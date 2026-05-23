@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "code": "P0020",
+  "id": "tool-manager",
+  "aliases": [
+    "P0020",
+    "Tool Manager",
+    "Workspace Hub",
+    "Workspace Notes"
+  ],
+  "name": "Tool Manager",
+  "type": "Web",
+  "owner": "Tool",
+  "status": "Beta",
+  "summary": "Unified Tool Manager (H1 sidebar): P0004 catalog + Notes V5 + Todo + 2FA + Cookie Auto. Skin P0008.",
+  "stack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Supabase",
+    "Chrome extension P0020-cookie-bridge"
+  ],
+  "commands": {
+    "dev": "corepack pnpm dev",
+    "build": "corepack pnpm build",
+    "preview": "corepack pnpm preview"
+  },
+  "deployTarget": "vercel",
+  "docs": {
+    "readme": "README.md",
+    "changelog": "CHANGELOG.md",
+    "design": "docs/DESIGN-PREVIEW.md"
+  },
+  "github": {
+    "repo": "tuanhoangfx/Tool-Manager",
+    "branch": "main",
+    "manifestPath": "tool.manifest.json"
+  },
+  "release": {
+    "version": "0.1.0",
+    "readiness": [
+      "hub-h1-unified-sidebar",
+      "notes-supabase-crud",
+      "lazy-hub-screens",
+      "twofa-local"
+    ]
+  },
+  "urls": {
+    "local": "http://127.0.0.1:5177",
+    "app": "https://tool-manager-zeta.vercel.app",
+    "preview": "https://tool-manager-zeta.vercel.app"
+  },
+  "vercel": {
+    "project": "tool-manager",
+    "projectId": "linked-via-cli",
+    "productionUrl": "https://tool-manager-zeta.vercel.app",
+    "productionBranch": "main",
+    "team": "tuanhoangfxs-projects",
+    "notes": "Vite SPA. Set VITE_SUPABASE_* + VITE_GITHUB_TOKEN in Vercel env."
+  },
+  "parentProject": {
+    "code": "P0004",
+    "note": "Cloned from GitHub Tool Manager; P0004 unchanged."
+  },
+  "health": {
+    "status": "Beta",
+    "note": "Notes Supabase CRUD; lazy hub chunks; https://tool-manager-zeta.vercel.app"
+  },
+  "manifestUpdatedAt": "2026-05-23T12:00:00.000Z"
+}

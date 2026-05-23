@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "P0020 Hub — Dev",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "corepack pnpm dev",
+      "cwd": "${workspaceFolder}",
+      "serverReadyAction": {
+        "pattern": "Local:\\s+(https?://[^\\s]+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    }
+  ]
+}
