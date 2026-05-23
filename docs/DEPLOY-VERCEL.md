@@ -31,7 +31,9 @@ Hoặc dùng MCP **deploy_to_vercel** từ Cursor (project root = P0020).
 
 ## GitHub
 
-Repo planned: `tuanhoangfx/Workspace-Notes` hoặc đổi tên `Tool-Manager` — cập nhật `tool.manifest.json` sau khi tạo repo.
+Repo: **https://github.com/tuanhoangfx/Tool-Manager** (branch `main`).
+
+Vercel Git integration: đã connect (`vercel git connect`).
 
 ## Sau deploy
 

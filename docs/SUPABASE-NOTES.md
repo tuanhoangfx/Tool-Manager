@@ -7,7 +7,9 @@
 
 `supabase/migrations/20260523120000_tool_manager_notes.sql`
 
-3. Kiểm tra: Table Editor → bảng `notes` + RLS enabled.
+3. Share (Sprint 3): `supabase/migrations/20260523140000_notes_share_public.sql`
+
+4. Kiểm tra: Table Editor → bảng `notes` + RLS enabled.
 
 ## Env local
 

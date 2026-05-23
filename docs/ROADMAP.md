@@ -4,34 +4,26 @@
 
 ## Sprint 1 — Notes production ✅
 
-- [x] Supabase schema + RLS (`supabase/migrations/20260523120000_tool_manager_notes.sql`)
-- [x] `src/lib/supabase.ts` + `src/features/notes/*` CRUD
-- [x] Gallery + Edit screens (V5 layout)
-- [ ] **Bạn:** chạy migration trên Supabase Dashboard (xem `docs/SUPABASE-NOTES.md`)
+- [x] Supabase schema + RLS
+- [x] Notes CRUD UI
+- [x] GitHub https://github.com/tuanhoangfx/Tool-Manager
+- [x] Vercel https://tool-manager-zeta.vercel.app + Git integration
 
-## Sprint 2 — Cookie bridge
+## Sprint 2 — Cookie bridge ✅ (MVP)
 
-- [ ] Extension MV3 `P0020-cookie-bridge`
-- [ ] Ghi `cookie_snapshot` + `sync_status` từ extension
-- [ ] Log sync 24h (thay mock)
+- [x] Extension `E:\Dev\Extension\P0020-cookie-bridge` (MV3, alarm 60m)
+- [x] Web bridge: Cookie sync → Kết nối extension / Sync now
+- [ ] Chạy migration share nếu chưa: `20260523140000_notes_share_public.sql`
 
-## Sprint 3 — Share links
+## Sprint 3 — Share (trong Note) ✅
 
-- [ ] `share_token` + password gate
-- [ ] `ShareLinksScreen` production
+- [x] `share_token`, `share_password_hash`, public RLS
+- [x] `PublicShareScreen` — `?screen=share&token=`
+- [x] Share UI trong Note Edit (sidebar Share đã gỡ)
 
-## Ops ✅ / pending
+## Tiếp theo
 
-- [x] Vite `manualChunks` + lazy hub screens (`src/hub/app-registry.ts`)
-- [x] `docs/DEPLOY-VERCEL.md`, `.env.example`
-- [ ] Vercel project `tool-manager` — deploy: `vercel deploy --name tool-manager`
-- [ ] Đổi folder `P0020-Tool-Manager` (đóng process đang lock folder trước)
-- [ ] Git init + push `tuanhoangfx/Workspace-Notes` hoặc `Tool-Manager`
-
-## Phân tách với P0004
-
-| | P0004 | P0020 |
-|---|-------|-------|
-| Tên | GitHub Tool Manager | Tool Manager |
-| Port | 5176 | 5177 |
-| Production | infix1.io.vn | tool-manager.vercel.app (sau deploy) |
+- [ ] Vercel env: `VITE_SUPABASE_*`, `VITE_GITHUB_TOKEN`
+- [ ] Extension publish Chrome Web Store (optional)
+- [ ] `share_expires_at` UI + view count RPC
+- [ ] Đổi folder `P0020-Tool-Manager`
