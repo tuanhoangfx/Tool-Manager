@@ -12,12 +12,13 @@
   "type": "Web",
   "owner": "Tool",
   "status": "Beta",
-  "summary": "Unified Tool Manager (H1 sidebar): P0004 catalog + Notes V5 + Todo + 2FA + Cookie Auto. Skin P0008.",
+  "summary": "Unified Tool Manager (H1 sidebar): P0004 catalog + Notes V1 (sync ID/pass) + Todo + 2FA + Cookie bridge. Skin P0008.",
   "stack": [
     "React",
     "TypeScript",
     "Vite",
     "Supabase",
+    "Inter",
     "Chrome extension P0020-cookie-bridge"
   ],
   "commands": {
@@ -40,7 +41,8 @@
     "version": "0.1.0",
     "readiness": [
       "hub-h1-unified-sidebar",
-      "notes-supabase-crud",
+      "notes-v1-classic-split",
+      "notes-sync-id-pass",
       "lazy-hub-screens",
       "twofa-local"
     ]
@@ -60,7 +62,7 @@
   },
   "parentProject": {
     "code": "P0004",
-    "note": "Cloned from GitHub Tool Manager; P0004 unchanged."
+    "note": "Cloned from Tool Hub (P0004); fork embeds catalog in unified shell."
   },
   "health": {
     "status": "Beta",
