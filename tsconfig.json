@@ -17,7 +17,9 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/features/todo/p0019/*"]
+      "@/*": ["src/features/todo/p0019/*"],
+      "@p0020/bridge": ["packages/p0020-bridge/src/index.js"],
+      "@p0020/bridge/*": ["packages/p0020-bridge/src/*"]
     }
   },
   "include": ["src", "eslint.config.js", "vite.config.ts"]

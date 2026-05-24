@@ -1,0 +1,14 @@
+{
+  "name": "@p0020/bridge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared P0020 cookie bridge protocol, domain normalize, vault crypto",
+  "exports": {
+    ".": "./src/index.js",
+    "./protocol": "./src/protocol.js",
+    "./normalize-domain": "./src/normalize-domain.js",
+    "./vault-crypto": "./src/vault-crypto.js",
+    "./mask": "./src/mask.js"
+  }
+}

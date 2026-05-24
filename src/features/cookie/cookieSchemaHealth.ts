@@ -1,0 +1,95 @@
+import toolManifest from "../../../tool.manifest.json";
+
+export type CookieSchemaCheck = {
+  name: string;
+  ok: boolean;
+  detail?: string;
+};
+
+export type CookieSchemaHealth = {
+  ok: boolean;
+  checks: CookieSchemaCheck[];
+  fixHint: string;
+};
+
+const FIX_HINT =
+  (toolManifest.supabase?.cookieBridge?.migrateDoc as string | undefined) ??
+  "Chạy migrations: `pnpm generate:apply-all` rồi paste APPLY_ALL trong SQL Editor, hoặc `supabase db push` — xem docs/SUPABASE-P0020.md";
+
+function rpcMissing(body: string) {
+  return /PGRST202|Could not find the function|does not exist in the schema cache/i.test(body);
+}
+
+/** Same probes as scripts/verify-p0020-schema.mjs (anon REST, not supabase.rpc). */
+async function rpcProbe(name: string, body: Record<string, unknown>) {
+  const url = import.meta.env.VITE_SUPABASE_URL as string;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+  const res = await fetch(`${url}/rest/v1/rpc/${name}`, {
+    method: "POST",
+    headers: {
+      apikey: key,
+      Authorization: `Bearer ${key}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  return { status: res.status, body: await res.text() };
+}
+
+export async function probeCookieSchemaHealth(): Promise<CookieSchemaHealth> {
+  const checks: CookieSchemaCheck[] = [];
+  const fakeId = "00000000-0000-0000-0000-000000000000";
+
+  const vaultProbe = await rpcProbe("note_vault_upsert", {
+    p_note_id: fakeId,
+    p_domain: ".test",
+    p_pass: null,
+    p_ciphertext: "dGVzdA==",
+    p_iv: "dGVzdA==",
+    p_cookie_count: 0,
+  });
+  const missingPassCol = /sync_pass_hash/i.test(vaultProbe.body);
+  checks.push({
+    name: "sync_pass_hash / note_verify_sync_pass",
+    ok: !missingPassCol && !rpcMissing(vaultProbe.body),
+    detail: missingPassCol ? vaultProbe.body.slice(0, 120) : vaultProbe.body.slice(0, 60) || "ok",
+  });
+
+  const syncByNote = await rpcProbe("note_sync_cookies_by_note_id", {
+    p_note_id: fakeId,
+    p_pass: null,
+    p_snapshot: [],
+    p_domain: ".test",
+  });
+  checks.push({
+    name: "note_sync_cookies_by_note_id",
+    ok: !rpcMissing(syncByNote.body),
+    detail: `${syncByNote.status} ${syncByNote.body.slice(0, 80)}`,
+  });
+
+  const setPass = await rpcProbe("note_set_sync_pass", {
+    p_note_id: fakeId,
+    p_pass: null,
+  });
+  // Function exists if anon gets "not authenticated" / note not found — not PGRST202
+  checks.push({
+    name: "note_set_sync_pass",
+    ok: !rpcMissing(setPass.body),
+    detail: `${setPass.status} ${setPass.body.slice(0, 80)}`,
+  });
+
+  const url = import.meta.env.VITE_SUPABASE_URL as string;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+  const tableRes = await fetch(`${url}/rest/v1/note_cookie_vault?select=note_id&limit=1`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+  });
+  checks.push({
+    name: "note_cookie_vault",
+    ok: tableRes.ok,
+    detail: String(tableRes.status),
+  });
+
+  const ok = checks.every((c) => c.ok);
+  return { ok, checks, fixHint: FIX_HINT };
+}

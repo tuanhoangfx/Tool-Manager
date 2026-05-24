@@ -15,7 +15,6 @@ export default defineConfig({
             if (id.includes("features/todo/p0019")) return "app-todo";
             if (id.includes("features/notes")) return "app-notes";
             if (id.includes("features/twofa")) return "app-twofa";
-            if (id.includes("features/hub/") || id.includes("features/store")) return "hub-p0004";
             return;
           }
           if (id.includes("@supabase")) return "vendor-supabase";
@@ -35,6 +34,7 @@ export default defineConfig({
     alias: {
       /** P0019 @/ imports — only used under src/features/todo/p0019 */
       "@": path.resolve(rootDir, "src/features/todo/p0019"),
+      "@p0020/bridge": path.resolve(rootDir, "packages/p0020-bridge/src"),
     },
   },
 });
