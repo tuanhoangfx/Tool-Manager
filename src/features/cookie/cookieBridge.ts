@@ -33,9 +33,13 @@ export type CookieBridgePrefs = {
 const BINDINGS_KEY = "e0001-cookie-bindings-v1";
 const PREFS_KEY = "e0001-cookie-bridge-prefs-v1";
 const SELECTED_BINDING_KEY = "e0001-selected-binding-id";
-const LEGACY_BINDINGS_KEY = "p0020-cookie-bindings-v1";
-const LEGACY_PREFS_KEY = "p0020-cookie-bridge-prefs-v1";
-const LEGACY_SELECTED_BINDING_KEY = "p0020-selected-binding-id";
+
+function purgeLegacyCookieBridgeStorage() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("p0020-cookie-bindings-v1");
+  localStorage.removeItem("p0020-cookie-bridge-prefs-v1");
+  localStorage.removeItem("p0020-selected-binding-id");
+}
 
 export const DOMAIN_PRESETS: { label: string; domain: string }[] = [
   { label: "Zalo", domain: ".zalo.me" },
@@ -57,10 +61,8 @@ export function isValidCookieBinding(b: CookieBinding): boolean {
 export function loadCookieBindings(): CookieBinding[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(BINDINGS_KEY) ?? localStorage.getItem(LEGACY_BINDINGS_KEY);
-    if (raw && !localStorage.getItem(BINDINGS_KEY)) {
-      localStorage.setItem(BINDINGS_KEY, raw);
-    }
+    purgeLegacyCookieBridgeStorage();
+    const raw = localStorage.getItem(BINDINGS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CookieBinding[];
     return Array.isArray(parsed) ? parsed.filter(isValidCookieBinding) : [];
@@ -75,11 +77,8 @@ export function saveCookieBindings(bindings: CookieBinding[]) {
 
 export function loadSelectedBindingId(): string | null {
   if (typeof window === "undefined") return null;
-  const id = localStorage.getItem(SELECTED_BINDING_KEY) ?? localStorage.getItem(LEGACY_SELECTED_BINDING_KEY);
-  if (id && !localStorage.getItem(SELECTED_BINDING_KEY)) {
-    localStorage.setItem(SELECTED_BINDING_KEY, id);
-  }
-  return id;
+  purgeLegacyCookieBridgeStorage();
+  return localStorage.getItem(SELECTED_BINDING_KEY);
 }
 
 export function saveSelectedBindingId(id: string | null) {
@@ -99,10 +98,8 @@ export function loadCookieBridgePrefs(): CookieBridgePrefs {
     };
   }
   try {
-    const raw = localStorage.getItem(PREFS_KEY) ?? localStorage.getItem(LEGACY_PREFS_KEY);
-    if (raw && !localStorage.getItem(PREFS_KEY)) {
-      localStorage.setItem(PREFS_KEY, raw);
-    }
+    purgeLegacyCookieBridgeStorage();
+    const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) {
       return {
         syncIntervalMinutes: 60,
