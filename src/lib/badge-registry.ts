@@ -28,10 +28,12 @@ import {
   Monitor,
   Package,
   Pencil,
+  Pin,
   RefreshCw,
   Rocket,
   Server,
   ShieldCheck,
+  Share2,
   Tag,
   Zap,
 } from "lucide-react";
@@ -102,6 +104,9 @@ const FILTER_ALL: Record<string, FilterIconMeta> = {
   status: { icon: Flag, className: "text-violet-400" },
   drift: { icon: AlertTriangle, className: "text-rose-400" },
   links: { icon: Link2, className: "text-amber-400" },
+  pinned: { icon: Pin, className: "text-indigo-300" },
+  sync: { icon: RefreshCw, className: "text-cyan-300" },
+  share: { icon: Share2, className: "text-violet-300" },
 };
 
 const LINK_STATUS: Record<string, FilterIconMeta> = {
@@ -225,6 +230,23 @@ export function resolveFilterOptionIcon(filterKey: string, option: FilterOption)
       return pick(DRIFT, option.value);
     case "links":
       return pick(LINKS, option.value);
+    case "pinned":
+      return option.value === "pinned"
+        ? { icon: Pin, className: "text-indigo-300" }
+        : { icon: ShieldCheck, className: "text-slate-400" };
+    case "sync":
+      return (
+        {
+          synced: { icon: CheckCircle2, className: "text-emerald-400" },
+          pending: { icon: RefreshCw, className: "text-amber-400" },
+          error: { icon: AlertTriangle, className: "text-rose-400" },
+          manual: { icon: Pencil, className: "text-slate-400" },
+        }[option.value] ?? { icon: RefreshCw, className: "text-cyan-300" }
+      );
+    case "share":
+      return option.value === "shared"
+        ? { icon: Share2, className: "text-violet-300" }
+        : { icon: Lock, className: "text-slate-400" };
     case "group":
       return resolveLinkGroupBadge(option.value as LinkGroup).iconMeta;
     case "kind":

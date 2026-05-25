@@ -1,21 +1,20 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
-import { NotesNewNoteButton } from "../notes/NotesNewNoteButton";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { DisplayPrefs } from "../../components/sales-shell";
 import { WorkspaceSidebar } from "../../components/sales-shell/WorkspaceSidebar";
-import { ToastProvider } from "../../components/toast";
+import { ToastContainer, ToastProvider } from "../../components/toast";
 import type { WorkspaceNavScreen, WorkspaceScreen } from "../../lib/workspace-screen";
-import { isWorkspaceScreen, NAV_SCREENS } from "../../lib/workspace-screen";
+import { NAV_SCREENS } from "../../lib/workspace-screen";
+import { readNoteIdFromUrl } from "../design-preview/design-nav";
 import { readShareTokenFromUrl } from "../notes/shareUtils";
 import { PublicShareScreen } from "../notes/PublicShareScreen";
+import { DEFAULT_NOTES_FILTER_KEYS } from "../notes/notes-list-prefs";
+import { NOTES_FILTER_DEFS } from "../notes/notes-filters";
 import { useHubNavigation } from "../hub/useHubNavigation";
 import { WorkspaceScreenChrome } from "./WorkspaceScreenChrome";
 import { WorkspaceSearchProvider } from "./WorkspaceSearchContext";
 
-const NotesGalleryScreen = lazy(() =>
-  import("../notes/NotesGalleryScreen").then((m) => ({ default: m.NotesGalleryScreen })),
-);
-const NoteEditScreen = lazy(() =>
-  import("../notes/NoteEditScreen").then((m) => ({ default: m.NoteEditScreen })),
+const NotesWorkspaceScreen = lazy(() =>
+  import("../notes/NotesWorkspaceScreen").then((m) => ({ default: m.NotesWorkspaceScreen })),
 );
 const TodoEmbed = lazy(() => import("../todo/TodoEmbed").then((m) => ({ default: m.TodoEmbed })));
 const TwofaManagerScreen = lazy(() =>
@@ -24,6 +23,21 @@ const TwofaManagerScreen = lazy(() =>
 const CookieSyncScreen = lazy(() =>
   import("../design-preview/screens/CookieSyncScreen").then((m) => ({ default: m.CookieSyncScreen })),
 );
+
+function WorkspaceSidebarDisplayPrefs() {
+  return (
+    <DisplayPrefs
+      filters={[...NOTES_FILTER_DEFS]}
+      defaultFilterKeys={DEFAULT_NOTES_FILTER_KEYS}
+      headerStats={[]}
+      defaultHeaderStatKeys={new Set()}
+      showRange={false}
+      showLimit={false}
+      showHeaderPin
+      sidebarRow
+    />
+  );
+}
 
 function navScreen(screen: WorkspaceScreen): WorkspaceNavScreen {
   if (screen === "edit") return "notes";
@@ -50,19 +64,12 @@ function WorkspaceScreenBody({
 }) {
   switch (screen) {
     case "notes":
-      return (
-        <Suspense fallback={<ScreenFallback label="Notes" />}>
-          <NotesGalleryScreen
-            shellMode
-            query={query}
-            onOpenNote={(id) => navigate("edit", { note: id })}
-          />
-        </Suspense>
-      );
     case "edit":
       return (
-        <Suspense fallback={<ScreenFallback label="Note editor" />}>
-          <NoteEditScreen shellMode onClose={() => navigate("notes")} />
+        <Suspense fallback={<ScreenFallback label="Notes" />}>
+          <NotesWorkspaceScreen
+            navigate={(opts) => navigate("notes", opts)}
+          />
         </Suspense>
       );
     case "todo":
@@ -90,13 +97,21 @@ function WorkspaceScreenBody({
   }
 }
 
+const NOTES_SCREENS = new Set<WorkspaceScreen>(["notes", "edit"]);
+
 export function WorkspaceApp() {
   const { screen, navigate } = useHubNavigation();
   const shareToken = readShareTokenFromUrl();
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    setQuery("");
+    if (screen !== "edit") return;
+    const note = readNoteIdFromUrl();
+    navigate("notes", { note: note ?? undefined, replace: true });
+  }, [screen, navigate]);
+
+  useEffect(() => {
+    if (!NOTES_SCREENS.has(screen)) setQuery("");
   }, [screen]);
 
   useEffect(() => {
@@ -116,6 +131,8 @@ export function WorkspaceApp() {
   }
 
   const activeNav = navScreen(screen);
+  const isNotesLayout = NOTES_SCREENS.has(screen);
+
   const onNav = useCallback(
     (next: WorkspaceNavScreen) => {
       navigate(next);
@@ -123,40 +140,37 @@ export function WorkspaceApp() {
     [navigate],
   );
 
-  const toolbar = useMemo(() => {
-    if (screen === "edit") {
-      return (
-        <button type="button" className="btn-ghost btn text-[12px]" onClick={() => navigate("notes")}>
-          <ArrowLeft size={14} />
-          Back to Notes
-        </button>
-      );
-    }
-    if (screen === "notes") {
-      return (
-        <NotesNewNoteButton onCreated={(id) => navigate("edit", { note: id })} />
-      );
-    }
-    return null;
-  }, [screen, navigate]);
+  const mainClass = isNotesLayout ? "hub-main hub-main--notes" : "hub-main";
+
+  const body = (
+    <WorkspaceScreenBody screen={screen} navigate={navigate} query={query} />
+  );
 
   return (
     <ToastProvider>
       <div className="hub-app theme-hub flex h-full min-h-0 w-full overflow-hidden">
-        <WorkspaceSidebar screen={activeNav} onNavigate={onNav} />
+        <WorkspaceSidebar
+          screen={activeNav}
+          onNavigate={onNav}
+          displayPrefs={<WorkspaceSidebarDisplayPrefs />}
+        />
 
-        <main className="hub-main flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden">
-          <WorkspaceSearchProvider query={query} setQuery={setQuery}>
-            <WorkspaceScreenChrome
-              screen={screen}
-              query={query}
-              onQueryChange={setQuery}
-              toolbar={toolbar}
-            >
-              <WorkspaceScreenBody screen={screen} navigate={navigate} query={query} />
-            </WorkspaceScreenChrome>
-          </WorkspaceSearchProvider>
+        <main className={`${mainClass} flex-1 min-h-0 min-w-0`}>
+          {isNotesLayout ? (
+            body
+          ) : (
+            <WorkspaceSearchProvider query={query} setQuery={setQuery}>
+              <WorkspaceScreenChrome
+                screen={screen}
+                query={query}
+                onQueryChange={setQuery}
+              >
+                {body}
+              </WorkspaceScreenChrome>
+            </WorkspaceSearchProvider>
+          )}
         </main>
+        <ToastContainer />
       </div>
     </ToastProvider>
   );

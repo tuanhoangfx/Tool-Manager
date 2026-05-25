@@ -24,6 +24,45 @@ export type NoteDraft = {
   sync_pass?: string;
 };
 
+function isMissingColumnError(message: string): boolean {
+  return /column/i.test(message) && /does not exist|not found|schema cache/i.test(message);
+}
+
+function isUniqueSlugError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; message?: string };
+  return e.code === "23505" || /notes_user_slug_idx|duplicate key/i.test(e.message ?? "");
+}
+
+async function updateNoteWithFallback(noteId: string, patch: Record<string, unknown>) {
+  const run = (nextPatch: Record<string, unknown>) =>
+    supabase.from("notes").update(nextPatch).eq("id", noteId).select("*").single();
+
+  let res = await run(patch);
+  if (!res.error) return res;
+
+  const msg = res.error.message ?? "";
+  if (isUniqueSlugError(res.error)) {
+    res = await run({ ...patch, slug: `note-${noteId.slice(0, 8)}` });
+    if (!res.error) return res;
+  }
+
+  if (isMissingColumnError(msg)) {
+    const minimal = {
+      title: patch.title,
+      slug: patch.slug,
+      domain: patch.domain,
+      body_md: patch.body_md,
+      pinned: patch.pinned,
+      share_enabled: patch.share_enabled,
+      share_token: patch.share_token,
+    };
+    res = await run(minimal);
+  }
+
+  return res;
+}
+
 export function useNote(session: Session | null, noteId: string | null) {
   const [note, setNote] = useState<NoteRow | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,7 +110,7 @@ export function useNote(session: Session | null, noteId: string | null) {
     async (draft: NoteDraft) => {
       if (!session || !noteId) throw new Error("No note selected");
       setSaving(true);
-      const slug = slugifyTitle(draft.title, draft.slug || "note");
+      const slug = draft.slug.trim() || slugifyTitle(draft.title, note?.slug || "note");
 
       let share_token = note?.share_token ?? null;
       let share_password_hash = note?.share_password_hash ?? null;
@@ -99,12 +138,7 @@ export function useNote(session: Session | null, noteId: string | null) {
         patch.domain = draft.domain.trim();
       }
 
-      const { data, error: err } = await supabase
-        .from("notes")
-        .update(patch)
-        .eq("id", noteId)
-        .select("*")
-        .single();
+      const { data, error: err } = await updateNoteWithFallback(noteId, patch);
       if (err) {
         setSaving(false);
         throw err;

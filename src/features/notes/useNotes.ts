@@ -40,13 +40,13 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
   const notes = useMemo(() => rows.map(toListItem), [rows]);
 
   const createNote = useCallback(async () => {
-    if (!session) throw new Error("Chưa đăng nhập");
+    if (!session) throw new Error("Not signed in");
     const slug = `note-${Date.now()}`;
     const { data, error: err } = await supabase
       .from("notes")
       .insert({
         user_id: session.user.id,
-        title: "Note mới",
+        title: "New note",
         slug,
         domain: "",
         body_md: "",

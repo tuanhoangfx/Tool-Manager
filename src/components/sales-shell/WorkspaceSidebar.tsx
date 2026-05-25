@@ -1,4 +1,5 @@
-import { Cookie, FileText, KeyRound, ListTodo } from "lucide-react";
+import type { ReactNode } from "react";
+import { Cookie, FileText, KeyRound, ListTodo, RefreshCcw, User } from "lucide-react";
 import { APP_USER_LABEL, APP_VERSION } from "../../lib/app-meta";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
 import { ToolAvatar } from "../ToolAvatar";
@@ -14,9 +15,39 @@ const items: { screen: WorkspaceNavScreen; label: string; icon: typeof FileText 
 type Props = {
   screen: WorkspaceNavScreen;
   onNavigate: (screen: WorkspaceNavScreen) => void;
+  displayPrefs?: ReactNode;
 };
 
-export function WorkspaceSidebar({ screen, onNavigate }: Props) {
+const footerBtn =
+  "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors text-[var(--muted)] hover:bg-white/5 hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60";
+
+function SidebarFooterButton({
+  icon: Icon,
+  label,
+  iconClass,
+  onClick,
+  disabled,
+  title,
+  trailing,
+}: {
+  icon: typeof RefreshCcw;
+  label: string;
+  iconClass: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  title?: string;
+  trailing?: ReactNode;
+}) {
+  return (
+    <button type="button" className={footerBtn} onClick={onClick} disabled={disabled} title={title}>
+      <Icon size={15} className={`shrink-0 ${iconClass}`} />
+      <span className="flex-1 text-left">{label}</span>
+      {trailing}
+    </button>
+  );
+}
+
+export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
   return (
     <aside className="flex h-full min-h-0 w-60 shrink-0 flex-col overflow-visible border-r border-white/5 bg-[var(--panel)] p-4">
       <div className="mb-4 shrink-0 flex items-center gap-3">
@@ -56,8 +87,23 @@ export function WorkspaceSidebar({ screen, onNavigate }: Props) {
         })}
       </nav>
 
-      <footer className="mt-2 shrink-0 border-t border-white/5 pt-2.5 text-[11px] text-[var(--muted)]">
-        <span className="text-[var(--text)]/80">{APP_USER_LABEL}</span>
+      <footer className="mt-2 shrink-0 space-y-0.5 overflow-visible border-t border-white/5 pt-2.5">
+        <SidebarFooterButton
+          icon={User}
+          iconClass="text-violet-400"
+          label="User"
+          title="Current workspace user"
+          disabled
+          trailing={<span className="text-xs font-medium text-[var(--text)]/80">{APP_USER_LABEL}</span>}
+        />
+        <SidebarFooterButton
+          icon={RefreshCcw}
+          iconClass="text-indigo-300"
+          label="Refresh"
+          onClick={() => window.location.reload()}
+          title="Refresh workspace"
+        />
+        {displayPrefs}
       </footer>
     </aside>
   );

@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-05-25
+
+### Added
+
+- Notes Hub-style search/filter bar, two-frame notes workspace, share setup panel, copy toasts, autosave, and folder management.
+- Supabase migration for synced note folders with local fallback when migration is not applied yet.
+
+### Changed
+
+- Notes metadata/header simplified to ID and update time; cookie sync IDs stay internal.
+- Notes labels normalized to English and editor styling aligned with the P0004 Hub theme.
+
 ## [0.1.0] — 2026-05-23
 
 ### Added

@@ -15,23 +15,22 @@ export function slugifyTitle(title: string, fallback = "note"): string {
   return base || fallback;
 }
 
-function formatRelativeVi(iso: string | null): string {
-  if (!iso) return "—";
+function formatRelativeEn(iso: string | null): string {
+  if (!iso) return "-";
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diffMs / 60_000);
-  if (mins < 1) return "vừa xong";
-  if (mins < 60) return `${mins} phút trước`;
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} giờ trước`;
+  if (hours < 24) return `${hours} hr ago`;
   const days = Math.floor(hours / 24);
-  return `${days} ngày trước`;
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-function formatDateVi(iso: string): string {
-  return new Intl.DateTimeFormat("vi-VN", {
+function formatDateEn(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
     day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso));
@@ -40,13 +39,13 @@ function formatDateVi(iso: string): string {
 export function syncMeta(status: NoteSyncStatus, syncedAt: string | null): Pick<NoteListItem, "syncLabel" | "syncTone"> {
   switch (status) {
     case "synced":
-      return { syncLabel: formatRelativeVi(syncedAt), syncTone: "emerald" };
+      return { syncLabel: formatRelativeEn(syncedAt), syncTone: "emerald" };
     case "pending":
-      return { syncLabel: "Chờ extension", syncTone: "amber" };
+      return { syncLabel: "Pending", syncTone: "amber" };
     case "error":
-      return { syncLabel: "Lỗi sync", syncTone: "rose" };
+      return { syncLabel: "Sync error", syncTone: "rose" };
     default:
-      return { syncLabel: "Thủ công", syncTone: "amber" };
+      return { syncLabel: "Manual", syncTone: "amber" };
   }
 }
 
@@ -56,7 +55,7 @@ export function toListItem(row: NoteRow): NoteListItem {
     ...row,
     syncLabel,
     syncTone,
-    updatedLabel: formatDateVi(row.updated_at),
+    updatedLabel: formatDateEn(row.updated_at),
   };
 }
 

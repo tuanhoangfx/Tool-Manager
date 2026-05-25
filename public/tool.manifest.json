@@ -33,7 +33,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "0.1.0",
+    "version": "0.1.1",
     "readiness": [
       "notes-v1-fusion",
       "notes-sync-id-pass",
@@ -83,5 +83,5 @@
     "status": "Beta",
     "note": "Notes Supabase CRUD; https://tool-manager-zeta.vercel.app"
   },
-  "manifestUpdatedAt": "2026-05-24T19:30:00.000Z"
+  "manifestUpdatedAt": "2026-05-25T09:36:00.000+07:00"
 }

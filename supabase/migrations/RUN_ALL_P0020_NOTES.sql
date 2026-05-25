@@ -31,3 +31,6 @@ where sync_id is null or sync_id = '';
 
 -- 6) Realtime
 -- (see 20260524100000_notes_realtime.sql)
+
+-- 7) Notes folders
+-- (see 20260525103000_note_folders.sql)

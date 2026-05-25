@@ -11,6 +11,9 @@ import {
   Link2,
   Flag,
   AlertTriangle,
+  Pin,
+  RefreshCw,
+  Share2,
 } from "lucide-react";
 import type { FilterIconMeta } from "../../lib/badge-registry";
 import { resolveFilterAllIcon, resolveFilterOptionIcon } from "../../lib/badge-registry";
@@ -34,6 +37,9 @@ const FILTER_ICONS: Record<string, React.ElementType> = {
   links: Link2,
   tool: Layers,
   entity: Layers,
+  pinned: Pin,
+  sync: RefreshCw,
+  share: Share2,
 };
 
 export type FilterValues = Record<string, string[]>;
@@ -160,7 +166,7 @@ export function FilterBar({
       <div className="space-y-2 rounded-2xl border border-white/5 bg-[var(--panel)] p-3">
         <div className="flex flex-wrap items-center gap-2">
           {searchField}
-          {toolbar ? <div className="ml-auto flex shrink-0 items-center gap-2">{toolbar}</div> : null}
+          {toolbar ? <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">{toolbar}</div> : null}
         </div>
         <div className="flex min-h-[34px] flex-wrap items-center gap-2">
           {filterDropdowns}
