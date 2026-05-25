@@ -15,3 +15,6 @@ export { SideNavButton } from "./SideNavButton";
 export { ToolFilterBar } from "./ToolFilterBar";
 export { ActivityDots } from "./ActivityDots";
 export { RunningBadge } from "./RunningBadge";
+export { AppSettingsButton } from "./AppSettingsButton";
+export { AppSettingsBack } from "./AppSettingsBack";
+export { SettingRow } from "./SettingRow";

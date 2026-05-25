@@ -177,14 +177,14 @@ returns setof public.note_cookie_vault
 language sql
 security definer
 set search_path = public
-as $$
+as $
   select v.*
   from public.note_cookie_vault v
   inner join public.notes n on n.id = v.note_id
   where n.user_id = auth.uid()
     and v.note_id = any (p_note_ids)
     and (p_since is null or v.updated_at > p_since);
-$$;
+$;
 
 revoke all on function public.note_vault_poll(uuid[], timestamptz) from public;
 grant execute on function public.note_vault_poll(uuid[], timestamptz) to authenticated;

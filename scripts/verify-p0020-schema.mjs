@@ -52,7 +52,7 @@ checks.push({
   name: "vault RPC (no stale v_note / sync_pass_hash bug)",
   ok: !staleVNote && !missingPassCol,
   detail: staleVNote
-    ? "OLD DB functions — run pnpm generate:apply-all + SQL Editor (docs/SUPABASE-P0020.md)"
+    ? "OLD DB functions — run supabase/APPLY_FIX_V_NOTE_DROP.sql"
     : missingPassCol
       ? vaultProbe.body.slice(0, 160)
       : vaultProbe.body.slice(0, 60) || "ok",
@@ -123,6 +123,6 @@ for (const c of checks) {
 
 const allOk = checks.every((c) => c.ok);
 if (!allOk) {
-  console.log("Fix: pnpm generate:apply-all → paste APPLY_ALL in SQL Editor (docs/SUPABASE-P0020.md).\n");
+  console.log("Fix: run supabase/APPLY_ALL_P0020_COOKIE_BRIDGE.sql in SQL Editor, then notify pgrst reload.\n");
 }
 process.exit(allOk ? 0 : 2);

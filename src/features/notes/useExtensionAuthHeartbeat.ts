@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
-import { broadcastExtensionAuth } from "../cookie/cookieBridgeProtocol";
+import { broadcastExtensionAuth } from "./shareUtils";
 
 const HEARTBEAT_MS = 30 * 60 * 1000;
 

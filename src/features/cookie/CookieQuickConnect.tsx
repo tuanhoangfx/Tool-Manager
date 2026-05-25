@@ -53,7 +53,7 @@ export function CookieQuickConnect({ notes, onConnect }: Props) {
       void resolveNoteForBinding({ noteId: id }).then(({ note, error }) => {
         if (cancelled) return;
         if (note) {
-          setResolvedSync(note.sync_id ?? (note.useNoteIdRpc ? "(UUID mode — see docs/SUPABASE-P0020.md)" : ""));
+          setResolvedSync(note.sync_id ?? (note.useNoteIdRpc ? "(UUID mode — run APPLY_COOKIE_SYNC.sql)" : ""));
         } else if (error && isMissingSyncIdColumn(error)) {
           setResolvedSync("");
           pushToast(migrationHintMessage(), "warn", 8000);

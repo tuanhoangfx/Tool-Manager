@@ -42,7 +42,7 @@ if (writeProbe) {
   const upsertBody = await upsert.text();
   console.log("vault upsert probe", upsert.status, upsertBody.slice(0, 120));
   if (/record\s+"v_note"|sync_pass_hash/i.test(upsertBody)) {
-    console.error("\nFAIL: stale DB functions — docs/SUPABASE-P0020.md (pnpm generate:apply-all)");
+    console.error("\nFAIL: stale DB functions — run APPLY_FIX_V_NOTE_DROP.sql");
     process.exit(2);
   }
 }

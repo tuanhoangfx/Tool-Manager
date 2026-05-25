@@ -218,8 +218,8 @@ export function CookieAutoSyncTable({
             {rows.map(({ binding, note, lines }) => {
               const tone = note?.syncTone ?? "amber";
               const status = note?.sync_status ?? "pending";
-              const vault = binding.noteId?.trim()
-                ? vaultByKey[vaultKey(binding.noteId.trim(), binding.domain)]
+              const vault: CookieVaultRow | undefined = binding.noteId
+                ? vaultByKey[vaultKey(binding.noteId, binding.domain)]
                 : undefined;
               const selected = selectedBindingId === binding.id;
               return (
@@ -277,10 +277,8 @@ export function CookieAutoSyncTable({
                     )}
                   </td>
                   <td className="max-w-[140px] px-3 py-2.5 text-[10px] text-amber-200/90" title={vault?.updated_by ?? ""}>
-                    {vault?.updated_by || vault?.source_browser ? (
-                      <span className="line-clamp-2 break-all">
-                        {vault.updated_by ?? vault.source_browser}
-                      </span>
+                    {vault?.updated_by ? (
+                      <span className="line-clamp-2 break-all">{vault.updated_by}</span>
                     ) : (
                       <span className="text-[var(--muted)]">—</span>
                     )}

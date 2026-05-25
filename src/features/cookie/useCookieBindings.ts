@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { NoteListItem } from "../notes/types";
-import { debounce } from "../../lib/debounce";
 import {
   bindingsForExtension,
   loadCookieBindings,
@@ -8,16 +7,10 @@ import {
   normalizeCookieDomain,
   saveCookieBindings,
   type CookieBinding,
-  loadSelectedBindingId,
-  saveSelectedBindingId,
 } from "./cookieBridge";
-import {
-  broadcastCookieBindings,
-  broadcastSelectedBinding,
-} from "./cookieBridgeProtocol";
 import { resolveNoteForBinding } from "./resolveNoteForBinding";
-
-const PUSH_DEBOUNCE_MS = 300;
+import { broadcastCookieBindings, broadcastSelectedBinding } from "../notes/shareUtils";
+import { loadSelectedBindingId, saveSelectedBindingId } from "./cookieBridge";
 
 export function useCookieBindings(notes: NoteListItem[]) {
   const [bindings, setBindings] = useState<CookieBinding[]>(() => loadCookieBindings());
@@ -32,6 +25,7 @@ export function useCookieBindings(notes: NoteListItem[]) {
     saveCookieBindings(bindings);
   }, [bindings, persistReady]);
 
+  // Chỉ sync metadata khi đã có notes — tránh vòng lặp render khi chưa đăng nhập
   const notesKey = notes.map((n) => `${n.id}:${n.sync_id}:${n.title}`).join("|");
 
   const pushToExtension = useCallback((list = bindings) => {
@@ -41,17 +35,11 @@ export function useCookieBindings(notes: NoteListItem[]) {
     broadcastSelectedBinding(sel?.noteId ?? null);
   }, [bindings]);
 
-  const pushDebounced = useMemo(
-    () => debounce((list: CookieBinding[]) => pushToExtension(list), PUSH_DEBOUNCE_MS),
-    [pushToExtension],
-  );
-
-  useEffect(() => () => pushDebounced.cancel(), [pushDebounced]);
-
+  /** Đẩy bindings sang extension khi load / thay đổi (tránh popup 0 bindings sau F5). */
   useEffect(() => {
     if (!persistReady || bindings.length === 0) return;
-    pushDebounced(bindings);
-  }, [bindings, persistReady, pushDebounced]);
+    pushToExtension();
+  }, [bindings, persistReady, pushToExtension]);
 
   const upsertBindingRow = useCallback(
     (row: Omit<CookieBinding, "id" | "enabled"> & { enabled?: boolean }) => {
@@ -94,6 +82,7 @@ export function useCookieBindings(notes: NoteListItem[]) {
     [notes, upsertBindingRow],
   );
 
+  /** Note UUID and/or Sync ID + domain (+ optional pass) → binding for extension */
   const connectBinding = useCallback(
     (opts: { noteId?: string; syncId?: string; domain: string; pass?: string }): CookieBinding | null => {
       const domain = normalizeCookieDomain(opts.domain);
@@ -132,9 +121,11 @@ export function useCookieBindings(notes: NoteListItem[]) {
         };
       }
 
+      const noteIdOpt = opts.noteId?.trim();
+      const syncIdOpt = opts.syncId?.trim();
       const local =
-        (opts.noteId ? notes.find((n) => n.id === opts.noteId!.trim()) : undefined) ??
-        (opts.syncId ? notes.find((n) => n.sync_id === opts.syncId!.trim()) : undefined);
+        (noteIdOpt ? notes.find((n) => n.id === noteIdOpt) : undefined) ??
+        (syncIdOpt ? notes.find((n) => n.sync_id === syncIdOpt) : undefined);
 
       if (local?.sync_id) {
         const row = upsertBindingRow({
@@ -181,7 +172,6 @@ export function useCookieBindings(notes: NoteListItem[]) {
             next.syncId = note.sync_id ?? next.syncId;
             next.noteTitle = note.title;
             next.useNoteIdRpc = !note.sync_id?.trim() && Boolean(next.noteId);
-            next.requiresPass = Boolean(note.sync_pass_hash);
           }
         }
         return next;
@@ -222,14 +212,13 @@ export function useCookieBindings(notes: NoteListItem[]) {
       if (!remote.ok) {
         return { ok: false as const, error: remote.error };
       }
-      pushDebounced.cancel();
       const list = loadCookieBindings();
       broadcastCookieBindings(bindingsForExtension(list));
       broadcastSelectedBinding(remote.row.noteId || null);
       saveSelectedBindingId(remote.row.id);
       return { ok: true as const, row: remote.row };
     },
-    [connectBindingRemote, pushDebounced],
+    [connectBindingRemote],
   );
 
   return {

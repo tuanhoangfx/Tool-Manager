@@ -131,7 +131,7 @@ export function bindingsForExtension(bindings: CookieBinding[]) {
       noteId: b.noteId?.trim() ?? "",
       pass: b.pass ?? "",
       domain: b.domain.trim(),
-      requiresPass: Boolean(b.requiresPass) || Boolean((b.pass ?? "").trim()),
+      requiresPass: false,
       noteTitle: b.noteTitle ?? "",
     }));
 }

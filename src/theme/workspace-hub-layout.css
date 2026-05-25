@@ -1,0 +1,64 @@
+/* P0004 hub shell layout — synced from P0004-Tool-Hub p0008-globals */
+
+:root,
+.theme-hub {
+  --app-tab-header-py: 0.75rem;
+  --app-tab-header-px: 1.5rem;
+  --app-tab-header-min-h: 2.75rem;
+  --app-tab-header-gap-below: 0.75rem;
+  --app-tab-header-sticky-h: var(--app-tab-header-min-h);
+  --hub-filter-pin-est-h: 6.75rem;
+  --hub-chrome-sticky-est-h: calc(var(--app-tab-header-min-h) + var(--hub-filter-pin-est-h));
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.hub-app {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.hub-app > aside {
+  position: relative;
+  z-index: 50;
+  width: 15rem;
+  flex-shrink: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+.hub-app > main,
+.hub-main {
+  position: relative;
+  z-index: 0;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 1.5rem 1.5rem;
+  scroll-padding-top: var(--hub-chrome-sticky-est-h);
+}
+
+.hub-main:has([data-search-pin][data-header-pin]) {
+  scroll-padding-top: var(--hub-chrome-sticky-est-h);
+}
+
+.hub-chrome-sticky {
+  isolation: isolate;
+}
+
+.hub-filter-sticky {
+  isolation: isolate;
+}

@@ -15,7 +15,7 @@ export function isMissingSyncPassRpc(message: string): boolean {
 export function migrationHintMessage(): string {
   return (
     "Database missing notes.sync_id — open Supabase SQL Editor and run file " +
-    "docs/SUPABASE-P0020.md — run migrations / generate:apply-all, then refresh."
+    "Tool/P0020-Workspace-Notes/supabase/APPLY_COOKIE_SYNC.sql then refresh."
   );
 }
 

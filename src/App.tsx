@@ -1,6 +1,6 @@
-import { HubApp } from "./features/hub/HubApp";
+import { WorkspaceApp } from "./features/workspace/WorkspaceApp";
 
-/** P0020 Tool Manager — H1 Unified Sidebar (P0008) */
+/** P0020 — P0004 Tool Hub shell, tabs: Notes · Todo · 2FA · Cookie Auto */
 export default function App() {
-  return <HubApp />;
+  return <WorkspaceApp />;
 }

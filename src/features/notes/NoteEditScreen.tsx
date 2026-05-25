@@ -10,7 +10,13 @@ import { useNote } from "./useNote";
 import { useNotes } from "./useNotes";
 import { useNotesAuth } from "./useNotesAuth";
 
-export function NoteEditScreen({ onClose }: { onClose?: () => void }) {
+export function NoteEditScreen({
+  onClose,
+  shellMode,
+}: {
+  onClose?: () => void;
+  shellMode?: boolean;
+}) {
   const noteId = readNoteIdFromUrl();
   const { session, loading: authLoading, isSupabaseConfigured } = useNotesAuth();
   const { note, loading, error, saving, save } = useNote(session, noteId);
@@ -114,25 +120,38 @@ export function NoteEditScreen({ onClose }: { onClose?: () => void }) {
 
   return (
     <div className="anim-fade">
-      <PageHeader
-        title="Chỉnh sửa note"
-        desc={`V5 drawer · ${note.id.slice(0, 8)}…`}
-        actions={
-          <>
-            <button type="button" className="btn-ghost btn text-[12px]" onClick={onClose}>
-              <X size={14} />
-              Đóng
-            </button>
-            <button type="button" className="btn-ghost btn text-[12px] text-rose-300" onClick={() => void onDelete()}>
-              <Trash2 size={14} />
-            </button>
-            <button type="button" className="btn text-[12px]" onClick={() => void onSave()} disabled={saving}>
-              <Save size={14} />
-              {saving ? "Đang lưu…" : "Lưu"}
-            </button>
-          </>
-        }
-      />
+      {!shellMode ? (
+        <PageHeader
+          title="Chỉnh sửa note"
+          desc={`V5 drawer · ${note.id.slice(0, 8)}…`}
+          actions={
+            <>
+              <button type="button" className="btn-ghost btn text-[12px]" onClick={onClose}>
+                <X size={14} />
+                Đóng
+              </button>
+              <button type="button" className="btn-ghost btn text-[12px] text-rose-300" onClick={() => void onDelete()}>
+                <Trash2 size={14} />
+              </button>
+              <button type="button" className="btn text-[12px]" onClick={() => void onSave()} disabled={saving}>
+                <Save size={14} />
+                {saving ? "Đang lưu…" : "Lưu"}
+              </button>
+            </>
+          }
+        />
+      ) : (
+        <div className="mb-4 flex flex-wrap justify-end gap-2">
+          <button type="button" className="btn-ghost btn text-[12px] text-rose-300" onClick={() => void onDelete()}>
+            <Trash2 size={14} />
+            Delete
+          </button>
+          <button type="button" className="btn text-[12px]" onClick={() => void onSave()} disabled={saving}>
+            <Save size={14} />
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      )}
 
       {savedHint ? (
         <p className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[12px] text-emerald-200">

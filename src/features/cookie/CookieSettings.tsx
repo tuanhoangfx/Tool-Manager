@@ -18,7 +18,6 @@ import {
 } from "./cookieBridge";
 
 import { EXTENSION_BUILD } from "./extensionBuildInfo";
-import { StorageRecommendations } from "./StorageRecommendations";
 
 type Props = {
   onBack: () => void;
@@ -99,10 +98,7 @@ export function CookieSettings({ onBack, onPrefsChange }: Props) {
               <option value={120}>2 hours</option>
             </select>
           </SettingRow>
-          <SettingRow
-            label="Realtime UI refresh"
-            desc="Extension: vault User/count/time qua Realtime + poll 10s (bật để browser 2 thấy sync browser 1)"
-          >
+          <SettingRow label="Realtime UI refresh" desc="Supabase postgres_changes on notes + vault">
             <label className="flex items-center gap-2 text-[12px]">
               <input
                 type="checkbox"
@@ -126,7 +122,7 @@ export function CookieSettings({ onBack, onPrefsChange }: Props) {
         <Glass tone="violet" label="V4 — Encrypted vault" icon={<Shield size={12} />}>
           <SettingRow
             label="Upload encrypted vault"
-            desc="AES-GCM jar on sync · requires pass on binding · see docs/SUPABASE-P0020.md"
+            desc="AES-GCM jar on sync · requires pass on binding · run APPLY_VAULT_V4.sql"
           >
             <label className="flex items-center gap-2 text-[12px]">
               <input type="checkbox" checked={vaultSync} onChange={(e) => persist({ vaultSync: e.target.checked })} />
@@ -135,7 +131,7 @@ export function CookieSettings({ onBack, onPrefsChange }: Props) {
           </SettingRow>
           <SettingRow
             label="Realtime apply vault"
-            desc="Browser khác Sync → tự Load cookies vào jar (không cần bấm Load — opt-in)"
+            desc="Other browser pushes → this browser chrome.cookies.set (opt-in)"
           >
             <label className="flex items-center gap-2 text-[12px]">
               <input
@@ -147,12 +143,11 @@ export function CookieSettings({ onBack, onPrefsChange }: Props) {
             </label>
           </SettingRow>
           <p className="text-[11px] text-amber-200/80 leading-relaxed px-1">
-            <strong>Sync now</strong> = upload vault (thủ công). Cookie đổi / F5 chỉ cập nhật snapshot — không ghi đè vault.
-            <strong> Load cookies</strong> trên browser khác; bật <strong>Realtime apply vault</strong> để tự Load khi có vault mới.
+            Cross-browser: Link extension mỗi Chrome profile. <strong>Sync now</strong> trên browser nào cũng ghi jar
+            hiện tại lên vault (bản mới nhất). <strong>Load cookies</strong> trên browser khác lấy vault mới nhất từ
+            Supabase.
           </p>
         </Glass>
-
-        <StorageRecommendations />
       </div>
     </div>
   );

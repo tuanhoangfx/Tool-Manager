@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pin, Plus, Search, SlidersHorizontal } from "lucide-react";
+import { Pin, Plus } from "lucide-react";
 import { StatusBadge } from "../../theme/p0008";
 import { readNoteIdFromUrl } from "../design-preview/design-nav";
 import { PageHeader } from "../design-preview/screens/PageHeader";
@@ -7,12 +7,20 @@ import { NotesAuthGate } from "./NotesAuthGate";
 import { useNotes } from "./useNotes";
 import { useNotesAuth } from "./useNotesAuth";
 
-export function NotesGalleryScreen({ onOpenNote }: { onOpenNote?: (noteId: string) => void }) {
+type Props = {
+  onOpenNote?: (noteId: string) => void;
+  /** P0004 shell provides header + search */
+  shellMode?: boolean;
+  query?: string;
+};
+
+export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery }: Props) {
   const { session, loading: authLoading, isSupabaseConfigured } = useNotesAuth();
   const { notes, loading, error, createNote } = useNotes(session);
-  const [query, setQuery] = useState("");
+  const [localQuery, setLocalQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const selectedId = readNoteIdFromUrl();
+  const query = shellMode ? (externalQuery ?? "") : localQuery;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -59,16 +67,18 @@ export function NotesGalleryScreen({ onOpenNote }: { onOpenNote?: (noteId: strin
 
   return (
     <div className="anim-fade">
-      <PageHeader
-        title="Notes"
-        desc="V5 Card Gallery — Supabase CRUD."
-        actions={
-          <button type="button" className="btn text-[12px]" onClick={() => void onNew()} disabled={creating}>
-            <Plus size={14} />
-            {creating ? "Đang tạo…" : "New note"}
-          </button>
-        }
-      />
+      {!shellMode ? (
+        <PageHeader
+          title="Notes"
+          desc="V5 Card Gallery — Supabase CRUD."
+          actions={
+            <button type="button" className="btn text-[12px]" onClick={() => void onNew()} disabled={creating}>
+              <Plus size={14} />
+              {creating ? "Đang tạo…" : "New note"}
+            </button>
+          }
+        />
+      ) : null}
 
       {error ? (
         <p className="mb-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[12px] text-rose-200">
@@ -78,21 +88,16 @@ export function NotesGalleryScreen({ onOpenNote }: { onOpenNote?: (noteId: strin
         </p>
       ) : null}
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        <div className="relative min-w-[12rem] flex-1">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+      {!shellMode ? (
+        <div className="mb-4 flex flex-wrap gap-2">
           <input
-            className="field !py-2 !pl-8 text-[12px]"
+            className="field !py-2 text-[12px]"
             placeholder="Tìm note, domain…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={localQuery}
+            onChange={(e) => setLocalQuery(e.target.value)}
           />
         </div>
-        <button type="button" className="btn-ghost btn text-[12px]" title="Pin filter — Sprint 2">
-          <SlidersHorizontal size={14} />
-          Filter
-        </button>
-      </div>
+      ) : null}
 
       {loading ? <p className="text-[12px] text-[var(--muted)]">Đang tải notes…</p> : null}
 

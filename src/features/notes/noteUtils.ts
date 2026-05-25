@@ -1,5 +1,11 @@
 import type { NoteRow, NoteListItem, NoteSyncStatus } from "./types";
 
+/** TM-xxxxxxxx — matches Supabase backfill / extension binding */
+export function generateSyncId(): string {
+  const hex = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
+  return `TM-${hex}`;
+}
+
 export function slugifyTitle(title: string, fallback = "note"): string {
   const base = title
     .trim()
@@ -64,4 +70,9 @@ export function cookieLines(snapshot: NoteRow["cookie_snapshot"]): string[] {
     });
   }
   return [];
+}
+
+export function formatCookieSnapshotMarkdown(lines: string[]): string {
+  if (!lines.length) return "";
+  return `## Cookie snapshot (masked)\n\n${lines.map((l) => `- ${l}`).join("\n")}\n\n`;
 }

@@ -13,8 +13,8 @@ export type CookieSchemaHealth = {
 };
 
 const FIX_HINT =
-  (toolManifest.supabase?.cookieBridge?.migrateDoc as string | undefined) ??
-  "Chạy migrations: `pnpm generate:apply-all` rồi paste APPLY_ALL trong SQL Editor, hoặc `supabase db push` — xem docs/SUPABASE-P0020.md";
+  (toolManifest.supabase?.localEnv?.note as string | undefined) ??
+  "Chạy supabase/APPLY_ALL_P0020_COOKIE_BRIDGE.sql trong Supabase SQL Editor, đợi ~30s, reload extension.";
 
 function rpcMissing(body: string) {
   return /PGRST202|Could not find the function|does not exist in the schema cache/i.test(body);
