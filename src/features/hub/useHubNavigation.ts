@@ -9,7 +9,6 @@ const RETIRED = new Set([
   "dashboard",
   "library",
   "activity",
-  "system",
   "settings",
   "hub",
   "layouts",
@@ -48,7 +47,7 @@ function migrateUrl(): WorkspaceScreen {
   }
 
   const tab = p.get("tab");
-  if (tab === "library" || tab === "activity" || tab === "system") {
+  if (tab === "library" || tab === "activity") {
     p.delete("tab");
     p.set("screen", "notes");
     window.history.replaceState(null, "", `${window.location.pathname}?${p.toString()}`);

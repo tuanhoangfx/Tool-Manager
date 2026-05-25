@@ -7,7 +7,7 @@ cd E:\Dev\Tool\P0020-Workspace-Notes
 corepack pnpm dev:vite
 ```
 
-**http://127.0.0.1:5177/** — Dashboard + sidebar tương tác.
+**http://127.0.0.1:5177/** — Workspace sidebar tương tác.
 
 ## Màn hình (`?screen=`)
 
@@ -16,16 +16,20 @@ corepack pnpm dev:vite
 | `dashboard` | Lưới shortcut (mặc định) |
 | `library` | P0004 Tool Library (P0008 embed) |
 | `activity` | P0004 Activity |
-| `system` | P0004 System / Sync |
+| `system` | System / Design Template |
 | `notes` | Notes V5 gallery |
 | `edit` | Chỉnh sửa note (`?note=id`) |
 | `todo` | Kanban mock (P0019) |
 | `twofa` | 2FA mock |
-| `cookie` | Cookie sync mock |
+| `cookie` | Cookie Auto production screen |
 | `share` | Share links mock |
 | `settings` | Cài đặt mock |
 
-URL cũ `?screen=hub` / `?screen=layouts` → tự chuyển Dashboard.
+Cookie Auto design template:
+
+`http://127.0.0.1:5177/?screen=system&stab=template&dtpl=cookie-sync`
+
+See `docs/DESIGN-PREVIEW-cookie-sync.md` for the five UI variants.
 
 ## Code chính
 

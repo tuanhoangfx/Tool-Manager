@@ -53,6 +53,8 @@ type FilterBarProps = {
   onValuesChange: (next: FilterValues) => void;
   /** Row 1 trailing (view toggle, counts) — used with layout="hub". */
   toolbar?: React.ReactNode;
+  /** Hub row 2 trailing, aligned with filters. */
+  filterToolbar?: React.ReactNode;
   /** Single-row trailing (legacy / Links panel). */
   trailing?: React.ReactNode;
   layout?: "inline" | "hub";
@@ -72,6 +74,7 @@ export function FilterBar({
   values,
   onValuesChange,
   toolbar,
+  filterToolbar,
   trailing,
   layout = "inline",
   pinSticky = false,
@@ -164,13 +167,20 @@ export function FilterBar({
     const stickyTop = headerPinned ? "top-[var(--app-tab-header-sticky-h)]" : "top-0";
     const panel = (
       <div className="space-y-2 rounded-2xl border border-white/5 bg-[var(--panel)] p-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-nowrap items-center gap-2">
           {searchField}
-          {toolbar ? <div className="flex flex-wrap items-center justify-end gap-2 sm:ml-auto">{toolbar}</div> : null}
+          {toolbar ? (
+            <div className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2 overflow-x-auto">
+              {toolbar}
+            </div>
+          ) : null}
         </div>
-        <div className="flex min-h-[34px] flex-wrap items-center gap-2">
+        <div className="flex min-h-[34px] min-w-0 flex-nowrap items-center gap-2 overflow-x-auto pb-0.5">
           {filterDropdowns}
-          {clearFiltersBtn ? <div className="ml-auto flex shrink-0">{clearFiltersBtn}</div> : null}
+          {clearFiltersBtn ? <div className="flex shrink-0">{clearFiltersBtn}</div> : null}
+          {filterToolbar ? (
+            <div className="ml-auto flex shrink-0 flex-nowrap items-center justify-end gap-2">{filterToolbar}</div>
+          ) : null}
         </div>
       </div>
     );

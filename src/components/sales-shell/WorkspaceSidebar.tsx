@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Cookie, FileText, KeyRound, ListTodo, RefreshCcw, User } from "lucide-react";
+import { Cookie, FileText, KeyRound, ListTodo, RefreshCcw, Settings2, User } from "lucide-react";
 import { APP_USER_LABEL, APP_VERSION } from "../../lib/app-meta";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
 import { ToolAvatar } from "../ToolAvatar";
@@ -10,6 +10,7 @@ const items: { screen: WorkspaceNavScreen; label: string; icon: typeof FileText 
   { screen: "todo", label: "Todo", icon: ListTodo },
   { screen: "twofa", label: "2FA", icon: KeyRound },
   { screen: "cookie", label: "Cookie Auto", icon: Cookie },
+  { screen: "system", label: "System", icon: Settings2 },
 ];
 
 type Props = {

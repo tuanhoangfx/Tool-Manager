@@ -1,6 +1,6 @@
 # Design decision — P0020 Tool Manager
 
-**Cập nhật:** 2026-05-22
+**Cập nhật:** 2026-05-25
 
 ## Đã chốt
 
@@ -9,6 +9,7 @@
 | **Hub layout** | **H1 — Unified Sidebar** | Một sidebar: P0004 + Apps; main đổi theo mục chọn |
 | **Notes UI** | **V5 — Card Gallery + Drawer** | Layout trong module Notes |
 | **Skin** | **P0008 Seller Center** | Toàn app, kể cả P0004 nhúng |
+| **Cookie Auto Web UI** | **P0004 Hub table + modal** | Table view giống Hub; Add/Edit/Delete qua modal; source lock hiển thị bằng badge |
 
 ## Phạm vi sản phẩm
 

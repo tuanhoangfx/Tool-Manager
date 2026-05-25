@@ -37,6 +37,8 @@ if (writeProbe) {
       p_ciphertext: "dGVzdA==",
       p_iv: "dGVzdA==",
       p_cookie_count: 1,
+      p_source_browser: "load-flow-check",
+      p_updated_by: "load-flow-check",
     }),
   });
   const upsertBody = await upsert.text();

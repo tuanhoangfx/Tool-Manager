@@ -1,5 +1,6 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from "react";
 import { DisplayPrefs } from "../../components/sales-shell";
+import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
 import { WorkspaceSidebar } from "../../components/sales-shell/WorkspaceSidebar";
 import { ToastContainer, ToastProvider } from "../../components/toast";
 import type { WorkspaceNavScreen, WorkspaceScreen } from "../../lib/workspace-screen";
@@ -22,6 +23,9 @@ const TwofaManagerScreen = lazy(() =>
 );
 const CookieSyncScreen = lazy(() =>
   import("../design-preview/screens/CookieSyncScreen").then((m) => ({ default: m.CookieSyncScreen })),
+);
+const SystemDesignTemplateScreen = lazy(() =>
+  import("../system/SystemDesignTemplateScreen").then((m) => ({ default: m.SystemDesignTemplateScreen })),
 );
 
 function WorkspaceSidebarDisplayPrefs() {
@@ -92,6 +96,12 @@ function WorkspaceScreenBody({
           <CookieSyncScreen shellMode query={query} />
         </Suspense>
       );
+    case "system":
+      return (
+        <Suspense fallback={<ScreenFallback label="System" />}>
+          <SystemDesignTemplateScreen />
+        </Suspense>
+      );
     default:
       return null;
   }
@@ -103,6 +113,10 @@ export function WorkspaceApp() {
   const { screen, navigate } = useHubNavigation();
   const shareToken = readShareTokenFromUrl();
   const [query, setQuery] = useState("");
+  const [screenFilters, setScreenFilters] = useState<FilterDef[]>([]);
+  const [screenFilterValues, setScreenFilterValues] = useState<FilterValues>({});
+  const [screenToolbar, setScreenToolbar] = useState<ReactNode>(null);
+  const [screenFilterToolbar, setScreenFilterToolbar] = useState<ReactNode>(null);
 
   useEffect(() => {
     if (screen !== "edit") return;
@@ -112,6 +126,10 @@ export function WorkspaceApp() {
 
   useEffect(() => {
     if (!NOTES_SCREENS.has(screen)) setQuery("");
+    setScreenFilters([]);
+    setScreenFilterValues({});
+    setScreenToolbar(null);
+    setScreenFilterToolbar(null);
   }, [screen]);
 
   useEffect(() => {
@@ -159,11 +177,27 @@ export function WorkspaceApp() {
           {isNotesLayout ? (
             body
           ) : (
-            <WorkspaceSearchProvider query={query} setQuery={setQuery}>
+            <WorkspaceSearchProvider
+              query={query}
+              setQuery={setQuery}
+              filters={screenFilters}
+              setFilters={setScreenFilters}
+              filterValues={screenFilterValues}
+              setFilterValues={setScreenFilterValues}
+              toolbar={screenToolbar}
+              setToolbar={setScreenToolbar}
+              filterToolbar={screenFilterToolbar}
+              setFilterToolbar={setScreenFilterToolbar}
+            >
               <WorkspaceScreenChrome
                 screen={screen}
                 query={query}
                 onQueryChange={setQuery}
+                filters={screenFilters}
+                filterValues={screenFilterValues}
+                onFilterValuesChange={setScreenFilterValues}
+                toolbar={screenToolbar}
+                filterToolbar={screenFilterToolbar}
               >
                 {body}
               </WorkspaceScreenChrome>

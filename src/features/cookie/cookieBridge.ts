@@ -14,6 +14,9 @@ export type CookieBinding = {
   /** True when target note has sync_pass_hash — vault requires pass on binding */
   requiresPass?: boolean;
   noteTitle?: string;
+  /** Browser allowed to publish/promote vault versions for this route. Targets are read-only. */
+  sourceBrowserId?: string | null;
+  sourceLabel?: string | null;
   enabled: boolean;
 };
 
@@ -143,6 +146,8 @@ export function bindingsForExtension(bindings: CookieBinding[]) {
       domain: b.domain.trim(),
       requiresPass: false,
       noteTitle: b.noteTitle ?? "",
+      sourceBrowserId: b.sourceBrowserId ?? null,
+      sourceLabel: b.sourceLabel ?? null,
     }));
 }
 

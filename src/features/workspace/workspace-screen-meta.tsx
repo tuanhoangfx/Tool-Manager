@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { Cookie, FileText, KeyRound, ListTodo } from "lucide-react";
+import { Cookie, FileText, KeyRound, ListTodo, Settings2 } from "lucide-react";
 import { APP_VERSION } from "../../lib/app-meta";
 import { EXTENSION_BUILD } from "../cookie/extensionBuildInfo";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
@@ -68,6 +68,16 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
             live: true,
           },
         ],
+      };
+    case "system":
+      return {
+        title: "System",
+        titleIcon: Settings2,
+        titleIconClass: "text-purple-400",
+        ariaLabel: "System header",
+        searchPlaceholder: "Search design templates…",
+        showSearch: false,
+        metaItems: BASE_META,
       };
     default:
       return {

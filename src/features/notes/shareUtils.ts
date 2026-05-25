@@ -46,6 +46,8 @@ export type ExtensionCookieBinding = {
   domain: string;
   requiresPass?: boolean;
   noteTitle?: string;
+  sourceBrowserId?: string | null;
+  sourceLabel?: string | null;
 };
 
 export function broadcastCookieSyncNow(noteId?: string) {

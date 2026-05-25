@@ -44,6 +44,8 @@ const vaultProbe = await rpc("note_vault_upsert", {
   p_ciphertext: "dGVzdA==",
   p_iv: "dGVzdA==",
   p_cookie_count: 0,
+  p_source_browser: "schema-check",
+  p_updated_by: "schema-check",
 });
 
 const staleVNote = /record\s+"v_note"\s+has\s+no\s+field/i.test(vaultProbe.body);
@@ -77,6 +79,8 @@ if (realNoteId) {
     p_ciphertext: "dGVzdA==",
     p_iv: "dGVzdA==",
     p_cookie_count: 0,
+    p_source_browser: "schema-check",
+    p_updated_by: "schema-check",
   });
   const realStale = /record\s+"v_note"\s+has\s+no\s+field/i.test(realVault.body);
   checks.push({

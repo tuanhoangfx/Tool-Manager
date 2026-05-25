@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AppTabHeader, FilterBar } from "../../components/sales-shell";
+import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import { screenChromeConfig } from "./workspace-screen-meta";
 
@@ -8,11 +9,25 @@ type Props = {
   query: string;
   onQueryChange: (q: string) => void;
   toolbar?: ReactNode;
+  filterToolbar?: ReactNode;
+  filters?: FilterDef[];
+  filterValues?: FilterValues;
+  onFilterValuesChange?: (next: FilterValues) => void;
   children: ReactNode;
 };
 
 /** P0004 Hub chrome: sticky tab header + search row + scrollable body */
-export function WorkspaceScreenChrome({ screen, query, onQueryChange, toolbar, children }: Props) {
+export function WorkspaceScreenChrome({
+  screen,
+  query,
+  onQueryChange,
+  toolbar,
+  filterToolbar,
+  filters = [],
+  filterValues = {},
+  onFilterValuesChange = () => {},
+  children,
+}: Props) {
   const cfg = screenChromeConfig(screen);
 
   const filterBar = cfg.showSearch ? (
@@ -22,11 +37,13 @@ export function WorkspaceScreenChrome({ screen, query, onQueryChange, toolbar, c
       headerPinned
       embedded
       placeholder={cfg.searchPlaceholder}
+      filters={filters}
       query={query}
       onQueryChange={onQueryChange}
-      values={{}}
-      onValuesChange={() => {}}
+      values={filterValues}
+      onValuesChange={onFilterValuesChange}
       toolbar={toolbar}
+      filterToolbar={filterToolbar}
     />
   ) : null;
 
@@ -50,7 +67,7 @@ export function WorkspaceScreenChrome({ screen, query, onQueryChange, toolbar, c
         />
         {filterBar}
       </div>
-      <div className="relative z-0 pt-1">{children}</div>
+      <div className="relative z-0 pt-5">{children}</div>
     </div>
   );
 }

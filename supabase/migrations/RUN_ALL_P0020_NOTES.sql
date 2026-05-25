@@ -34,3 +34,15 @@ where sync_id is null or sync_id = '';
 
 -- 7) Notes folders
 -- (see 20260525103000_note_folders.sql)
+
+-- 8) Cookie vault updated_by + extension v0.5.17+ RPC signature
+-- (see 20260526100000_note_cookie_vault_updated_by.sql)
+
+-- 9) Cookie bridge cloud routes
+-- (see 20260525133000_cookie_bridge_routes.sql)
+
+-- 10) Cookie bridge browser agents + command queue
+-- (see 20260525165000_cookie_bridge_agents.sql)
+
+-- 11) Versioned cookie vault sync metadata + RPC v2
+-- (see 20260527113000_note_cookie_vault_versioned_sync.sql)

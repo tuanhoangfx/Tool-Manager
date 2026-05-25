@@ -48,6 +48,8 @@ export async function probeCookieSchemaHealth(): Promise<CookieSchemaHealth> {
     p_ciphertext: "dGVzdA==",
     p_iv: "dGVzdA==",
     p_cookie_count: 0,
+    p_source_browser: "schema-health",
+    p_updated_by: "schema-health",
   });
   const missingPassCol = /sync_pass_hash/i.test(vaultProbe.body);
   checks.push({

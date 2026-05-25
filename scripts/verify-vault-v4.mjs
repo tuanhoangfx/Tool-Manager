@@ -40,24 +40,33 @@ async function checkTable() {
   return { ok: res.ok, status: res.status, body: await res.text() };
 }
 
-async function checkRpc(name) {
+async function checkRpc(name, body) {
   const res = await fetch(`${url}/rest/v1/rpc/${name}`, {
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      p_note_id: "00000000-0000-0000-0000-000000000000",
-      p_domain: ".test",
-      p_pass: null,
-    }),
+    body: JSON.stringify(body),
   });
-  const body = await res.text();
-  const exists = !/does not exist|PGRST202|42883/i.test(body);
-  return { ok: exists, status: res.status, body: body.slice(0, 200) };
+  const responseBody = await res.text();
+  const exists = !/does not exist|PGRST202|42883/i.test(responseBody);
+  return { ok: exists, status: res.status, body: responseBody.slice(0, 200) };
 }
 
 const table = await checkTable();
-const upsert = await checkRpc("note_vault_upsert");
-const fetchRpc = await checkRpc("note_vault_fetch");
+const upsert = await checkRpc("note_vault_upsert", {
+  p_note_id: "00000000-0000-0000-0000-000000000000",
+  p_domain: ".test",
+  p_pass: null,
+  p_ciphertext: "dGVzdA==",
+  p_iv: "dGVzdA==",
+  p_cookie_count: 0,
+  p_source_browser: "vault-check",
+  p_updated_by: "vault-check",
+});
+const fetchRpc = await checkRpc("note_vault_fetch", {
+  p_note_id: "00000000-0000-0000-0000-000000000000",
+  p_domain: ".test",
+  p_pass: null,
+});
 
 console.log("note_cookie_vault table:", table.ok ? "OK" : `MISSING (${table.status})`);
 if (!table.ok) console.log("  ", table.body.slice(0, 120));
