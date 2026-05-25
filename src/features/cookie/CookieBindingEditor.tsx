@@ -22,7 +22,7 @@ export function CookieBindingEditor({ bindings, notes, onAdd, onUpdate, onRemove
   return (
     <Glass tone="indigo" label="Domain → Note bindings">
       <p className="mb-3 text-[11px] text-[var(--muted)]">
-        Pick a source domain (cookie jar) and target note (Sync ID or note UUID). Save pushes config to P0020-cookie-bridge.
+        Pick a source domain (cookie jar) and target note (Sync ID or note UUID). Save pushes config to E0001-cookie-bridge.
       </p>
       {passMismatches.length ? (
         <div className="mb-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-100">

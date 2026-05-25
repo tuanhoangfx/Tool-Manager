@@ -11,7 +11,7 @@
 
 ## Sprint 2 — Cookie bridge ✅ (MVP)
 
-- [x] Extension `E:\Dev\Extension\P0020-cookie-bridge` (MV3, alarm 60m)
+- [x] Extension `E:\Dev\Extension\E0001-cookie-bridge` (MV3, alarm 60m)
 - [x] Web bridge: Cookie sync → Kết nối extension / Sync now
 - [ ] Chạy migration share nếu chưa: `20260523140000_notes_share_public.sql`
 

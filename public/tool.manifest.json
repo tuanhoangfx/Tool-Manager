@@ -14,7 +14,7 @@
     "Vite",
     "Supabase",
     "Inter",
-    "Chrome extension P0020-cookie-bridge"
+    "Chrome extension E0001-cookie-bridge"
   ],
   "commands": {
     "dev": "corepack pnpm dev",

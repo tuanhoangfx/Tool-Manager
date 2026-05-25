@@ -1,4 +1,4 @@
-/** Client-side vault crypto (same algorithm as P0020-cookie-bridge extension). */
+/** Client-side vault crypto (same algorithm as E0001-cookie-bridge extension). */
 
 const VAULT_VERSION = 1;
 const PBKDF2_ITERATIONS = 120_000;

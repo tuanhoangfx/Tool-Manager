@@ -65,7 +65,7 @@ export function CookieSettings({ onBack, onPrefsChange }: Props) {
 
       <div className="space-y-4">
         <Glass tone="amber" label="Extension bridge" icon={<Cookie size={12} />}>
-          <SettingRow label="P0020-cookie-bridge" desc="Chrome MV3 · E:\Dev\Extension\P0020-cookie-bridge">
+          <SettingRow label="E0001-cookie-bridge" desc="Chrome MV3 · E:\Dev\Extension\E0001-cookie-bridge">
             <span className="badge border border-emerald-500/40 bg-emerald-500/20 text-emerald-200">
               v{EXTENSION_BUILD.version}
             </span>

@@ -43,7 +43,7 @@ function CookieSyncSignIn({ shellMode }: { shellMode?: boolean }) {
       {!shellMode ? (
         <PageHeader
           title="Cookie sync"
-          desc="Sign in to link domains → notes and push config to P0020-cookie-bridge."
+          desc="Sign in to link domains → notes and push config to E0001-cookie-bridge."
         />
       ) : null}
       <NotesAuthGate />
@@ -117,7 +117,7 @@ function CookieSyncMain({
       user: s.user,
     });
     pushToExtension();
-    pushToast("Đã gửi session + bindings tới extension (Reload P0020 nếu cần).", "success");
+    pushToast("Đã gửi session + bindings tới extension (Reload E0001 nếu cần).", "success");
   }, [pushToExtension, pushToast]);
 
   useEffect(() => {
@@ -221,9 +221,9 @@ function CookieSyncMain({
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
         <CheckCircle2 size={20} className="shrink-0 text-emerald-400" />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium text-emerald-100">P0020-cookie-bridge</div>
+          <div className="text-sm font-medium text-emerald-100">E0001-cookie-bridge</div>
           <div className="text-[11px] text-[var(--muted)]">
-            <code className="text-indigo-300">E:\Dev\Extension\P0020-cookie-bridge</code>
+            <code className="text-indigo-300">E:\Dev\Extension\E0001-cookie-bridge</code>
             · Nhãn:{" "}
             <span className="text-indigo-300/90">{bridgeRole === "reader" ? "Reader" : "Writer"}</span>
             (tạm, không khóa quyền) · Sync/Load đều được trên mọi browser
