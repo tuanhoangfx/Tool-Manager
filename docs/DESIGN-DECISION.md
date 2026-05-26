@@ -10,6 +10,7 @@
 | **Notes UI** | **V5 — Card Gallery + Drawer** | Layout trong module Notes |
 | **Skin** | **P0008 Seller Center** | Toàn app, kể cả P0004 nhúng |
 | **Cookie Auto Web UI** | **P0004 Hub table + modal** | Table view giống Hub; Add/Edit/Delete qua modal; source lock hiển thị bằng badge |
+| **Route Detail Modal** | **V1 — Hub Twin Tables + search/filter** | ToolDetailModal-style shell; Access và Browser diagnostics đều dùng bảng, có search/filter, Published route, Re-publish route |
 
 ## Phạm vi sản phẩm
 

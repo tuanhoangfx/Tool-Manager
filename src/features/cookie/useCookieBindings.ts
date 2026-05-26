@@ -3,14 +3,15 @@ import type { NoteListItem } from "../notes/types";
 import {
   bindingsForExtension,
   loadCookieBindings,
+  loadSelectedBindingId,
   newBindingId,
   normalizeCookieDomain,
   saveCookieBindings,
+  saveSelectedBindingId,
   type CookieBinding,
 } from "./cookieBridge";
 import { resolveNoteForBinding } from "./resolveNoteForBinding";
-import { broadcastCookieBindings, broadcastSelectedBinding } from "../notes/shareUtils";
-import { loadSelectedBindingId, saveSelectedBindingId } from "./cookieBridge";
+import { broadcastCookieBindings, broadcastSelectedBinding } from "./extensionBridgeMessages";
 
 export function useCookieBindings(notes: NoteListItem[]) {
   const [bindings, setBindings] = useState<CookieBinding[]>(() => loadCookieBindings());
@@ -206,7 +207,7 @@ export function useCookieBindings(notes: NoteListItem[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- notesKey tracks list changes
   }, [notesKey, syncNoteMeta]);
 
-  const connectAndPush = useCallback(
+  const connectAndCache = useCallback(
     async (opts: { noteId?: string; syncId?: string; domain: string; pass?: string }) => {
       const remote = await connectBindingRemote(opts);
       if (!remote.ok) {
@@ -227,7 +228,7 @@ export function useCookieBindings(notes: NoteListItem[]) {
     addBinding,
     connectBinding,
     connectBindingRemote,
-    connectAndPush,
+    connectAndCache,
     updateBinding,
     removeBinding,
     pushToExtension,

@@ -1,4 +1,4 @@
-import type { AppScreen } from "./types";
+import type { AppScreen } from "../../lib/workspace-screen";
 
 export function designHref(screen: AppScreen, extra?: { note?: string }) {
   const p = new URLSearchParams();

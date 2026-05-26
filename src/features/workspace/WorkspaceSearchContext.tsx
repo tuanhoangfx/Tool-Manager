@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
+import type { TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
 
 type Ctx = {
@@ -12,6 +13,10 @@ type Ctx = {
   setToolbar: (toolbar: ReactNode) => void;
   filterToolbar: ReactNode;
   setFilterToolbar: (toolbar: ReactNode) => void;
+  headerActions: ReactNode;
+  setHeaderActions: (actions: ReactNode) => void;
+  centerStats: TabHeaderStatItem[];
+  setCenterStats: (stats: TabHeaderStatItem[]) => void;
 };
 
 const WorkspaceSearchContext = createContext<Ctx | null>(null);
@@ -27,6 +32,10 @@ export function WorkspaceSearchProvider({
   setToolbar,
   filterToolbar,
   setFilterToolbar,
+  headerActions,
+  setHeaderActions,
+  centerStats,
+  setCenterStats,
   children,
 }: {
   query: string;
@@ -39,6 +48,10 @@ export function WorkspaceSearchProvider({
   setToolbar: (toolbar: ReactNode) => void;
   filterToolbar: ReactNode;
   setFilterToolbar: (toolbar: ReactNode) => void;
+  headerActions: ReactNode;
+  setHeaderActions: (actions: ReactNode) => void;
+  centerStats: TabHeaderStatItem[];
+  setCenterStats: (stats: TabHeaderStatItem[]) => void;
   children: ReactNode;
 }) {
   return (
@@ -54,6 +67,10 @@ export function WorkspaceSearchProvider({
         setToolbar,
         filterToolbar,
         setFilterToolbar,
+        headerActions,
+        setHeaderActions,
+        centerStats,
+        setCenterStats,
       }}
     >
       {children}
@@ -75,6 +92,10 @@ export function useWorkspaceSearch() {
       setToolbar: () => {},
       filterToolbar: null,
       setFilterToolbar: () => {},
+      headerActions: null,
+      setHeaderActions: () => {},
+      centerStats: [],
+      setCenterStats: () => {},
     };
   }
   return ctx;

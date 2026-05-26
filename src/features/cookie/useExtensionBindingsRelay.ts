@@ -1,19 +1,17 @@
 import { useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import {
-  bindingsForExtension,
   loadCookieBindings,
   loadSelectedBindingId,
 } from "./cookieBridge";
 import {
-  broadcastCookieBindings,
   broadcastExtensionAuth,
   broadcastSelectedBinding,
-} from "../notes/shareUtils";
+} from "./extensionBridgeMessages";
 
 /**
- * When the extension popup asks for routes, re-push bindings + session from Tool localStorage
- * (works on any Manager screen — not only Cookie sync).
+ * When the extension popup asks for routes, re-push only the Tool session.
+ * The extension must read route data from Supabase RPC, not from Web local cache.
  */
 export function useExtensionBindingsRelay(active: boolean) {
   useEffect(() => {
@@ -32,13 +30,11 @@ export function useExtensionBindingsRelay(active: boolean) {
           access_token: s.access_token,
           refresh_token: s.refresh_token,
           expires_at: s.expires_at,
+          user: s.user,
         });
       }
 
       const list = loadCookieBindings();
-      if (!list.length) return;
-
-      broadcastCookieBindings(bindingsForExtension(list));
       const selId = loadSelectedBindingId();
       const sel = selId ? list.find((b) => b.id === selId) : list.find((b) => b.enabled);
       broadcastSelectedBinding(sel?.noteId ?? null);

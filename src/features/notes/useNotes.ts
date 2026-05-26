@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
 import { loadCookieBridgePrefs } from "../cookie/cookieBridge";
 import { useNotesCookieRealtime } from "../cookie/useNotesCookieRealtime";
-import { fetchAllNotes } from "./notesSelect";
+import { createNoteRow, deleteNoteRow, fetchNotesList } from "./notesRepository";
 import { generateSyncId, toListItem } from "./noteUtils";
-import type { NoteListItem, NoteRow } from "./types";
+import type { NoteRow } from "./types";
 
 export function useNotes(session: Session | null, opts?: { realtime?: boolean }) {
   const [rows, setRows] = useState<NoteRow[]>([]);
@@ -19,7 +18,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
     }
     setLoading(true);
     setError("");
-    const { data, error: err } = await fetchAllNotes();
+    const { data, error: err } = await fetchNotesList();
 
     if (err) {
       setError(err.message);
@@ -42,18 +41,12 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
   const createNote = useCallback(async () => {
     if (!session) throw new Error("Not signed in");
     const slug = `note-${Date.now()}`;
-    const { data, error: err } = await supabase
-      .from("notes")
-      .insert({
-        user_id: session.user.id,
-        title: "New note",
-        slug,
-        domain: "",
-        body_md: "",
-        sync_id: generateSyncId(),
-      })
-      .select("*")
-      .single();
+    const { data, error: err } = await createNoteRow({
+      userId: session.user.id,
+      title: "New note",
+      slug,
+      syncId: generateSyncId(),
+    });
     if (err) throw err;
     await refresh();
     return data as NoteRow;
@@ -61,7 +54,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
 
   const deleteNote = useCallback(
     async (id: string) => {
-      const { error: err } = await supabase.from("notes").delete().eq("id", id);
+      const { error: err } = await deleteNoteRow(id);
       if (err) throw err;
       await refresh();
     },

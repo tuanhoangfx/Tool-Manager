@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Cookie Auto route owner is shown in Route Detail/Access and extension metadata; owner can `Sync now` by default when Source is unset.
+- Cookie route/vault realtime now refreshes cloud routes across linked browser profiles, and Notes Workspace shows the cookie snapshot above the markdown editor.
+- Cookie Auto is now cloud-first: Add/Edit route writes `cookie_bridge_routes` immediately, and manual `Pull routes` / `Push cloud` UI paths were removed.
+- Workspace now mounts the extension relay globally so the popup can request the current Tool session and route cache before rendering.
+- Extension relay now sends session only; route data is loaded by the extension from Supabase RPC as the source of truth.
+- Extension route RPCs now use the Tool user's JWT so `auth.uid()` matches Web P0020.
+- Extension popup no longer refresh-loops on route-pull timestamps and route selection now works by clicking the full row.
+- Cookie route cards now have a compact green circular selector and Copy Note ID action; route sharing can be managed from toolbar or Access tab.
+- Route cards now show share state, cleaner site branding icons, and fewer technical labels; Route bridge is compacted into an icon-only action.
+- Extension build metadata updated to v0.5.49 for continuous tab lock during Load cookies navigation/reload.
+
 ## [0.1.1] — 2026-05-25
 
 ### Added
@@ -53,7 +66,7 @@
 - Tab **Design** mặc định với **5 layout preview** (V1–V5) cho Notes + cookie block mock.
 - **Skin 3 — P0008 Seller Center** (mặc định tab Design): clone `globals.css`, Tailwind, `.btn`/`.field`, animations, glass bento, sidebar.
 - `src/theme/p0008/*`, `P0008SkinShell`; tab Library/Activity/System vẫn skin P0004 (skin 1).
-- `docs/DESIGN-PREVIEW.md`, `.cursor/rules/design-preview-first.mdc`.
+- Initial design preview docs and `.cursor/rules/design-preview-first.mdc` (preview docs removed after production lock).
 - Dev server port **5177**.
 
 ### Not included (phase 0)

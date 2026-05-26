@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ElementType } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Search,
   X,
@@ -40,6 +40,8 @@ const FILTER_ICONS: Record<string, React.ElementType> = {
   pinned: Pin,
   sync: RefreshCw,
   share: Share2,
+  type: Layers,
+  source: Link2,
 };
 
 export type FilterValues = Record<string, string[]>;
@@ -167,20 +169,20 @@ export function FilterBar({
     const stickyTop = headerPinned ? "top-[var(--app-tab-header-sticky-h)]" : "top-0";
     const panel = (
       <div className="space-y-2 rounded-2xl border border-white/5 bg-[var(--panel)] p-3">
-        <div className="flex min-w-0 flex-nowrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {searchField}
           {toolbar ? (
-            <div className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2 overflow-x-auto">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
               {toolbar}
             </div>
           ) : null}
         </div>
-        <div className="flex min-h-[34px] min-w-0 flex-nowrap items-center gap-2 overflow-x-auto pb-0.5">
+        <div className="flex min-h-[34px] flex-wrap items-center gap-2">
           {filterDropdowns}
-          {clearFiltersBtn ? <div className="flex shrink-0">{clearFiltersBtn}</div> : null}
           {filterToolbar ? (
             <div className="ml-auto flex shrink-0 flex-nowrap items-center justify-end gap-2">{filterToolbar}</div>
           ) : null}
+          {clearFiltersBtn ? <div className="ml-auto flex shrink-0">{clearFiltersBtn}</div> : null}
         </div>
       </div>
     );

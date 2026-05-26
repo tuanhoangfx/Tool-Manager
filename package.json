@@ -1,10 +1,10 @@
 {
-  "name": "workspace-tools",
+  "name": "workspace-vault-hub",
   "private": true,
   "version": "0.1.1",
   "packageManager": "pnpm@9.15.9",
   "type": "module",
-  "description": "P0020 Workspace Tools — Notes, Todo, 2FA, Cookie sync (catalog → P0004 Tool Hub).",
+  "description": "P0020 Workspace Hub — unified Tool workspace for Notes, Todo, 2FA, secure cookie vault, and browser agents.",
   "author": "Tool Workspace",
   "scripts": {
     "dev": "node scripts/ensure-dev.cjs --open",

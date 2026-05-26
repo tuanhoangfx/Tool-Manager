@@ -1,6 +1,6 @@
 {
-  "name": "Workspace Tools",
-  "short_name": "Workspace",
+  "name": "Workspace Hub",
+  "short_name": "Hub",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0F172A",

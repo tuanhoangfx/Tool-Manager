@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { Cookie, FileText, KeyRound, ListTodo, Settings2 } from "lucide-react";
+import { Cookie, FileText, KeyRound, ListTodo, Settings2, Users } from "lucide-react";
 import { APP_VERSION } from "../../lib/app-meta";
 import { EXTENSION_BUILD } from "../cookie/extensionBuildInfo";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
@@ -12,6 +12,7 @@ export type ScreenChromeConfig = {
   ariaLabel: string;
   searchPlaceholder: string;
   showSearch: boolean;
+  filterParam: "hfilt" | "nfilt" | "cfilt" | "tfilt" | "afilt" | "ufilt";
   metaItems: TabHeaderMetaItem[];
 };
 
@@ -30,6 +31,7 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         ariaLabel: screen === "edit" ? "Edit note header" : "Notes header",
         searchPlaceholder: "Search notes, domain, slug…",
         showSearch: screen === "notes",
+        filterParam: "nfilt",
         metaItems: BASE_META,
       };
     case "todo":
@@ -40,6 +42,7 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         ariaLabel: "Todo header",
         searchPlaceholder: "Search tasks…",
         showSearch: true,
+        filterParam: "tfilt",
         metaItems: BASE_META,
       };
     case "twofa":
@@ -50,6 +53,7 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         ariaLabel: "2FA header",
         searchPlaceholder: "Search service or account…",
         showSearch: true,
+        filterParam: "ufilt",
         metaItems: BASE_META,
       };
     case "cookie":
@@ -60,6 +64,7 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         ariaLabel: "Cookie Auto header",
         searchPlaceholder: "Search domain, note, sync ID…",
         showSearch: true,
+        filterParam: "cfilt",
         metaItems: [
           ...BASE_META,
           {
@@ -69,6 +74,17 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
           },
         ],
       };
+    case "users":
+      return {
+        title: "User Management",
+        titleIcon: Users,
+        titleIconClass: "text-emerald-400",
+        ariaLabel: "User Management header",
+        searchPlaceholder: "Search users by name, email, role, project…",
+        showSearch: true,
+        filterParam: "afilt",
+        metaItems: BASE_META,
+      };
     case "system":
       return {
         title: "System",
@@ -77,6 +93,7 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         ariaLabel: "System header",
         searchPlaceholder: "Search design templates…",
         showSearch: false,
+        filterParam: "hfilt",
         metaItems: BASE_META,
       };
     default:
@@ -86,6 +103,7 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         ariaLabel: "Workspace header",
         searchPlaceholder: "Search…",
         showSearch: false,
+        filterParam: "hfilt",
         metaItems: BASE_META,
       };
   }

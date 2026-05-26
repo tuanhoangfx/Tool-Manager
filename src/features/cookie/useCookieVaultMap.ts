@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
 import type { CookieBinding } from "./cookieBridge";
+import { fetchCookieVaultRows, mapVaultRows } from "./cookieVaultRepository";
 
 export type CookieVaultRow = {
   note_id: string;
@@ -17,9 +17,10 @@ export function useCookieVaultMap(session: Session | null, bindings: CookieBindi
   const [vaultError, setVaultError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const noteIds = bindings
-    .filter((b) => b.enabled && b.noteId?.trim())
-    .map((b) => b.noteId.trim());
+  const noteIds = useMemo(
+    () => bindings.filter((b) => b.enabled && b.noteId?.trim()).map((b) => b.noteId.trim()),
+    [bindings],
+  );
 
   const refresh = useCallback(async () => {
     if (!session || noteIds.length === 0) {
@@ -29,10 +30,7 @@ export function useCookieVaultMap(session: Session | null, bindings: CookieBindi
     }
     setLoading(true);
     setVaultError(null);
-    const { data, error } = await supabase
-      .from("note_cookie_vault")
-      .select("note_id, domain, cookie_count, updated_at, source_browser, updated_by")
-      .in("note_id", [...new Set(noteIds)]);
+    const { data, error } = await fetchCookieVaultRows(noteIds);
 
     setLoading(false);
     if (error) {
@@ -44,12 +42,8 @@ export function useCookieVaultMap(session: Session | null, bindings: CookieBindi
       }
       return;
     }
-    const map: Record<string, CookieVaultRow> = {};
-    for (const row of data ?? []) {
-      map[`${row.note_id}:${row.domain}`] = row as CookieVaultRow;
-    }
-    setVaultByKey(map);
-  }, [session, noteIds.join("|")]);
+    setVaultByKey(mapVaultRows(data ?? []));
+  }, [noteIds, session]);
 
   useEffect(() => {
     void refresh();

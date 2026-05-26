@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "code": "P0020",
-  "id": "workspace-tools",
-  "aliases": ["P0020", "Workspace Tools", "Workspace Notes"],
-  "name": "Workspace Tools",
+  "id": "workspace-vault-hub",
+  "aliases": ["P0020", "Workspace Hub", "Workspace Vault Hub", "Workspace Tools", "Workspace Notes"],
+  "name": "Workspace Hub",
   "type": "Web",
   "owner": "Tool",
   "status": "Beta",
-  "summary": "Notes (Supabase), Todo (P0019 embed), 2FA, Cookie bridge. Tool catalog → P0004 Tool Hub.",
+  "summary": "Unified Tool workspace hub for notes, todo, 2FA, secure cookie vault, and browser agents.",
   "stack": [
     "React",
     "TypeScript",
@@ -25,7 +25,7 @@
   "docs": {
     "readme": "README.md",
     "changelog": "CHANGELOG.md",
-    "design": "docs/DESIGN-PREVIEW.md"
+    "design": "docs/DESIGN-DECISION.md"
   },
   "github": {
     "repo": "tuanhoangfx/Tool-Manager",

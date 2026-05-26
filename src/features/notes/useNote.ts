@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
 import { loadCookieBridgePrefs } from "../cookie/cookieBridge";
 import { useNotesCookieRealtime } from "../cookie/useNotesCookieRealtime";
-import { fetchNoteById, isMissingSyncIdColumn } from "./notesSelect";
+import { fetchNoteById, isMissingSyncIdColumn, updateNoteRow, updateNoteSyncId } from "./notesRepository";
 import { setNoteSyncPass } from "./noteSyncPass";
 import { generateSyncId, slugifyTitle } from "./noteUtils";
 import { generateShareToken, hashSharePassword } from "./shareUtils";
@@ -35,8 +34,7 @@ function isUniqueSlugError(err: unknown): boolean {
 }
 
 async function updateNoteWithFallback(noteId: string, patch: Record<string, unknown>) {
-  const run = (nextPatch: Record<string, unknown>) =>
-    supabase.from("notes").update(nextPatch).eq("id", noteId).select("*").single();
+  const run = (nextPatch: Record<string, unknown>) => updateNoteRow(noteId, nextPatch);
 
   let res = await run(patch);
   if (!res.error) return res;
@@ -84,12 +82,7 @@ export function useNote(session: Session | null, noteId: string | null) {
       let row = (data as NoteRow | null) ?? null;
       if (row && !row.sync_id?.trim()) {
         const sync_id = generateSyncId();
-        const { data: patched, error: patchErr } = await supabase
-          .from("notes")
-          .update({ sync_id })
-          .eq("id", noteId)
-          .select("*")
-          .single();
+        const { data: patched, error: patchErr } = await updateNoteSyncId(noteId, sync_id);
         if (!patchErr && patched) row = patched as NoteRow;
         else if (patchErr && isMissingSyncIdColumn(patchErr.message)) {
           /* sync_id column not migrated — note still usable via note UUID RPC */
@@ -163,7 +156,7 @@ export function useNote(session: Session | null, noteId: string | null) {
       setNote(row);
       return out;
     },
-    [session, noteId, note?.share_token, note?.share_password_hash],
+    [session, noteId, note?.share_token, note?.share_password_hash, note?.slug],
   );
 
   return { note, loading, error, saving, refresh, save };

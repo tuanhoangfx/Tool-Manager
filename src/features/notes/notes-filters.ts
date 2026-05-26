@@ -38,10 +38,11 @@ export function matchesTimeRange(updatedAt: string | undefined, range: TimeRange
 }
 
 export function notesFilterOptions(_notes: NoteListItem[]) {
+  void _notes;
   return {
     pinned: [
-      { value: "yes", label: "Pinned", color: "#818cf8" },
-      { value: "no", label: "Not pinned", color: "#6b7394" },
+      { value: "pinned", label: "Pinned", color: "#818cf8" },
+      { value: "unpinned", label: "Not pinned", color: "#6b7394" },
     ],
     sync: [
       { value: "synced", label: "Synced", color: "#22c55e" },
@@ -50,8 +51,8 @@ export function notesFilterOptions(_notes: NoteListItem[]) {
       { value: "error", label: "Error", color: "#ef4444" },
     ],
     share: [
-      { value: "on", label: "Share on", color: "#06b6d4" },
-      { value: "off", label: "Share off", color: "#6b7394" },
+      { value: "shared", label: "Share on", color: "#06b6d4" },
+      { value: "private", label: "Share off", color: "#6b7394" },
     ],
   };
 }
@@ -63,12 +64,12 @@ function matchesNoteFilters(note: NoteListItem, q: string, filters: Record<strin
     if (!hay.includes(query)) return false;
   }
   if (filters.pinned?.length) {
-    const pin = note.pinned ? "yes" : "no";
+    const pin = note.pinned ? "pinned" : "unpinned";
     if (!filters.pinned.includes(pin)) return false;
   }
   if (filters.sync?.length && !filters.sync.includes(note.sync_status)) return false;
   if (filters.share?.length) {
-    const sh = note.share_enabled ? "on" : "off";
+    const sh = note.share_enabled ? "shared" : "private";
     if (!filters.share.includes(sh)) return false;
   }
   return true;

@@ -1,11 +1,11 @@
 /** P0020 workspace tabs — URL ?screen= */
-export const WORKSPACE_SCREENS = ["notes", "edit", "todo", "twofa", "cookie", "system", "share"] as const;
+export const WORKSPACE_SCREENS = ["notes", "edit", "todo", "twofa", "cookie", "users", "system", "share"] as const;
 
 export type WorkspaceScreen = (typeof WORKSPACE_SCREENS)[number];
 
 export type WorkspaceNavScreen = Exclude<WorkspaceScreen, "edit" | "share">;
 
-export const NAV_SCREENS: WorkspaceNavScreen[] = ["notes", "todo", "twofa", "cookie", "system"];
+export const NAV_SCREENS: WorkspaceNavScreen[] = ["notes", "todo", "twofa", "cookie", "users", "system"];
 
 export function isWorkspaceScreen(value: string | null): value is WorkspaceScreen {
   return value !== null && (WORKSPACE_SCREENS as readonly string[]).includes(value);
@@ -30,6 +30,7 @@ export const SCREEN_LABELS: Record<WorkspaceScreen, string> = {
   todo: "Todo",
   twofa: "2FA",
   cookie: "Cookie Auto",
+  users: "User Management",
   system: "System",
   share: "Share",
 };

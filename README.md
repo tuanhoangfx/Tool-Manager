@@ -31,7 +31,7 @@ Chi tiết: [docs/DEV.md](docs/DEV.md) · [docs/SUPABASE-NOTES.md](docs/SUPABASE
 | `?screen=library` | Tool Library |
 | `?screen=notes` | Notes V5 |
 
-[docs/DESIGN-DECISION.md](docs/DESIGN-DECISION.md) · [docs/DESIGN-PREVIEW.md](docs/DESIGN-PREVIEW.md)
+[docs/DESIGN-DECISION.md](docs/DESIGN-DECISION.md)
 
 ## Commands
 

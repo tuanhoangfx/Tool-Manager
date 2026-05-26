@@ -17,6 +17,12 @@ export type CookieBinding = {
   /** Browser allowed to publish/promote vault versions for this route. Targets are read-only. */
   sourceBrowserId?: string | null;
   sourceLabel?: string | null;
+  ownerUserId?: string | null;
+  ownerUserEmail?: string | null;
+  accessRole?: "owner" | "member";
+  canApply?: boolean;
+  canPublish?: boolean;
+  canManage?: boolean;
   enabled: boolean;
 };
 
@@ -29,7 +35,7 @@ export type CookieBridgePrefs = {
   vaultSync: boolean;
   /** Extension applies remote vault via Realtime + poll (opt-in — writes cookies to this browser) */
   realtimeVaultApply: boolean;
-  /** Nhãn tạm (chưa khóa quyền) — mọi browser đều Sync + Load */
+  /** Legacy local label. Effective write permission comes from owner/member route access. */
   bridgeRole: CookieBridgeRole;
 };
 
@@ -148,6 +154,10 @@ export function bindingsForExtension(bindings: CookieBinding[]) {
       noteTitle: b.noteTitle ?? "",
       sourceBrowserId: b.sourceBrowserId ?? null,
       sourceLabel: b.sourceLabel ?? null,
+      ownerUserId: b.ownerUserId ?? null,
+      ownerUserEmail: b.ownerUserEmail ?? null,
+      accessRole: b.accessRole ?? "owner",
+      canPublish: b.canPublish !== false,
     }));
 }
 

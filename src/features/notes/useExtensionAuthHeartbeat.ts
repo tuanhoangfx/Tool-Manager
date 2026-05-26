@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
-import { broadcastExtensionAuth } from "./shareUtils";
+import { broadcastExtensionAuth } from "../cookie/extensionBridgeMessages";
 
 const HEARTBEAT_MS = 30 * 60 * 1000;
 
@@ -26,5 +26,5 @@ export function useExtensionAuthHeartbeat(session: Session | null) {
     void push();
     const id = window.setInterval(() => void push(), HEARTBEAT_MS);
     return () => window.clearInterval(id);
-  }, [session?.user?.id]);
+  }, [session]);
 }

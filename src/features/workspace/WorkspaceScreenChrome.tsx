@@ -1,8 +1,15 @@
-import type { ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AppTabHeader, FilterBar } from "../../components/sales-shell";
+import type { TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import { screenChromeConfig } from "./workspace-screen-meta";
+
+function readVisibleFilterKeys(param: string): Set<string> | null {
+  if (typeof window === "undefined") return null;
+  const raw = new URLSearchParams(window.location.search).get(param);
+  return raw === null ? null : new Set(raw.split(",").filter(Boolean));
+}
 
 type Props = {
   screen: WorkspaceScreen;
@@ -10,6 +17,8 @@ type Props = {
   onQueryChange: (q: string) => void;
   toolbar?: ReactNode;
   filterToolbar?: ReactNode;
+  headerActions?: ReactNode;
+  centerStats?: TabHeaderStatItem[];
   filters?: FilterDef[];
   filterValues?: FilterValues;
   onFilterValuesChange?: (next: FilterValues) => void;
@@ -23,12 +32,27 @@ export function WorkspaceScreenChrome({
   onQueryChange,
   toolbar,
   filterToolbar,
+  headerActions,
+  centerStats = [],
   filters = [],
   filterValues = {},
   onFilterValuesChange = () => {},
   children,
 }: Props) {
   const cfg = screenChromeConfig(screen);
+  const [visibleFilterKeys, setVisibleFilterKeys] = useState(() => readVisibleFilterKeys(cfg.filterParam));
+
+  useEffect(() => {
+    const sync = () => setVisibleFilterKeys(readVisibleFilterKeys(cfg.filterParam));
+    sync();
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, [cfg.filterParam]);
+
+  const visibleFilters = useMemo(() => {
+    const keys = visibleFilterKeys ?? new Set(filters.map((filter) => filter.key));
+    return filters.filter((filter) => keys.has(filter.key));
+  }, [filters, visibleFilterKeys]);
 
   const filterBar = cfg.showSearch ? (
     <FilterBar
@@ -37,7 +61,7 @@ export function WorkspaceScreenChrome({
       headerPinned
       embedded
       placeholder={cfg.searchPlaceholder}
-      filters={filters}
+      filters={visibleFilters}
       query={query}
       onQueryChange={onQueryChange}
       values={filterValues}
@@ -60,7 +84,8 @@ export function WorkspaceScreenChrome({
           titleIconClass={cfg.titleIconClass}
           title={cfg.title}
           metaItems={cfg.metaItems}
-          centerStats={[]}
+          centerStats={centerStats}
+          actions={headerActions}
           pinSticky={false}
           dividerBelow={false}
           embedded

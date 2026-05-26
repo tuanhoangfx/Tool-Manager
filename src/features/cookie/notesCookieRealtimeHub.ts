@@ -40,6 +40,78 @@ function ensureChannel(userId: string) {
         }
       },
     )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "cookie_bridge_routes",
+        filter: `user_id=eq.${userId}`,
+      },
+      () => {
+        listeners.forEach((fn) => {
+          try {
+            fn();
+          } catch (err) {
+            console.error("[P0020] route realtime listener", err);
+          }
+        });
+      },
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "note_cookie_members",
+        filter: `owner_user_id=eq.${userId}`,
+      },
+      () => {
+        listeners.forEach((fn) => {
+          try {
+            fn();
+          } catch (err) {
+            console.error("[P0020] member owner realtime listener", err);
+          }
+        });
+      },
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "note_cookie_members",
+        filter: `grantee_user_id=eq.${userId}`,
+      },
+      () => {
+        listeners.forEach((fn) => {
+          try {
+            fn();
+          } catch (err) {
+            console.error("[P0020] member grantee realtime listener", err);
+          }
+        });
+      },
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "note_cookie_vault",
+        filter: `user_id=eq.${userId}`,
+      },
+      () => {
+        listeners.forEach((fn) => {
+          try {
+            fn();
+          } catch (err) {
+            console.error("[P0020] vault realtime listener", err);
+          }
+        });
+      },
+    )
     .subscribe();
 }
 

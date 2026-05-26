@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ElementType } from "react";
+import { useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { ChevronDown, Clock } from "lucide-react";
 import { usePageSessionSeconds } from "../../hooks/usePageSessionSeconds";
 import "./app-tab-header.css";
@@ -41,6 +41,7 @@ type AppTabHeaderProps = {
   dividerBelow?: boolean;
   /** Inside shared sticky chrome (header + search); no own sticky/margins. */
   embedded?: boolean;
+  actions?: ReactNode;
 };
 
 function TitleWithMenu({
@@ -188,6 +189,7 @@ export function AppTabHeader({
   pinSticky = true,
   dividerBelow = true,
   embedded = false,
+  actions,
 }: AppTabHeaderProps) {
   const sessionMmSs = usePageSessionSeconds();
   const positionClass = embedded ? "relative" : pinSticky ? "sticky top-0 z-40" : "relative z-0";
@@ -241,6 +243,7 @@ export function AppTabHeader({
         <Clock size={14} className="shrink-0 text-indigo-400/90" />
         <span>Session</span>
         <span className="tabular-nums text-[var(--text)]/90">{sessionMmSs}</span>
+        {actions ? <span className="ml-1 inline-flex items-center gap-1">{actions}</span> : null}
       </div>
     </header>
   );

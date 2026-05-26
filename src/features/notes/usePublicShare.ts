@@ -1,16 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "../../lib/supabase";
-import { hashSharePassword } from "./shareUtils";
-
-export type PublicShareRow = {
-  id: string;
-  title: string;
-  body_md: string;
-  cookie_snapshot: unknown;
-  share_password_hash: string | null;
-  share_enabled: boolean;
-  share_token: string | null;
-};
+import { fetchPublicShareNote, type PublicShareRow } from "./publicShareRepository";
 
 export function usePublicShare(token: string | null) {
   const [row, setRow] = useState<PublicShareRow | null>(null);
@@ -25,22 +14,14 @@ export function usePublicShare(token: string | null) {
     }
     setLoading(true);
     setError("");
-    const { data, error: err } = await supabase
-      .from("notes")
-      .select("id, title, body_md, cookie_snapshot, share_password_hash, share_enabled, share_token")
-      .eq("share_token", token)
-      .eq("share_enabled", true)
-      .maybeSingle();
+    const res = await fetchPublicShareNote(token);
 
-    if (err) {
-      setError(err.message);
+    if (!res.ok && !res.note) {
+      setError(res.error);
       setRow(null);
-    } else if (!data) {
-      setError("Link không hợp lệ hoặc đã tắt share.");
-      setRow(null);
-    } else {
-      setRow(data as PublicShareRow);
-      if (!data.share_password_hash) setUnlocked(true);
+    } else if (res.note) {
+      setRow(res.note);
+      setUnlocked(!res.locked);
     }
     setLoading(false);
   }, [token]);
@@ -51,19 +32,20 @@ export function usePublicShare(token: string | null) {
 
   const verifyPassword = useCallback(
     async (password: string) => {
-      if (!row) return false;
-      if (!row.share_password_hash) {
+      if (!row || !token) return false;
+      if (!row.requires_password) {
         setUnlocked(true);
         return true;
       }
-      const hash = await hashSharePassword(password, row.id);
-      if (hash === row.share_password_hash) {
+      const res = await fetchPublicShareNote(token, password);
+      if (res.ok) {
+        setRow(res.note);
         setUnlocked(true);
         return true;
       }
       return false;
     },
-    [row],
+    [row, token],
   );
 
   return { row, loading, error, unlocked, verifyPassword, refresh };

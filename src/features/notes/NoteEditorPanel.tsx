@@ -15,6 +15,8 @@ import {
 import { useState, type ReactNode } from "react";
 import { useAppToast } from "../../components/toast";
 import type { NoteFolder } from "./noteFolders";
+import { NoteCookieSnapshotBlock } from "./NoteCookieSnapshotBlock";
+import { cookieLines } from "./noteUtils";
 import { buildShareUrl } from "./shareUtils";
 import type { NoteRow } from "./types";
 
@@ -57,7 +59,6 @@ export function NoteEditorPanel({
   loading,
   title,
   slug,
-  domain,
   pinned,
   shareEnabled,
   sharePassword,
@@ -85,12 +86,13 @@ export function NoteEditorPanel({
   onSetFolderColor,
   onDeleteFolder,
 }: Props) {
-  const displayTitle = title.trim() || "Untitled";
   const [folderOpen, setFolderOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const updatedLabel = note?.updated_at ? formatShortDate(note.updated_at) : "";
   const shareUrl = note?.share_token && shareEnabled ? buildShareUrl(note.share_token) : "";
+  const cookieSnapshotLines = note ? cookieLines(note.cookie_snapshot) : [];
+  const showCookieSnapshot = Boolean(note && (cookieSnapshotLines.length > 0 || note.sync_status === "synced"));
 
   return (
     <section className="notes-editor flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-white/10">
@@ -193,8 +195,19 @@ export function NoteEditorPanel({
       ) : null}
 
       <div className="notes-editor__body min-h-0 flex-1 overflow-y-auto p-4">
+        {showCookieSnapshot ? (
+          <div className="mb-3">
+            <NoteCookieSnapshotBlock
+              lines={cookieSnapshotLines}
+              syncStatus={note?.sync_status ?? "pending"}
+              syncedAt={note?.synced_at ?? null}
+              bodyMd={body}
+              onInsertIntoMarkdown={onBodyChange}
+            />
+          </div>
+        ) : null}
         <textarea
-          className="notes-editor__textarea min-h-0 h-full w-full resize-none rounded-lg p-4 font-sans text-[13px] leading-relaxed outline-none"
+          className="notes-editor__textarea min-h-[14rem] w-full resize-none rounded-lg p-4 font-sans text-[13px] leading-relaxed outline-none"
           placeholder="Write markdown…"
           value={body}
           onChange={(e) => onBodyChange(e.target.value)}

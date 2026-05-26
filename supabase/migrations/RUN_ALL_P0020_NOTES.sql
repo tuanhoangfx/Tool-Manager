@@ -1,5 +1,5 @@
 -- =============================================================================
--- P0020 Workspace Notes — run once in Supabase Dashboard → SQL Editor
+-- P0020 Workspace Hub — run once in Supabase Dashboard → SQL Editor
 -- Fixes: "column notes.sync_id does not exist" and cookie sync RPC
 -- =============================================================================
 
@@ -46,3 +46,15 @@ where sync_id is null or sync_id = '';
 
 -- 11) Versioned cookie vault sync metadata + RPC v2
 -- (see 20260527113000_note_cookie_vault_versioned_sync.sql)
+
+-- 12) Note ID cookie members + accessible route/vault RPC v3
+-- (see 20260528153000_note_cookie_members.sql)
+
+-- 13) User Management directory from auth.users
+-- (see 20260528170000_workspace_user_directory.sql)
+
+-- 14) Cookie route owner email + route/vault realtime publication
+-- (see 20260529090000_cookie_route_owner_email_realtime.sql)
+
+-- 15) Cookie member realtime publication for shared route refresh
+-- (see 20260529103000_note_cookie_members_realtime.sql)

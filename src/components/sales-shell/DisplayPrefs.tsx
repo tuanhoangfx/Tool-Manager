@@ -16,6 +16,11 @@ export type PrefItem = { key: string; label: string };
 
 type Tab = "general" | "display";
 
+function parseSet(raw: string | null): Set<string> | null {
+  if (raw === null) return null;
+  return new Set(raw.split(",").filter(Boolean));
+}
+
 export function DisplayPrefs({
   kpis,
   charts,
@@ -31,6 +36,7 @@ export function DisplayPrefs({
   menuPlacement = "bottom",
   compact = false,
   sidebarRow = false,
+  filterParam = "hfilt",
 }: {
   kpis?: PrefItem[];
   charts?: PrefItem[];
@@ -50,6 +56,8 @@ export function DisplayPrefs({
   compact?: boolean;
   /** Full-width sidebar footer row (icon + label). */
   sidebarRow?: boolean;
+  /** URL parameter used to persist visible filter dropdowns. */
+  filterParam?: "hfilt" | "nfilt" | "cfilt" | "tfilt" | "afilt" | "ufilt";
 }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("general");
@@ -111,7 +119,7 @@ export function DisplayPrefs({
 
   const rawKpi = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("kpi") : null;
   const rawCharts = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("charts") : null;
-  const rawFilters = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("hfilt") : null;
+  const rawFilters = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get(filterParam) : null;
   const isSystem = screen === "system";
   const rawHeaderStats =
     typeof window !== "undefined"
@@ -121,7 +129,7 @@ export function DisplayPrefs({
   const rawSpin = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("spin") : null;
   const visKpi = prefs.kpi;
   const visCharts = prefs.charts;
-  const visHubFilters = prefs.hubFilters;
+  const visHubFilters = parseSet(rawFilters);
   const headerStats =
     headerStatsProp ?? (isSystem ? SYSTEM_HEADER_STAT_DEFS : HUB_HEADER_STAT_DEFS);
   const headerStatDefaults =
@@ -167,6 +175,22 @@ export function DisplayPrefs({
     } else {
       update({ [param]: [...next].join(",") });
     }
+  }
+
+  function toggleFilter(key: string) {
+    const defaults = filterDefaults;
+    let next: Set<string>;
+    if (visHubFilters === null) {
+      next = new Set(defaults);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+    } else {
+      next = new Set(visHubFilters);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+    }
+    const allDefault = next.size === defaults.size && [...next].every((k) => defaults.has(k));
+    update({ [filterParam]: allDefault ? null : [...next].join(",") });
   }
 
   function isVisible(set: Set<string> | null, defaults: Set<string>, key: string) {
@@ -323,7 +347,7 @@ export function DisplayPrefs({
                         key={f.key}
                         label={f.label}
                         on={isVisible(visHubFilters, filterDefaults, f.key)}
-                        onChange={() => toggle("hfilt", filters, filterDefaults, f.key)}
+                        onChange={() => toggleFilter(f.key)}
                       />
                     ))}
                   </div>
@@ -362,7 +386,7 @@ export function DisplayPrefs({
                 limit: null,
                 kpi: null,
                 charts: null,
-                hfilt: null,
+                [filterParam]: null,
                 hstat: null,
                 sstat: null,
                 hpin: null,

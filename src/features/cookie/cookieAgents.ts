@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
+import { fetchCookieAgentsAndCommands, sendCookieAgentCommand } from "./cookieAgentsRepository";
 
 export type CookieAgent = {
   id: string;
@@ -43,67 +43,69 @@ type SendCommandInput = {
   payload?: Record<string, unknown>;
 };
 
-function schemaError(err: unknown) {
-  const message = err && typeof err === "object" && "message" in err ? String(err.message) : String(err ?? "");
-  if (/cookie_bridge_agents|cookie_bridge_commands|schema cache|does not exist|PGRST/i.test(message)) {
-    return "Browser agents table is missing. Run supabase/migrations/20260525165000_cookie_bridge_agents.sql.";
-  }
-  return message || "Browser agents failed.";
-}
-
 export function useCookieAgents(session: Session | null) {
   const [agents, setAgents] = useState<CookieAgent[]>([]);
   const [commands, setCommands] = useState<CookieAgentCommand[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const userId = session?.user?.id;
 
   const refresh = useCallback(async () => {
-    if (!session?.user?.id) return;
+    if (!userId) return;
     setLoading(true);
-    const [agentRes, commandRes] = await Promise.all([
-      supabase
-        .from("cookie_bridge_agents")
-        .select("*")
-        .order("last_seen_at", { ascending: false })
-        .limit(20),
-      supabase
-        .from("cookie_bridge_commands")
-        .select("id,target_browser_id,command,note_id,domain,status,result,error,created_at,completed_at")
-        .order("created_at", { ascending: false })
-        .limit(12),
-    ]);
+    const res = await fetchCookieAgentsAndCommands();
     setLoading(false);
-    if (agentRes.error || commandRes.error) {
-      setError(schemaError(agentRes.error ?? commandRes.error));
+    if (!res.ok) {
+      setError(res.error);
       return;
     }
     setError(null);
-    setAgents((agentRes.data ?? []) as CookieAgent[]);
-    setCommands((commandRes.data ?? []) as CookieAgentCommand[]);
-  }, [session?.user?.id]);
+    setAgents(res.agents);
+    setCommands(res.commands);
+  }, [userId]);
 
   const sendCommand = useCallback(
     async (input: SendCommandInput) => {
-      if (!session?.user?.id) return { ok: false as const, error: "Not signed in." };
-      const { error: insertError } = await supabase.from("cookie_bridge_commands").insert({
-        user_id: session.user.id,
-        target_browser_id: input.targetBrowserId ?? null,
+      if (!userId) return { ok: false as const, error: "Not signed in." };
+      const res = await sendCookieAgentCommand({
+        userId,
+        targetBrowserId: input.targetBrowserId,
         command: input.command,
-        note_id: input.noteId ?? null,
+        noteId: input.noteId,
         domain: input.domain ?? ".facebook.com",
         payload: input.payload ?? {},
       });
-      if (insertError) return { ok: false as const, error: schemaError(insertError) };
+      if (!res.ok) return res;
       void refresh();
       return { ok: true as const };
     },
-    [refresh, session?.user?.id],
+    [refresh, userId],
   );
 
   useEffect(() => {
+    let cancelled = false;
+    let timer = 0;
+
+    const nextDelay = () => (document.visibilityState === "hidden" ? 30000 : 5000);
+    const tick = () => {
+      if (cancelled) return;
+      void refresh().finally(() => {
+        if (!cancelled) timer = window.setTimeout(tick, nextDelay());
+      });
+    };
+    const onVisibility = () => {
+      window.clearTimeout(timer);
+      tick();
+    };
+
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 5000);
-    return () => window.clearInterval(timer);
+    timer = window.setTimeout(tick, nextDelay());
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [refresh]);
 
   return { agents, commands, loading, error, refresh, sendCommand };

@@ -21,11 +21,10 @@ export function readNotesListPrefs(): NotesListPrefs {
   }
   const sp = new URLSearchParams(window.location.search);
   const density = sp.get("ndens") === "compact" ? "compact" : "comfort";
-  const noteFilterParam = sp.get("nfilt") ?? sp.get("hfilt");
   return {
     range: hub.range,
     density,
-    noteFilters: parseSet(noteFilterParam),
+    noteFilters: parseSet(sp.get("nfilt")),
   };
 }
 

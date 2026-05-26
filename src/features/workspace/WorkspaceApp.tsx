@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from "react";
 import { DisplayPrefs } from "../../components/sales-shell";
+import type { TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
 import { WorkspaceSidebar } from "../../components/sales-shell/WorkspaceSidebar";
 import { ToastContainer, ToastProvider } from "../../components/toast";
@@ -10,6 +11,8 @@ import { readShareTokenFromUrl } from "../notes/shareUtils";
 import { PublicShareScreen } from "../notes/PublicShareScreen";
 import { DEFAULT_NOTES_FILTER_KEYS } from "../notes/notes-list-prefs";
 import { NOTES_FILTER_DEFS } from "../notes/notes-filters";
+import { COOKIE_ROUTE_FILTER_DEFS, DEFAULT_COOKIE_ROUTE_FILTER_KEYS } from "../cookie/cookie-route-filters";
+import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
 import { useHubNavigation } from "../hub/useHubNavigation";
 import { WorkspaceScreenChrome } from "./WorkspaceScreenChrome";
 import { WorkspaceSearchProvider } from "./WorkspaceSearchContext";
@@ -22,17 +25,40 @@ const TwofaManagerScreen = lazy(() =>
   import("../twofa/TwofaManagerScreen").then((m) => ({ default: m.TwofaManagerScreen })),
 );
 const CookieSyncScreen = lazy(() =>
-  import("../design-preview/screens/CookieSyncScreen").then((m) => ({ default: m.CookieSyncScreen })),
+  import("../cookie/CookieSyncScreen").then((m) => ({ default: m.CookieSyncScreen })),
+);
+const UserManagementScreen = lazy(() =>
+  import("../users/UserManagementScreen").then((m) => ({ default: m.UserManagementScreen })),
 );
 const SystemDesignTemplateScreen = lazy(() =>
   import("../system/SystemDesignTemplateScreen").then((m) => ({ default: m.SystemDesignTemplateScreen })),
 );
 
-function WorkspaceSidebarDisplayPrefs() {
+function WorkspaceSidebarDisplayPrefs({
+  screen,
+  screenFilters,
+}: {
+  screen: WorkspaceNavScreen;
+  screenFilters: FilterDef[];
+}) {
+  const filterConfig =
+    screen === "cookie"
+      ? { filters: COOKIE_ROUTE_FILTER_DEFS, defaultFilterKeys: DEFAULT_COOKIE_ROUTE_FILTER_KEYS, filterParam: "cfilt" as const }
+      : screen === "notes"
+        ? { filters: [...NOTES_FILTER_DEFS], defaultFilterKeys: DEFAULT_NOTES_FILTER_KEYS, filterParam: "nfilt" as const }
+        : screenFilters.length
+          ? {
+              filters: screenFilters.map(({ key, label }) => ({ key, label })),
+              defaultFilterKeys: new Set(screenFilters.map((filter) => filter.key)),
+              filterParam: screen === "todo" ? ("tfilt" as const) : screen === "users" ? ("ufilt" as const) : ("afilt" as const),
+            }
+          : { filters: [], defaultFilterKeys: new Set<string>(), filterParam: "hfilt" as const };
+
   return (
     <DisplayPrefs
-      filters={[...NOTES_FILTER_DEFS]}
-      defaultFilterKeys={DEFAULT_NOTES_FILTER_KEYS}
+      filters={filterConfig.filters}
+      defaultFilterKeys={filterConfig.defaultFilterKeys}
+      filterParam={filterConfig.filterParam}
       headerStats={[]}
       defaultHeaderStatKeys={new Set()}
       showRange={false}
@@ -96,6 +122,12 @@ function WorkspaceScreenBody({
           <CookieSyncScreen shellMode query={query} />
         </Suspense>
       );
+    case "users":
+      return (
+        <Suspense fallback={<ScreenFallback label="User Management" />}>
+          <UserManagementScreen shellMode />
+        </Suspense>
+      );
     case "system":
       return (
         <Suspense fallback={<ScreenFallback label="System" />}>
@@ -111,12 +143,15 @@ const NOTES_SCREENS = new Set<WorkspaceScreen>(["notes", "edit"]);
 
 export function WorkspaceApp() {
   const { screen, navigate } = useHubNavigation();
+  useExtensionBindingsRelay(true);
   const shareToken = readShareTokenFromUrl();
   const [query, setQuery] = useState("");
   const [screenFilters, setScreenFilters] = useState<FilterDef[]>([]);
   const [screenFilterValues, setScreenFilterValues] = useState<FilterValues>({});
   const [screenToolbar, setScreenToolbar] = useState<ReactNode>(null);
   const [screenFilterToolbar, setScreenFilterToolbar] = useState<ReactNode>(null);
+  const [screenHeaderActions, setScreenHeaderActions] = useState<ReactNode>(null);
+  const [screenCenterStats, setScreenCenterStats] = useState<TabHeaderStatItem[]>([]);
 
   useEffect(() => {
     if (screen !== "edit") return;
@@ -130,6 +165,8 @@ export function WorkspaceApp() {
     setScreenFilterValues({});
     setScreenToolbar(null);
     setScreenFilterToolbar(null);
+    setScreenHeaderActions(null);
+    setScreenCenterStats([]);
   }, [screen]);
 
   useEffect(() => {
@@ -144,19 +181,19 @@ export function WorkspaceApp() {
     };
   }, []);
 
-  if (screen === "share" && shareToken) {
-    return <PublicShareScreen />;
-  }
-
-  const activeNav = navScreen(screen);
-  const isNotesLayout = NOTES_SCREENS.has(screen);
-
   const onNav = useCallback(
     (next: WorkspaceNavScreen) => {
       navigate(next);
     },
     [navigate],
   );
+
+  if (screen === "share" && shareToken) {
+    return <PublicShareScreen />;
+  }
+
+  const activeNav = navScreen(screen);
+  const isNotesLayout = NOTES_SCREENS.has(screen);
 
   const mainClass = isNotesLayout ? "hub-main hub-main--notes" : "hub-main";
 
@@ -170,7 +207,7 @@ export function WorkspaceApp() {
         <WorkspaceSidebar
           screen={activeNav}
           onNavigate={onNav}
-          displayPrefs={<WorkspaceSidebarDisplayPrefs />}
+          displayPrefs={<WorkspaceSidebarDisplayPrefs screen={activeNav} screenFilters={screenFilters} />}
         />
 
         <main className={`${mainClass} flex-1 min-h-0 min-w-0`}>
@@ -188,6 +225,10 @@ export function WorkspaceApp() {
               setToolbar={setScreenToolbar}
               filterToolbar={screenFilterToolbar}
               setFilterToolbar={setScreenFilterToolbar}
+              headerActions={screenHeaderActions}
+              setHeaderActions={setScreenHeaderActions}
+              centerStats={screenCenterStats}
+              setCenterStats={setScreenCenterStats}
             >
               <WorkspaceScreenChrome
                 screen={screen}
@@ -198,6 +239,8 @@ export function WorkspaceApp() {
                 onFilterValuesChange={setScreenFilterValues}
                 toolbar={screenToolbar}
                 filterToolbar={screenFilterToolbar}
+                headerActions={screenHeaderActions}
+                centerStats={screenCenterStats}
               >
                 {body}
               </WorkspaceScreenChrome>

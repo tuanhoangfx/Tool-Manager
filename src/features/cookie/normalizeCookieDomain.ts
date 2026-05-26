@@ -3,7 +3,7 @@ export function normalizeCookieDomain(input: string): string | null {
   const raw = input.trim();
   if (!raw) return null;
 
-  let host = raw;
+  let host: string;
   try {
     if (/^https?:\/\//i.test(raw)) {
       host = new URL(raw).hostname;

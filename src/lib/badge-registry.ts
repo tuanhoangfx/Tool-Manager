@@ -107,6 +107,8 @@ const FILTER_ALL: Record<string, FilterIconMeta> = {
   pinned: { icon: Pin, className: "text-indigo-300" },
   sync: { icon: RefreshCw, className: "text-cyan-300" },
   share: { icon: Share2, className: "text-violet-300" },
+  type: { icon: Layers, className: "text-indigo-300" },
+  source: { icon: Link2, className: "text-emerald-300" },
 };
 
 const LINK_STATUS: Record<string, FilterIconMeta> = {
@@ -247,6 +249,14 @@ export function resolveFilterOptionIcon(filterKey: string, option: FilterOption)
       return option.value === "shared"
         ? { icon: Share2, className: "text-violet-300" }
         : { icon: Lock, className: "text-slate-400" };
+    case "type":
+      return option.value === "facebook"
+        ? { icon: Monitor, className: "text-blue-300" }
+        : { icon: Layers, className: "text-slate-300" };
+    case "source":
+      return option.value === "locked"
+        ? { icon: Lock, className: "text-emerald-300" }
+        : { icon: AlertTriangle, className: "text-amber-300" };
     case "group":
       return resolveLinkGroupBadge(option.value as LinkGroup).iconMeta;
     case "kind":
