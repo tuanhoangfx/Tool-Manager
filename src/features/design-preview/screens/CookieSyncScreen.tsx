@@ -20,8 +20,7 @@ import { useExtensionAuthHeartbeat } from "../../notes/useExtensionAuthHeartbeat
 import { supabase } from "../../../lib/supabase";
 import { Link2, RefreshCw, Settings } from "lucide-react";
 import { EXTENSION_RELEASE_PAGE } from "../../cookie/extensionInstall";
-import { CookieExtensionGuideButton } from "../../cookie/CookieExtensionGuideButton";
-import { CookieExtensionHeaderLink } from "../../cookie/CookieExtensionHeaderLink";
+import { CookieInstallHeaderActions } from "../../cookie/CookieInstallHeaderActions";
 import { useAppView } from "../../../hooks/useAppView";
 import { CookieSettings } from "../../cookie/CookieSettings";
 import { CookieAutoSyncTable } from "../../cookie/CookieAutoSyncTable";
@@ -179,6 +178,14 @@ function bridgeStatusFromState({
 }
 
 function CookieSyncSignIn({ shellMode }: { shellMode?: boolean }) {
+  const { setHeaderActions } = useWorkspaceSearch();
+
+  useEffect(() => {
+    if (!shellMode) return;
+    setHeaderActions(<CookieInstallHeaderActions />);
+    return () => setHeaderActions(null);
+  }, [setHeaderActions, shellMode]);
+
   return (
     <div className={shellMode ? "" : "p-6"}>
       {!shellMode ? (
@@ -467,13 +474,7 @@ function CookieSyncMain({
   );
 
   const cookieHeaderActions = useMemo(
-    () => (
-      <>
-        <CookieExtensionHeaderLink />
-        <CookieExtensionGuideButton />
-        {cookieSettingsHeaderAction}
-      </>
-    ),
+    () => <CookieInstallHeaderActions trailing={cookieSettingsHeaderAction} />,
     [cookieSettingsHeaderAction],
   );
 
@@ -538,9 +539,7 @@ function CookieSyncMain({
   const pageHeaderActions = useMemo(
     () => (
       <>
-        <CookieExtensionHeaderLink />
-        <CookieExtensionGuideButton />
-        {cookieSettingsHeaderAction}
+        <CookieInstallHeaderActions trailing={cookieSettingsHeaderAction} />
         {routeActions}
       </>
     ),
