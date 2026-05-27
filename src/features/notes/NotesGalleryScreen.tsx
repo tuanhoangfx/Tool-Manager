@@ -48,21 +48,17 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
   if (!isSupabaseConfigured) {
     return (
       <div className="anim-fade p-6 text-sm text-amber-200">
-        Supabase chưa cấu hình. Thêm <code>VITE_SUPABASE_URL</code> và <code>VITE_SUPABASE_ANON_KEY</code>.
+        Supabase is not configured. Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>.
       </div>
     );
   }
 
   if (authLoading) {
-    return <div className="anim-fade p-6 text-sm text-[var(--muted)]">Đang tải phiên…</div>;
+    return <div className="anim-fade p-6 text-sm text-[var(--muted)]">Loading session…</div>;
   }
 
   if (!session) {
-    return (
-      <div className="anim-fade p-6">
-        <NotesAuthGate />
-      </div>
-    );
+    return <NotesAuthGate variant="notes" />;
   }
 
   return (
@@ -74,7 +70,7 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
           actions={
             <button type="button" className="btn text-[12px]" onClick={() => void onNew()} disabled={creating}>
               <Plus size={14} />
-              {creating ? "Đang tạo…" : "New note"}
+              {creating ? "Creating…" : "New note"}
             </button>
           }
         />
@@ -83,7 +79,7 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
       {error ? (
         <p className="mb-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[12px] text-rose-200">
           {error.includes("relation") || error.includes("notes")
-            ? `${error} — chạy migration supabase/migrations/20260523120000_tool_manager_notes.sql`
+            ? `${error} — run migration supabase/migrations/20260523120000_tool_manager_notes.sql`
             : error}
         </p>
       ) : null}
@@ -92,14 +88,14 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
         <div className="mb-4 flex flex-wrap gap-2">
           <input
             className="field !py-2 text-[12px]"
-            placeholder="Tìm note, domain…"
+            placeholder="Search notes, domains…"
             value={localQuery}
             onChange={(e) => setLocalQuery(e.target.value)}
           />
         </div>
       ) : null}
 
-      {loading ? <p className="text-[12px] text-[var(--muted)]">Đang tải notes…</p> : null}
+      {loading ? <p className="text-[12px] text-[var(--muted)]">Loading notes…</p> : null}
 
       <div className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {filtered.map((n) => {
@@ -120,10 +116,10 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
                 {n.pinned ? <Pin size={14} className="shrink-0 text-indigo-300" /> : null}
               </div>
               {n.domain ? <p className="font-mono text-[10px] text-indigo-300/80">{n.domain}</p> : null}
-              <p className="mt-1 text-[10px] text-[var(--muted)]">Cập nhật {n.updatedLabel}</p>
+              <p className="mt-1 text-[10px] text-[var(--muted)]">Updated {n.updatedLabel}</p>
               <footer className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
                 <StatusBadge tone={n.syncTone}>{n.syncLabel}</StatusBadge>
-                <span className="text-[10px] text-indigo-300">Mở →</span>
+                <span className="text-[10px] text-indigo-300">Open →</span>
               </footer>
             </button>
           );
@@ -131,7 +127,7 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
       </div>
 
       {!loading && filtered.length === 0 ? (
-        <p className="mt-4 text-[12px] text-[var(--muted)]">Chưa có note. Bấm New note để bắt đầu.</p>
+        <p className="mt-4 text-[12px] text-[var(--muted)]">No notes yet. Click New note to get started.</p>
       ) : null}
     </div>
   );

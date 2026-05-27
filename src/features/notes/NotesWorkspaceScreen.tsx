@@ -232,8 +232,20 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
 
   if (!session) {
     return (
-      <div className="p-6">
-        <NotesAuthGate />
+      <div className="notes-workspace anim-fade flex min-h-0 flex-col">
+        <NotesHubChrome
+          query={query}
+          onQueryChange={setQuery}
+          filterValues={filterValues}
+          onFilterValuesChange={setFilterValues}
+          notes={[]}
+          shown={0}
+          density={density}
+          onDensityChange={setDensity}
+        />
+        <div className="pt-5">
+          <NotesAuthGate variant="notes" />
+        </div>
       </div>
     );
   }

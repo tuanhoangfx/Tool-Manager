@@ -4,6 +4,8 @@ import { PageHeader } from "../design-preview/screens/PageHeader";
 import { generateCode, secondsRemaining } from "./totp";
 import { useTwofaAccounts } from "./useTwofaAccounts";
 import type { TwofaAccount } from "./types";
+import { useNotesAuth } from "../notes/useNotesAuth";
+import { NotesAuthGate } from "../notes/NotesAuthGate";
 
 function maskSecret(secret: string) {
   if (secret.length <= 8) return "••••••••";
@@ -55,12 +57,17 @@ export function TwofaManagerScreen({
   shellMode?: boolean;
   query?: string;
 } = {}) {
+  const { session } = useNotesAuth();
   const { accounts, add, update, remove } = useTwofaAccounts();
   const [service, setService] = useState("");
   const [accountName, setAccountName] = useState("");
   const [secret, setSecret] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  if (!session) {
+    return <NotesAuthGate variant="twofa" />;
+  }
 
   const editing = useMemo(() => accounts.find((a) => a.id === editingId), [accounts, editingId]);
 
@@ -92,12 +99,12 @@ export function TwofaManagerScreen({
     const draft = { service, account: accountName, secret };
     const testCode = generateCode(draft.service, draft.account, draft.secret);
     if (!testCode) {
-      setError("Secret không hợp lệ (Base32 TOTP). Kiểm tra lại mã từ app gốc.");
+      setError("Invalid secret (Base32 TOTP). Please verify the value from your authenticator app.");
       return;
     }
     const ok = editingId ? update(editingId, draft) : add(draft);
     if (!ok) {
-      setError("Điền đủ Service, Account và Secret.");
+      setError("Please fill Service, Account, and Secret.");
       return;
     }
     resetForm();
@@ -108,11 +115,11 @@ export function TwofaManagerScreen({
       {!shellMode ? (
         <PageHeader
           title="2FA Manager"
-          desc="TOTP local — Service · Account · Secret · mã 6 số tự đổi mỗi 30s (Ivmo-style). Dữ liệu lưu trên trình duyệt."
+          desc="Local TOTP — Service · Account · Secret · 6-digit codes rotate every 30s. Data is stored in your browser."
           actions={
             editing ? (
               <button type="button" className="btn-ghost btn text-[12px]" onClick={resetForm}>
-                Hủy sửa
+                Cancel edit
               </button>
             ) : null
           }
@@ -142,13 +149,13 @@ export function TwofaManagerScreen({
       {error ? <p className="mb-3 text-[12px] text-rose-300">{error}</p> : null}
       <button type="button" className="btn mb-4 inline-flex gap-2 text-[12px]" onClick={onSubmit}>
         {editing ? <Pencil size={14} /> : <Plus size={14} />}
-        {editing ? "Cập nhật" : "Thêm"}
+        {editing ? "Update" : "Add"}
       </button>
 
       {visibleAccounts.length === 0 ? (
         <div className="rounded-xl border border-dashed border-white/15 bg-white/[.02] px-6 py-10 text-center text-sm text-[var(--muted)]">
           <Shield className="mx-auto mb-2 text-indigo-300" size={28} />
-          Chưa có mục 2FA. Thêm secret Base32 từ Google Authenticator / Ivmo export.
+          No 2FA entries yet. Add a Base32 secret from Google Authenticator or an export.
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-white/10">

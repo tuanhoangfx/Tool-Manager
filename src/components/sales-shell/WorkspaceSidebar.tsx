@@ -1,11 +1,12 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Cookie, FileText, KeyRound, ListTodo, Mail, RefreshCcw, Settings2, ShieldCheck, User, Users, X } from "lucide-react";
+import { Cookie, FileText, KeyRound, ListTodo, LogOut, Mail, RefreshCcw, Settings2, ShieldCheck, User, Users, X } from "lucide-react";
 import { APP_VERSION } from "../../lib/app-meta";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
 import { ToolAvatar } from "../ToolAvatar";
 import { toolIconName, toolSvgIcon } from "../../lib/visual";
 import { useNotesAuth } from "../../features/notes/useNotesAuth";
+import { supabase } from "../../lib/supabase";
 
 const items: { screen: WorkspaceNavScreen; label: string; icon: typeof FileText }[] = [
   { screen: "notes", label: "Notes", icon: FileText },
@@ -62,6 +63,7 @@ function userDisplay(email: string | null | undefined) {
 export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
   const { session } = useNotesAuth();
   const [userModalOpen, setUserModalOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const user = session?.user ?? null;
   const email = user?.email ?? null;
   const footerUserLabel = email || shortId(user?.id) || "guest";
@@ -129,6 +131,28 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
                     </div>
                   );
                 })}
+              </div>
+              <div className="border-t border-white/10 p-4">
+                <button
+                  type="button"
+                  className="btn-danger btn flex w-full items-center justify-center gap-2 text-[13px]"
+                  disabled={!session || signingOut}
+                  onClick={() => {
+                    void (async () => {
+                      setSigningOut(true);
+                      const { error } = await supabase.auth.signOut();
+                      setSigningOut(false);
+                      if (error) {
+                        window.alert(error.message);
+                        return;
+                      }
+                      setUserModalOpen(false);
+                    })();
+                  }}
+                >
+                  <LogOut size={15} />
+                  {signingOut ? "Signing out…" : "Sign Out"}
+                </button>
               </div>
             </div>
           </div>,

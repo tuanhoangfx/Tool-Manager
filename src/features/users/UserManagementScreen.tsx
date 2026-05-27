@@ -26,6 +26,7 @@ import {
 } from "../../components/sales-shell";
 import { useAppToast } from "../../components/toast";
 import { useNotesAuth } from "../notes/useNotesAuth";
+import { NotesAuthGate } from "../notes/NotesAuthGate";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import { fetchUserManagementRows, type UserManagementRow } from "./userManagementRepository";
 
@@ -448,7 +449,7 @@ export function UserManagementScreen({ shellMode = false }: { shellMode?: boolea
   }
 
   if (!session) {
-    return <div className="rounded-2xl border border-white/5 bg-[var(--panel)] p-6 text-sm text-[var(--muted)]">Sign in to manage workspace users.</div>;
+    return <NotesAuthGate variant="users" />;
   }
 
   return (

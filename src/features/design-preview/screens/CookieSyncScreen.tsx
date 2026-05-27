@@ -186,17 +186,7 @@ function CookieSyncSignIn({ shellMode }: { shellMode?: boolean }) {
     return () => setHeaderActions(null);
   }, [setHeaderActions, shellMode]);
 
-  return (
-    <div className={shellMode ? "" : "p-6"}>
-      {!shellMode ? (
-        <PageHeader
-          title="Cookie sync"
-          desc="Sign in to create cloud-first routes and link the E0001-cookie-bridge runtime."
-        />
-      ) : null}
-      <NotesAuthGate />
-    </div>
-  );
+  return <NotesAuthGate variant="cookie-auto" />;
 }
 
 function CookieSyncMain({
@@ -253,7 +243,7 @@ function CookieSyncMain({
       data: { session: s },
     } = await supabase.auth.getSession();
     if (!s) {
-      pushToast("Chưa đăng nhập.", "warn");
+      pushToast("Not signed in.", "warn");
       return;
     }
     let nextBindings = bindings;
@@ -273,10 +263,10 @@ function CookieSyncMain({
     });
     if (nextBindings.length > 0) {
       pushToExtension(nextBindings);
-      pushToast("Đã link extension runtime. Cloud routes sẽ tự nhận qua realtime.", "success");
+      pushToast("Extension runtime linked. Cloud routes will arrive via realtime.", "success");
     } else {
       pushToExtension([]);
-      pushToast("Đã gửi session tới extension. Tạo route mới để ghi thẳng lên cloud.", "info");
+      pushToast("Session sent to extension. Create a new route to publish directly to cloud.", "info");
     }
   }, [bindings, notes, pushToExtension, pushToast, setBindings]);
 
@@ -287,7 +277,7 @@ function CookieSyncMain({
         pushToast(res.error, "error", 8000);
         return false;
       }
-      if (!opts.silent) pushToast("Route đã ghi thẳng lên cloud.", "success");
+      if (!opts.silent) pushToast("Route published to cloud.", "success");
       return true;
     },
     [pushToast, session],
@@ -335,7 +325,7 @@ function CookieSyncMain({
       const joined = next.find((binding) => binding.noteId === res.route.note_id && binding.domain === res.route.domain);
       if (joined) setSelectedBindingId(joined.id);
       pushToExtension(next);
-      pushToast("Đã join route được share. Bạn chỉ Load cookies, không Sync Now.", "success");
+      pushToast("Shared route joined. You can Load cookies, but Sync Now is disabled.", "success");
       return true;
     },
     [bindings, notes, pushToExtension, pushToast, setBindings],
@@ -356,7 +346,7 @@ function CookieSyncMain({
       setDeepLinkDone(true);
       if (res.ok) {
         void publishRouteToCloud(res.row, { silent: true }).then((ok) => {
-          if (ok) pushToast("Đã tạo route từ URL và ghi thẳng lên cloud.", "success");
+          if (ok) pushToast("Route created from URL and published to cloud.", "success");
         });
         void onLinkExtension();
       } else {
@@ -371,11 +361,11 @@ function CookieSyncMain({
     broadcastCookieSyncNow(targetNoteId);
     if (targetNoteId) {
       pushToast(
-        `Đã gửi Sync tới extension — ${row?.noteTitle ?? "route đã chọn"}. Mở popup extension → Sync now / Load cookies.`,
+        `Sync requested in extension — ${row?.noteTitle ?? "selected route"}. Open extension popup → Sync now / Load cookies.`,
         "info",
       );
     } else {
-      pushToast("Chọn route trong bảng trước khi Sync.", "warn");
+      pushToast("Select a route in the table before Sync.", "warn");
     }
     setTimeout(() => void refresh(), 2500);
   }, [bindings, pushToast, refresh, selectedBindingId]);
@@ -429,11 +419,11 @@ function CookieSyncMain({
 
   const onSetSourceAgent = async (agent: (typeof agents)[number]) => {
     if (!selectedBinding) {
-      pushToast("Chọn route trước khi đặt source.", "warn");
+      pushToast("Select a route before setting source.", "warn");
       return;
     }
     if (!agent.facebook_has_login) {
-      pushToast("Browser này chưa có Facebook login cookie, không thể làm source.", "warn");
+      pushToast("This browser has no Facebook login cookies, so it cannot be the source.", "warn");
       return;
     }
     const res = await setCookieRouteSource(session, selectedBinding, agent.browser_id, agent.label);
@@ -683,7 +673,7 @@ function CookieSyncMain({
         onRecheck={() => {
           void refreshSchemaHealth().then((h) => {
             if (h?.ok) pushToast("Schema cookie bridge: 4/4 OK", "success");
-            else pushToast("Schema vẫn thiếu — xem checklist bên dưới.", "warn", 8000);
+            else pushToast("Schema incomplete — see checklist below.", "warn", 8000);
           });
         }}
       />

@@ -28,7 +28,7 @@ export async function fetchPublicShareNote(token: string, password?: string) {
   if (!payload?.ok || !payload.note) {
     return {
       ok: false as const,
-      error: payload?.error ?? "Link không hợp lệ, đã tắt share hoặc mật khẩu không đúng.",
+      error: payload?.error ?? "Invalid link: sharing disabled or password is incorrect.",
       locked: payload?.locked === true,
       note: payload?.note ?? null,
     };

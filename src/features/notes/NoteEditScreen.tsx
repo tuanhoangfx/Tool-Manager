@@ -55,61 +55,57 @@ export function NoteEditScreen({
         share_password: sharePassword || undefined,
       });
       setSharePassword("");
-      setSavedHint("Đã lưu");
+      setSavedHint("Saved");
       setTimeout(() => setSavedHint(""), 2500);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Lưu thất bại");
+      setActionError(err instanceof Error ? err.message : "Save failed");
     }
   };
 
   const onDelete = async () => {
-    if (!noteId || !confirm("Xóa note này?")) return;
+    if (!noteId || !confirm("Delete this note?")) return;
     setActionError("");
     try {
       await deleteNote(noteId);
       onClose?.();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Xóa thất bại");
+      setActionError(err instanceof Error ? err.message : "Delete failed");
     }
   };
 
   if (!isSupabaseConfigured) {
-    return <div className="anim-fade p-6 text-sm text-amber-200">Supabase chưa cấu hình.</div>;
+    return <div className="anim-fade p-6 text-sm text-amber-200">Supabase is not configured.</div>;
   }
 
   if (authLoading) {
-    return <div className="anim-fade p-6 text-sm text-[var(--muted)]">Đang tải phiên…</div>;
+    return <div className="anim-fade p-6 text-sm text-[var(--muted)]">Loading session…</div>;
   }
 
   if (!session) {
-    return (
-      <div className="anim-fade p-6">
-        <NotesAuthGate />
-      </div>
-    );
+    return <NotesAuthGate variant="notes" />;
   }
 
   if (!noteId) {
     return (
       <div className="anim-fade p-6 text-sm text-[var(--muted)]">
-        Chọn một note từ gallery.
+        Pick a note from the gallery.
         <button type="button" className="btn-ghost btn ml-2 text-[12px]" onClick={onClose}>
-          Về Notes
+          Back to Notes
         </button>
       </div>
     );
   }
 
   if (loading) {
-    return <div className="anim-fade p-6 text-sm text-[var(--muted)]">Đang tải note…</div>;
+    return <div className="anim-fade p-6 text-sm text-[var(--muted)]">Loading note…</div>;
   }
 
   if (error || !note) {
     return (
       <div className="anim-fade p-6 text-sm text-rose-200">
-        {error || "Không tìm thấy note"}
+        {error || "Note not found"}
         <button type="button" className="btn-ghost btn ml-2 text-[12px]" onClick={onClose}>
-          Về Notes
+          Back to Notes
         </button>
       </div>
     );
@@ -122,20 +118,20 @@ export function NoteEditScreen({
     <div className="anim-fade">
       {!shellMode ? (
         <PageHeader
-          title="Chỉnh sửa note"
+          title="Edit note"
           desc={`V5 drawer · ${note.id.slice(0, 8)}…`}
           actions={
             <>
               <button type="button" className="btn-ghost btn text-[12px]" onClick={onClose}>
                 <X size={14} />
-                Đóng
+                Close
               </button>
               <button type="button" className="btn-ghost btn text-[12px] text-rose-300" onClick={() => void onDelete()}>
                 <Trash2 size={14} />
               </button>
               <button type="button" className="btn text-[12px]" onClick={() => void onSave()} disabled={saving}>
                 <Save size={14} />
-                {saving ? "Đang lưu…" : "Lưu"}
+                {saving ? "Saving…" : "Save"}
               </button>
             </>
           }
@@ -170,7 +166,7 @@ export function NoteEditScreen({
           onClick={onClose}
           className="hidden w-full rounded-xl border border-white/5 bg-black/20 p-4 text-left opacity-40 transition-opacity hover:opacity-60 lg:block"
         >
-          <p className="text-[11px] text-[var(--muted)]">← Bấm để về Gallery</p>
+          <p className="text-[11px] text-[var(--muted)]">← Back to Gallery</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             {notes.slice(0, 6).map((n) => (
               <div
@@ -184,7 +180,7 @@ export function NoteEditScreen({
 
         <div className="anim-right space-y-3 lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
           <Glass tone="indigo" className="!p-3">
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-[var(--muted)]">Tiêu đề</label>
+            <label className="mb-1 block text-[10px] uppercase tracking-wider text-[var(--muted)]">Title</label>
             <input className="field text-[13px] font-medium" value={title} onChange={(e) => setTitle(e.target.value)} />
             <label className="mb-1 mt-3 block text-[10px] uppercase tracking-wider text-[var(--muted)]">Slug</label>
             <input
@@ -193,15 +189,15 @@ export function NoteEditScreen({
               onChange={(e) => setSlug(e.target.value)}
               onBlur={() => setSlug(slugifyTitle(title, slug))}
             />
-            <label className="mb-1 mt-3 block text-[10px] uppercase tracking-wider text-[var(--muted)]">Domain cookie</label>
+            <label className="mb-1 mt-3 block text-[10px] uppercase tracking-wider text-[var(--muted)]">Cookie domain</label>
             <input className="field font-mono text-[11px]" value={domain} onChange={(e) => setDomain(e.target.value)} />
             <label className="mt-3 flex items-center gap-2 text-[11px]">
               <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
-              Ghim note
+              Pin note
             </label>
           </Glass>
 
-          <Glass tone="indigo" label="Nội dung markdown" className="flex flex-col">
+          <Glass tone="indigo" label="Markdown content" className="flex flex-col">
             <div className="mb-2 flex justify-end">
               <button type="button" className="btn-ghost btn text-[11px]">
                 <Eye size={12} />
@@ -221,19 +217,19 @@ export function NoteEditScreen({
               <span className="text-[10px] text-[var(--muted)]">read-only</span>
             </div>
             <ul className="space-y-0.5 font-mono text-[10px] text-indigo-200/80">
-              {lines.length ? lines.map((line) => <li key={line}>{line}</li>) : <li className="text-[var(--muted)]">Chưa có snapshot</li>}
+              {lines.length ? lines.map((line) => <li key={line}>{line}</li>) : <li className="text-[var(--muted)]">No snapshot yet</li>}
             </ul>
           </Glass>
 
           <Glass tone="cyan" label="Share link" icon={<Link2 size={12} />}>
             <label className="mb-2 flex items-center gap-2 text-[11px]">
               <input type="checkbox" checked={shareEnabled} onChange={(e) => setShareEnabled(e.target.checked)} />
-              Bật share công khai
+              Enable public share
             </label>
             {shareEnabled ? (
               <>
                 <div className="flex gap-2">
-                  <input className="field flex-1 font-mono text-[10px]" readOnly value={shareUrl || "Lưu để tạo link"} />
+                  <input className="field flex-1 font-mono text-[10px]" readOnly value={shareUrl || "Save to generate link"} />
                   <button
                     type="button"
                     className="btn-ghost btn shrink-0 text-[11px]"
@@ -241,19 +237,19 @@ export function NoteEditScreen({
                     onClick={() => {
                       if (!shareUrl) return;
                       void navigator.clipboard.writeText(shareUrl);
-                      setSavedHint("Đã copy link share");
+                      setSavedHint("Share link copied");
                     }}
                   >
                     Copy
                   </button>
                 </div>
                 <label className="mb-1 mt-3 block text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                  Mật khẩu share {note.share_password_hash ? "(đã đặt — nhập mới để đổi)" : ""}
+                  Share password {note.share_password_hash ? "(set — enter a new one to change)" : ""}
                 </label>
                 <input
                   className="field text-[12px]"
                   type="password"
-                  placeholder="Tùy chọn — bảo vệ nội dung"
+                  placeholder="Optional — protect content"
                   value={sharePassword}
                   onChange={(e) => setSharePassword(e.target.value)}
                 />
@@ -262,7 +258,7 @@ export function NoteEditScreen({
                 </p>
               </>
             ) : (
-              <p className="text-[10px] text-[var(--muted)]">Tắt share sẽ thu hồi link khi Lưu.</p>
+              <p className="text-[10px] text-[var(--muted)]">Disabling share will revoke the link on the next Save.</p>
             )}
           </Glass>
         </div>

@@ -1,7 +1,11 @@
 import { Search, Settings2 } from "lucide-react";
 import { Glass } from "../../theme/p0008";
+import { useNotesAuth } from "../notes/useNotesAuth";
+import { NotesAuthGate } from "../notes/NotesAuthGate";
 
 export function SystemDesignTemplateScreen() {
+  const { session } = useNotesAuth();
+  if (!session) return <NotesAuthGate variant="system" />;
   return (
     <div className="space-y-4">
       <Glass tone="purple">

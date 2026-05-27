@@ -19,13 +19,13 @@ export function PublicShareScreen() {
     setChecking(true);
     const ok = await verifyPassword(password);
     setChecking(false);
-    if (!ok) setPwError("Sai mật khẩu.");
+    if (!ok) setPwError("Incorrect password.");
   };
 
   if (!token) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] p-6 text-sm text-[var(--muted)]">
-        Thiếu token share trong URL.
+        Missing share token in URL.
       </div>
     );
   }
@@ -33,7 +33,7 @@ export function PublicShareScreen() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] p-6 text-sm text-[var(--muted)]">
-        Đang tải…
+        Loading…
       </div>
     );
   }
@@ -41,7 +41,7 @@ export function PublicShareScreen() {
   if (error || !row) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] p-6 text-sm text-rose-300">
-        {error || "Không tìm thấy note."}
+        {error || "Note not found."}
       </div>
     );
   }
@@ -56,14 +56,14 @@ export function PublicShareScreen() {
           <input
             className="field mx-auto mt-4 max-w-xs text-center text-[12px]"
             type="password"
-            placeholder="Nhập password share…"
+            placeholder="Enter share password…"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && void onUnlock()}
           />
           {pwError ? <p className="mt-2 text-[12px] text-rose-300">{pwError}</p> : null}
           <button type="button" className="btn mx-auto mt-3 text-[12px]" onClick={() => void onUnlock()} disabled={checking}>
-            {checking ? "Đang kiểm tra…" : "Xem nội dung"}
+            {checking ? "Checking…" : "View content"}
           </button>
         </Glass>
       </div>
@@ -77,7 +77,7 @@ export function PublicShareScreen() {
       <div className="mx-auto max-w-2xl">
         <p className="text-[11px] text-[var(--muted)]">P0020-Data-Box · shared read-only</p>
         <h1 className="mt-1 text-2xl font-semibold">{row.title}</h1>
-        <Glass tone="indigo" label="Nội dung" className="mt-4">
+        <Glass tone="indigo" label="Content" className="mt-4">
           <pre className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-indigo-100/90">{row.body_md || "—"}</pre>
         </Glass>
         {lines.length ? (
