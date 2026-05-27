@@ -15,7 +15,7 @@ export function SystemDesignTemplateScreen() {
           </div>
           <span className="inline-flex items-center gap-2 rounded-full border border-purple-400/25 bg-purple-400/10 px-3 py-1.5 text-xs text-purple-100">
             <Settings2 size={14} />
-            P0020 template gate
+            P0020-Data-Box template gate
           </span>
         </div>
       </Glass>

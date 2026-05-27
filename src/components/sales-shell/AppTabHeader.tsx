@@ -15,6 +15,7 @@ export type TabHeaderMetaItem = {
   title?: string;
   value: string;
   live?: boolean;
+  href?: string;
 };
 
 export type TabHeaderStatItem = {
@@ -133,13 +134,10 @@ function Rule({ visibleFrom = "sm" }: { visibleFrom?: "sm" | "md" | "lg" }) {
   return <span className={`h-3.5 w-px shrink-0 self-center bg-white/10 ${vis}`} aria-hidden />;
 }
 
-function MetaLine({ icon: Icon, title, value, live }: TabHeaderMetaItem) {
+function MetaLine({ icon: Icon, title, value, live, href }: TabHeaderMetaItem) {
   const tip = title ? `${title}: ${value}` : value;
-  return (
-    <div
-      className="inline-flex max-w-full min-w-0 items-center gap-1.5 text-[13px] leading-none text-[var(--muted)]"
-      title={tip}
-    >
+  const inner = (
+    <>
       <Icon size={14} className="shrink-0 text-indigo-400/90" />
       {title ? <span className="shrink-0">{title}</span> : null}
       {live !== undefined ? (
@@ -149,6 +147,27 @@ function MetaLine({ icon: Icon, title, value, live }: TabHeaderMetaItem) {
         />
       ) : null}
       <span className="truncate tabular-nums text-[var(--text)]/90">{value}</span>
+    </>
+  );
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex max-w-full min-w-0 items-center gap-1.5 text-[13px] leading-none text-[var(--muted)] transition-colors hover:text-indigo-200"
+        title={tip}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <div
+      className="inline-flex max-w-full min-w-0 items-center gap-1.5 text-[13px] leading-none text-[var(--muted)]"
+      title={tip}
+    >
+      {inner}
     </div>
   );
 }
@@ -240,10 +259,10 @@ export function AppTabHeader({
       </div>
 
       <div className="flex shrink-0 items-center justify-self-end gap-1.5 text-[13px] leading-none text-[var(--muted)]">
+        {actions ? <span className="mr-1 inline-flex items-center gap-1.5">{actions}</span> : null}
         <Clock size={14} className="shrink-0 text-indigo-400/90" />
         <span>Session</span>
         <span className="tabular-nums text-[var(--text)]/90">{sessionMmSs}</span>
-        {actions ? <span className="ml-1 inline-flex items-center gap-1">{actions}</span> : null}
       </div>
     </header>
   );

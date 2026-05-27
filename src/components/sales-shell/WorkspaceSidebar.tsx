@@ -146,7 +146,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
           size="md"
         />
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold leading-tight">Workspace Hub</div>
+          <div className="truncate text-sm font-semibold leading-tight">P0020-Data-Box</div>
           <div className="text-[10px] text-[var(--muted)]">P0020 · v{APP_VERSION}</div>
         </div>
       </div>

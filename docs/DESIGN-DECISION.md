@@ -1,4 +1,4 @@
-# Design decision — P0020 Tool Manager
+# Design decision — P0020-Data-Box
 
 **Cập nhật:** 2026-05-25
 
@@ -15,7 +15,7 @@
 ## Phạm vi sản phẩm
 
 ```
-P0020 Tool Manager (H1)
+P0020-Data-Box (H1)
 ├── Sidebar
 │   ├── Dashboard
 │   ├── P0004 — Library · Activity · System

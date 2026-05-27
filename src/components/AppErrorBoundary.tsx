@@ -21,7 +21,7 @@ export class AppErrorBoundary extends Component<Props, State> {
           <h2 className="mb-2 text-base font-semibold">Screen failed to load</h2>
           <p className="mb-3 font-mono text-[12px] text-rose-200/90">{this.state.error.message}</p>
           <p className="text-[11px] text-[var(--muted)]">
-            Try <code className="text-indigo-300">pnpm run dev</code> in Tool/P0020-Workspace-Notes, then hard refresh (Ctrl+Shift+R).
+            Try <code className="text-indigo-300">pnpm run dev</code> in Tool/P0020-Data-Box, then hard refresh (Ctrl+Shift+R).
           </p>
           <button
             type="button"

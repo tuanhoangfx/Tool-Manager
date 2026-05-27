@@ -19,6 +19,8 @@ import {
 import { useExtensionAuthHeartbeat } from "../../notes/useExtensionAuthHeartbeat";
 import { supabase } from "../../../lib/supabase";
 import { Link2, RefreshCw, Settings } from "lucide-react";
+import { EXTENSION_RELEASE_PAGE } from "../../cookie/extensionInstall";
+import { CookieExtensionHeaderLink } from "../../cookie/CookieExtensionHeaderLink";
 import { useAppView } from "../../../hooks/useAppView";
 import { CookieSettings } from "../../cookie/CookieSettings";
 import { CookieAutoSyncTable } from "../../cookie/CookieAutoSyncTable";
@@ -463,11 +465,21 @@ function CookieSyncMain({
     [setView],
   );
 
+  const cookieHeaderActions = useMemo(
+    () => (
+      <>
+        <CookieExtensionHeaderLink />
+        {cookieSettingsHeaderAction}
+      </>
+    ),
+    [cookieSettingsHeaderAction],
+  );
+
   useEffect(() => {
     if (!shellMode) return;
-    setHeaderActions(cookieSettingsHeaderAction);
+    setHeaderActions(cookieHeaderActions);
     return () => setHeaderActions(null);
-  }, [cookieSettingsHeaderAction, setHeaderActions, shellMode]);
+  }, [cookieHeaderActions, setHeaderActions, shellMode]);
 
   useEffect(() => {
     if (!isSettings) return;
@@ -493,6 +505,15 @@ function CookieSyncMain({
 
   const routeActions = useMemo(() => (
     <>
+      <a
+        href={EXTENSION_RELEASE_PAGE}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hidden h-[34px] items-center rounded-lg border border-white/10 bg-[var(--panel-2)] px-2.5 text-[11px] text-[var(--muted)] hover:text-[var(--text)] xl:inline-flex"
+        title="All extension releases"
+      >
+        Releases
+      </a>
       <BridgeActionsMenu
         status={bridgeStatus}
         onLinkExtension={() => void onLinkExtension()}
@@ -515,6 +536,7 @@ function CookieSyncMain({
   const pageHeaderActions = useMemo(
     () => (
       <>
+        <CookieExtensionHeaderLink />
         {cookieSettingsHeaderAction}
         {routeActions}
       </>

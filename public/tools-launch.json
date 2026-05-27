@@ -1,6 +1,6 @@
 {
-  "workspace-hub": {
-    "cwd": "E:\\Dev\\Tool\\P0020-Workspace-Notes",
+  "p0020-data-box": {
+    "cwd": "E:\\Dev\\Tool\\P0020-Data-Box",
     "command": "corepack pnpm dev",
     "devUrl": "http://127.0.0.1:5177"
   },

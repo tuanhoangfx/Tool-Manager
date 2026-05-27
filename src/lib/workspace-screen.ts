@@ -1,4 +1,4 @@
-/** P0020 workspace tabs — URL ?screen= */
+/** P0020-Data-Box tabs — URL ?screen= */
 export const WORKSPACE_SCREENS = ["notes", "edit", "todo", "twofa", "cookie", "users", "system", "share"] as const;
 
 export type WorkspaceScreen = (typeof WORKSPACE_SCREENS)[number];

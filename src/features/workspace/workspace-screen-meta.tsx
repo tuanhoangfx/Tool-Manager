@@ -1,7 +1,8 @@
 import type { ElementType } from "react";
-import { Cookie, FileText, KeyRound, ListTodo, Settings2, Users } from "lucide-react";
+import { Cookie, FileText, KeyRound, ListTodo, Package, Settings2, Users } from "lucide-react";
 import { APP_VERSION } from "../../lib/app-meta";
 import { EXTENSION_BUILD } from "../cookie/extensionBuildInfo";
+import { EXTENSION_INSTALL_LABEL } from "../cookie/extensionInstall";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import type { TabHeaderMetaItem } from "../../components/sales-shell";
 
@@ -69,8 +70,14 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
           ...BASE_META,
           {
             icon: Cookie,
-            value: `ext v${EXTENSION_BUILD.version}`,
+            title: "Extension",
+            value: `v${EXTENSION_BUILD.version}`,
             live: true,
+          },
+          {
+            icon: Package,
+            title: "Install",
+            value: EXTENSION_INSTALL_LABEL,
           },
         ],
       };

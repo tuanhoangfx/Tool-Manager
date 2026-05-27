@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "P0020: Dev (terminal tích hợp)",
+      "label": "P0020-Data-Box: Dev (terminal tích hợp)",
       "type": "shell",
       "command": "corepack pnpm dev",
       "options": { "cwd": "${workspaceFolder}" },

@@ -1,4 +1,4 @@
--- Tool Manager (P0020) — notes table + RLS
+-- P0020-Data-Box — notes table + RLS
 -- Apply: Supabase Dashboard → SQL Editor → Run this file
 
 create table if not exists public.notes (

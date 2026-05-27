@@ -37,7 +37,7 @@ function waitForHealth(maxMs = 12000) {
 async function main() {
   const alreadyUp = await probe(VITE_URL);
   if (alreadyUp) {
-    console.log(`\n  P0020 Hub đã chạy → ${VITE_URL}`);
+    console.log(`\n  P0020-Data-Box đã chạy → ${VITE_URL}`);
     console.log("  (Không khởi động thêm Vite — tránh trùng cổng.)\n");
     console.log("  Dừng server cũ: tìm terminal đang chạy dev và nhấn Ctrl+C.\n");
     process.stdin.resume();
@@ -45,7 +45,7 @@ async function main() {
     return;
   }
 
-  console.log("\n  P0020 Tool Manager — launcher + Vite");
+  console.log("\n  P0020-Data-Box — launcher + Vite");
   console.log(`  UI: ${VITE_URL}`);
   console.log("  (Giống P0008: dùng Cursor Launch / Run → p0020-dev để tích hợp Simple Browser.)\n");
 

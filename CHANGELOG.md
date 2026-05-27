@@ -1,6 +1,13 @@
-# Changelog — Tool Manager (P0020)
+# Changelog — P0020-Data-Box
 
 ## [Unreleased]
+
+### Changed
+
+- Rebrand P0020 identity labels to P0020-Data-Box.
+- Use the Azure Data Box SVG icon from theSVG for favicon, sidebar avatar, and PWA manifest.
+- Production domain `databox.infix1.io.vn` with path `/cookie` for Cookie Auto; header shows extension install labels and Download ZIP link.
+- Extension distribution: `package-extension.ps1` + GitHub Release workflow for team Load unpacked installs.
 
 ### Fixed
 
@@ -49,20 +56,20 @@
 
 ### Changed
 
-- Rebrand → **Tool Manager**; shared `src/lib/supabase.ts` (P0019 re-export).
+- Rebrand → **P0020-Data-Box**; shared `src/lib/supabase.ts` (P0019 re-export).
 - Cookie sync screen reads notes from Supabase.
 
 ### Pending
 
 - Chạy SQL migration trên Supabase Dashboard.
-- Đổi folder `P0020-Tool-Manager` khi không còn process lock.
+- Đổi folder `P0020-Data-Box` khi không còn process lock.
 - Vercel env: `VITE_SUPABASE_*`, `VITE_GITHUB_TOKEN`.
 
 ## [0.0.1-design] — prior
 
 ### Changed (rebrand)
 
-- **Workspace Hub / Workspace Notes** → **Tool Manager** (UI, manifest, docs).
+- Legacy P0020 labels → **P0020-Data-Box** (UI, manifest, docs).
 
 ### Design
 
@@ -73,7 +80,7 @@
 
 ### Added
 
-- Fork từ P0004 (`P0020-Workspace-Notes`); P0004 không đổi.
+- Fork từ P0004 (`P0020-Data-Box`); P0004 không đổi.
 - Tab **Design** mặc định với **5 layout preview** (V1–V5) cho Notes + cookie block mock.
 - **Skin 3 — P0008 Seller Center** (mặc định tab Design): clone `globals.css`, Tailwind, `.btn`/`.field`, animations, glass bento, sidebar.
 - `src/theme/p0008/*`, `P0008SkinShell`; tab Library/Activity/System vẫn skin P0004 (skin 1).

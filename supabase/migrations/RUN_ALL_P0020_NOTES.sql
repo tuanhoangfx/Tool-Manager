@@ -1,5 +1,5 @@
 -- =============================================================================
--- P0020 Workspace Hub — run once in Supabase Dashboard → SQL Editor
+-- P0020-Data-Box — run once in Supabase Dashboard → SQL Editor
 -- Fixes: "column notes.sync_id does not exist" and cookie sync RPC
 -- =============================================================================
 

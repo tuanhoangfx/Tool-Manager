@@ -1,4 +1,4 @@
-# Roadmap — Tool Manager (P0020)
+# Roadmap — P0020-Data-Box
 
 **Cập nhật:** 2026-05-23
 
@@ -26,4 +26,4 @@
 - [ ] Vercel env: `VITE_SUPABASE_*`, `VITE_GITHUB_TOKEN`
 - [ ] Extension publish Chrome Web Store (optional)
 - [ ] `share_expires_at` UI + view count RPC
-- [ ] Đổi folder `P0020-Tool-Manager`
+- [ ] Đổi folder `P0020-Data-Box`
