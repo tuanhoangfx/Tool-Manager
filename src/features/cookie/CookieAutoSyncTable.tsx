@@ -47,6 +47,7 @@ import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import type { NoteListItem } from "../notes/types";
 import { cookieLines } from "../notes/noteUtils";
 import { DOMAIN_PRESETS, type CookieBinding } from "./cookieBridge";
+import brandIconRegistry from "./cookieBrandIcons.registry.json";
 import { COOKIE_ROUTE_FILTER_DEFS } from "./cookie-route-filters";
 import { listNoteCookieMembers, upsertNoteCookieMember } from "./noteCookieMembersRepository";
 import type { CookieVaultRow } from "./useCookieVaultMap";
@@ -152,27 +153,20 @@ function routeSource(binding: CookieBinding) {
 
 const THESVG_CDN = "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons";
 
-const SITE_ICON_SLUGS: Array<{ match: RegExp; slug: string; label: string }> = [
-  { match: /(^|\.)facebook\.com$/i, slug: "facebook", label: "Facebook" },
-  { match: /(^|\.)google\.com$/i, slug: "google", label: "Google" },
-  { match: /(^|\.)youtube\.com$/i, slug: "youtube", label: "YouTube" },
-  { match: /(^|\.)tiktok\.com$/i, slug: "tiktok", label: "TikTok" },
-  { match: /(^|\.)instagram\.com$/i, slug: "instagram", label: "Instagram" },
-  { match: /(^|\.)x\.com$|(^|\.)twitter\.com$/i, slug: "x", label: "X" },
-  { match: /(^|\.)linkedin\.com$/i, slug: "linkedin", label: "LinkedIn" },
-  { match: /(^|\.)github\.com$/i, slug: "github", label: "GitHub" },
-  { match: /(^|\.)amazon\./i, slug: "amazon", label: "Amazon" },
-  { match: /(^|\.)shopee\./i, slug: "shopee", label: "Shopee" },
-];
+type CookieBrandIconEntry = {
+  label: string;
+  match: string;
+  source: { type: "thesvg"; slug: string } | { type: "local"; webSrc: string; extensionSrc: string };
+};
+
+const COOKIE_BRAND_ICON_REGISTRY = brandIconRegistry as CookieBrandIconEntry[];
 
 function siteIcon(domain: string) {
   const host = domain.replace(/^\./, "").toLowerCase();
-  const hit = SITE_ICON_SLUGS.find((item) => item.match.test(host));
+  const hit = COOKIE_BRAND_ICON_REGISTRY.find((item) => new RegExp(item.match, "i").test(host));
   if (!hit) return null;
-  return {
-    label: hit.label,
-    src: `${THESVG_CDN}/${hit.slug}/default.svg`,
-  };
+  const src = hit.source.type === "thesvg" ? `${THESVG_CDN}/${hit.source.slug}/default.svg` : hit.source.webSrc;
+  return { label: hit.label, src };
 }
 
 function shareStateLabel(binding: CookieBinding, shareCount: number | undefined) {
@@ -276,7 +270,6 @@ function CookieRouteCard({
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="relative shrink-0">
             <div className="relative grid h-9 w-9 place-items-center overflow-hidden rounded-xl border border-white/10 bg-white/[.04] text-indigo-200">
-              <Cookie size={16} className="absolute opacity-75" />
               {icon ? (
                 <img
                   src={icon.src}
@@ -288,7 +281,9 @@ function CookieRouteCard({
                     event.currentTarget.style.display = "none";
                   }}
                 />
-              ) : null}
+              ) : (
+                <Cookie size={16} className="opacity-75" />
+              )}
             </div>
             <span
               className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-[var(--panel)]"

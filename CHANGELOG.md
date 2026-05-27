@@ -14,6 +14,17 @@
 - Cookie route cards now have a compact green circular selector and Copy Note ID action; route sharing can be managed from toolbar or Access tab.
 - Route cards now show share state, cleaner site branding icons, and fewer technical labels; Route bridge is compacted into an icon-only action.
 - Extension build metadata updated to v0.5.49 for continuous tab lock during Load cookies navigation/reload.
+- Extension build metadata updated to v0.5.50 so the active tab overlay matches the popup progress card.
+- Extension build metadata updated to v0.5.51 for stage-specific Load cookies progress effects.
+- Extension build metadata updated to v0.5.52 for the compact route table popup with search/filter and per-route actions.
+- Extension build metadata updated to v0.5.53 for the wider no-horizontal-scroll popup and Web-style Cookie Auto filters.
+- Extension build metadata updated to v0.5.54 for P0004 Hub-style searchable filter dropdowns and route action icons.
+- Extension build metadata updated to v0.5.55 for header user/web shortcut and route icon/status-dot layout.
+- Extension build metadata updated to v0.5.56 for Excel-style row selection and normalized table header typography.
+- Extension build metadata updated to v0.5.57 for Kalodata/Surfshark route brand icons.
+- Extension build metadata updated to v0.5.58 for local Kalodata icon storage and Web/Extension icon alignment.
+- Extension build metadata updated to v0.5.59 for the shared Cookie Auto brand icon registry.
+- Extension build metadata updated to v0.5.60 for popup route column alignment and last Loaded time.
 
 ## [0.1.1] — 2026-05-25
 
