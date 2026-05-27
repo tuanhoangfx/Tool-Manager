@@ -18,6 +18,7 @@ const CODE_ICONS: Record<string, string> = {
   P0005: "chat",
   P0007: "router",
   P0008: "point_of_sale",
+  P0020: "deployed_code",
 };
 
 const CODE_SVG_ICONS: Record<string, string> = {
@@ -27,6 +28,7 @@ const CODE_SVG_ICONS: Record<string, string> = {
   P0005: "/icons/zalo.svg",
   P0007: "/icons/openrouter.svg",
   P0008: "/icons/nextjs.svg",
+  P0020: "/icons/azure-data-box.svg",
 };
 
 export function toolSvgIcon(tool: { code: string }): string | null {

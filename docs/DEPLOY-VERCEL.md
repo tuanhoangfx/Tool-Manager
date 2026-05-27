@@ -1,4 +1,4 @@
-# P0020 Tool Manager — Deploy Vercel
+# P0020-Data-Box — Deploy Vercel
 
 ## Project
 
@@ -21,7 +21,7 @@
 ## CLI
 
 ```powershell
-cd E:\Dev\Tool\P0020-Workspace-Notes
+cd E:\Dev\Tool\P0020-Data-Box
 corepack pnpm install
 corepack pnpm build
 corepack pnpm dlx vercel@latest deploy --prod --yes --scope tuanhoangfxs-projects

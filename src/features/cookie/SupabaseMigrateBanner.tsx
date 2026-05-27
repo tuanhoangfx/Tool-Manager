@@ -5,8 +5,6 @@ import toolManifest from "../../../tool.manifest.json";
 
 const APPLY_ALL_FILE =
   toolManifest.supabase?.cookieBridge?.applySql ?? "supabase/APPLY_ALL_P0020_COOKIE_BRIDGE.sql";
-const MIGRATE_DOC =
-  toolManifest.supabase?.cookieBridge?.migrateDoc ?? "docs/SUPABASE-P0020.md";
 const SQL_EDITOR_URL =
   toolManifest.supabase?.sqlEditor ??
   "https://supabase.com/dashboard/project/yhnqwxejjkfgmjmiquhb/sql/new";
@@ -50,9 +48,7 @@ export function SupabaseMigrateBanner({
             ))}
           </ul>
         ) : null}
-        <p className="mt-2 font-mono text-[10px] text-amber-300/80">
-          Generated: {APPLY_ALL_FILE} · <span className="text-amber-200/80">{MIGRATE_DOC}</span>
-        </p>
+        <p className="mt-2 font-mono text-[10px] text-amber-300/80">File: {APPLY_ALL_FILE}</p>
         {DB_URL_NOTE ? (
           <p className="mt-1 text-[10px] text-amber-200/70">
             DB: <code className="text-amber-300/90">SUPABASE_DB_URL</code> in tool.manifest.json →

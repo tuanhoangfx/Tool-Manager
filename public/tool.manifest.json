@@ -1,20 +1,21 @@
 {
   "schemaVersion": 1,
   "code": "P0020",
-  "id": "workspace-tools",
-  "aliases": ["P0020", "Workspace Tools", "Workspace Notes"],
-  "name": "Workspace Tools",
+  "id": "p0020-data-box",
+  "aliases": ["P0020", "P0020-Data-Box", "Data Box", "Azure Data Box"],
+  "name": "P0020-Data-Box",
   "type": "Web",
   "owner": "Tool",
   "status": "Beta",
-  "summary": "Notes (Supabase), Todo (P0019 embed), 2FA, Cookie bridge. Tool catalog → P0004 Tool Hub.",
+  "icon": "icons/azure-data-box.svg",
+  "summary": "Unified data workspace for notes, todo, 2FA, secure cookie vault, and browser agents.",
   "stack": [
     "React",
     "TypeScript",
     "Vite",
     "Supabase",
     "Inter",
-    "Chrome extension P0020-cookie-bridge"
+    "Chrome extension E0001-cookie-bridge"
   ],
   "commands": {
     "dev": "corepack pnpm dev",
@@ -25,7 +26,7 @@
   "docs": {
     "readme": "README.md",
     "changelog": "CHANGELOG.md",
-    "design": "docs/DESIGN-PREVIEW.md"
+    "design": "docs/DESIGN-DECISION.md"
   },
   "github": {
     "repo": "tuanhoangfx/Tool-Manager",
@@ -33,7 +34,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "0.1.0",
+    "version": "0.1.1",
     "readiness": [
       "notes-v1-fusion",
       "notes-sync-id-pass",
@@ -44,13 +45,16 @@
   },
   "urls": {
     "local": "http://127.0.0.1:5177",
-    "app": "https://tool-manager-zeta.vercel.app",
-    "preview": "https://tool-manager-zeta.vercel.app"
+    "app": "https://databox.infix1.io.vn",
+    "preview": "https://databox.infix1.io.vn",
+    "cookie": "https://databox.infix1.io.vn/cookie",
+    "legacyApp": "https://tool-manager-zeta.vercel.app"
   },
   "vercel": {
     "project": "tool-manager",
     "projectId": "linked-via-cli",
-    "productionUrl": "https://tool-manager-zeta.vercel.app",
+    "productionUrl": "https://databox.infix1.io.vn",
+    "customDomains": ["databox.infix1.io.vn"],
     "productionBranch": "main",
     "team": "tuanhoangfxs-projects",
     "notes": "Vite SPA. Set VITE_SUPABASE_* in Vercel env."
@@ -83,5 +87,5 @@
     "status": "Beta",
     "note": "Notes Supabase CRUD; https://tool-manager-zeta.vercel.app"
   },
-  "manifestUpdatedAt": "2026-05-24T19:30:00.000Z"
+  "manifestUpdatedAt": "2026-05-27T09:11:00.000+07:00"
 }

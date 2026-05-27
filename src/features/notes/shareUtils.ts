@@ -17,12 +17,3 @@ export function buildShareUrl(token: string): string {
   const base = typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
   return `${base}?screen=share&token=${token}`;
 }
-
-export {
-  broadcastExtensionAuth,
-  broadcastCookieSyncNow,
-  broadcastSelectedBinding,
-  broadcastCookieBindings,
-  broadcastCookieBridgePrefs,
-  type ExtensionCookieBinding,
-} from "../cookie/cookieBridgeProtocol";

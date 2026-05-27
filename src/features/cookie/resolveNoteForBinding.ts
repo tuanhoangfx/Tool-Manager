@@ -5,6 +5,7 @@ import {
   isMissingSyncIdColumn,
   migrationHintMessage,
 } from "../notes/notesSelect";
+import type { NoteRow } from "../notes/types";
 import { supabase } from "../../lib/supabase";
 
 export type ResolvedNote = {
@@ -43,7 +44,7 @@ export async function resolveNoteForBinding(opts: {
       };
     }
 
-    let row = data;
+    let row = data as NoteRow;
     if (!row.sync_id?.trim()) {
       const newSyncId = generateSyncId();
       const { data: patched, error: patchErr } = await supabase

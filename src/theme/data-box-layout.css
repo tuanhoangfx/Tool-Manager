@@ -1,0 +1,141 @@
+/* P0020-Data-Box shell layout — synced from P0004-Tool-Hub p0008-globals */
+
+:root,
+.theme-hub {
+  --app-tab-header-py: 0.75rem;
+  --app-tab-header-px: 1.5rem;
+  --app-tab-header-min-h: 2.75rem;
+  --app-tab-header-gap-below: 0.75rem;
+  --app-tab-header-sticky-h: var(--app-tab-header-min-h);
+  --hub-filter-pin-est-h: 6.75rem;
+  --hub-chrome-sticky-est-h: calc(var(--app-tab-header-min-h) + var(--hub-filter-pin-est-h));
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.hub-app {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.hub-app > aside {
+  position: relative;
+  z-index: 50;
+  width: 15rem;
+  flex-shrink: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+.hub-app > main,
+.hub-main {
+  position: relative;
+  z-index: 0;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 1.5rem 1.5rem;
+  scroll-padding-top: var(--hub-chrome-sticky-est-h);
+}
+
+.hub-main:has([data-search-pin][data-header-pin]) {
+  scroll-padding-top: var(--hub-chrome-sticky-est-h);
+}
+
+.hub-chrome-sticky {
+  isolation: isolate;
+}
+
+.hub-filter-sticky {
+  isolation: isolate;
+}
+
+/* Notes: full-height workspace (list | editor) */
+.hub-main--notes {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+  scroll-padding-top: 0;
+}
+
+.notes-workspace {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.notes-workspace__body {
+  min-height: 0;
+  max-height: calc(100dvh - var(--hub-chrome-sticky-est-h) - 4.75rem);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.notes-rail {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(99, 102, 241, 0.12), transparent 36%),
+    linear-gradient(180deg, rgba(17, 24, 39, 0.88), rgba(13, 20, 41, 0.94)),
+    var(--panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 18px 50px rgba(0, 0, 0, 0.18);
+}
+
+.notes-rail button {
+  backdrop-filter: blur(8px);
+}
+
+.notes-editor {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(79, 70, 229, 0.10), transparent 34%),
+    linear-gradient(180deg, rgba(10, 15, 31, 0.72), rgba(8, 13, 27, 0.88));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 18px 50px rgba(0, 0, 0, 0.18);
+}
+
+.notes-editor__header {
+  background:
+    linear-gradient(90deg, rgba(99, 102, 241, 0.08), rgba(14, 165, 233, 0.04), transparent),
+    rgba(8, 13, 27, 0.42);
+}
+
+.notes-editor__title {
+  letter-spacing: -0.01em;
+}
+
+.notes-editor__card {
+  border-color: rgba(129, 140, 248, 0.16) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.12), transparent 32%),
+    rgba(17, 24, 39, 0.70) !important;
+}
+
+.notes-editor__textarea {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--text);
+  box-shadow: none !important;
+}
+
+.notes-editor__textarea::placeholder {
+  color: color-mix(in srgb, var(--muted) 72%, transparent);
+}
+
+.note-meta-badge {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}

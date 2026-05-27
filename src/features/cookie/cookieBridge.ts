@@ -1,4 +1,4 @@
-/** Cookie bridge ↔ P0020-cookie-bridge extension (postMessage + local prefs). */
+/** Cookie bridge ↔ E0001-cookie-bridge extension (postMessage + local prefs). */
 
 export { normalizeCookieDomain } from "./normalizeCookieDomain";
 
@@ -14,6 +14,15 @@ export type CookieBinding = {
   /** True when target note has sync_pass_hash — vault requires pass on binding */
   requiresPass?: boolean;
   noteTitle?: string;
+  /** Browser allowed to publish/promote vault versions for this route. Targets are read-only. */
+  sourceBrowserId?: string | null;
+  sourceLabel?: string | null;
+  ownerUserId?: string | null;
+  ownerUserEmail?: string | null;
+  accessRole?: "owner" | "member";
+  canApply?: boolean;
+  canPublish?: boolean;
+  canManage?: boolean;
   enabled: boolean;
 };
 
@@ -26,13 +35,20 @@ export type CookieBridgePrefs = {
   vaultSync: boolean;
   /** Extension applies remote vault via Realtime + poll (opt-in — writes cookies to this browser) */
   realtimeVaultApply: boolean;
-  /** Nhãn tạm (chưa khóa quyền) — mọi browser đều Sync + Load */
+  /** Legacy local label. Effective write permission comes from owner/member route access. */
   bridgeRole: CookieBridgeRole;
 };
 
-const BINDINGS_KEY = "p0020-cookie-bindings-v1";
-const PREFS_KEY = "p0020-cookie-bridge-prefs-v1";
-const SELECTED_BINDING_KEY = "p0020-selected-binding-id";
+const BINDINGS_KEY = "e0001-cookie-bindings-v1";
+const PREFS_KEY = "e0001-cookie-bridge-prefs-v1";
+const SELECTED_BINDING_KEY = "e0001-selected-binding-id";
+
+function purgeLegacyCookieBridgeStorage() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("p0020-cookie-bindings-v1");
+  localStorage.removeItem("p0020-cookie-bridge-prefs-v1");
+  localStorage.removeItem("p0020-selected-binding-id");
+}
 
 export const DOMAIN_PRESETS: { label: string; domain: string }[] = [
   { label: "Zalo", domain: ".zalo.me" },
@@ -54,6 +70,7 @@ export function isValidCookieBinding(b: CookieBinding): boolean {
 export function loadCookieBindings(): CookieBinding[] {
   if (typeof window === "undefined") return [];
   try {
+    purgeLegacyCookieBridgeStorage();
     const raw = localStorage.getItem(BINDINGS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CookieBinding[];
@@ -69,6 +86,7 @@ export function saveCookieBindings(bindings: CookieBinding[]) {
 
 export function loadSelectedBindingId(): string | null {
   if (typeof window === "undefined") return null;
+  purgeLegacyCookieBridgeStorage();
   return localStorage.getItem(SELECTED_BINDING_KEY);
 }
 
@@ -89,6 +107,7 @@ export function loadCookieBridgePrefs(): CookieBridgePrefs {
     };
   }
   try {
+    purgeLegacyCookieBridgeStorage();
     const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) {
       return {
@@ -131,8 +150,14 @@ export function bindingsForExtension(bindings: CookieBinding[]) {
       noteId: b.noteId?.trim() ?? "",
       pass: b.pass ?? "",
       domain: b.domain.trim(),
-      requiresPass: Boolean(b.requiresPass) || Boolean((b.pass ?? "").trim()),
+      requiresPass: false,
       noteTitle: b.noteTitle ?? "",
+      sourceBrowserId: b.sourceBrowserId ?? null,
+      sourceLabel: b.sourceLabel ?? null,
+      ownerUserId: b.ownerUserId ?? null,
+      ownerUserEmail: b.ownerUserEmail ?? null,
+      accessRole: b.accessRole ?? "owner",
+      canPublish: b.canPublish !== false,
     }));
 }
 

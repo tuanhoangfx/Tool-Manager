@@ -16,6 +16,8 @@ export type NoteRow = {
   share_view_count: number;
   sync_status: NoteSyncStatus;
   synced_at: string | null;
+  sync_id: string | null;
+  sync_pass_hash: string | null;
   created_at: string;
   updated_at: string;
 };

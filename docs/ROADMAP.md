@@ -1,4 +1,4 @@
-# Roadmap — Tool Manager (P0020)
+# Roadmap — P0020-Data-Box
 
 **Cập nhật:** 2026-05-23
 
@@ -11,7 +11,7 @@
 
 ## Sprint 2 — Cookie bridge ✅ (MVP)
 
-- [x] Extension `E:\Dev\Extension\P0020-cookie-bridge` (MV3, alarm 60m)
+- [x] Extension `E:\Dev\Extension\E0001-cookie-bridge` (MV3, alarm 60m)
 - [x] Web bridge: Cookie sync → Kết nối extension / Sync now
 - [ ] Chạy migration share nếu chưa: `20260523140000_notes_share_public.sql`
 
@@ -26,4 +26,4 @@
 - [ ] Vercel env: `VITE_SUPABASE_*`, `VITE_GITHUB_TOKEN`
 - [ ] Extension publish Chrome Web Store (optional)
 - [ ] `share_expires_at` UI + view count RPC
-- [ ] Đổi folder `P0020-Tool-Manager`
+- [ ] Đổi folder `P0020-Data-Box`

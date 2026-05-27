@@ -7,7 +7,7 @@ export function normalizeSecret(raw: string): string {
 export function createTotp(service: string, account: string, secret: string) {
   const clean = normalizeSecret(secret);
   return new TOTP({
-    issuer: service.trim() || "Tool Manager",
+    issuer: service.trim() || "P0020-Data-Box",
     label: account.trim() || "account",
     algorithm: "SHA1",
     digits: 6,

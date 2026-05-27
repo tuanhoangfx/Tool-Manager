@@ -48,7 +48,13 @@ function CodeCell({ account }: { account: TwofaAccount }) {
   );
 }
 
-export function TwofaManagerScreen() {
+export function TwofaManagerScreen({
+  shellMode,
+  query = "",
+}: {
+  shellMode?: boolean;
+  query?: string;
+} = {}) {
   const { accounts, add, update, remove } = useTwofaAccounts();
   const [service, setService] = useState("");
   const [accountName, setAccountName] = useState("");
@@ -57,6 +63,14 @@ export function TwofaManagerScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const editing = useMemo(() => accounts.find((a) => a.id === editingId), [accounts, editingId]);
+
+  const visibleAccounts = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return accounts;
+    return accounts.filter(
+      (a) => a.service.toLowerCase().includes(q) || a.account.toLowerCase().includes(q),
+    );
+  }, [accounts, query]);
 
   const resetForm = () => {
     setService("");
@@ -91,17 +105,19 @@ export function TwofaManagerScreen() {
 
   return (
     <div className="anim-fade">
-      <PageHeader
-        title="2FA Manager"
-        desc="TOTP local — Service · Account · Secret · mã 6 số tự đổi mỗi 30s (Ivmo-style). Dữ liệu lưu trên trình duyệt."
-        actions={
-          editing ? (
-            <button type="button" className="btn-ghost btn text-[12px]" onClick={resetForm}>
-              Hủy sửa
-            </button>
-          ) : null
-        }
-      />
+      {!shellMode ? (
+        <PageHeader
+          title="2FA Manager"
+          desc="TOTP local — Service · Account · Secret · mã 6 số tự đổi mỗi 30s (Ivmo-style). Dữ liệu lưu trên trình duyệt."
+          actions={
+            editing ? (
+              <button type="button" className="btn-ghost btn text-[12px]" onClick={resetForm}>
+                Hủy sửa
+              </button>
+            ) : null
+          }
+        />
+      ) : null}
 
       <div className="mb-4 grid gap-2 sm:grid-cols-3">
         <input
@@ -129,7 +145,7 @@ export function TwofaManagerScreen() {
         {editing ? "Cập nhật" : "Thêm"}
       </button>
 
-      {accounts.length === 0 ? (
+      {visibleAccounts.length === 0 ? (
         <div className="rounded-xl border border-dashed border-white/15 bg-white/[.02] px-6 py-10 text-center text-sm text-[var(--muted)]">
           <Shield className="mx-auto mb-2 text-indigo-300" size={28} />
           Chưa có mục 2FA. Thêm secret Base32 từ Google Authenticator / Ivmo export.
@@ -147,7 +163,7 @@ export function TwofaManagerScreen() {
               </tr>
             </thead>
             <tbody>
-              {accounts.map((row) => (
+              {visibleAccounts.map((row) => (
                 <tr key={row.id} className="border-t border-white/5 hover:bg-white/[.02]">
                   <td className="p-2.5 font-medium">{row.service}</td>
                   <td className="max-w-[12rem] truncate p-2.5 text-[var(--muted)]" title={row.account}>

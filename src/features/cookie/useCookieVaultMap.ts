@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
 import type { CookieBinding } from "./cookieBridge";
-import { bindingVaultQueryKey } from "./bindingVaultKeys";
+import { fetchCookieVaultRows, mapVaultRows } from "./cookieVaultRepository";
 
 export type CookieVaultRow = {
   note_id: string;
@@ -18,55 +17,33 @@ export function useCookieVaultMap(session: Session | null, bindings: CookieBindi
   const [vaultError, setVaultError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const vaultQueryKey = bindingVaultQueryKey(bindings);
-  const noteIds = vaultQueryKey
-    ? [...new Set(vaultQueryKey.split("|").map((p) => p.split(":")[0]))]
-    : [];
+  const noteIds = useMemo(
+    () => bindings.filter((b) => b.enabled && b.noteId?.trim()).map((b) => b.noteId.trim()),
+    [bindings],
+  );
 
   const refresh = useCallback(async () => {
-    if (!session || !vaultQueryKey) {
+    if (!session || noteIds.length === 0) {
       setVaultByKey({});
       setVaultError(null);
       return;
     }
     setLoading(true);
     setVaultError(null);
-    let data: CookieVaultRow[] | null = null;
-    let error: { message?: string } | null = null;
-    const res = await supabase
-      .from("note_cookie_vault")
-      .select("note_id, domain, cookie_count, updated_at, source_browser, updated_by")
-      .in("note_id", [...new Set(noteIds)]);
-    data = res.data as CookieVaultRow[] | null;
-    error = res.error;
-    if (error && /updated_by|column/i.test(error.message ?? "")) {
-      const fallback = await supabase
-        .from("note_cookie_vault")
-        .select("note_id, domain, cookie_count, updated_at, source_browser")
-        .in("note_id", [...new Set(noteIds)]);
-      data = (fallback.data ?? []).map((row) => ({
-        ...(row as CookieVaultRow),
-        updated_by: (row as CookieVaultRow).source_browser,
-      }));
-      error = fallback.error;
-    }
+    const { data, error } = await fetchCookieVaultRows(noteIds);
 
     setLoading(false);
     if (error) {
       const msg = error.message ?? String(error);
       if (/note_cookie_vault|does not exist|schema cache/i.test(msg)) {
-        setVaultError("Run migrations — docs/SUPABASE-P0020.md (pnpm generate:apply-all)");
+        setVaultError("Run supabase/APPLY_VAULT_V4.sql");
       } else {
         setVaultError(msg);
       }
       return;
     }
-    const map: Record<string, CookieVaultRow> = {};
-    for (const row of data ?? []) {
-      map[`${row.note_id}:${row.domain}`] = row as CookieVaultRow;
-    }
-    setVaultByKey(map);
-  }, [session, vaultQueryKey]);
+    setVaultByKey(mapVaultRows(data ?? []));
+  }, [noteIds, session]);
 
   useEffect(() => {
     void refresh();

@@ -20,7 +20,7 @@ const repo = process.env.GITHUB_REPO || manifestRepo || "GitHub-Tool-Manager";
 const description =
   process.env.GITHUB_DESCRIPTION ||
   (manifestRepo === "Tool-Manager"
-    ? "Unified Tool Manager hub (P0020): P0004 catalog + Notes + Todo + 2FA + cookie bridge."
+    ? "P0020-Data-Box: unified data workspace with Notes, Todo, 2FA, and cookie bridge."
     : "Public catalog and GitHub operations console for published workspace tools.");
 const pushOnce = process.argv.includes("--push-once");
 
@@ -113,7 +113,7 @@ async function main() {
     run("git", ["add", "-A"], { stdio: "inherit" });
     const status = run("git", ["status", "--porcelain"]);
     if (status) {
-      run("git", ["commit", "-m", "Initial publish GitHub Tool Manager"], { stdio: "inherit" });
+      run("git", ["commit", "-m", "Initial publish P0020-Data-Box"], { stdio: "inherit" });
     }
     run("git", ["push", "-u", "origin", "HEAD:main"], { stdio: "inherit" });
   } finally {

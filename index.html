@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b1020" />
+    <meta name="theme-color" content="#0078D4" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/icons/azure-data-box.svg" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,11 +13,16 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap"
       rel="stylesheet"
     />
-    <title>P0020 Workspace Tools</title>
+    <title>P0020-Data-Box</title>
     <script>
       (function () {
-        var t = localStorage.getItem("gtm-theme");
+        var t = localStorage.getItem("tool-hub-theme") || localStorage.getItem("gtm-theme");
         if (t === "dark") document.documentElement.classList.add("dark");
+        else if (t === "light") {
+          /* classic light */
+        } else {
+          document.documentElement.classList.add("theme-hub");
+        }
         if (document.fonts && document.fonts.ready) {
           document.fonts.ready.then(function () {
             document.documentElement.classList.add("fonts-loaded");
@@ -31,7 +36,7 @@
   <body>
     <div id="root">
       <p style="margin:2rem;font-family:system-ui,sans-serif;color:#8a93b2;font-size:14px">
-        Loading P0020… If this stays blank, run <code>pnpm run dev</code> in Tool/P0020-Workspace-Notes.
+        Loading P0020-Data-Box… If this stays blank, run <code>pnpm run dev</code> in Tool/P0020-Data-Box.
       </p>
     </div>
     <script type="module" src="/src/main.tsx"></script>

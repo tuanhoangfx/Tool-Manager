@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
 import { loadCookieBridgePrefs } from "../cookie/cookieBridge";
 import { useNotesCookieRealtime } from "../cookie/useNotesCookieRealtime";
-import { fetchNoteById, isMissingSyncIdColumn } from "./notesSelect";
+import { fetchNoteById, isMissingSyncIdColumn, updateNoteRow, updateNoteSyncId } from "./notesRepository";
 import { setNoteSyncPass } from "./noteSyncPass";
 import { generateSyncId, slugifyTitle } from "./noteUtils";
 import { generateShareToken, hashSharePassword } from "./shareUtils";
@@ -23,6 +22,44 @@ export type NoteDraft = {
   /** Plain sync pass — hashed via RPC when non-empty */
   sync_pass?: string;
 };
+
+function isMissingColumnError(message: string): boolean {
+  return /column/i.test(message) && /does not exist|not found|schema cache/i.test(message);
+}
+
+function isUniqueSlugError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; message?: string };
+  return e.code === "23505" || /notes_user_slug_idx|duplicate key/i.test(e.message ?? "");
+}
+
+async function updateNoteWithFallback(noteId: string, patch: Record<string, unknown>) {
+  const run = (nextPatch: Record<string, unknown>) => updateNoteRow(noteId, nextPatch);
+
+  let res = await run(patch);
+  if (!res.error) return res;
+
+  const msg = res.error.message ?? "";
+  if (isUniqueSlugError(res.error)) {
+    res = await run({ ...patch, slug: `note-${noteId.slice(0, 8)}` });
+    if (!res.error) return res;
+  }
+
+  if (isMissingColumnError(msg)) {
+    const minimal = {
+      title: patch.title,
+      slug: patch.slug,
+      domain: patch.domain,
+      body_md: patch.body_md,
+      pinned: patch.pinned,
+      share_enabled: patch.share_enabled,
+      share_token: patch.share_token,
+    };
+    res = await run(minimal);
+  }
+
+  return res;
+}
 
 export function useNote(session: Session | null, noteId: string | null) {
   const [note, setNote] = useState<NoteRow | null>(null);
@@ -45,12 +82,7 @@ export function useNote(session: Session | null, noteId: string | null) {
       let row = (data as NoteRow | null) ?? null;
       if (row && !row.sync_id?.trim()) {
         const sync_id = generateSyncId();
-        const { data: patched, error: patchErr } = await supabase
-          .from("notes")
-          .update({ sync_id })
-          .eq("id", noteId)
-          .select("*")
-          .single();
+        const { data: patched, error: patchErr } = await updateNoteSyncId(noteId, sync_id);
         if (!patchErr && patched) row = patched as NoteRow;
         else if (patchErr && isMissingSyncIdColumn(patchErr.message)) {
           /* sync_id column not migrated — note still usable via note UUID RPC */
@@ -71,7 +103,7 @@ export function useNote(session: Session | null, noteId: string | null) {
     async (draft: NoteDraft) => {
       if (!session || !noteId) throw new Error("No note selected");
       setSaving(true);
-      const slug = slugifyTitle(draft.title, draft.slug || "note");
+      const slug = draft.slug.trim() || slugifyTitle(draft.title, note?.slug || "note");
 
       let share_token = note?.share_token ?? null;
       let share_password_hash = note?.share_password_hash ?? null;
@@ -99,12 +131,7 @@ export function useNote(session: Session | null, noteId: string | null) {
         patch.domain = draft.domain.trim();
       }
 
-      const { data, error: err } = await supabase
-        .from("notes")
-        .update(patch)
-        .eq("id", noteId)
-        .select("*")
-        .single();
+      const { data, error: err } = await updateNoteWithFallback(noteId, patch);
       if (err) {
         setSaving(false);
         throw err;
@@ -129,7 +156,7 @@ export function useNote(session: Session | null, noteId: string | null) {
       setNote(row);
       return out;
     },
-    [session, noteId, note?.share_token, note?.share_password_hash],
+    [session, noteId, note?.share_token, note?.share_password_hash, note?.slug],
   );
 
   return { note, loading, error, saving, refresh, save };

@@ -75,7 +75,7 @@ export function PublicShareScreen() {
   return (
     <div className="p0008-skin min-h-screen bg-[var(--bg)] p-6 text-[var(--text)]">
       <div className="mx-auto max-w-2xl">
-        <p className="text-[11px] text-[var(--muted)]">Tool Manager · shared read-only</p>
+        <p className="text-[11px] text-[var(--muted)]">P0020-Data-Box · shared read-only</p>
         <h1 className="mt-1 text-2xl font-semibold">{row.title}</h1>
         <Glass tone="indigo" label="Nội dung" className="mt-4">
           <pre className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-indigo-100/90">{row.body_md || "—"}</pre>

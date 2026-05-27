@@ -1,10 +1,10 @@
 ---
-description: P0020 — H1 Unified Sidebar + Notes V5; Sprint theo DESIGN-DECISION.md
-globs: P0020-Workspace-Notes/**/*
+description: P0020-Data-Box — H1 Unified Sidebar + Notes V5; Sprint theo DESIGN-DECISION.md
+globs: P0020-Data-Box/**/*
 alwaysApply: false
 ---
 
-# P0020 Tool Manager
+# P0020-Data-Box
 
 ## Đã chốt (2026-05-22)
 

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
-import { toListItem } from "./noteUtils";
-import type { NoteListItem, NoteRow } from "./types";
+import { loadCookieBridgePrefs } from "../cookie/cookieBridge";
+import { useNotesCookieRealtime } from "../cookie/useNotesCookieRealtime";
+import { createNoteRow, deleteNoteRow, fetchNotesList } from "./notesRepository";
+import { generateSyncId, toListItem } from "./noteUtils";
+import type { NoteRow } from "./types";
 
-export function useNotes(session: Session | null) {
+export function useNotes(session: Session | null, opts?: { realtime?: boolean }) {
   const [rows, setRows] = useState<NoteRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -16,11 +18,7 @@ export function useNotes(session: Session | null) {
     }
     setLoading(true);
     setError("");
-    const { data, error: err } = await supabase
-      .from("notes")
-      .select("*")
-      .order("pinned", { ascending: false })
-      .order("updated_at", { ascending: false });
+    const { data, error: err } = await fetchNotesList();
 
     if (err) {
       setError(err.message);
@@ -35,22 +33,20 @@ export function useNotes(session: Session | null) {
     void refresh();
   }, [refresh]);
 
+  const realtimeEnabled = opts?.realtime ?? loadCookieBridgePrefs().realtimeSync;
+  useNotesCookieRealtime(session, refresh, realtimeEnabled);
+
   const notes = useMemo(() => rows.map(toListItem), [rows]);
 
   const createNote = useCallback(async () => {
-    if (!session) throw new Error("Chưa đăng nhập");
+    if (!session) throw new Error("Not signed in");
     const slug = `note-${Date.now()}`;
-    const { data, error: err } = await supabase
-      .from("notes")
-      .insert({
-        user_id: session.user.id,
-        title: "Note mới",
-        slug,
-        domain: "",
-        body_md: "",
-      })
-      .select("*")
-      .single();
+    const { data, error: err } = await createNoteRow({
+      userId: session.user.id,
+      title: "New note",
+      slug,
+      syncId: generateSyncId(),
+    });
     if (err) throw err;
     await refresh();
     return data as NoteRow;
@@ -58,7 +54,7 @@ export function useNotes(session: Session | null) {
 
   const deleteNote = useCallback(
     async (id: string) => {
-      const { error: err } = await supabase.from("notes").delete().eq("id", id);
+      const { error: err } = await deleteNoteRow(id);
       if (err) throw err;
       await refresh();
     },

@@ -1,4 +1,4 @@
-# Chạy UI local — P0020
+# Chạy UI local — P0020-Data-Box
 
 ## Cửa sổ `next-server` — không phải P0020
 
@@ -28,7 +28,7 @@ Một tab Terminal, `Ctrl+C` để tắt → http://127.0.0.1:5177/
 
 ### Task (không tự bật khi mở folder)
 
-**Terminal → Run Task…** → **P0020: Dev (terminal tích hợp)**
+**Terminal → Run Task…** → **P0020-Data-Box: Dev (terminal tích hợp)**
 
 ## Build (không cần server)
 
