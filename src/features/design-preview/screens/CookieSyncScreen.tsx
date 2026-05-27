@@ -20,6 +20,7 @@ import { useExtensionAuthHeartbeat } from "../../notes/useExtensionAuthHeartbeat
 import { supabase } from "../../../lib/supabase";
 import { Link2, RefreshCw, Settings } from "lucide-react";
 import { EXTENSION_RELEASE_PAGE } from "../../cookie/extensionInstall";
+import { CookieExtensionGuideButton } from "../../cookie/CookieExtensionGuideButton";
 import { CookieExtensionHeaderLink } from "../../cookie/CookieExtensionHeaderLink";
 import { useAppView } from "../../../hooks/useAppView";
 import { CookieSettings } from "../../cookie/CookieSettings";
@@ -469,6 +470,7 @@ function CookieSyncMain({
     () => (
       <>
         <CookieExtensionHeaderLink />
+        <CookieExtensionGuideButton />
         {cookieSettingsHeaderAction}
       </>
     ),
@@ -537,6 +539,7 @@ function CookieSyncMain({
     () => (
       <>
         <CookieExtensionHeaderLink />
+        <CookieExtensionGuideButton />
         {cookieSettingsHeaderAction}
         {routeActions}
       </>
