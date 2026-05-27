@@ -109,7 +109,16 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
                 <GuideSection title="Install the extension">
                   <ol className="space-y-2.5">
                     <Step n={1}>
-                      Download{" "}
+                      Open{" "}
+                      <a
+                        href={EXTENSION_RELEASE_PAGE}
+                        className="font-medium text-indigo-300 hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        GitHub Releases (latest)
+                      </a>{" "}
+                      and download{" "}
                       <a
                         href={EXTENSION_RELEASE_ZIP}
                         className="font-medium text-indigo-300 hover:underline"
@@ -118,7 +127,7 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
                       >
                         E0001-cookie-bridge-v{EXTENSION_BUILD.version}.zip
                       </a>{" "}
-                      from GitHub Releases (or use the header button <strong className="text-[var(--text)]">Cookie Auto Extension</strong>).
+                      (or use the header button <strong className="text-[var(--text)]">Cookie Auto Extension</strong> to open the release page).
                     </Step>
                     <Step n={2}>
                       Extract the ZIP to a permanent folder, e.g.{" "}
@@ -192,6 +201,33 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
                     </li>
                     <li>
                       Open <strong className="text-[var(--text)]">Cookie settings</strong> (gear) for realtime sync, vault sync, and bridge role.
+                    </li>
+                  </ul>
+                </GuideSection>
+
+                <GuideSection title="Download links">
+                  <ul className="list-disc space-y-1.5 pl-4">
+                    <li>
+                      Release page:{" "}
+                      <a
+                        href={EXTENSION_RELEASE_PAGE}
+                        className="font-medium text-indigo-300 hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {EXTENSION_RELEASE_PAGE}
+                      </a>
+                    </li>
+                    <li>
+                      Direct ZIP (fallback):{" "}
+                      <a
+                        href={EXTENSION_RELEASE_ZIP}
+                        className="font-medium text-indigo-300 hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        E0001-cookie-bridge-v{EXTENSION_BUILD.version}.zip
+                      </a>
                     </li>
                   </ul>
                 </GuideSection>

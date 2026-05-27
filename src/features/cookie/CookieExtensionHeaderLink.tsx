@@ -3,7 +3,7 @@ import { EXTENSION_BUILD } from "./extensionBuildInfo";
 import {
   EXTENSION_HEADER_LABEL,
   EXTENSION_INSTALL_HINT,
-  EXTENSION_RELEASE_ZIP,
+  EXTENSION_RELEASE_PAGE,
 } from "./extensionInstall";
 import "./cookie-extension-header-cta.css";
 
@@ -15,12 +15,12 @@ type Props = {
 export function CookieExtensionHeaderLink({ className = "" }: Props) {
   return (
     <a
-      href={EXTENSION_RELEASE_ZIP}
+      href={EXTENSION_RELEASE_PAGE}
       target="_blank"
       rel="noopener noreferrer"
       className={`cookie-extension-header-cta group ${className}`.trim()}
       title={EXTENSION_INSTALL_HINT}
-      aria-label={`${EXTENSION_HEADER_LABEL} v${EXTENSION_BUILD.version} — download ZIP`}
+      aria-label={`${EXTENSION_HEADER_LABEL} v${EXTENSION_BUILD.version} — open latest release`}
     >
       <span className="cookie-extension-header-cta__glow" aria-hidden />
       <Cookie size={14} className="cookie-extension-header-cta__icon shrink-0" aria-hidden />
