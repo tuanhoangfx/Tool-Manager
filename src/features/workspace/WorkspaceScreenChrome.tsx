@@ -73,7 +73,7 @@ export function WorkspaceScreenChrome({
 
   return (
     <div
-      className="anim-fade relative min-h-0"
+      className="anim-fade relative flex min-h-0 flex-1 flex-col"
       data-search-pin={cfg.showSearch ? true : undefined}
       data-header-pin={cfg.showSearch ? true : undefined}
     >
@@ -92,7 +92,7 @@ export function WorkspaceScreenChrome({
         />
         {filterBar}
       </div>
-      <div className="relative z-0 pt-5">{children}</div>
+      <div className="hub-screen-body relative z-0 pt-5">{children}</div>
     </div>
   );
 }

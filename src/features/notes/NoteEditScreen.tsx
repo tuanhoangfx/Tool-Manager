@@ -18,7 +18,7 @@ export function NoteEditScreen({
   shellMode?: boolean;
 }) {
   const noteId = readNoteIdFromUrl();
-  const { session, loading: authLoading, isSupabaseConfigured } = useNotesAuth();
+  const { session, loading: authLoading, isSupabaseConfigured, offline } = useNotesAuth();
   const { note, loading, error, saving, save } = useNote(session, noteId);
   const { notes, deleteNote } = useNotes(session);
 
@@ -73,7 +73,7 @@ export function NoteEditScreen({
     }
   };
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured && !offline) {
     return <div className="anim-fade p-6 text-sm text-amber-200">Supabase is not configured.</div>;
   }
 
@@ -223,9 +223,19 @@ export function NoteEditScreen({
 
           <Glass tone="cyan" label="Share link" icon={<Link2 size={12} />}>
             <label className="mb-2 flex items-center gap-2 text-[11px]">
-              <input type="checkbox" checked={shareEnabled} onChange={(e) => setShareEnabled(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={shareEnabled}
+                disabled={offline}
+                onChange={(e) => setShareEnabled(e.target.checked)}
+              />
               Enable public share
             </label>
+            {offline ? (
+              <p className="mb-2 text-[10px] text-amber-200/80">
+                Offline mode: sharing requires Supabase and is disabled.
+              </p>
+            ) : null}
             {shareEnabled ? (
               <>
                 <div className="flex gap-2">

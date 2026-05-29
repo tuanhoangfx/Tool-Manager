@@ -10,6 +10,7 @@ import {
   SYSTEM_HEADER_STAT_DEFS,
 } from "../../features/system-hub/system-prefs";
 import { readAppScreen, type AppScreen } from "../../lib/app-screen";
+import { useOfflineMode } from "../../lib/offlineMode";
 import { LIMIT_OPTIONS, patchHubListPrefs, readHubListPrefs, TIME_RANGES } from "../../lib/url-prefs";
 
 export type PrefItem = { key: string; label: string };
@@ -63,6 +64,7 @@ export function DisplayPrefs({
   const [tab, setTab] = useState<Tab>("general");
   const [prefs, setPrefs] = useState(readHubListPrefs);
   const [screen, setScreen] = useState<AppScreen>(() => readAppScreen());
+  const { offline, toggle: toggleOffline } = useOfflineMode();
   const [sidebarPanelStyle, setSidebarPanelStyle] = useState<CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -304,6 +306,14 @@ export function DisplayPrefs({
                   ) : null}
                 </Section>
               ) : null}
+
+              <Section label="App mode">
+                <ToggleRow
+                  label="Offline mode (limited features)"
+                  on={offline}
+                  onChange={toggleOffline}
+                />
+              </Section>
             </>
           ) : null}
 

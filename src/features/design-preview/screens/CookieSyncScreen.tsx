@@ -45,6 +45,7 @@ import { useCookieSchemaHealth } from "../../cookie/useCookieSchemaHealth";
 import { EXTENSION_BUILD } from "../../cookie/extensionBuildInfo";
 import { PageHeader } from "./PageHeader";
 import { useWorkspaceSearch } from "../../workspace/WorkspaceSearchContext";
+import { getOfflineMode } from "../../../lib/offlineMode";
 
 type BridgeStatusBadge = {
   label: string;
@@ -196,12 +197,14 @@ function CookieSyncMain({
   session: Session;
   shellMode?: boolean;
 }) {
+  const offline = getOfflineMode();
+  const cloudSession: Session | null = offline ? null : session;
   const { isSettings, setView } = useAppView();
   const { setHeaderActions } = useWorkspaceSearch();
   const { notes, loading, refresh } = useNotes(session);
   const { bindings, setBindings, addBinding, connectAndCache, updateBinding, removeBinding, pushToExtension } =
     useCookieBindings(notes);
-  const { vaultByKey, vaultError, refreshVault } = useCookieVaultMap(session, bindings);
+  const { vaultByKey, vaultError, refreshVault } = useCookieVaultMap(cloudSession, bindings);
   const {
     agents,
     commands: agentCommands,
@@ -239,6 +242,10 @@ function CookieSyncMain({
 
 
   const onLinkExtension = useCallback(async () => {
+    if (offline) {
+      pushToast("Offline mode: linking extension runtime requires Supabase.", "warn");
+      return;
+    }
     const {
       data: { session: s },
     } = await supabase.auth.getSession();
@@ -272,6 +279,7 @@ function CookieSyncMain({
 
   const publishRouteToCloud = useCallback(
     async (route: CookieBinding, opts: { silent?: boolean } = {}) => {
+      if (offline) return false;
       const res = await upsertCookieRouteToCloud(session, route);
       if (!res.ok) {
         pushToast(res.error, "error", 8000);
@@ -280,10 +288,11 @@ function CookieSyncMain({
       if (!opts.silent) pushToast("Route published to cloud.", "success");
       return true;
     },
-    [pushToast, session],
+    [offline, pushToast, session],
   );
 
   const refreshCloudRoutes = useCallback(async (opts: { silent?: boolean } = {}) => {
+    if (offline) return;
     const res = await pullCookieRoutesFromCloud(session, bindings, notes);
     if (!res.ok) {
       if (!opts.silent) pushToast(res.error, "error", 8000);
@@ -297,7 +306,7 @@ function CookieSyncMain({
         res.count ? "success" : "info",
       );
     }
-  }, [bindings, notes, pushToExtension, pushToast, session, setBindings]);
+  }, [bindings, notes, offline, pushToExtension, pushToast, session, setBindings]);
 
   const onRealtimeRefresh = useCallback(() => {
     void refresh();
@@ -563,6 +572,11 @@ function CookieSyncMain({
 
   return (
     <div className={shellMode ? "" : "p-6"}>
+      {offline ? (
+        <p className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
+          Offline mode is enabled. Cloud routes, sharing, sync now, and vault status are disabled.
+        </p>
+      ) : null}
       {!shellMode ? (
         <PageHeader
           title="Cookie sync"
@@ -594,6 +608,11 @@ function CookieSyncMain({
               }),
               row,
             ];
+            if (offline) {
+              pushToExtension(nextBindings);
+              pushToast("Route saved locally (offline).", "info");
+              return;
+            }
             void publishRouteToCloud(row, { silent: true }).then((ok) => {
               if (!ok) {
                 removeBinding(row.id);
@@ -611,6 +630,11 @@ function CookieSyncMain({
             if (!current) return;
             const nextRoute = { ...current, ...patch };
             updateBinding(id, patch);
+            if (offline) {
+              pushToExtension(bindings.map((binding) => (binding.id === id ? nextRoute : binding)));
+              pushToast("Route updated locally (offline).", "info");
+              return;
+            }
             void publishRouteToCloud(nextRoute, { silent: true }).then((ok) => {
               if (!ok) return;
               pushToExtension(bindings.map((binding) => (binding.id === id ? nextRoute : binding)));
@@ -621,6 +645,13 @@ function CookieSyncMain({
           onRemove={(id) => {
             const current = bindings.find((binding) => binding.id === id);
             if (!current) return;
+            if (offline) {
+              removeBinding(id);
+              if (selectedBindingId === id) setSelectedBindingId(null);
+              pushToExtension(bindings.filter((binding) => binding.id !== id));
+              pushToast("Route removed locally (offline).", "info");
+              return;
+            }
             void disableCookieRouteInCloud(session, current).then((res) => {
               if (!res.ok) {
                 pushToast(res.error, "error", 8000);
@@ -662,8 +693,10 @@ function CookieSyncMain({
           )}
           onRefresh={() => {
             void refresh();
-            void refreshVault();
-            void refreshCloudRoutes({ silent: true });
+            if (!offline) {
+              void refreshVault();
+              void refreshCloudRoutes({ silent: true });
+            }
           }}
         />
       </div>
@@ -690,7 +723,7 @@ export function CookieSyncScreen({
   shellMode?: boolean;
   query?: string;
 } = {}) {
-  const { session, loading: authLoading } = useNotesAuth();
+  const { session, loading: authLoading, offline } = useNotesAuth();
 
   if (authLoading) {
     return (

@@ -7,6 +7,8 @@ import { setNoteSyncPass } from "./noteSyncPass";
 import { generateSyncId, slugifyTitle } from "./noteUtils";
 import { generateShareToken, hashSharePassword } from "./shareUtils";
 import type { NoteRow } from "./types";
+import { getOfflineMode } from "../../lib/offlineMode";
+import { getOfflineNote, upsertOfflineNote } from "./offlineNotesRepository";
 
 export type NoteSaveResult = NoteRow & { passMigrationHint?: string };
 
@@ -72,6 +74,21 @@ export function useNote(session: Session | null, noteId: string | null) {
       setNote(null);
       return;
     }
+    if (getOfflineMode()) {
+      setLoading(true);
+      setError("");
+      try {
+        const row = await getOfflineNote(noteId);
+        setNote(row);
+        if (!row) setError("Note not found");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Offline note load failed");
+        setNote(null);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     setLoading(true);
     setError("");
     const { data, error: err } = await fetchNoteById(noteId);
@@ -102,6 +119,33 @@ export function useNote(session: Session | null, noteId: string | null) {
   const save = useCallback(
     async (draft: NoteDraft) => {
       if (!session || !noteId) throw new Error("No note selected");
+      if (getOfflineMode()) {
+        setSaving(true);
+        const now = new Date().toISOString();
+        const existing = note ?? (await getOfflineNote(noteId));
+        if (!existing) {
+          setSaving(false);
+          throw new Error("Note not found");
+        }
+        const row: NoteRow = {
+          ...existing,
+          title: draft.title.trim() || "Untitled",
+          slug: draft.slug.trim() || slugifyTitle(draft.title, existing.slug || "note"),
+          domain: draft.domain !== undefined ? draft.domain.trim() : existing.domain,
+          body_md: draft.body_md,
+          pinned: draft.pinned,
+          // Share + sync pass require Supabase RPCs — keep disabled offline.
+          share_enabled: false,
+          share_token: null,
+          share_password_hash: null,
+          sync_status: "manual",
+          updated_at: now,
+        };
+        await upsertOfflineNote(row);
+        setNote(row);
+        setSaving(false);
+        return row;
+      }
       setSaving(true);
       const slug = draft.slug.trim() || slugifyTitle(draft.title, note?.slug || "note");
 

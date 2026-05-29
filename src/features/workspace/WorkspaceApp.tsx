@@ -195,7 +195,7 @@ export function WorkspaceApp() {
   const activeNav = navScreen(screen);
   const isNotesLayout = NOTES_SCREENS.has(screen);
 
-  const mainClass = isNotesLayout ? "hub-main hub-main--notes" : "hub-main";
+  const mainClass = isNotesLayout ? "hub-main hub-main--notes" : "hub-main hub-main--tab";
 
   const body = (
     <WorkspaceScreenBody screen={screen} navigate={navigate} query={query} />

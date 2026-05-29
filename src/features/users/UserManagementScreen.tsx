@@ -265,7 +265,7 @@ function UserCards({ users }: { users: UserManagementRow[] }) {
 
 export function UserManagementScreen({ shellMode = false }: { shellMode?: boolean }) {
   void shellMode;
-  const { session, loading: authLoading, isSupabaseConfigured } = useNotesAuth();
+  const { session, loading: authLoading, isSupabaseConfigured, offline } = useNotesAuth();
   const { pushToast } = useAppToast();
   const { query, filterValues, setFilters, setToolbar, setFilterToolbar, setCenterStats } = useWorkspaceSearch();
   const [rows, setRows] = useState<UserManagementRow[]>([]);
@@ -450,6 +450,14 @@ export function UserManagementScreen({ shellMode = false }: { shellMode?: boolea
 
   if (!session) {
     return <NotesAuthGate variant="users" />;
+  }
+
+  if (offline) {
+    return (
+      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100">
+        Offline mode is enabled. User Management requires Supabase and is unavailable.
+      </div>
+    );
   }
 
   return (

@@ -14,6 +14,7 @@
     "daemon:stop": "pm2 delete p0020-dev && pm2 save",
     "daemon:status": "pm2 status p0020-dev",
     "open": "node scripts/ensure-dev.cjs --open",
+    "prebuild": "node scripts/sync-extension-version.mjs",
     "build": "tsc --noEmit && vitest run --passWithNoTests && vite build",
     "verify:vault": "node scripts/verify-vault-v4.mjs",
     "verify:cookie": "node scripts/verify-p0020-schema.mjs",

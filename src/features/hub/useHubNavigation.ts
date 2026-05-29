@@ -9,6 +9,7 @@ import {
   buildAppUrl,
   navScreenToPath,
   pathnameToNavScreen,
+  searchWithoutNavScreen,
 } from "../../lib/workspace-path";
 
 const RETIRED = new Set([
@@ -67,9 +68,9 @@ function migrateUrl(): WorkspaceScreen {
 
   const pathScreen = pathnameToNavScreen(window.location.pathname);
   if (pathScreen) {
-    if (!p.get("screen")) {
-      p.set("screen", pathScreen);
-      window.history.replaceState(null, "", buildAppUrl(pathScreen, p.toString()));
+    const clean = buildAppUrl(pathScreen, p.toString());
+    if (`${window.location.pathname}${window.location.search}` !== clean) {
+      window.history.replaceState(null, "", clean);
     }
     return pathScreen;
   }
@@ -102,17 +103,29 @@ export function useHubNavigation() {
       setScreen(next);
       const p = new URLSearchParams(window.location.search);
       p.delete("tab");
-      p.set("screen", next);
+
+      if (next === "share" || next === "edit") {
+        p.set("screen", next);
+        if (opts?.note) p.set("note", opts.note);
+        else p.delete("note");
+        if (opts?.token) p.set("token", opts.token);
+        else p.delete("token");
+        const path = `/?${p.toString()}`;
+        if (opts?.replace) window.history.replaceState({ screen: next }, "", path);
+        else window.history.pushState({ screen: next }, "", path);
+        return;
+      }
+
+      p.delete("screen");
       if (opts?.note) p.set("note", opts.note);
-      else if (next !== "edit") p.delete("note");
-      if (opts?.token) p.set("token", opts.token);
-      else if (next !== "share") p.delete("token");
+      else p.delete("note");
+      p.delete("token");
       if (next !== "cookie") p.delete("view");
 
-      const path =
-        next === "share" || next === "edit"
-          ? `/?${p.toString()}`
-          : `${navScreenToPath(next as WorkspaceNavScreen)}?${p.toString()}`;
+      const qs = searchWithoutNavScreen(p.toString());
+      const path = qs
+        ? `${navScreenToPath(next as WorkspaceNavScreen)}?${qs}`
+        : navScreenToPath(next as WorkspaceNavScreen);
 
       if (opts?.replace) window.history.replaceState({ screen: next }, "", path);
       else window.history.pushState({ screen: next }, "", path);

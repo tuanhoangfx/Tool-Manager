@@ -15,7 +15,7 @@ type Props = {
 };
 
 export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery }: Props) {
-  const { session, loading: authLoading, isSupabaseConfigured } = useNotesAuth();
+  const { session, loading: authLoading, isSupabaseConfigured, offline } = useNotesAuth();
   const { notes, loading, error, createNote } = useNotes(session);
   const [localQuery, setLocalQuery] = useState("");
   const [creating, setCreating] = useState(false);
@@ -45,7 +45,7 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
     }
   };
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured && !offline) {
     return (
       <div className="anim-fade p-6 text-sm text-amber-200">
         Supabase is not configured. Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>.

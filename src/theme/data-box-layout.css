@@ -63,6 +63,20 @@ body,
   isolation: isolate;
 }
 
+/* Tab screens (Todo, Cookie, …): chrome + flex body for embeds */
+.hub-main--tab {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.hub-main--tab .hub-screen-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
 /* Notes: full-height workspace (list | editor) */
 .hub-main--notes {
   display: flex;

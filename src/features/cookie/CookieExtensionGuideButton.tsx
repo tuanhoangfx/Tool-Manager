@@ -2,11 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { BookOpen, Cookie, Download, ExternalLink, X } from "lucide-react";
 import { cookieScreenUrl } from "../../lib/app-urls";
-import { EXTENSION_BUILD } from "./extensionBuildInfo";
-import {
-  EXTENSION_RELEASE_PAGE,
-  EXTENSION_RELEASE_ZIP,
-} from "./extensionInstall";
+import { useExtensionRelease } from "./useExtensionRelease";
 
 type Props = {
   className?: string;
@@ -34,6 +30,7 @@ function Step({ n, children }: { n: number; children: ReactNode }) {
 
 export function CookieExtensionGuideButton({ className = "" }: Props) {
   const [open, setOpen] = useState(false);
+  const release = useExtensionRelease();
   const cookieUrl = cookieScreenUrl();
 
   const onKey = useCallback(
@@ -70,7 +67,7 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
                       Cookie Auto Extension — Install &amp; Usage
                     </h2>
                     <span className="rounded-md border border-emerald-400/30 bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-100">
-                      v{EXTENSION_BUILD.version}
+                      v{release.version}
                     </span>
                   </div>
                   <p className="text-[12px] text-[var(--muted)]">
@@ -111,7 +108,7 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
                     <Step n={1}>
                       Open{" "}
                       <a
-                        href={EXTENSION_RELEASE_PAGE}
+                        href={release.releasePage}
                         className="font-medium text-indigo-300 hover:underline"
                         target="_blank"
                         rel="noopener noreferrer"
@@ -120,12 +117,12 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
                       </a>{" "}
                       and download{" "}
                       <a
-                        href={EXTENSION_RELEASE_ZIP}
+                        href={release.zipUrl}
                         className="font-medium text-indigo-300 hover:underline"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        E0001-cookie-bridge-v{EXTENSION_BUILD.version}.zip
+                        {release.zipName}
                       </a>{" "}
                       (or use the header button <strong className="text-[var(--text)]">Cookie Auto Extension</strong> to open the release page).
                     </Step>
@@ -153,7 +150,7 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
                       Click <strong className="text-[var(--text)]">Load unpacked</strong> and select the extracted folder (must contain <code className="rounded bg-white/5 px-1 text-[12px]">manifest.json</code>).
                     </Step>
                     <Step n={6}>
-                      Pin the extension if needed. Confirm version <strong className="text-[var(--text)]">v{EXTENSION_BUILD.version}</strong> on the card.
+                      Pin the extension if needed. Confirm version <strong className="text-[var(--text)]">v{release.version}</strong> on the card.
                     </Step>
                   </ol>
                 </GuideSection>
@@ -210,23 +207,23 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
                     <li>
                       Release page:{" "}
                       <a
-                        href={EXTENSION_RELEASE_PAGE}
+                        href={release.releasePage}
                         className="font-medium text-indigo-300 hover:underline"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        {EXTENSION_RELEASE_PAGE}
+                        {release.releasePage}
                       </a>
                     </li>
                     <li>
                       Direct ZIP (fallback):{" "}
                       <a
-                        href={EXTENSION_RELEASE_ZIP}
+                        href={release.zipUrl}
                         className="font-medium text-indigo-300 hover:underline"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        E0001-cookie-bridge-v{EXTENSION_BUILD.version}.zip
+                        {release.zipName}
                       </a>
                     </li>
                   </ul>
@@ -246,7 +243,7 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
 
               <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-white/10 px-5 py-3">
                 <a
-                  href={EXTENSION_RELEASE_ZIP}
+                  href={release.zipUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-100 hover:bg-emerald-500/25"
@@ -255,7 +252,7 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
                   Download ZIP
                 </a>
                 <a
-                  href={EXTENSION_RELEASE_PAGE}
+                  href={release.releasePage}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--panel-2)] px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--text)]"

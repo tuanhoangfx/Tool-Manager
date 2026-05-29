@@ -26,12 +26,27 @@ export function navScreenToPath(screen: WorkspaceNavScreen): string {
   return NAV_SCREEN_PATH[screen];
 }
 
+function parseSearch(search: string): URLSearchParams {
+  const raw = search.startsWith("?") ? search.slice(1) : search;
+  return new URLSearchParams(raw);
+}
+
+/** Drop redundant `screen` when the pathname already identifies the tab. */
+export function searchWithoutNavScreen(search = ""): string {
+  const p = parseSearch(search);
+  p.delete("screen");
+  return p.toString();
+}
+
 export function buildAppUrl(screen: WorkspaceScreen, search = ""): string {
   const base =
     screen === "share" || screen === "edit"
       ? `/?screen=${encodeURIComponent(screen)}`
       : navScreenToPath(screen as WorkspaceNavScreen);
   if (!search) return base;
-  const q = search.startsWith("?") ? search.slice(1) : search;
-  return `${base}?${q}`;
+  const q =
+    screen === "share" || screen === "edit"
+      ? parseSearch(search).toString()
+      : searchWithoutNavScreen(search);
+  return q ? `${base}?${q}` : base;
 }

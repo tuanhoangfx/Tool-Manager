@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { ToolAvatar } from "../../components/ToolAvatar";
 import { toolIconName, toolSvgIcon } from "../../lib/visual";
 import { supabase } from "../../lib/supabase";
+import { setOfflineMode } from "../../lib/offlineMode";
 
 type Props = {
   onAuthed?: () => void;
@@ -209,9 +210,22 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
         <div className="auth-inline-card">
           <div className="auth-inline-title">{copy.title}</div>
           <div className="auth-inline-sub">{copy.sub}</div>
-          <button type="button" className="auth-inline-btn" onClick={() => setShowModal(true)}>
-            Login
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className="auth-inline-btn" onClick={() => setShowModal(true)}>
+              Login
+            </button>
+            <button
+              type="button"
+              className="auth-inline-btn auth-inline-btn--ghost"
+              onClick={() => {
+                setOfflineMode(true);
+                onAuthed?.();
+              }}
+              title="Use offline mode (limited features)"
+            >
+              Offline mode
+            </button>
+          </div>
         </div>
       </div>
       {showModal ? (

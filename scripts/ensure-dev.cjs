@@ -7,7 +7,7 @@ const http = require("node:http");
 
 const root = path.resolve(__dirname, "..");
 const PORT = 5177;
-const URL = `http://127.0.0.1:${PORT}/?screen=notes`;
+const URL = `http://127.0.0.1:${PORT}/notes`;
 
 function probe(url, timeoutMs = 800) {
   return new Promise((resolve) => {

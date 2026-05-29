@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { ChevronDown, Clock } from "lucide-react";
 import { usePageSessionSeconds } from "../../hooks/usePageSessionSeconds";
+import { useOfflineMode } from "../../lib/offlineMode";
 import "./app-tab-header.css";
 
 export type TabTitleMenuItem = {
@@ -211,6 +212,7 @@ export function AppTabHeader({
   actions,
 }: AppTabHeaderProps) {
   const sessionMmSs = usePageSessionSeconds();
+  const { offline } = useOfflineMode();
   const positionClass = embedded ? "relative" : pinSticky ? "sticky top-0 z-40" : "relative z-0";
   const dividerClass = embedded || !dividerBelow ? "" : "border-b border-white/5";
   const gapBelow = embedded || !dividerBelow ? "" : "mb-[var(--app-tab-header-gap-below)]";
@@ -260,6 +262,14 @@ export function AppTabHeader({
 
       <div className="flex shrink-0 items-center justify-self-end gap-1.5 text-[13px] leading-none text-[var(--muted)]">
         {actions ? <span className="mr-1 inline-flex items-center gap-1.5">{actions}</span> : null}
+        {offline ? (
+          <span
+            className="mr-1 inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-100"
+            title="Offline mode: limited features (cloud disabled)"
+          >
+            Offline mode
+          </span>
+        ) : null}
         <Clock size={14} className="shrink-0 text-indigo-400/90" />
         <span>Session</span>
         <span className="tabular-nums text-[var(--text)]/90">{sessionMmSs}</span>

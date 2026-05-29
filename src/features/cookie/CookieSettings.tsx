@@ -18,6 +18,7 @@ import {
 } from "./cookieBridge";
 
 import { EXTENSION_BUILD } from "./extensionBuildInfo";
+import { OfflineModeSettingRow } from "./OfflineModeSettingRow";
 
 type Props = {
   onBack: () => void;
@@ -61,6 +62,9 @@ export function CookieSettings({ onBack, onPrefsChange, variant = "page" }: Prop
 
   const content = (
     <div className={variant === "modal" ? "space-y-3" : "space-y-4"}>
+        <Glass tone="slate" label="App mode" icon={<span className="text-[11px] font-semibold">Mode</span>}>
+          <OfflineModeSettingRow />
+        </Glass>
         <Glass tone="amber" label="Extension bridge" icon={<Cookie size={12} />}>
           <SettingRow label="E0001-cookie-bridge" desc="Chrome MV3 · GitHub Release ZIP → Load unpacked">
             <span className="badge border border-emerald-500/40 bg-emerald-500/20 text-emerald-200">
