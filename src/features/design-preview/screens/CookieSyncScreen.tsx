@@ -773,7 +773,11 @@ export function CookieSyncScreen({
   const { session, loading: authLoading, offline } = useNotesAuth();
 
   if (authLoading) {
-    return <WorkspaceLoadingView screen="cookie" variant="full" />;
+    return (
+      <div className="grid min-h-[40vh] place-items-center p-8 text-sm text-[var(--muted)]" role="status">
+        Loading Cookie Auto…
+      </div>
+    );
   }
 
   if (!session) {
