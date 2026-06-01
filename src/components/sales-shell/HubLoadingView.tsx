@@ -68,7 +68,9 @@ export const WORKSPACE_LOADING_PRESETS = {
   twofa: { icon: KeyRound, ariaLabel: "Loading 2FA" },
   cookie: { icon: Cookie, ariaLabel: "Loading cookie auto" },
   system: { icon: Settings2, ariaLabel: "Loading system" },
-} as const satisfies Record<WorkspaceNavScreen, { icon: LucideIcon; ariaLabel: string }>;
+} as const satisfies Partial<Record<WorkspaceNavScreen, { icon: LucideIcon; ariaLabel: string }>>;
+
+const FALLBACK_LOADER = { icon: Gauge, ariaLabel: "Loading" } as const;
 
 export function WorkspaceLoadingView({
   screen,
@@ -77,6 +79,6 @@ export function WorkspaceLoadingView({
   screen: WorkspaceNavScreen;
   variant?: HubLoadingViewProps["variant"];
 }) {
-  const preset = WORKSPACE_LOADING_PRESETS[screen];
+  const preset = WORKSPACE_LOADING_PRESETS[screen as keyof typeof WORKSPACE_LOADING_PRESETS] ?? FALLBACK_LOADER;
   return <HubLoadingView icon={preset.icon} ariaLabel={preset.ariaLabel} variant={variant} />;
 }

@@ -22,17 +22,18 @@ export function useCookieVaultMap(session: Session | null, bindings: CookieBindi
     [bindings],
   );
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
     if (!session || noteIds.length === 0) {
       setVaultByKey({});
       setVaultError(null);
       return;
     }
-    setLoading(true);
+    if (!silent) setLoading(true);
     setVaultError(null);
     const { data, error } = await fetchCookieVaultRows(noteIds);
 
-    setLoading(false);
+    if (!silent) setLoading(false);
     if (error) {
       const msg = error.message ?? String(error);
       if (/note_cookie_vault|does not exist|schema cache/i.test(msg)) {
@@ -46,7 +47,9 @@ export function useCookieVaultMap(session: Session | null, bindings: CookieBindi
   }, [noteIds, session]);
 
   useEffect(() => {
-    void refresh();
+    const hasVault = Object.keys(vaultByKey).length > 0;
+    void refresh({ silent: hasVault });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- silent when vault already shown
   }, [refresh]);
 
   return { vaultByKey, vaultError, vaultLoading: loading, refreshVault: refresh };
