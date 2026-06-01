@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAppToast } from "../../../components/toast";
+import { WorkspaceLoadingView } from "../../../components/sales-shell";
 import type { Session } from "@supabase/supabase-js";
 import { useNotesAuth } from "../../notes/useNotesAuth";
 import { useNotes } from "../../notes/useNotes";
@@ -13,12 +14,13 @@ import {
 import {
   loadCookieBridgePrefs,
   loadSelectedBindingId,
+  saveCookieBridgePrefs,
   saveSelectedBindingId,
   type CookieBinding,
 } from "../../cookie/cookieBridge";
 import { useExtensionAuthHeartbeat } from "../../notes/useExtensionAuthHeartbeat";
 import { supabase } from "../../../lib/supabase";
-import { Link2, RefreshCw, Settings } from "lucide-react";
+import { Activity, Link2, RefreshCw, Settings } from "lucide-react";
 import { EXTENSION_RELEASE_PAGE } from "../../cookie/extensionInstall";
 import { CookieInstallHeaderActions } from "../../cookie/CookieInstallHeaderActions";
 import { useAppView } from "../../../hooks/useAppView";
@@ -163,7 +165,7 @@ function bridgeStatusFromState({
       title: "No browser agent found. Click Link extension from this menu.",
     };
   }
-  const onlineAgents = agents.filter((agent) => Date.now() - new Date(agent.last_seen_at).getTime() < 25_000);
+  const onlineAgents = agents.filter((agent) => Date.now() - new Date(agent.last_seen_at).getTime() < 45_000);
   if (onlineAgents.length === 0) {
     return {
       label: "Stale",
@@ -220,6 +222,14 @@ function CookieSyncMain({
   const [selectedBindingId, setSelectedBindingId] = useState<string | null>(() => loadSelectedBindingId());
   const [autoRan, setAutoRan] = useState(false);
   const [autoRoutesLoaded, setAutoRoutesLoaded] = useState(false);
+  const bindingsRef = useRef(bindings);
+  const notesRef = useRef(notes);
+  bindingsRef.current = bindings;
+  notesRef.current = notes;
+  const notesKey = useMemo(
+    () => notes.map((n) => `${n.id}:${n.title}`).join("|"),
+    [notes],
+  );
 
   useEffect(() => {
     if (selectedBindingId) return;
@@ -291,13 +301,24 @@ function CookieSyncMain({
     [offline, pushToast, session],
   );
 
+  const bindingsSignature = useCallback((list: CookieBinding[]) => {
+    return [...list]
+      .map(
+        (b) =>
+          `${b.id}|${b.noteId}|${b.domain}|${b.syncId}|${b.sourceBrowserId ?? ""}|${b.noteTitle ?? ""}|${b.enabled ? 1 : 0}`,
+      )
+      .sort()
+      .join(";");
+  }, []);
+
   const refreshCloudRoutes = useCallback(async (opts: { silent?: boolean } = {}) => {
     if (offline) return;
-    const res = await pullCookieRoutesFromCloud(session, bindings, notes);
+    const res = await pullCookieRoutesFromCloud(session, bindingsRef.current, notesRef.current);
     if (!res.ok) {
       if (!opts.silent) pushToast(res.error, "error", 8000);
       return;
     }
+    if (bindingsSignature(res.bindings) === bindingsSignature(bindingsRef.current)) return;
     setBindings(res.bindings);
     pushToExtension(res.bindings);
     if (!opts.silent) {
@@ -306,11 +327,11 @@ function CookieSyncMain({
         res.count ? "success" : "info",
       );
     }
-  }, [bindings, notes, offline, pushToExtension, pushToast, session, setBindings]);
+  }, [bindingsSignature, offline, pushToExtension, pushToast, session, setBindings]);
 
   const onRealtimeRefresh = useCallback(() => {
-    void refresh();
-    void refreshVault();
+    void refresh({ silent: true });
+    void refreshVault({ silent: true });
     void refreshCloudRoutes({ silent: true });
   }, [refreshCloudRoutes, refresh, refreshVault]);
 
@@ -321,6 +342,33 @@ function CookieSyncMain({
     setAutoRoutesLoaded(true);
     void refreshCloudRoutes({ silent: true });
   }, [autoRoutesLoaded, loading, refreshCloudRoutes, session]);
+
+  /** Keep cookie_bridge_routes.note_title in sync when a note is renamed in Notes. */
+  useEffect(() => {
+    if (!session || offline || loading) return;
+    const list = bindingsRef.current;
+    const noteList = notesRef.current;
+    const stale = list.filter((b) => {
+      if (!b.enabled || !b.noteId?.trim()) return false;
+      const note = noteList.find((n) => n.id === b.noteId);
+      if (!note?.title?.trim()) return false;
+      return (b.noteTitle?.trim() ?? "") !== note.title.trim();
+    });
+    if (stale.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      for (const row of stale) {
+        if (cancelled) return;
+        const note = noteList.find((n) => n.id === row.noteId);
+        if (!note) continue;
+        await publishRouteToCloud({ ...row, noteTitle: note.title }, { silent: true });
+      }
+      if (!cancelled) void refreshCloudRoutes({ silent: true });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [notesKey, session, offline, loading, publishRouteToCloud, refreshCloudRoutes]);
 
   const onJoinByNoteId = useCallback(
     async (noteId: string, domain: string) => {
@@ -376,7 +424,7 @@ function CookieSyncMain({
     } else {
       pushToast("Select a route in the table before Sync.", "warn");
     }
-    setTimeout(() => void refresh(), 2500);
+    setTimeout(() => void refresh({ silent: true }), 2500);
   }, [bindings, pushToast, refresh, selectedBindingId]);
 
   useEffect(() => {
@@ -726,13 +774,7 @@ export function CookieSyncScreen({
   const { session, loading: authLoading, offline } = useNotesAuth();
 
   if (authLoading) {
-    return (
-      <div className={shellMode ? "" : "p-6"}>
-        <div className="rounded-xl border border-white/10 bg-white/[.03] p-6 text-sm text-[var(--text)]">
-          Loading session…
-        </div>
-      </div>
-    );
+    return <WorkspaceLoadingView screen="cookie" variant="full" />;
   }
 
   if (!session) {

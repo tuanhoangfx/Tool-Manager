@@ -81,7 +81,7 @@ export function mergeCookieRoutes(
       domain,
       pass: prev?.pass,
       requiresPass: prev?.requiresPass ?? Boolean(note?.sync_pass_hash),
-      noteTitle: row.note_title ?? note?.title ?? prev?.noteTitle,
+      noteTitle: note?.title?.trim() || row.note_title?.trim() || prev?.noteTitle,
       useNoteIdRpc: !(row.sync_id ?? note?.sync_id)?.trim(),
       sourceBrowserId: row.source_browser_id ?? prev?.sourceBrowserId ?? null,
       sourceLabel: row.source_label ?? prev?.sourceLabel ?? null,
