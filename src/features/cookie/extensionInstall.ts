@@ -5,14 +5,17 @@ export const EXTENSION_GITHUB_REPO = "tuanhoangfx/E0001-cookie-bridge";
 /** Latest release page (redirects to newest tag). */
 export const EXTENSION_RELEASE_PAGE = `https://github.com/${EXTENSION_GITHUB_REPO}/releases/latest`;
 
-/** Direct ZIP URL for a given extension version (must match the asset name on GitHub). */
+/** Direct ZIP for a specific release tag (offline fallback; not “latest” redirect). */
 export function extensionReleaseZipUrl(version: string = EXTENSION_BUILD.version): string {
-  return `https://github.com/${EXTENSION_GITHUB_REPO}/releases/latest/download/E0001-cookie-bridge-v${version}.zip`;
+  const v = version.replace(/^v/i, "").trim();
+  const tag = `v${v}`;
+  const zipName = `E0001-cookie-bridge-v${v}.zip`;
+  return `https://github.com/${EXTENSION_GITHUB_REPO}/releases/download/${tag}/${zipName}`;
 }
 
 /**
- * Static ZIP link using the bundled version (may 404 until `pnpm sync:extension` / deploy).
- * Prefer {@link fetchLatestExtensionRelease} or {@link useExtensionRelease} for auto-latest.
+ * Bundled fallback URL — prefer {@link fetchLatestExtensionRelease} / {@link useExtensionRelease}.
+ * Updated automatically by `prebuild` / `predev` (sync-extension-version.mjs).
  */
 export const EXTENSION_RELEASE_ZIP = extensionReleaseZipUrl();
 

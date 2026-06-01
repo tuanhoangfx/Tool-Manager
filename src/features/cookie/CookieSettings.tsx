@@ -17,7 +17,7 @@ import {
   type CookieBridgeRole,
 } from "./cookieBridge";
 
-import { EXTENSION_BUILD } from "./extensionBuildInfo";
+import { useExtensionRelease } from "./useExtensionRelease";
 import { OfflineModeSettingRow } from "./OfflineModeSettingRow";
 
 type Props = {
@@ -27,8 +27,9 @@ type Props = {
 };
 
 export function CookieSettings({ onBack, onPrefsChange, variant = "page" }: Props) {
+  const extensionRelease = useExtensionRelease();
   const [intervalMin, setIntervalMin] = useState(60);
-  const [realtimeSync, setRealtimeSync] = useState(true);
+  const [realtimeSync, setRealtimeSync] = useState(false);
   const [vaultSync, setVaultSync] = useState(true);
   const [realtimeVaultApply, setRealtimeVaultApply] = useState(false);
   const [bridgeRole, setBridgeRole] = useState<CookieBridgeRole>("writer");
@@ -68,7 +69,7 @@ export function CookieSettings({ onBack, onPrefsChange, variant = "page" }: Prop
         <Glass tone="amber" label="Extension bridge" icon={<Cookie size={12} />}>
           <SettingRow label="E0001-cookie-bridge" desc="Chrome MV3 · GitHub Release ZIP → Load unpacked">
             <span className="badge border border-emerald-500/40 bg-emerald-500/20 text-emerald-200">
-              v{EXTENSION_BUILD.version}
+              v{extensionRelease.version}
             </span>
           </SettingRow>
           <SettingRow
@@ -99,7 +100,10 @@ export function CookieSettings({ onBack, onPrefsChange, variant = "page" }: Prop
               <option value={120}>2 hours</option>
             </select>
           </SettingRow>
-          <SettingRow label="Realtime UI refresh" desc="Supabase postgres_changes on notes + vault">
+          <SettingRow
+            label="Realtime UI refresh"
+            desc="Auto-refresh Cookie Auto when notes/routes/vault change. Turn off if the page flickers during sync."
+          >
             <label className="flex items-center gap-2 text-[12px]">
               <input
                 type="checkbox"

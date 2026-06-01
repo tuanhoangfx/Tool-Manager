@@ -1,5 +1,9 @@
-/** Keep in sync with Extension/E0001-cookie-bridge manifest + build-info.js — run pnpm sync:extension */
+/**
+ * Offline fallback only (labels + ZIP if GitHub API fails).
+ * Auto-synced - do not edit by hand. Source: E0001 manifest
+ * Download button uses GitHub releases/latest at runtime.
+ */
 export const EXTENSION_BUILD = {
-  version: "0.5.69",
+  version: "0.5.71",
   updated: "2026-05-29",
 };
