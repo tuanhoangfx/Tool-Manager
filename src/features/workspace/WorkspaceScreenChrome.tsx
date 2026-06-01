@@ -3,6 +3,7 @@ import { AppTabHeader, FilterBar } from "../../components/sales-shell";
 import type { TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
+import { useExtensionRelease } from "../cookie/useExtensionRelease";
 import { screenChromeConfig } from "./workspace-screen-meta";
 
 function readVisibleFilterKeys(param: string): Set<string> | null {
@@ -39,7 +40,17 @@ export function WorkspaceScreenChrome({
   onFilterValuesChange = () => {},
   children,
 }: Props) {
-  const cfg = screenChromeConfig(screen);
+  const extensionRelease = useExtensionRelease();
+  const cfg = useMemo(() => {
+    const base = screenChromeConfig(screen);
+    if (screen !== "cookie") return base;
+    return {
+      ...base,
+      metaItems: base.metaItems.map((item) =>
+        item.title === "Extension" ? { ...item, value: `v${extensionRelease.version}`, live: true } : item,
+      ),
+    };
+  }, [extensionRelease.version, screen]);
   const [visibleFilterKeys, setVisibleFilterKeys] = useState(() => readVisibleFilterKeys(cfg.filterParam));
 
   useEffect(() => {

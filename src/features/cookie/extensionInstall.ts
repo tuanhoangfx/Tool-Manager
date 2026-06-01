@@ -22,4 +22,4 @@ export const EXTENSION_INSTALL_LABEL = "Load unpacked";
 export const EXTENSION_HEADER_LABEL = "Cookie Auto Extension";
 
 export const EXTENSION_INSTALL_HINT =
-  "Open latest release → download ZIP → extract → chrome://extensions → Developer mode → Load unpacked → Link extension here";
+  "Download latest ZIP → extract → chrome://extensions → Developer mode → Load unpacked → Link extension on Cookie Auto";

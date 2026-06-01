@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { BookOpen, Cookie, Download, ExternalLink, X } from "lucide-react";
 import { cookieScreenUrl } from "../../lib/app-urls";
+import { triggerExtensionZipDownload } from "./extensionDownload";
+import { fetchLatestExtensionRelease } from "./extensionReleaseApi";
 import { useExtensionRelease } from "./useExtensionRelease";
 
 type Props = {
@@ -30,8 +32,22 @@ function Step({ n, children }: { n: number; children: ReactNode }) {
 
 export function CookieExtensionGuideButton({ className = "" }: Props) {
   const [open, setOpen] = useState(false);
+  const [zipBusy, setZipBusy] = useState(false);
   const release = useExtensionRelease();
   const cookieUrl = cookieScreenUrl();
+
+  const onDownloadZip = () => {
+    if (zipBusy) return;
+    setZipBusy(true);
+    void (async () => {
+      try {
+        const latest = await fetchLatestExtensionRelease();
+        await triggerExtensionZipDownload(latest);
+      } finally {
+        setZipBusy(false);
+      }
+    })();
+  };
 
   const onKey = useCallback(
     (event: KeyboardEvent) => {
@@ -106,25 +122,11 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
                 <GuideSection title="Install the extension">
                   <ol className="space-y-2.5">
                     <Step n={1}>
-                      Open{" "}
-                      <a
-                        href={release.releasePage}
-                        className="font-medium text-indigo-300 hover:underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        GitHub Releases (latest)
-                      </a>{" "}
-                      and download{" "}
-                      <a
-                        href={release.zipUrl}
-                        className="font-medium text-indigo-300 hover:underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {release.zipName}
-                      </a>{" "}
-                      (or use the header button <strong className="text-[var(--text)]">Cookie Auto Extension</strong> to open the release page).
+                      Click the header button{" "}
+                      <strong className="text-[var(--text)]">Cookie Auto Extension</strong> (or{" "}
+                      <strong className="text-[var(--text)]">Download ZIP</strong> below) to fetch the latest{" "}
+                      <code className="rounded bg-white/5 px-1 text-[12px]">{release.zipName}</code> from GitHub
+                      Releases.
                     </Step>
                     <Step n={2}>
                       Extract the ZIP to a permanent folder, e.g.{" "}
@@ -242,15 +244,15 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
               </div>
 
               <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-white/10 px-5 py-3">
-                <a
-                  href={release.zipUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-100 hover:bg-emerald-500/25"
+                <button
+                  type="button"
+                  disabled={zipBusy}
+                  onClick={onDownloadZip}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-100 hover:bg-emerald-500/25 disabled:opacity-60"
                 >
                   <Download size={14} />
-                  Download ZIP
-                </a>
+                  {zipBusy ? "Downloading…" : "Download ZIP"}
+                </button>
                 <a
                   href={release.releasePage}
                   target="_blank"
