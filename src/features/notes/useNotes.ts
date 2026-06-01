@@ -8,18 +8,21 @@ import type { NoteRow } from "./types";
 import { getOfflineMode } from "../../lib/offlineMode";
 import { deleteOfflineNote, listOfflineNotes, upsertOfflineNote } from "./offlineNotesRepository";
 
+export type NotesRefreshOpts = { /** Skip loading UI — use for realtime / background poll */ silent?: boolean };
+
 export function useNotes(session: Session | null, opts?: { realtime?: boolean }) {
   const [rows, setRows] = useState<NoteRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (refreshOpts?: NotesRefreshOpts) => {
+    const silent = refreshOpts?.silent ?? false;
     if (!session) {
       setRows([]);
       return;
     }
     if (getOfflineMode()) {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError("");
       try {
         setRows(await listOfflineNotes());
@@ -27,21 +30,26 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
         setError(err instanceof Error ? err.message : "Offline notes load failed");
         setRows([]);
       } finally {
-        setLoading(false);
+        if (!silent) setLoading(false);
       }
       return;
     }
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError("");
-    const { data, error: err } = await fetchNotesList();
-
-    if (err) {
-      setError(err.message);
+    try {
+      const { data, error: err } = await fetchNotesList();
+      if (err) {
+        setError(err.message);
+        setRows([]);
+      } else {
+        setRows((data ?? []) as NoteRow[]);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load notes");
       setRows([]);
-    } else {
-      setRows((data ?? []) as NoteRow[]);
+    } finally {
+      if (!silent) setLoading(false);
     }
-    setLoading(false);
   }, [session]);
 
   useEffect(() => {
@@ -49,7 +57,10 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
   }, [refresh]);
 
   const realtimeEnabled = opts?.realtime ?? loadCookieBridgePrefs().realtimeSync;
-  useNotesCookieRealtime(session, refresh, realtimeEnabled && !getOfflineMode());
+  const refreshFromRealtime = useCallback(() => {
+    void refresh({ silent: true });
+  }, [refresh]);
+  useNotesCookieRealtime(session, refreshFromRealtime, realtimeEnabled && !getOfflineMode());
 
   const notes = useMemo(() => rows.map(toListItem), [rows]);
 
