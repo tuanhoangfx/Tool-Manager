@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 /** Sync extension manifest version → Tool extensionBuildInfo.ts */
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const extDir = join(root, "..", "..", "Extension", "E0001-cookie-bridge");
-const manifest = JSON.parse(readFileSync(join(extDir, "manifest.json"), "utf8"));
+const manifestPath = join(extDir, "manifest.json");
+if (!existsSync(manifestPath)) {
+  console.log("sync-extension-version: skip (E0001 not in build context)");
+  process.exit(0);
+}
+const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const buildInfo = readFileSync(join(extDir, "build-info.js"), "utf8");
 const updatedMatch = buildInfo.match(/updated:\s*"([^"]+)"/);
 const updated = updatedMatch?.[1] ?? new Date().toISOString().slice(0, 10);
