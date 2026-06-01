@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAppToast } from "../../../components/toast";
-import { WorkspaceLoadingView } from "../../../components/sales-shell";
 import type { Session } from "@supabase/supabase-js";
 import { useNotesAuth } from "../../notes/useNotesAuth";
 import { useNotes } from "../../notes/useNotes";
@@ -331,7 +330,7 @@ function CookieSyncMain({
 
   const onRealtimeRefresh = useCallback(() => {
     void refresh({ silent: true });
-    void refreshVault({ silent: true });
+    void refreshVault();
     void refreshCloudRoutes({ silent: true });
   }, [refreshCloudRoutes, refresh, refreshVault]);
 
