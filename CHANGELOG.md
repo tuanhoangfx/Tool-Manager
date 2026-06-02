@@ -11,7 +11,8 @@
 - Product: P0020
 - Prompt: Git P0020 after Push; bump Minor tier and sync release pipeline
 - Commit: `762bdfb`
-- Status: Committed
+- Status: Verified
+- Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v0.2.1
 
 ### Changes
 
