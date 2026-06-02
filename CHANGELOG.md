@@ -10,8 +10,8 @@
 - Type: Patch
 - Product: P0020
 - Prompt: Fix Vercel deploy ENOENT on monorepo file: deps; standardize release pipeline
-- Commit: pending
-- Status: Draft
+- Commit: `55b1b38`
+- Status: Committed
 
 ### Changes
 
