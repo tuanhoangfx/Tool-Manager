@@ -7,3 +7,7 @@ dev-server.log
 !.env.example
 
 .vercel
+
+# Supabase MCP / browser batch scratch (keep committed migrations + browser-batch-*.sql)
+supabase/_*
+supabase/.batch*

@@ -1,4 +1,36 @@
-﻿# Changelog — P0020-Data-Box
+﻿# Changelog - P0020-Data-Box
+
+> **Ship keywords:** `Git P0020` | `Push P0020` | `Release P0020`  
+> **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
+> **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
+
+## 2026-06-03 - Vendor hub-load/hub-ui for standalone Vercel build
+
+- Version: `0.1.4`
+- Type: Patch
+- Product: P0020
+- Prompt: Fix Vercel deploy ENOENT on monorepo file: deps; standardize release pipeline
+- Commit: pending
+- Status: Draft
+
+### Changes
+
+- Vendor `@dev/hub-load` and `@tool-workspace/hub-ui` under `vendor/` for GitHub/Vercel standalone clone.
+- Update `package.json`, Vite/TS paths, CSS import; exclude `vendor/**` from Vitest.
+- Gitignore `supabase/_*` migration scratch files.
+
+### Verification
+
+- `corepack pnpm build` — pass
+- Vercel: `tool-manager` production deploy after push
+
+### Rollback
+
+```powershell
+git revert <sha>
+```
+
+---
 
 ## 2026-06-03 - Cookie Auto cloud-first, Notes cookie snapshot, extension UI polish
 

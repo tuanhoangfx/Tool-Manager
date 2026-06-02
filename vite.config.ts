@@ -32,8 +32,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@p0020/bridge": path.resolve(rootDir, "packages/p0020-bridge/src"),
-      "@dev/hub-load": path.resolve(rootDir, "../packages/hub-load/src"),
-      "@tool-workspace/hub-ui": path.resolve(rootDir, "../../packages/hub-ui/src"),
+      "@dev/hub-load": path.resolve(rootDir, "vendor/hub-load/src"),
+      "@tool-workspace/hub-ui": path.resolve(rootDir, "vendor/hub-ui/src"),
     },
   },
 });
