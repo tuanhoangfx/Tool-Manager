@@ -6,7 +6,7 @@
 - Type: Patch
 - Product: P0020
 - Prompt: Consolidate former [Unreleased] work into a versioned audit entry for review and rollback
-- Commit: `4773f53`
+- Commit: `9a5c5cf`
 - Status: Committed
 
 ### Changes
@@ -29,7 +29,7 @@
 ```powershell
 cd E:\Dev\Tool\P0020-Data-Box
 git checkout v0.1.1
-# after commit: git revert 4773f53
+# after commit: git revert 9a5c5cf
 ```
 
 ---
