@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { cookieAgentsCache } from "../../lib/cookie-boot-cache";
 import { fetchCookieAgentsAndCommands, sendCookieAgentCommand } from "./cookieAgentsRepository";
 
 export type CookieAgent = {
@@ -44,17 +45,19 @@ type SendCommandInput = {
 };
 
 export function useCookieAgents(session: Session | null) {
-  const [agents, setAgents] = useState<CookieAgent[]>([]);
-  const [commands, setCommands] = useState<CookieAgentCommand[]>([]);
-  const [loading, setLoading] = useState(false);
+  const cached = cookieAgentsCache.readStale();
+  const [agents, setAgents] = useState<CookieAgent[]>(() => cached?.agents ?? []);
+  const [commands, setCommands] = useState<CookieAgentCommand[]>(() => cached?.commands ?? []);
+  const [loading, setLoading] = useState(() => !cached && Boolean(session?.user?.id));
   const [error, setError] = useState<string | null>(null);
   const userId = session?.user?.id;
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     if (!userId) return;
-    setLoading(true);
+    const silent = opts?.silent ?? agents.length > 0;
+    if (!silent) setLoading(true);
     const res = await fetchCookieAgentsAndCommands();
-    setLoading(false);
+    if (!silent) setLoading(false);
     if (!res.ok) {
       setError(res.error);
       return;
@@ -62,7 +65,8 @@ export function useCookieAgents(session: Session | null) {
     setError(null);
     setAgents(res.agents);
     setCommands(res.commands);
-  }, [userId]);
+    cookieAgentsCache.write({ agents: res.agents, commands: res.commands });
+  }, [userId, agents.length]);
 
   const sendCommand = useCallback(
     async (input: SendCommandInput) => {
@@ -86,10 +90,10 @@ export function useCookieAgents(session: Session | null) {
     let cancelled = false;
     let timer = 0;
 
-    const nextDelay = () => (document.visibilityState === "hidden" ? 30000 : 5000);
+    const nextDelay = () => (document.visibilityState === "hidden" ? 30000 : 12000);
     const tick = () => {
       if (cancelled) return;
-      void refresh().finally(() => {
+      void refresh({ silent: true }).finally(() => {
         if (!cancelled) timer = window.setTimeout(tick, nextDelay());
       });
     };
@@ -98,7 +102,8 @@ export function useCookieAgents(session: Session | null) {
       tick();
     };
 
-    void refresh();
+    const stale = cookieAgentsCache.readStale();
+    void refresh({ silent: stale != null && stale.agents.length > 0 });
     timer = window.setTimeout(tick, nextDelay());
     document.addEventListener("visibilitychange", onVisibility);
     return () => {

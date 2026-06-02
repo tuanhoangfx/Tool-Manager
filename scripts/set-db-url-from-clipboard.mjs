@@ -7,9 +7,12 @@ import { readFileSync, writeFileSync, existsSync } from "fs";
 import { execSync } from "child_process";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { loadP0020Env } from "./load-p0020-env.mjs";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const { root, env } = loadP0020Env();
 const envPath = resolve(root, ".env.local");
+const expectedRef =
+  env.VITE_SUPABASE_URL?.match(/https:\/\/([a-z0-9]+)\.supabase\.co/i)?.[1] ?? null;
 
 function readClipboard() {
   return execSync(
@@ -24,7 +27,7 @@ function normalizeUrl(raw) {
   const url = line.trim().replace(/^["']|["']$/g, "");
   if (!url.startsWith("postgresql://")) return null;
   if (/\[YOUR-PASSWORD\]|\[DB_PASSWORD\]/i.test(url)) return null;
-  if (!url.includes("yhnqwxejjkfgmjmiquhb")) return null;
+  if (expectedRef && !url.includes(expectedRef)) return null;
   return url;
 }
 
@@ -32,7 +35,9 @@ const clip = readClipboard();
 const url = normalizeUrl(clip);
 if (!url) {
   console.error(
-    "Clipboard does not contain a valid pooler URI (need real password, project yhnqwxejjkfgmjmiquhb).",
+    expectedRef
+      ? `Clipboard does not contain a valid pooler URI for project ${expectedRef}.`
+      : "Clipboard does not contain a valid pooler URI. Set VITE_SUPABASE_URL in .env.local first.",
   );
   console.error("Copy from Supabase → Connect → Transaction pooler → URI → Copy.");
   process.exit(1);

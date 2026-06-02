@@ -1,6 +1,22 @@
-/** Single portal mount — all tab loaders render here for one fixed viewport center. */
+import { useEffect } from "react";
+
 export const HUB_TAB_LOADER_ROOT_ID = "hub-tab-loader-root";
 
+export function ensureHubTabLoaderRoot(): HTMLElement {
+  let el = document.getElementById(HUB_TAB_LOADER_ROOT_ID);
+  if (!el) {
+    el = document.createElement("div");
+    el.id = HUB_TAB_LOADER_ROOT_ID;
+    el.className = "pointer-events-none";
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+/** Mounts loader portal on document.body (not inside flex main — keeps orb centered on every tab). */
 export function HubLoaderRoot() {
-  return <div id={HUB_TAB_LOADER_ROOT_ID} className="pointer-events-none" aria-hidden />;
+  useEffect(() => {
+    ensureHubTabLoaderRoot();
+  }, []);
+  return null;
 }

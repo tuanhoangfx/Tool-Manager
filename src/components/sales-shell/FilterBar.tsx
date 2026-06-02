@@ -142,19 +142,23 @@ export function FilterBar({
     </div>
   );
 
-  const clearFiltersBtn = hasActive ? (
+  const clearFiltersBtn = (
     <button
       type="button"
       onClick={clearAll}
-      className="inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 text-xs font-medium text-rose-200 transition-colors hover:bg-rose-500/20"
+      className={`inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 text-xs font-medium text-rose-200 transition-colors hover:bg-rose-500/20 ${
+        hasActive ? "" : "pointer-events-none invisible"
+      }`}
       title="Clear search and all filters"
+      aria-hidden={!hasActive}
+      tabIndex={hasActive ? 0 : -1}
     >
       Clear filters
       <span className="grid h-4 min-w-[16px] place-items-center rounded-full bg-rose-500/80 px-1 text-[9px] font-bold text-white">
-        {activeCount}
+        {activeCount || 0}
       </span>
     </button>
-  ) : null;
+  );
 
   const filterDropdowns = filters.map((f) => (
     <MultiFilterDropdown
@@ -169,20 +173,22 @@ export function FilterBar({
     const stickyTop = headerPinned ? "top-[var(--app-tab-header-sticky-h)]" : "top-0";
     const panel = (
       <div className="space-y-2 rounded-2xl border border-white/5 bg-[var(--panel)] p-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-nowrap items-center gap-2">
           {searchField}
           {toolbar ? (
-            <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+            <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-2">
               {toolbar}
             </div>
           ) : null}
         </div>
         <div className="flex min-h-[34px] flex-wrap items-center gap-2">
-          {filterDropdowns}
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            {filterDropdowns}
+            {clearFiltersBtn}
+          </div>
           {filterToolbar ? (
             <div className="ml-auto flex shrink-0 flex-nowrap items-center justify-end gap-2">{filterToolbar}</div>
           ) : null}
-          {clearFiltersBtn ? <div className="ml-auto flex shrink-0">{clearFiltersBtn}</div> : null}
         </div>
       </div>
     );

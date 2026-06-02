@@ -57,12 +57,20 @@ export function notesFilterOptions(_notes: NoteListItem[]) {
   };
 }
 
+function matchesNoteSearch(note: NoteListItem, rawQuery: string): boolean {
+  const query = rawQuery.trim().toLowerCase();
+  if (!query) return true;
+  const stripped = query.replace(/^id\s+/i, "").trim();
+  const idHay = [note.id, note.id.replace(/-/g, "")].join(" ");
+  const hay = [idHay, note.title, note.domain, note.slug, note.sync_id ?? ""].join(" ").toLowerCase();
+  const qNoDash = stripped.replace(/-/g, "");
+  if (hay.includes(query) || hay.includes(stripped)) return true;
+  if (qNoDash.length >= 8 && idHay.toLowerCase().replace(/-/g, "").includes(qNoDash)) return true;
+  return false;
+}
+
 function matchesNoteFilters(note: NoteListItem, q: string, filters: Record<string, string[]>): boolean {
-  const query = q.trim().toLowerCase();
-  if (query) {
-    const hay = [note.title, note.domain, note.slug, note.sync_id ?? ""].join(" ").toLowerCase();
-    if (!hay.includes(query)) return false;
-  }
+  if (!matchesNoteSearch(note, q)) return false;
   if (filters.pinned?.length) {
     const pin = note.pinned ? "pinned" : "unpinned";
     if (!filters.pinned.includes(pin)) return false;

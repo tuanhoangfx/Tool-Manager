@@ -4,8 +4,10 @@ import {
   loadCookieBindings,
   loadSelectedBindingId,
 } from "./cookieBridge";
+import { getHubIdentitySession } from "../../lib/supabase-identity";
 import {
   broadcastExtensionAuth,
+  broadcastExtensionIdentityAuth,
   broadcastSelectedBinding,
 } from "./extensionBridgeMessages";
 
@@ -22,6 +24,15 @@ export function useExtensionBindingsRelay(active: boolean) {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type !== "P0020_REQUEST_BINDINGS_FROM_EXTENSION") return;
 
+      const hubSession = await getHubIdentitySession();
+      if (hubSession) {
+        broadcastExtensionIdentityAuth({
+          access_token: hubSession.access_token,
+          refresh_token: hubSession.refresh_token,
+          expires_at: hubSession.expires_at,
+          user: hubSession.user,
+        });
+      }
       const {
         data: { session: s },
       } = await supabase.auth.getSession();

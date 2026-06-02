@@ -2,13 +2,18 @@
   "schemaVersion": 1,
   "code": "P0020",
   "id": "p0020-data-box",
-  "aliases": ["P0020", "P0020-Data-Box", "Data Box", "Azure Data Box"],
+  "aliases": [
+    "P0020",
+    "P0020-Data-Box",
+    "Data Box",
+    "Azure Data Box"
+  ],
   "name": "P0020-Data-Box",
   "type": "Web",
   "owner": "Tool",
   "status": "Beta",
   "icon": "icons/azure-data-box.svg",
-  "summary": "Unified data workspace for notes, todo, 2FA, secure cookie vault, and browser agents.",
+  "summary": "Unified data workspace for notes, 2FA, secure cookie vault, and browser agents.",
   "stack": [
     "React",
     "TypeScript",
@@ -25,8 +30,7 @@
   "deployTarget": "vercel",
   "docs": {
     "readme": "README.md",
-    "changelog": "CHANGELOG.md",
-    "design": "docs/DESIGN-DECISION.md"
+    "changelog": "CHANGELOG.md"
   },
   "github": {
     "repo": "tuanhoangfx/Tool-Manager",
@@ -34,11 +38,12 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "0.1.1",
+    "version": "0.1.2",
     "readiness": [
-      "notes-v1-fusion",
+      "unified-sidebar-shell",
+      "notes-workspace",
       "notes-sync-id-pass",
-      "todo-p0019-embed",
+      "lazy-hub-screens",
       "twofa-local",
       "cookie-bridge"
     ]
@@ -54,26 +59,30 @@
     "project": "tool-manager",
     "projectId": "linked-via-cli",
     "productionUrl": "https://databox.infix1.io.vn",
-    "customDomains": ["databox.infix1.io.vn"],
+    "customDomains": [
+      "databox.infix1.io.vn"
+    ],
     "productionBranch": "main",
     "team": "tuanhoangfxs-projects",
     "notes": "Vite SPA. Set VITE_SUPABASE_* in Vercel env."
   },
   "supabase": {
-    "projectRef": "yhnqwxejjkfgmjmiquhb",
-    "url": "https://yhnqwxejjkfgmjmiquhb.supabase.co",
-    "dashboard": "https://supabase.com/dashboard/project/yhnqwxejjkfgmjmiquhb",
-    "sqlEditor": "https://supabase.com/dashboard/project/yhnqwxejjkfgmjmiquhb/sql/new",
+    "projectRef": "bklxcjrkhrevdcqjscku",
+    "url": "https://bklxcjrkhrevdcqjscku.supabase.co",
+    "dashboard": "https://supabase.com/dashboard/project/bklxcjrkhrevdcqjscku",
+    "sqlEditor": "https://supabase.com/dashboard/project/bklxcjrkhrevdcqjscku/sql/new",
+    "hubProjectRef": "fmnrafpzctuhxjaaomzt",
+    "hubUrl": "https://fmnrafpzctuhxjaaomzt.supabase.co",
     "localEnv": {
-      "SUPABASE_DB_URL": "postgresql://postgres.yhnqwxejjkfgmjmiquhb:[DB_PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres",
-      "note": "Optional in .env.local for `pnpm apply:cookie`. Password: Dashboard → Project Settings → Database → Connection string (URI). Same project as P0019."
+      "SUPABASE_DB_URL": "postgresql://postgres.bklxcjrkhrevdcqjscku:[DB_PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres",
+      "note": "Replace [DB_PASSWORD] in .env.local. Run `pnpm db:migrate` then `pnpm verify:cookie`."
     },
     "cookieBridge": {
       "migrationsDir": "supabase/migrations",
       "applySql": "supabase/APPLY_ALL_P0020_COOKIE_BRIDGE.sql",
-      "migrateDoc": "docs/SUPABASE-P0020.md",
+      "migrateDoc": "docs/DATABOX-MIGRATION.md",
       "generateApply": "pnpm generate:apply-all",
-      "verify": "pnpm verify:cookie-bridge"
+      "verify": "pnpm verify:cookie"
     }
   },
   "relatedProjects": {

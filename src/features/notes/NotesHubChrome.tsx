@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, FileText, Pin, StickyNote } from "lucide-react";
 import { AppTabHeader, FilterBar, type FilterDef, type FilterValues } from "../../components/sales-shell";
+import { WorkspaceTabDisplayPrefs } from "../workspace/WorkspaceTabDisplayPrefs";
+import { readHubListPrefs } from "../../lib/url-prefs";
+import { DEFAULT_NOTES_HEADER_STAT_KEYS } from "./notes-display-prefs";
 import { APP_VERSION } from "../../lib/app-meta";
 import { NotesFilterToolbar } from "./NotesFilterToolbar";
 import {
@@ -20,7 +23,9 @@ type Props = {
   shown: number;
   density: NotesListDensity;
   onDensityChange: (d: NotesListDensity) => void;
-  toolbarExtra?: React.ReactNode;
+  /** Row 2 — note actions beside filters. */
+  filterToolbar?: React.ReactNode;
+  headerActions?: React.ReactNode;
 };
 
 export function NotesHubChrome({
@@ -32,15 +37,23 @@ export function NotesHubChrome({
   shown,
   density,
   onDensityChange,
-  toolbarExtra,
+  filterToolbar,
+  headerActions,
 }: Props) {
   const [prefs, setPrefs] = useState(readNotesListPrefs);
+  const [hubPrefs, setHubPrefs] = useState(readHubListPrefs);
 
   useEffect(() => {
-    const sync = () => setPrefs(readNotesListPrefs());
+    const sync = () => {
+      setPrefs(readNotesListPrefs());
+      setHubPrefs(readHubListPrefs());
+    };
     window.addEventListener("popstate", sync);
     return () => window.removeEventListener("popstate", sync);
   }, []);
+
+  const visHeaderStats =
+    hubPrefs.headerStats ?? DEFAULT_NOTES_HEADER_STAT_KEYS;
 
   const visFilterKeys = prefs.noteFilters ?? DEFAULT_NOTES_FILTER_KEYS;
   const opts = useMemo(() => notesFilterOptions(notes), [notes]);
@@ -71,16 +84,15 @@ export function NotesHubChrome({
       values={filterValues}
       onValuesChange={onFilterValuesChange}
       toolbar={
-        <>
-          <NotesFilterToolbar
-            shown={shown}
-            total={notes.length}
-            density={density}
-            onDensityChange={onDensityChange}
-          />
-          {toolbarExtra}
-        </>
+        <NotesFilterToolbar
+          range={hubPrefs.range}
+          shown={shown}
+          total={notes.length}
+          density={density}
+          onDensityChange={onDensityChange}
+        />
       }
+      filterToolbar={filterToolbar}
     />
   );
 
@@ -94,28 +106,44 @@ export function NotesHubChrome({
           title="Notes"
           metaItems={[{ icon: FileText, title: "Build", value: `v${APP_VERSION}` }]}
           centerStats={[
-            {
-              key: "notes-total",
-              icon: StickyNote,
-              label: "notes",
-              value: notes.length,
-              toneClass: "text-indigo-300",
-            },
-            {
-              key: "notes-pinned",
-              icon: Pin,
-              label: "pinned",
-              value: pinnedCount,
-              toneClass: "text-violet-300",
-            },
-            {
-              key: "notes-synced",
-              icon: CheckCircle2,
-              label: "synced",
-              value: syncedCount,
-              toneClass: "text-emerald-300",
-            },
-          ]}
+            visHeaderStats.has("notes-total")
+              ? {
+                  key: "notes-total",
+                  icon: StickyNote,
+                  label: "notes",
+                  value: notes.length,
+                  toneClass: "text-indigo-300",
+                }
+              : null,
+            visHeaderStats.has("notes-pinned")
+              ? {
+                  key: "notes-pinned",
+                  icon: Pin,
+                  label: "pinned",
+                  value: pinnedCount,
+                  toneClass: "text-violet-300",
+                }
+              : null,
+            visHeaderStats.has("notes-synced")
+              ? {
+                  key: "notes-synced",
+                  icon: CheckCircle2,
+                  label: "synced",
+                  value: syncedCount,
+                  toneClass: "text-emerald-300",
+                }
+              : null,
+          ].filter((stat): stat is NonNullable<typeof stat> => stat !== null)}
+          actions={
+            <div className="flex shrink-0 items-center gap-1.5">
+              {headerActions}
+              <WorkspaceTabDisplayPrefs
+                screen="notes"
+                notesDensity={density}
+                onNotesDensityChange={onDensityChange}
+              />
+            </div>
+          }
           pinSticky={false}
           dividerBelow={false}
           embedded

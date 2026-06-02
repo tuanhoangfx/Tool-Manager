@@ -4,7 +4,10 @@ export type AppView = "main" | "settings";
 
 function readView(): AppView {
   if (typeof window === "undefined") return "main";
-  return new URLSearchParams(window.location.search).get("view") === "settings" ? "settings" : "main";
+  // Settings view has been deprecated; keep backward compatibility for old URLs.
+  // Strip `?view=settings` while still returning a valid view.
+  const v = new URLSearchParams(window.location.search).get("view");
+  return v === "settings" ? "main" : "main";
 }
 
 export function useAppView() {
@@ -17,11 +20,12 @@ export function useAppView() {
   }, []);
 
   const setView = useCallback((next: AppView) => {
-    setViewState(next);
+    // Coerce deprecated view to avoid dead-state.
+    const safeNext: AppView = next === "settings" ? "main" : next;
+    setViewState(safeNext);
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    if (next === "settings") params.set("view", "settings");
-    else params.delete("view");
+    params.delete("view");
     const query = params.toString();
     const url = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
     window.history.pushState(null, "", url);
@@ -29,7 +33,7 @@ export function useAppView() {
 
   return {
     view,
-    isSettings: view === "settings",
+    isSettings: false,
     setView,
   };
 }

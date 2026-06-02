@@ -5,6 +5,8 @@ export type TwofaAccount = {
   secret: string;
   createdAt: string;
   updatedAt: string;
+  /** Set when a code is copied or the row is actively used (for time-range filters). */
+  lastUsedAt?: string;
 };
 
 export type TwofaDraft = {

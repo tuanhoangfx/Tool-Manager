@@ -1,5 +1,7 @@
 /** Browser-extension postMessage contract for E0001-cookie-bridge. */
 
+import { HUB_SUPABASE_ANON_KEY, HUB_SUPABASE_URL } from "../../lib/hub-supabase-env";
+
 export type ExtensionCookieBinding = {
   syncId: string;
   noteId?: string;
@@ -17,6 +19,28 @@ export type ExtensionCookieBinding = {
   canManage?: boolean;
 };
 
+/** Tool Hub identity session (P0004) — user registry / admin. */
+export function broadcastExtensionIdentityAuth(session: {
+  access_token: string;
+  refresh_token: string;
+  expires_at?: number;
+  user?: { id?: string | null; email?: string | null };
+}) {
+  const detail = {
+    type: "E0001_HUB_IDENTITY_AUTH",
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+    expires_at: session.expires_at,
+    user_id: session.user?.id ?? null,
+    user_email: session.user?.email ?? null,
+    supabase_url: HUB_SUPABASE_URL,
+    supabase_anon_key: HUB_SUPABASE_ANON_KEY,
+  };
+  window.postMessage(detail, window.location.origin);
+  document.dispatchEvent(new CustomEvent("e0001-hub-identity-auth", { detail }));
+}
+
+/** Data Box session — cookie vault sync (unchanged flow). */
 export function broadcastExtensionAuth(session: {
   access_token: string;
   refresh_token: string;

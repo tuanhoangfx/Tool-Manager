@@ -1,13 +1,31 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
+import { hideBootLoader } from "./lib/hide-boot-loader";
+import { prefetchDataBoxAuth } from "./lib/prefetch-data-box-auth";
+import "./theme/hub-boot.css";
 import "./theme/p0008-globals.css";
 import "./theme/hub-appearance.css";
 import "./theme/data-box-layout.css";
 import "./styles.css";
 
-createRoot(document.getElementById("root")!).render(
+prefetchDataBoxAuth();
+hideBootLoader();
+
+const rootEl = document.getElementById("root");
+if (!rootEl) {
+  throw new Error("#root not found");
+}
+
+createRoot(rootEl).render(
   <StrictMode>
-    <App />
+    <AppErrorBoundary label="P0020-Data-Box">
+      <App />
+    </AppErrorBoundary>
   </StrictMode>,
 );
+
+requestAnimationFrame(() => {
+  hideBootLoader();
+});

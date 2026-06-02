@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Cookie, Eye, Link2, Save, Trash2, X } from "lucide-react";
+import { WorkspaceLoadingView } from "../../components/sales-shell";
 import { Glass, StatusBadge } from "../../theme/p0008";
 import { readNoteIdFromUrl } from "../design-preview/design-nav";
 import { PageHeader } from "../design-preview/screens/PageHeader";
@@ -78,7 +79,7 @@ export function NoteEditScreen({
   }
 
   if (authLoading) {
-    return <div className="anim-fade p-6 text-sm text-[var(--muted)]">Loading session…</div>;
+    return <WorkspaceLoadingView screen="notes" variant="full" />;
   }
 
   if (!session) {
@@ -97,7 +98,7 @@ export function NoteEditScreen({
   }
 
   if (loading) {
-    return <div className="anim-fade p-6 text-sm text-[var(--muted)]">Loading note…</div>;
+    return <WorkspaceLoadingView screen="notes" variant="full" />;
   }
 
   if (error || !note) {

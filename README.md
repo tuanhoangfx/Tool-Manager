@@ -1,19 +1,15 @@
 # P0020-Data-Box
 
-Fork từ [P0004 GitHub Tool Manager](../P0004-GitHub-Tool-Manager). **P0004 repo gốc giữ nguyên** (catalog-only, port 5176).
-
-**P0020-Data-Box** = data workspace gồm Notes + Todo (P0019) + 2FA + Cookie Auto, giữ shell H1 từ P0004.
-
-**Layout đã chốt:** H1 Unified Sidebar · **Skin:** P0008.
+Unified data workspace: Notes, 2FA, Cookie Auto (+ System). Shell từ P0004 Tool Hub; skin P0008.
 
 | Sản phẩm | Mã | Port | Vai trò |
 |----------|-----|------|---------|
-| GitHub Tool Manager | P0004 | 5176 | Catalog / GitHub sync (production) |
+| Tool Hub | P0004 | 5176 | Catalog / GitHub sync |
 | **P0020-Data-Box** | P0020 | 5177 | Data workspace + apps |
 
-## Chạy local
+Todo/task board: tích hợp qua **P0021-AutoVideo-Studio** (project riêng).
 
-**Giống P0008:** Cursor Launch → **`p0020-dev`** hoặc terminal:
+## Chạy local
 
 ```powershell
 cd E:\Dev\Tool\P0020-Data-Box
@@ -21,7 +17,7 @@ corepack pnpm install
 corepack pnpm dev
 ```
 
-→ http://127.0.0.1:5177/ · Production: https://databox.infix1.io.vn · Cookie Auto: https://databox.infix1.io.vn/cookie
+→ http://127.0.0.1:5177/ · Production: https://databox.infix1.io.vn · Cookie: https://databox.infix1.io.vn/cookie
 
 Chi tiết: [docs/DEV.md](docs/DEV.md) · [docs/SUPABASE-NOTES.md](docs/SUPABASE-NOTES.md) · [docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md)
 
@@ -29,9 +25,7 @@ Chi tiết: [docs/DEV.md](docs/DEV.md) · [docs/SUPABASE-NOTES.md](docs/SUPABASE
 |-----|--------|
 | http://127.0.0.1:5177/ | Dashboard |
 | `?screen=library` | Tool Library |
-| `?screen=notes` | Notes V5 |
-
-[docs/DESIGN-DECISION.md](docs/DESIGN-DECISION.md)
+| `?screen=notes` | Notes |
 
 ## Commands
 

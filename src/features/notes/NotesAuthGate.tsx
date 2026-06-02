@@ -2,13 +2,16 @@ import { useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { ToolAvatar } from "../../components/ToolAvatar";
+import { relaySessionsToExtension } from "../../lib/relay-extension-sessions";
 import { toolIconName, toolSvgIcon } from "../../lib/visual";
 import { supabase } from "../../lib/supabase";
 import { setOfflineMode } from "../../lib/offlineMode";
+import { signInWorkspaceDual } from "../../lib/workspace-dual-auth";
+import { useNotesAuth } from "./useNotesAuth";
 
 type Props = {
   onAuthed?: () => void;
-  variant?: "notes" | "cookie-auto" | "todo" | "twofa" | "users" | "system";
+  variant?: "notes" | "cookie-auto" | "twofa" | "system";
 };
 
 type ModalProps = {
@@ -18,6 +21,7 @@ type ModalProps = {
 };
 
 function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
+  const { adoptSession } = useNotesAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -29,7 +33,13 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
     const lower = msg.toLowerCase();
     if (lower.includes("rate limit")) return "Temporary sign-in issue. Please try again in a moment.";
     if (lower.includes("invalid login credentials")) {
-      return "Incorrect email or password.";
+      return "Incorrect email or password. Use the same credentials as Tool Hub (P0004).";
+    }
+    if (lower.includes("exceed_egress_quota") || lower.includes("egress_quota")) {
+      return "Data Box Supabase is paused (egress quota exceeded). Restore the project in Supabase Dashboard → Billing, or use Offline mode for local-only work.";
+    }
+    if (msg === "Failed to fetch" || lower.includes("networkerror") || lower.includes("load failed")) {
+      return "Cannot reach Tool Hub or Data Box (network/DNS). Check VITE_HUB_SUPABASE_URL / VITE_SUPABASE_URL and Supabase project status.";
     }
     return msg || "Sign-in failed. Please try again.";
   };
@@ -38,17 +48,26 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
     e.preventDefault();
     setBusy(true);
     setMessage("");
-    const action =
-      mode === "signup"
-        ? supabase.auth.signUp({ email, password })
-        : supabase.auth.signInWithPassword({ email, password });
-    const { error } = await action;
-    setBusy(false);
-    if (error) {
-      setMessage(normalizeAuthError(error.message));
-      return;
+    try {
+      const { identitySession, dataSession, dataError } = await signInWorkspaceDual(
+        email,
+        password,
+        mode === "signup" ? "signup" : "signin",
+      );
+      if (!dataSession) {
+        throw new Error(
+          dataError ??
+            "Tool Hub sign-in succeeded but Data Box session failed. Check Data Box Supabase status or try again.",
+        );
+      }
+      adoptSession(dataSession);
+      relaySessionsToExtension(identitySession, dataSession);
+      setBusy(false);
+      onAuthed?.();
+    } catch (err) {
+      setBusy(false);
+      setMessage(normalizeAuthError(err instanceof Error ? err.message : String(err)));
     }
-    onAuthed?.();
   };
 
   const onForgotPassword = async () => {
@@ -88,20 +107,16 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
           />
         </div>
         <h2 id="auth-gate-title" className="auth-gate-title">
-          Welcome to P0020 Data Box
+          Sign in to P0020 Data Box
         </h2>
         <p className="auth-gate-subtitle">
           {variant === "cookie-auto"
-            ? "Sign in to enable cloud-first cookie sync."
-            : variant === "users"
-              ? "Sign in to manage workspace users."
-              : variant === "twofa"
+            ? "Sign in with your Data Box account"
+            : variant === "twofa"
                 ? "Sign in to manage 2FA codes in this workspace."
                 : variant === "system"
                   ? "Sign in to access system tools."
-                  : variant === "todo"
-                    ? "Sign in to manage your tasks."
-                    : "Sign in to your workspace"}
+                  : "Same email and password as Tool Hub (P0004). User roles are managed on Tool Hub only."}
         </p>
 
         <div className="auth-gate-tabs" role="tablist">
@@ -183,19 +198,11 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
     },
     "cookie-auto": {
       title: "Sign in to enable cloud-first cookie sync.",
-      sub: "Link your browser session and keep cookie routes in sync across browsers.",
-    },
-    todo: {
-      title: "Sign in to manage your tasks.",
-      sub: "Track progress, manage deadlines, and collaborate seamlessly.",
+      sub: "Sign in with your Data Box account",
     },
     twofa: {
       title: "Sign in to manage 2FA codes.",
       sub: "Store and generate time-based codes securely in your workspace.",
-    },
-    users: {
-      title: "Sign in to manage workspace users.",
-      sub: "View activity, roles, and project access in one dashboard.",
     },
     system: {
       title: "Sign in to access system tools.",
@@ -212,7 +219,7 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
           <div className="auth-inline-sub">{copy.sub}</div>
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" className="auth-inline-btn" onClick={() => setShowModal(true)}>
-              Login
+              Sign in
             </button>
             <button
               type="button"

@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { loadCookieBridgePrefs } from "../cookie/cookieBridge";
 import { useNotesCookieRealtime } from "../cookie/useNotesCookieRealtime";
+import { NOTES_REALTIME_UI_REFRESH } from "./notes-egress";
 import { fetchNoteById, isMissingSyncIdColumn, updateNoteRow, updateNoteSyncId } from "./notesRepository";
 import { setNoteSyncPass } from "./noteSyncPass";
-import { generateSyncId, slugifyTitle } from "./noteUtils";
+import { generateSyncId, noteEditorContentEqual, slugifyTitle } from "./noteUtils";
 import { generateShareToken, hashSharePassword } from "./shareUtils";
 import type { NoteRow } from "./types";
 import { getOfflineMode } from "../../lib/offlineMode";
+import { readNoteDetailStale, writeNoteDetailCache } from "../../lib/note-detail-cache";
 import { getOfflineNote, upsertOfflineNote } from "./offlineNotesRepository";
 
 export type NoteSaveResult = NoteRow & { passMigrationHint?: string };
@@ -63,62 +64,113 @@ async function updateNoteWithFallback(noteId: string, patch: Record<string, unkn
   return res;
 }
 
+export type NoteRefreshOpts = { /** Skip full editor loading — background / same-note refresh */ silent?: boolean };
+
+function staleNoteForId(noteId: string | null): NoteRow | null {
+  return noteId ? readNoteDetailStale(noteId) : null;
+}
+
 export function useNote(session: Session | null, noteId: string | null) {
-  const [note, setNote] = useState<NoteRow | null>(null);
-  const [loading, setLoading] = useState(false);
+  const userId = session?.user?.id ?? null;
+  const [note, setNote] = useState<NoteRow | null>(() => staleNoteForId(noteId));
+  const [loading, setLoading] = useState(() => Boolean(noteId && !staleNoteForId(noteId)));
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const trackedNoteId = useRef(noteId);
+  const fetchGen = useRef(0);
 
-  const refresh = useCallback(async () => {
-    if (!session || !noteId) {
-      setNote(null);
-      return;
-    }
-    if (getOfflineMode()) {
-      setLoading(true);
-      setError("");
-      try {
-        const row = await getOfflineNote(noteId);
-        setNote(row);
-        if (!row) setError("Note not found");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Offline note load failed");
-        setNote(null);
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-    setLoading(true);
+  /** Sync note state in the same commit as selectedId — avoids one frame of the previous note. */
+  if (noteId !== trackedNoteId.current) {
+    trackedNoteId.current = noteId;
+    fetchGen.current += 1;
+    const stale = staleNoteForId(noteId);
+    setNote(stale);
+    setLoading(Boolean(noteId && !stale));
     setError("");
-    const { data, error: err } = await fetchNoteById(noteId);
-    if (err) {
-      setError(err.message);
+  }
+
+  const commitNote = useCallback((row: NoteRow | null) => {
+    if (!row) {
       setNote(null);
-    } else {
-      let row = (data as NoteRow | null) ?? null;
-      if (row && !row.sync_id?.trim()) {
-        const sync_id = generateSyncId();
-        const { data: patched, error: patchErr } = await updateNoteSyncId(noteId, sync_id);
-        if (!patchErr && patched) row = patched as NoteRow;
-        else if (patchErr && isMissingSyncIdColumn(patchErr.message)) {
-          /* sync_id column not migrated — note still usable via note UUID RPC */
-        }
-      }
-      setNote(row);
+      return;
     }
-    setLoading(false);
-  }, [session, noteId]);
+    setNote((prev) => (prev && noteEditorContentEqual(prev, row) ? prev : row));
+  }, []);
+
+  const refresh = useCallback(
+    async (refreshOpts?: NoteRefreshOpts) => {
+      const silent = refreshOpts?.silent ?? false;
+      const targetId = noteId;
+      if (!userId || !targetId) {
+        setNote(null);
+        setLoading(false);
+        return;
+      }
+      const gen = fetchGen.current;
+
+      if (getOfflineMode()) {
+        if (!silent) setLoading(true);
+        setError("");
+        try {
+          const row = await getOfflineNote(targetId);
+          if (gen !== fetchGen.current || targetId !== noteId) return;
+          commitNote(row);
+          if (row) writeNoteDetailCache(targetId, row);
+          if (!row) setError("Note not found");
+        } catch (err) {
+          if (gen !== fetchGen.current) return;
+          setError(err instanceof Error ? err.message : "Offline note load failed");
+          setNote(null);
+        } finally {
+          if (!silent) setLoading(false);
+        }
+        return;
+      }
+
+      if (!silent) setLoading(true);
+      setError("");
+      const { data, error: err } = await fetchNoteById(targetId);
+      if (gen !== fetchGen.current || targetId !== noteId) return;
+
+      if (err) {
+        setError(err.message);
+        setNote(null);
+      } else {
+        let row = (data as NoteRow | null) ?? null;
+        if (row && !row.sync_id?.trim()) {
+          const sync_id = generateSyncId();
+          const { data: patched, error: patchErr } = await updateNoteSyncId(targetId, sync_id);
+          if (gen !== fetchGen.current || targetId !== noteId) return;
+          if (!patchErr && patched) row = patched as NoteRow;
+          else if (patchErr && isMissingSyncIdColumn(patchErr.message)) {
+            /* sync_id column not migrated */
+          }
+        }
+        commitNote(row);
+        if (row) writeNoteDetailCache(targetId, row);
+      }
+      setLoading(false);
+    },
+    [commitNote, noteId, userId],
+  );
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (!userId || !noteId) {
+      setNote(null);
+      setLoading(false);
+      return;
+    }
+    void refresh({ silent: true });
+  }, [noteId, refresh, userId]);
 
-  useNotesCookieRealtime(session, refresh, loadCookieBridgePrefs().realtimeSync);
+  const refreshFromRealtime = useCallback(() => {
+    void refresh({ silent: true });
+  }, [refresh]);
+  useNotesCookieRealtime(session, refreshFromRealtime, NOTES_REALTIME_UI_REFRESH);
 
   const save = useCallback(
     async (draft: NoteDraft) => {
-      if (!session || !noteId) throw new Error("No note selected");
+      if (!userId || !noteId) throw new Error("No note selected");
       if (getOfflineMode()) {
         setSaving(true);
         const now = new Date().toISOString();
@@ -134,7 +186,6 @@ export function useNote(session: Session | null, noteId: string | null) {
           domain: draft.domain !== undefined ? draft.domain.trim() : existing.domain,
           body_md: draft.body_md,
           pinned: draft.pinned,
-          // Share + sync pass require Supabase RPCs — keep disabled offline.
           share_enabled: false,
           share_token: null,
           share_password_hash: null,
@@ -198,9 +249,10 @@ export function useNote(session: Session | null, noteId: string | null) {
       setSaving(false);
       const out: NoteSaveResult = passMigrationHint ? { ...row, passMigrationHint } : row;
       setNote(row);
+      writeNoteDetailCache(noteId, row);
       return out;
     },
-    [session, noteId, note?.share_token, note?.share_password_hash, note?.slug],
+    [userId, noteId, note?.share_token, note?.share_password_hash, note?.slug],
   );
 
   return { note, loading, error, saving, refresh, save };

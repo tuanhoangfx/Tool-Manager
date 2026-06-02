@@ -13,7 +13,20 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="/hub-boot.css" />
     <title>P0020-Data-Box</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0b1020;
+        color: #e8ecff;
+      }
+      #root {
+        min-height: 100%;
+      }
+    </style>
     <script>
       (function () {
         var t = localStorage.getItem("tool-hub-theme") || localStorage.getItem("gtm-theme");
@@ -34,11 +47,34 @@
     </script>
   </head>
   <body>
-    <div id="root">
-      <p style="margin:2rem;font-family:system-ui,sans-serif;color:#8a93b2;font-size:14px">
-        Loading P0020-Data-Box… If this stays blank, run <code>pnpm run dev</code> in Tool/P0020-Data-Box.
-      </p>
+    <div id="hub-boot-loader" class="hub-boot-loader--pane" role="status" aria-label="Loading P0020-Data-Box">
+      <div class="hub-boot-orb" aria-hidden="true">
+        <span class="hub-boot-orb__ring"></span>
+        <span class="hub-boot-orb__ring hub-boot-orb__ring--dash"></span>
+        <span class="hub-boot-orb__ring hub-boot-orb__ring--inner"></span>
+        <span class="hub-boot-orb__core">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+        </span>
+      </div>
     </div>
+    <div id="root"></div>
+    <script>
+      (function () {
+        function dropBoot() {
+          var el = document.getElementById("hub-boot-loader");
+          if (el) el.remove();
+        }
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", dropBoot, { once: true });
+        } else {
+          dropBoot();
+        }
+        window.addEventListener("load", dropBoot, { once: true });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

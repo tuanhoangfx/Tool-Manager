@@ -1,7 +1,7 @@
-import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from "react";
-import { DisplayPrefs } from "../../components/sales-shell";
-import type { TabHeaderStatItem } from "../../components/sales-shell";
-import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
+import { useCallback, useEffect, useState } from "react";
+import { DisplayPrefs, HubLoaderRoot } from "../../components/sales-shell";
+import { hideBootLoader } from "../../lib/hide-boot-loader";
+import type { FilterDef } from "../../components/sales-shell/FilterBar";
 import { WorkspaceSidebar } from "../../components/sales-shell/WorkspaceSidebar";
 import { ToastContainer, ToastProvider } from "../../components/toast";
 import type { WorkspaceNavScreen, WorkspaceScreen } from "../../lib/workspace-screen";
@@ -13,26 +13,17 @@ import { DEFAULT_NOTES_FILTER_KEYS } from "../notes/notes-list-prefs";
 import { NOTES_FILTER_DEFS } from "../notes/notes-filters";
 import { COOKIE_ROUTE_FILTER_DEFS, DEFAULT_COOKIE_ROUTE_FILTER_KEYS } from "../cookie/cookie-route-filters";
 import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
+import { useHubIdentityRelay } from "../hub/useHubIdentityRelay";
 import { useHubNavigation } from "../hub/useHubNavigation";
-import { WorkspaceScreenChrome } from "./WorkspaceScreenChrome";
-import { WorkspaceSearchProvider } from "./WorkspaceSearchContext";
-
-const NotesWorkspaceScreen = lazy(() =>
-  import("../notes/NotesWorkspaceScreen").then((m) => ({ default: m.NotesWorkspaceScreen })),
-);
-const TodoEmbed = lazy(() => import("../todo/TodoEmbed").then((m) => ({ default: m.TodoEmbed })));
-const TwofaManagerScreen = lazy(() =>
-  import("../twofa/TwofaManagerScreen").then((m) => ({ default: m.TwofaManagerScreen })),
-);
-const CookieSyncScreen = lazy(() =>
-  import("../cookie/CookieSyncScreen").then((m) => ({ default: m.CookieSyncScreen })),
-);
-const UserManagementScreen = lazy(() =>
-  import("../users/UserManagementScreen").then((m) => ({ default: m.UserManagementScreen })),
-);
-const SystemDesignTemplateScreen = lazy(() =>
-  import("../system/SystemDesignTemplateScreen").then((m) => ({ default: m.SystemDesignTemplateScreen })),
-);
+import { AuthSessionProvider } from "../notes/AuthSessionProvider";
+import { useNotesAuth } from "../notes/useNotesAuth";
+import { NotesWorkspaceScreen } from "../notes/NotesWorkspaceScreen";
+import { TwofaManagerScreen } from "../twofa/TwofaManagerScreen";
+import { CookieSyncScreen } from "../cookie/CookieSyncScreen";
+import { SystemDesignTemplateScreen } from "../system/SystemDesignTemplateScreen";
+import { prefetchNotesListBackground } from "../../lib/hub-background-prefetch";
+import { WorkspaceShellTabFrame } from "./WorkspaceShellTabFrame";
+import { WorkspaceVisitedTabPanel } from "./WorkspaceVisitedTabPanel";
 
 function WorkspaceSidebarDisplayPrefs({
   screen,
@@ -50,7 +41,7 @@ function WorkspaceSidebarDisplayPrefs({
           ? {
               filters: screenFilters.map(({ key, label }) => ({ key, label })),
               defaultFilterKeys: new Set(screenFilters.map((filter) => filter.key)),
-              filterParam: screen === "todo" ? ("tfilt" as const) : screen === "users" ? ("ufilt" as const) : ("afilt" as const),
+              filterParam: screen === "twofa" ? ("afilt" as const) : ("hfilt" as const),
             }
           : { filters: [], defaultFilterKeys: new Set<string>(), filterParam: "hfilt" as const };
 
@@ -59,12 +50,14 @@ function WorkspaceSidebarDisplayPrefs({
       filters={filterConfig.filters}
       defaultFilterKeys={filterConfig.defaultFilterKeys}
       filterParam={filterConfig.filterParam}
+      filtersFromUrl
       headerStats={[]}
       defaultHeaderStatKeys={new Set()}
       showRange={false}
       showLimit={false}
       showHeaderPin
       sidebarRow
+      scope="tab"
     />
   );
 }
@@ -75,83 +68,16 @@ function navScreen(screen: WorkspaceScreen): WorkspaceNavScreen {
   return "notes";
 }
 
-function ScreenFallback({ label }: { label: string }) {
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center text-sm text-[var(--muted)]">
-      Loading {label}…
-    </div>
-  );
-}
-
-function WorkspaceScreenBody({
-  screen,
-  navigate,
-  query,
-}: {
-  screen: WorkspaceScreen;
-  navigate: ReturnType<typeof useHubNavigation>["navigate"];
-  query: string;
-}) {
-  switch (screen) {
-    case "notes":
-    case "edit":
-      return (
-        <Suspense fallback={<ScreenFallback label="Notes" />}>
-          <NotesWorkspaceScreen
-            navigate={(opts) => navigate("notes", opts)}
-          />
-        </Suspense>
-      );
-    case "todo":
-      return (
-        <div className="flex min-h-0 flex-1 flex-col">
-          <Suspense fallback={<ScreenFallback label="Todo" />}>
-            <TodoEmbed />
-          </Suspense>
-        </div>
-      );
-    case "twofa":
-      return (
-        <Suspense fallback={<ScreenFallback label="2FA" />}>
-          <TwofaManagerScreen shellMode query={query} />
-        </Suspense>
-      );
-    case "cookie":
-      return (
-        <Suspense fallback={<ScreenFallback label="Cookie Auto" />}>
-          <CookieSyncScreen shellMode query={query} />
-        </Suspense>
-      );
-    case "users":
-      return (
-        <Suspense fallback={<ScreenFallback label="User Management" />}>
-          <UserManagementScreen shellMode />
-        </Suspense>
-      );
-    case "system":
-      return (
-        <Suspense fallback={<ScreenFallback label="System" />}>
-          <SystemDesignTemplateScreen />
-        </Suspense>
-      );
-    default:
-      return null;
-  }
-}
-
 const NOTES_SCREENS = new Set<WorkspaceScreen>(["notes", "edit"]);
 
-export function WorkspaceApp() {
+function WorkspaceAppInner() {
   const { screen, navigate } = useHubNavigation();
+  useHubIdentityRelay();
   useExtensionBindingsRelay(true);
   const shareToken = readShareTokenFromUrl();
-  const [query, setQuery] = useState("");
-  const [screenFilters, setScreenFilters] = useState<FilterDef[]>([]);
-  const [screenFilterValues, setScreenFilterValues] = useState<FilterValues>({});
-  const [screenToolbar, setScreenToolbar] = useState<ReactNode>(null);
-  const [screenFilterToolbar, setScreenFilterToolbar] = useState<ReactNode>(null);
-  const [screenHeaderActions, setScreenHeaderActions] = useState<ReactNode>(null);
-  const [screenCenterStats, setScreenCenterStats] = useState<TabHeaderStatItem[]>([]);
+  const activeNav = navScreen(screen);
+  const isNotesLayout = NOTES_SCREENS.has(screen);
+  const [visited, setVisited] = useState<Set<WorkspaceNavScreen>>(() => new Set([activeNav]));
 
   useEffect(() => {
     if (screen !== "edit") return;
@@ -160,14 +86,19 @@ export function WorkspaceApp() {
   }, [screen, navigate]);
 
   useEffect(() => {
-    if (!NOTES_SCREENS.has(screen)) setQuery("");
-    setScreenFilters([]);
-    setScreenFilterValues({});
-    setScreenToolbar(null);
-    setScreenFilterToolbar(null);
-    setScreenHeaderActions(null);
-    setScreenCenterStats([]);
-  }, [screen]);
+    setVisited((prev) => new Set(prev).add(activeNav));
+  }, [activeNav]);
+
+  useEffect(() => {
+    hideBootLoader();
+    prefetchNotesListBackground();
+    const idle = window.requestIdleCallback?.(() => prefetchNotesListBackground(), { timeout: 2000 });
+    if (idle == null) {
+      const t = window.setTimeout(() => prefetchNotesListBackground(), 400);
+      return () => window.clearTimeout(t);
+    }
+    return () => window.cancelIdleCallback(idle);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.add("theme-hub");
@@ -192,63 +123,53 @@ export function WorkspaceApp() {
     return <PublicShareScreen />;
   }
 
-  const activeNav = navScreen(screen);
-  const isNotesLayout = NOTES_SCREENS.has(screen);
-
   const mainClass = isNotesLayout ? "hub-main hub-main--notes" : "hub-main hub-main--tab";
 
-  const body = (
-    <WorkspaceScreenBody screen={screen} navigate={navigate} query={query} />
-  );
+  return (
+    <div className="hub-app theme-hub flex h-full min-h-0 w-full overflow-hidden">
+      <WorkspaceSidebar
+        screen={activeNav}
+        onNavigate={onNav}
+        displayPrefs={<WorkspaceSidebarDisplayPrefs screen={activeNav} screenFilters={[]} />}
+      />
 
+      <main className={`${mainClass} flex min-h-0 min-w-0 flex-col`}>
+        <HubLoaderRoot />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <WorkspaceVisitedTabPanel tabId="notes" active={isNotesLayout} visited={visited}>
+            <NotesWorkspaceScreen navigate={(opts) => navigate("notes", opts)} />
+          </WorkspaceVisitedTabPanel>
+
+          <WorkspaceVisitedTabPanel tabId="twofa" active={screen === "twofa"} visited={visited}>
+            <WorkspaceShellTabFrame screen="twofa" active={screen === "twofa"}>
+              <TwofaManagerScreen shellMode />
+            </WorkspaceShellTabFrame>
+          </WorkspaceVisitedTabPanel>
+
+          <WorkspaceVisitedTabPanel tabId="cookie" active={screen === "cookie"} visited={visited}>
+            <WorkspaceShellTabFrame screen="cookie" active={screen === "cookie"}>
+              <CookieSyncScreen shellMode tabActive={screen === "cookie"} />
+            </WorkspaceShellTabFrame>
+          </WorkspaceVisitedTabPanel>
+
+          <WorkspaceVisitedTabPanel tabId="system" active={screen === "system"} visited={visited}>
+            <WorkspaceShellTabFrame screen="system" active={screen === "system"}>
+              <SystemDesignTemplateScreen />
+            </WorkspaceShellTabFrame>
+          </WorkspaceVisitedTabPanel>
+        </div>
+      </main>
+      <ToastContainer />
+    </div>
+  );
+}
+
+export function WorkspaceApp() {
   return (
     <ToastProvider>
-      <div className="hub-app theme-hub flex h-full min-h-0 w-full overflow-hidden">
-        <WorkspaceSidebar
-          screen={activeNav}
-          onNavigate={onNav}
-          displayPrefs={<WorkspaceSidebarDisplayPrefs screen={activeNav} screenFilters={screenFilters} />}
-        />
-
-        <main className={`${mainClass} flex-1 min-h-0 min-w-0`}>
-          {isNotesLayout ? (
-            body
-          ) : (
-            <WorkspaceSearchProvider
-              query={query}
-              setQuery={setQuery}
-              filters={screenFilters}
-              setFilters={setScreenFilters}
-              filterValues={screenFilterValues}
-              setFilterValues={setScreenFilterValues}
-              toolbar={screenToolbar}
-              setToolbar={setScreenToolbar}
-              filterToolbar={screenFilterToolbar}
-              setFilterToolbar={setScreenFilterToolbar}
-              headerActions={screenHeaderActions}
-              setHeaderActions={setScreenHeaderActions}
-              centerStats={screenCenterStats}
-              setCenterStats={setScreenCenterStats}
-            >
-              <WorkspaceScreenChrome
-                screen={screen}
-                query={query}
-                onQueryChange={setQuery}
-                filters={screenFilters}
-                filterValues={screenFilterValues}
-                onFilterValuesChange={setScreenFilterValues}
-                toolbar={screenToolbar}
-                filterToolbar={screenFilterToolbar}
-                headerActions={screenHeaderActions}
-                centerStats={screenCenterStats}
-              >
-                {body}
-              </WorkspaceScreenChrome>
-            </WorkspaceSearchProvider>
-          )}
-        </main>
-        <ToastContainer />
-      </div>
+      <AuthSessionProvider>
+        <WorkspaceAppInner />
+      </AuthSessionProvider>
     </ToastProvider>
   );
 }

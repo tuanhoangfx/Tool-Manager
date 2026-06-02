@@ -21,6 +21,7 @@ body,
 }
 
 .hub-app {
+  --hub-sidebar-width: 15rem;
   display: flex;
   height: 100%;
   min-height: 0;
@@ -63,7 +64,7 @@ body,
   isolation: isolate;
 }
 
-/* Tab screens (Todo, Cookie, …): chrome + flex body for embeds */
+/* Tab screens (Cookie, 2FA, …): chrome + flex body for embeds */
 .hub-main--tab {
   display: flex;
   flex-direction: column;
@@ -139,6 +140,11 @@ body,
     rgba(17, 24, 39, 0.70) !important;
 }
 
+.notes-editor__body {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+
 .notes-editor__textarea {
   border: 0 !important;
   background: transparent !important;
@@ -150,6 +156,12 @@ body,
   color: color-mix(in srgb, var(--muted) 72%, transparent);
 }
 
+.notes-editor__textarea--locked {
+  cursor: text;
+}
+
 .note-meta-badge {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
+
+/* Hub boot + tab loader: /hub-boot.css (index.html) + main.tsx import */

@@ -1,92 +1,86 @@
-# Changelog — P0020-Data-Box
+﻿# Changelog — P0020-Data-Box
 
-## [Unreleased]
+## 2026-06-03 - Cookie Auto cloud-first, Notes cookie snapshot, extension UI polish
 
-### Changed
+- Version: `0.1.2`
+- Type: Patch
+- Product: P0020
+- Prompt: Consolidate former [Unreleased] work into a versioned audit entry for review and rollback
+- Commit: `4773f53`
+- Status: Committed
 
-- Rebrand P0020 identity labels to P0020-Data-Box.
-- Use the Azure Data Box SVG icon from theSVG for favicon, sidebar avatar, and PWA manifest.
-- Production domain `databox.infix1.io.vn` with path `/cookie` for Cookie Auto; header shows extension install labels and Download ZIP link.
-- Extension distribution: `package-extension.ps1` + GitHub Release workflow for team Load unpacked installs.
+### Changes
 
-### Fixed
+- Rebrand to P0020-Data-Box; Azure Data Box icon (favicon, sidebar, PWA).
+- Production domain `databox.infix1.io.vn`; Cookie Auto at `/cookie`; extension ZIP download in header.
+- Cookie cloud-first: routes write to `cookie_bridge_routes`; removed manual Pull/Push cloud UI.
+- Extension relay global; popup loads routes via Supabase RPC with user JWT.
+- Route owner in detail/access; realtime vault sync; Notes workspace shows cookie snapshot above editor.
+- Route cards: green selector, Copy Note ID, share toolbar, brand icons (Kalodata/Surfshark), Hub-style filters.
+- Extension popup iterations v0.5.49–v0.5.60 (tab lock, progress overlay, compact table, column alignment).
 
-- Cookie Auto route owner is shown in Route Detail/Access and extension metadata; owner can `Sync now` by default when Source is unset.
-- Cookie route/vault realtime now refreshes cloud routes across linked browser profiles, and Notes Workspace shows the cookie snapshot above the markdown editor.
-- Cookie Auto is now cloud-first: Add/Edit route writes `cookie_bridge_routes` immediately, and manual `Pull routes` / `Push cloud` UI paths were removed.
-- Workspace now mounts the extension relay globally so the popup can request the current Tool session and route cache before rendering.
-- Extension relay now sends session only; route data is loaded by the extension from Supabase RPC as the source of truth.
-- Extension route RPCs now use the Tool user's JWT so `auth.uid()` matches Web P0020.
-- Extension popup no longer refresh-loops on route-pull timestamps and route selection now works by clicking the full row.
-- Cookie route cards now have a compact green circular selector and Copy Note ID action; route sharing can be managed from toolbar or Access tab.
-- Route cards now show share state, cleaner site branding icons, and fewer technical labels; Route bridge is compacted into an icon-only action.
-- Extension build metadata updated to v0.5.49 for continuous tab lock during Load cookies navigation/reload.
-- Extension build metadata updated to v0.5.50 so the active tab overlay matches the popup progress card.
-- Extension build metadata updated to v0.5.51 for stage-specific Load cookies progress effects.
-- Extension build metadata updated to v0.5.52 for the compact route table popup with search/filter and per-route actions.
-- Extension build metadata updated to v0.5.53 for the wider no-horizontal-scroll popup and Web-style Cookie Auto filters.
-- Extension build metadata updated to v0.5.54 for P0004 Hub-style searchable filter dropdowns and route action icons.
-- Extension build metadata updated to v0.5.55 for header user/web shortcut and route icon/status-dot layout.
-- Extension build metadata updated to v0.5.56 for Excel-style row selection and normalized table header typography.
-- Extension build metadata updated to v0.5.57 for Kalodata/Surfshark route brand icons.
-- Extension build metadata updated to v0.5.58 for local Kalodata icon storage and Web/Extension icon alignment.
-- Extension build metadata updated to v0.5.59 for the shared Cookie Auto brand icon registry.
-- Extension build metadata updated to v0.5.60 for popup route column alignment and last Loaded time.
+### Verification
 
-## [0.1.1] — 2026-05-25
+- `corepack pnpm build` — pass (2026-06-03)
+- Browser: http://127.0.0.1:5177/?screen=cookie
 
-### Added
+### Rollback
 
-- Notes Hub-style search/filter bar, two-frame notes workspace, share setup panel, copy toasts, autosave, and folder management.
-- Supabase migration for synced note folders with local fallback when migration is not applied yet.
+```powershell
+cd E:\Dev\Tool\P0020-Data-Box
+git checkout v0.1.1
+# after commit: git revert 4773f53
+```
 
-### Changed
+---
 
-- Notes metadata/header simplified to ID and update time; cookie sync IDs stay internal.
-- Notes labels normalized to English and editor styling aligned with the P0004 Hub theme.
+## 2026-05-25 - Notes workspace Hub filters
 
-## [0.1.0] — 2026-05-23
+- Version: `0.1.1`
+- Type: Patch
+- Product: P0020
+- Prompt: Notes Hub-style search/filter and folder management
+- Commit: `913fa3e`
+- Status: Committed
 
-### Added
+### Changes
 
-- **Notes Supabase CRUD** — `src/features/notes/`, migration SQL, auth gate.
-- **Lazy hub screens** + Vite `manualChunks` (app-todo, app-notes, hub-p0004, vendors).
-- **Deploy Vercel** — https://tool-manager-zeta.vercel.app
-- `docs/SUPABASE-NOTES.md`, `docs/DEPLOY-VERCEL.md`, `.env.example`, `src/hub/app-registry.ts`.
+- Notes Hub-style search/filter bar, two-frame workspace, share setup, copy toasts, autosave, folders.
+- Supabase migration for synced note folders with local fallback.
+- Notes metadata simplified; labels English; P0004 Hub theme alignment.
 
-### Changed
+### Verification
 
-- Rebrand → **P0020-Data-Box**; shared `src/lib/supabase.ts` (P0019 re-export).
-- Cookie sync screen reads notes from Supabase.
+- pending
 
-### Pending
+### Rollback
 
-- Chạy SQL migration trên Supabase Dashboard.
-- Đổi folder `P0020-Data-Box` khi không còn process lock.
-- Vercel env: `VITE_SUPABASE_*`, `VITE_GITHUB_TOKEN`.
+```powershell
+git checkout v0.1.0
+```
 
-## [0.0.1-design] — prior
+---
 
-### Changed (rebrand)
+## 2026-05-23 - Notes Supabase CRUD and Vercel deploy
 
-- Legacy P0020 labels → **P0020-Data-Box** (UI, manifest, docs).
+- Version: `0.1.0`
+- Type: Minor
+- Product: P0020
+- Prompt: Initial Notes CRUD and deploy baseline
+- Commit: `913fa3e`
+- Status: Committed
 
-### Design
+### Changes
 
-- **Layout chốt: V5** (Card Gallery + Drawer), skin P0008 — `docs/DESIGN-DECISION.md`
-- Phase 1: Notes production UI theo V5
+- Notes Supabase CRUD, lazy hub screens, Vite manualChunks, Vercel deploy docs.
+- Rebrand P0020-Data-Box; shared supabase client; cookie sync reads notes.
 
-## [0.0.1-design] — 2026-05-22
+### Verification
 
-### Added
+- https://tool-manager-zeta.vercel.app (legacy)
 
-- Fork từ P0004 (`P0020-Data-Box`); P0004 không đổi.
-- Tab **Design** mặc định với **5 layout preview** (V1–V5) cho Notes + cookie block mock.
-- **Skin 3 — P0008 Seller Center** (mặc định tab Design): clone `globals.css`, Tailwind, `.btn`/`.field`, animations, glass bento, sidebar.
-- `src/theme/p0008/*`, `P0008SkinShell`; tab Library/Activity/System vẫn skin P0004 (skin 1).
-- Initial design preview docs and `.cursor/rules/design-preview-first.mdc` (preview docs removed after production lock).
-- Dev server port **5177**.
+### Rollback
 
-### Not included (phase 0)
-
-- Notes CRUD, Supabase, extension cookie sync, share links thật.
+```powershell
+git checkout <initial-release-sha>
+```

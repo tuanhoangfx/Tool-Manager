@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Pin, Plus } from "lucide-react";
+import { WorkspaceLoadingView } from "../../components/sales-shell";
 import { StatusBadge } from "../../theme/p0008";
 import { readNoteIdFromUrl } from "../design-preview/design-nav";
 import { PageHeader } from "../design-preview/screens/PageHeader";
@@ -54,7 +55,7 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
   }
 
   if (authLoading) {
-    return <div className="anim-fade p-6 text-sm text-[var(--muted)]">Loading session…</div>;
+    return <WorkspaceLoadingView screen="notes" variant="full" />;
   }
 
   if (!session) {

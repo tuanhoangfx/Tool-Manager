@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AppTabHeader, FilterBar } from "../../components/sales-shell";
+import { WorkspaceTabDisplayPrefs } from "./WorkspaceTabDisplayPrefs";
 import type { TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
@@ -96,7 +97,12 @@ export function WorkspaceScreenChrome({
           title={cfg.title}
           metaItems={cfg.metaItems}
           centerStats={centerStats}
-          actions={headerActions}
+          actions={
+            <div className="flex shrink-0 items-center gap-1.5">
+              {headerActions}
+              <WorkspaceTabDisplayPrefs screen={screen} screenFilters={filters} />
+            </div>
+          }
           pinSticky={false}
           dividerBelow={false}
           embedded

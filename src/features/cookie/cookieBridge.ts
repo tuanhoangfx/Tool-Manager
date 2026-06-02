@@ -1,5 +1,7 @@
 /** Cookie bridge ↔ E0001-cookie-bridge extension (postMessage + local prefs). */
 
+import { notifyCookieBridgePrefsChange } from "./cookie-bridge-prefs-events";
+
 export { normalizeCookieDomain } from "./normalizeCookieDomain";
 
 export type CookieBinding = {
@@ -80,8 +82,28 @@ export function loadCookieBindings(): CookieBinding[] {
   }
 }
 
+export const COOKIE_BINDINGS_CHANGE_EVENT = "p0020-cookie-bindings-change";
+
+export function filterActiveCookieBindingsForNote(bindings: CookieBinding[], noteId: string): CookieBinding[] {
+  const id = noteId.trim();
+  if (!id) return [];
+  return bindings.filter((b) => b.enabled && b.noteId === id);
+}
+
+export function getActiveCookieBindingsForNote(noteId: string): CookieBinding[] {
+  return filterActiveCookieBindingsForNote(loadCookieBindings(), noteId);
+}
+
+/** Note is driven by Cookie Auto route — editor allows title only. */
+export function isNoteManagedByCookieRoute(noteId: string | null | undefined): boolean {
+  return Boolean(noteId && getActiveCookieBindingsForNote(noteId).length > 0);
+}
+
 export function saveCookieBindings(bindings: CookieBinding[]) {
   localStorage.setItem(BINDINGS_KEY, JSON.stringify(bindings));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(COOKIE_BINDINGS_CHANGE_EVENT));
+  }
 }
 
 export function loadSelectedBindingId(): string | null {
@@ -100,7 +122,7 @@ export function loadCookieBridgePrefs(): CookieBridgePrefs {
   if (typeof window === "undefined") {
     return {
       syncIntervalMinutes: 60,
-      realtimeSync: true,
+      realtimeSync: false,
       vaultSync: true,
       realtimeVaultApply: false,
       bridgeRole: "writer",
@@ -112,7 +134,7 @@ export function loadCookieBridgePrefs(): CookieBridgePrefs {
     if (!raw) {
       return {
         syncIntervalMinutes: 60,
-        realtimeSync: true,
+        realtimeSync: false,
         vaultSync: true,
         realtimeVaultApply: false,
         bridgeRole: "writer",
@@ -121,7 +143,7 @@ export function loadCookieBridgePrefs(): CookieBridgePrefs {
     const p = JSON.parse(raw) as Partial<CookieBridgePrefs>;
     return {
       syncIntervalMinutes: p.syncIntervalMinutes ?? 60,
-      realtimeSync: p.realtimeSync ?? true,
+      realtimeSync: p.realtimeSync === true,
       vaultSync: p.vaultSync !== false,
       realtimeVaultApply: p.realtimeVaultApply === true,
       bridgeRole: p.bridgeRole === "reader" ? "reader" : "writer",
@@ -129,7 +151,7 @@ export function loadCookieBridgePrefs(): CookieBridgePrefs {
   } catch {
     return {
       syncIntervalMinutes: 60,
-      realtimeSync: true,
+      realtimeSync: false,
       vaultSync: true,
       realtimeVaultApply: false,
       bridgeRole: "writer",
@@ -139,6 +161,7 @@ export function loadCookieBridgePrefs(): CookieBridgePrefs {
 
 export function saveCookieBridgePrefs(prefs: CookieBridgePrefs) {
   localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  notifyCookieBridgePrefsChange(prefs);
 }
 
 /** Payload sent to extension — always include noteId when present (UUID mode). */

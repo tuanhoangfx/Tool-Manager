@@ -5,13 +5,14 @@ import {
   NAV_SCREENS,
   type WorkspaceNavScreen,
 } from "../../lib/workspace-screen";
+import { toolHubUsersUrl } from "../../lib/hub-identity-urls";
 import {
   buildAppUrl,
+  isUsersLegacyPath,
   navScreenToPath,
   pathnameToNavScreen,
   searchWithoutNavScreen,
 } from "../../lib/workspace-path";
-
 const RETIRED = new Set([
   "dashboard",
   "library",
@@ -19,15 +20,36 @@ const RETIRED = new Set([
   "settings",
   "hub",
   "layouts",
+  "todo",
 ]);
+
+function redirectUsersPathToToolHub(): void {
+  if (typeof window === "undefined") return;
+  const target = toolHubUsersUrl();
+  if (window.location.href !== target) {
+    window.location.replace(target);
+  }
+}
 
 function readScreenFromLocation(): WorkspaceScreen {
   if (typeof window === "undefined") return "notes";
+
+  const normalizedPath = window.location.pathname.replace(/\/+$/, "") || "/";
+  if (normalizedPath === "/todo") return "notes";
+
+  if (isUsersLegacyPath(window.location.pathname)) {
+    redirectUsersPathToToolHub();
+    return "notes";
+  }
 
   const pathScreen = pathnameToNavScreen(window.location.pathname);
   if (pathScreen) return pathScreen;
 
   const s = new URLSearchParams(window.location.search).get("screen");
+  if (s === "users") {
+    redirectUsersPathToToolHub();
+    return "notes";
+  }
   if (s && RETIRED.has(s)) return "notes";
   return isWorkspaceScreen(s) ? s : "notes";
 }
@@ -35,6 +57,14 @@ function readScreenFromLocation(): WorkspaceScreen {
 function migrateUrl(): WorkspaceScreen {
   const p = new URLSearchParams(window.location.search);
   const raw = p.get("screen");
+
+  const normalizedPath = window.location.pathname.replace(/\/+$/, "") || "/";
+  if (normalizedPath === "/todo") {
+    p.delete("screen");
+    p.delete("tab");
+    window.history.replaceState(null, "", buildAppUrl("notes", p.toString()));
+    return "notes";
+  }
 
   if (raw && RETIRED.has(raw)) {
     p.delete("tab");

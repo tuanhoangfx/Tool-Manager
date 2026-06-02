@@ -1,11 +1,12 @@
-/** P0020-Data-Box tabs — path routes (/notes, /todo, …); legacy ?screen= still read */
-export const WORKSPACE_SCREENS = ["notes", "edit", "todo", "twofa", "cookie", "users", "system", "share"] as const;
+/** P0020-Data-Box tabs — path routes (/notes, /cookie, …); legacy ?screen= still read */
+export const WORKSPACE_SCREENS = ["notes", "edit", "twofa", "cookie", "system", "share"] as const;
 
 export type WorkspaceScreen = (typeof WORKSPACE_SCREENS)[number];
 
 export type WorkspaceNavScreen = Exclude<WorkspaceScreen, "edit" | "share">;
 
-export const NAV_SCREENS: WorkspaceNavScreen[] = ["notes", "todo", "twofa", "cookie", "users", "system"];
+/** In-app tabs only — workspace users live on Tool Hub (P0004). */
+export const NAV_SCREENS: WorkspaceNavScreen[] = ["notes", "twofa", "cookie", "system"];
 
 export function isWorkspaceScreen(value: string | null): value is WorkspaceScreen {
   return value !== null && (WORKSPACE_SCREENS as readonly string[]).includes(value);
@@ -27,10 +28,8 @@ export function isAppScreen(value: string | null): value is AppScreen {
 export const SCREEN_LABELS: Record<WorkspaceScreen, string> = {
   notes: "Notes",
   edit: "Edit note",
-  todo: "Todo",
   twofa: "2FA",
   cookie: "Cookie Auto",
-  users: "User Management",
   system: "System",
   share: "Share",
 };

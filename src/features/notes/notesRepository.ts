@@ -1,13 +1,30 @@
+import { ensureDataBoxAuth } from "../../lib/ensure-data-box-auth";
 import { supabase } from "../../lib/supabase";
 import type { NoteRow } from "./types";
 
+const DATA_BOX_AUTH_REQUIRED =
+  "Sign in on P0020 (Data Box). Tool Hub login alone does not grant notes access.";
+
+async function requireDataBoxSession() {
+  const session = await ensureDataBoxAuth();
+  if (!session) throw new Error(DATA_BOX_AUTH_REQUIRED);
+}
+
+/** List/grid — omit cookie_snapshot + body_md to cut egress on refresh. */
 export const NOTES_LIST_SELECT =
-  "id,user_id,title,slug,domain,cookie_snapshot,pinned,share_enabled,share_token,share_password_hash,share_expires_at,share_view_count,sync_status,synced_at,sync_id,sync_pass_hash,created_at,updated_at";
+  "id,user_id,title,slug,domain,pinned,share_enabled,share_token,share_password_hash,share_expires_at,share_view_count,sync_status,synced_at,sync_id,sync_pass_hash,created_at,updated_at";
 
-export const NOTES_DETAIL_SELECT = `${NOTES_LIST_SELECT},body_md`;
+export const NOTES_COOKIE_SELECT = "cookie_snapshot,sync_status,synced_at";
 
-export const NOTES_LEGACY_SELECT =
-  "id,user_id,title,slug,domain,body_md,cookie_snapshot,pinned,share_enabled,share_token,share_password_hash,share_expires_at,share_view_count,sync_status,synced_at,created_at,updated_at";
+export const NOTES_DETAIL_SELECT = `${NOTES_LIST_SELECT},cookie_snapshot,body_md`;
+
+export const NOTES_LEGACY_LIST_SELECT =
+  "id,user_id,title,slug,domain,pinned,share_enabled,share_token,share_password_hash,share_expires_at,share_view_count,sync_status,synced_at,created_at,updated_at";
+
+export const NOTES_LEGACY_DETAIL_SELECT = `${NOTES_LEGACY_LIST_SELECT},body_md,cookie_snapshot`;
+
+/** @deprecated Use NOTES_LEGACY_LIST_SELECT / NOTES_LEGACY_DETAIL_SELECT */
+export const NOTES_LEGACY_SELECT = NOTES_LEGACY_DETAIL_SELECT;
 
 export function isMissingSyncIdColumn(message: string): boolean {
   return /sync_id/i.test(message) && /does not exist|column/i.test(message);
@@ -28,12 +45,14 @@ function withSyncDefaults(row: Record<string, unknown>, bodyMd = ""): NoteRow {
   return {
     ...row,
     body_md: (row.body_md as string | undefined) ?? bodyMd,
+    cookie_snapshot: (row.cookie_snapshot as NoteRow["cookie_snapshot"] | undefined) ?? null,
     sync_id: (row.sync_id as string | null) ?? null,
     sync_pass_hash: (row.sync_pass_hash as string | null) ?? null,
   } as NoteRow;
 }
 
 export async function fetchNotesList() {
+  await requireDataBoxSession();
   const res = await supabase
     .from("notes")
     .select(NOTES_LIST_SELECT)
@@ -43,7 +62,7 @@ export async function fetchNotesList() {
   if (res.error && isMissingSyncIdColumn(res.error.message)) {
     const legacy = await supabase
       .from("notes")
-      .select(NOTES_LEGACY_SELECT)
+      .select(NOTES_LEGACY_LIST_SELECT)
       .order("pinned", { ascending: false })
       .order("updated_at", { ascending: false });
     if (!legacy.error && legacy.data) {
@@ -65,9 +84,10 @@ export async function fetchNotesList() {
 }
 
 export async function fetchNoteById(noteId: string) {
+  await requireDataBoxSession();
   const res = await supabase.from("notes").select(NOTES_DETAIL_SELECT).eq("id", noteId).maybeSingle();
   if (res.error && isMissingSyncIdColumn(res.error.message)) {
-    const legacy = await supabase.from("notes").select(NOTES_LEGACY_SELECT).eq("id", noteId).maybeSingle();
+    const legacy = await supabase.from("notes").select(NOTES_LEGACY_DETAIL_SELECT).eq("id", noteId).maybeSingle();
     if (!legacy.error && legacy.data) {
       return { ...legacy, data: withSyncDefaults(legacy.data as Record<string, unknown>) };
     }
@@ -77,7 +97,15 @@ export async function fetchNoteById(noteId: string) {
   return res;
 }
 
+export async function fetchNoteCookieSnapshot(noteId: string) {
+  await requireDataBoxSession();
+  const res = await supabase.from("notes").select(NOTES_COOKIE_SELECT).eq("id", noteId).maybeSingle();
+  if (!res.error && res.data) return res;
+  return res;
+}
+
 export async function fetchNoteBySyncId(syncId: string) {
+  await requireDataBoxSession();
   const res = await supabase.from("notes").select(NOTES_DETAIL_SELECT).eq("sync_id", syncId).maybeSingle();
   if (res.error && isMissingSyncIdColumn(res.error.message)) {
     return { data: null, error: { message: migrationHintMessage() } };
@@ -96,6 +124,7 @@ export async function createNoteRow(input: {
   bodyMd?: string;
   syncId: string;
 }) {
+  await requireDataBoxSession();
   return supabase
     .from("notes")
     .insert({
@@ -111,13 +140,16 @@ export async function createNoteRow(input: {
 }
 
 export async function updateNoteRow(noteId: string, patch: Record<string, unknown>) {
+  await requireDataBoxSession();
   return supabase.from("notes").update(patch).eq("id", noteId).select(NOTES_DETAIL_SELECT).single();
 }
 
 export async function updateNoteSyncId(noteId: string, syncId: string) {
+  await requireDataBoxSession();
   return supabase.from("notes").update({ sync_id: syncId }).eq("id", noteId).select(NOTES_DETAIL_SELECT).single();
 }
 
 export async function deleteNoteRow(noteId: string) {
+  await requireDataBoxSession();
   return supabase.from("notes").delete().eq("id", noteId);
 }

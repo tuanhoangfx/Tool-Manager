@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { Cookie, FileText, KeyRound, ListTodo, Package, Settings2, Users } from "lucide-react";
+import { Cookie, FileText, KeyRound, Package, Settings2 } from "lucide-react";
 import { APP_VERSION } from "../../lib/app-meta";
 import { EXTENSION_BUILD } from "../cookie/extensionBuildInfo";
 import { EXTENSION_INSTALL_LABEL } from "../cookie/extensionInstall";
@@ -13,7 +13,7 @@ export type ScreenChromeConfig = {
   ariaLabel: string;
   searchPlaceholder: string;
   showSearch: boolean;
-  filterParam: "hfilt" | "nfilt" | "cfilt" | "tfilt" | "afilt" | "ufilt";
+  filterParam: "hfilt" | "nfilt" | "cfilt" | "afilt";
   metaItems: TabHeaderMetaItem[];
 };
 
@@ -35,17 +35,6 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         filterParam: "nfilt",
         metaItems: BASE_META,
       };
-    case "todo":
-      return {
-        title: "Todo",
-        titleIcon: ListTodo,
-        titleIconClass: "text-sky-400",
-        ariaLabel: "Todo header",
-        searchPlaceholder: "Search tasks…",
-        showSearch: true,
-        filterParam: "tfilt",
-        metaItems: BASE_META,
-      };
     case "twofa":
       return {
         title: "2FA",
@@ -54,7 +43,7 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         ariaLabel: "2FA header",
         searchPlaceholder: "Search service or account…",
         showSearch: true,
-        filterParam: "ufilt",
+        filterParam: "afilt",
         metaItems: BASE_META,
       };
     case "cookie":
@@ -80,17 +69,6 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
             value: EXTENSION_INSTALL_LABEL,
           },
         ],
-      };
-    case "users":
-      return {
-        title: "User Management",
-        titleIcon: Users,
-        titleIconClass: "text-emerald-400",
-        ariaLabel: "User Management header",
-        searchPlaceholder: "Search users by name, email, role, project…",
-        showSearch: true,
-        filterParam: "afilt",
-        metaItems: BASE_META,
       };
     case "system":
       return {

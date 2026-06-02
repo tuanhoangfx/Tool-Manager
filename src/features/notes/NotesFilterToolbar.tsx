@@ -1,20 +1,19 @@
 import { StickyNote } from "lucide-react";
 import { HubResultCount, HubTimeRangeSelect } from "../../components/sales-shell";
 import type { FilterValues } from "../../components/sales-shell";
+import type { TimeRange } from "../../lib/url-prefs";
 import { patchNotesListPrefs, type NotesListDensity } from "./notes-list-prefs";
 import { NotesViewToggle } from "./NotesViewToggle";
-import { readHubListPrefs } from "../../lib/url-prefs";
 
 type Props = {
+  range: TimeRange;
   shown: number;
   total: number;
   density: NotesListDensity;
   onDensityChange: (d: NotesListDensity) => void;
 };
 
-export function NotesFilterToolbar({ shown, total, density, onDensityChange }: Props) {
-  const range = readHubListPrefs().range;
-
+export function NotesFilterToolbar({ range, shown, total, density, onDensityChange }: Props) {
   return (
     <>
       <HubTimeRangeSelect value={range} />

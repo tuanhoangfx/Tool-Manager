@@ -290,11 +290,20 @@
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
 }
 
+.auth-inline-btn--hub {
+  gap: 6px;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+}
+
 .auth-inline-btn--ghost {
   background: rgba(255, 255, 255, 0.06);
   box-shadow: none;
   color: var(--text);
   border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.auth-inline-hint {
+  max-width: 42rem;
 }
 
 .auth-inline-btn:hover {

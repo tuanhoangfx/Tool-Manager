@@ -4,5 +4,6 @@ export { PublicShareScreen } from "./PublicShareScreen";
 export { NotesAuthGate } from "./NotesAuthGate";
 export { useNotes } from "./useNotes";
 export { useNote } from "./useNote";
-export { useNotesAuth } from "./useNotesAuth";
+export { AuthSessionProvider, useNotesAuth } from "./useNotesAuth";
+export type { NotesAuthState } from "./useNotesAuthState";
 export type { NoteRow, NoteListItem } from "./types";

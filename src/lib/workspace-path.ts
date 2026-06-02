@@ -3,12 +3,13 @@ import type { WorkspaceNavScreen, WorkspaceScreen } from "./workspace-screen";
 /** Path-first routes for P0020-Data-Box (e.g. /cookie). */
 export const NAV_SCREEN_PATH: Record<WorkspaceNavScreen, string> = {
   notes: "/notes",
-  todo: "/todo",
   twofa: "/twofa",
   cookie: "/cookie",
-  users: "/users",
   system: "/system",
 };
+
+/** Legacy path — redirects to Tool Hub /users. */
+export const USERS_LEGACY_PATH = "/users";
 
 const PATH_TO_NAV_SCREEN = new Map<string, WorkspaceNavScreen>(
   Object.entries(NAV_SCREEN_PATH).map(([screen, path]) => [path, screen as WorkspaceNavScreen]),
@@ -17,8 +18,14 @@ const PATH_TO_NAV_SCREEN = new Map<string, WorkspaceNavScreen>(
 PATH_TO_NAV_SCREEN.set("/", "notes");
 PATH_TO_NAV_SCREEN.set("", "notes");
 
+export function isUsersLegacyPath(pathname: string): boolean {
+  const normalized = pathname.replace(/\/+$/, "") || "/";
+  return normalized === USERS_LEGACY_PATH;
+}
+
 export function pathnameToNavScreen(pathname: string): WorkspaceNavScreen | null {
   const normalized = pathname.replace(/\/+$/, "") || "/";
+  if (isUsersLegacyPath(normalized)) return null;
   return PATH_TO_NAV_SCREEN.get(normalized) ?? null;
 }
 

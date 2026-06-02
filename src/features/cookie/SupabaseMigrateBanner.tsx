@@ -6,8 +6,7 @@ import toolManifest from "../../../tool.manifest.json";
 const APPLY_ALL_FILE =
   toolManifest.supabase?.cookieBridge?.applySql ?? "supabase/APPLY_ALL_P0020_COOKIE_BRIDGE.sql";
 const SQL_EDITOR_URL =
-  toolManifest.supabase?.sqlEditor ??
-  "https://supabase.com/dashboard/project/yhnqwxejjkfgmjmiquhb/sql/new";
+  toolManifest.supabase?.sqlEditor ?? "https://supabase.com/dashboard";
 const DB_URL_NOTE = toolManifest.supabase?.localEnv?.note;
 
 export function SupabaseMigrateBanner({

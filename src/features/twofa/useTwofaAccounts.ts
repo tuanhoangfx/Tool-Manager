@@ -46,5 +46,12 @@ export function useTwofaAccounts() {
     setAccounts((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
-  return { accounts, tick, add, update, remove };
+  const touchLastUsed = useCallback((id: string) => {
+    const now = new Date().toISOString();
+    setAccounts((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, lastUsedAt: now, updatedAt: now } : a)),
+    );
+  }, []);
+
+  return { accounts, tick, add, update, remove, touchLastUsed };
 }

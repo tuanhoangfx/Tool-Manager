@@ -1,0 +1,331 @@
+
+-- 20260525100000_note_cookie_vault_v4.sql
+-- V4: Encrypted cookie vault (AES-GCM ciphertext) + RPC for extension cross-browser apply
+
+create table if not exists public.note_cookie_vault (
+  id uuid primary key default gen_random_uuid(),
+  note_id uuid not null references public.notes (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  domain text not null,
+  ciphertext text not null,
+  iv text not null,
+  cookie_count int not null default 0,
+  source_browser text,
+  updated_at timestamptz not null default now(),
+  unique (note_id, domain)
+);
+
+create index if not exists note_cookie_vault_user_updated_idx
+  on public.note_cookie_vault (user_id, updated_at desc);
+
+alter table public.note_cookie_vault enable row level security;
+
+drop policy if exists "vault_select_own" on public.note_cookie_vault;
+drop policy if exists "vault_insert_own" on public.note_cookie_vault;
+drop policy if exists "vault_update_own" on public.note_cookie_vault;
+drop policy if exists "vault_delete_own" on public.note_cookie_vault;
+
+create policy "vault_select_own" on public.note_cookie_vault
+  for select to authenticated
+  using (user_id = auth.uid());
+
+create policy "vault_insert_own" on public.note_cookie_vault
+  for insert to authenticated
+  with check (user_id = auth.uid());
+
+create policy "vault_update_own" on public.note_cookie_vault
+  for update to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+create policy "vault_delete_own" on public.note_cookie_vault
+  for delete to authenticated
+  using (user_id = auth.uid());
+
+grant select, insert, update, delete on public.note_cookie_vault to authenticated;
+
+-- Verify sync pass (same rules as note_sync_cookies)
+create or replace function public.note_verify_sync_pass(p_note_id uuid, p_pass text)
+returns public.notes
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_note public.notes%rowtype;
+begin
+  select * into v_note from public.notes where id = p_note_id;
+  if not found then
+    raise exception 'note not found';
+  end if;
+  if v_note.sync_pass_hash is not null and v_note.sync_pass_hash <> '' then
+    if p_pass is null or crypt(p_pass, v_note.sync_pass_hash) <> v_note.sync_pass_hash then
+      raise exception 'invalid pass';
+    end if;
+  end if;
+  return v_note;
+end;
+$$;
+
+-- Extension upserts encrypted vault (anon + pass)
+create or replace function public.note_vault_upsert(
+  p_note_id uuid,
+  p_domain text,
+  p_pass text default null,
+  p_ciphertext text default null,
+  p_iv text default null,
+  p_cookie_count int default 0,
+  p_source_browser text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_note public.notes;
+  v_row public.note_cookie_vault%rowtype;
+begin
+  if p_note_id is null or trim(p_domain) = '' then
+    raise exception 'note_id and domain required';
+  end if;
+  if p_ciphertext is null or p_iv is null then
+    raise exception 'ciphertext and iv required';
+  end if;
+
+  v_note := note_verify_sync_pass(p_note_id, p_pass);
+
+  insert into public.note_cookie_vault (
+    note_id, user_id, domain, ciphertext, iv, cookie_count, source_browser, updated_at
+  )
+  values (
+    p_note_id,
+    v_note.user_id,
+    trim(p_domain),
+    p_ciphertext,
+    p_iv,
+    coalesce(p_cookie_count, 0),
+    nullif(trim(p_source_browser), ''),
+    now()
+  )
+  on conflict (note_id, domain) do update set
+    ciphertext = excluded.ciphertext,
+    iv = excluded.iv,
+    cookie_count = excluded.cookie_count,
+    source_browser = excluded.source_browser,
+    updated_at = now();
+
+  select * into v_row from public.note_cookie_vault
+  where note_id = p_note_id and domain = trim(p_domain);
+
+  return jsonb_build_object(
+    'note_id', v_row.note_id,
+    'domain', v_row.domain,
+    'cookie_count', v_row.cookie_count,
+    'updated_at', v_row.updated_at,
+    'ok', true
+  );
+end;
+$$;
+
+revoke all on function public.note_vault_upsert(uuid, text, text, text, text, int, text) from public;
+grant execute on function public.note_vault_upsert(uuid, text, text, text, text, int, text) to anon, authenticated;
+
+-- Extension fetches vault for decrypt + apply on other browser
+create or replace function public.note_vault_fetch(
+  p_note_id uuid,
+  p_domain text,
+  p_pass text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_row public.note_cookie_vault%rowtype;
+begin
+  perform note_verify_sync_pass(p_note_id, p_pass);
+
+  select * into v_row from public.note_cookie_vault
+  where note_id = p_note_id and domain = trim(p_domain);
+
+  if not found then
+    return jsonb_build_object('ok', false, 'reason', 'not_found');
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'note_id', v_row.note_id,
+    'domain', v_row.domain,
+    'ciphertext', v_row.ciphertext,
+    'iv', v_row.iv,
+    'cookie_count', v_row.cookie_count,
+    'source_browser', v_row.source_browser,
+    'updated_at', v_row.updated_at
+  );
+end;
+$$;
+
+revoke all on function public.note_vault_fetch(uuid, text, text) from public;
+grant execute on function public.note_vault_fetch(uuid, text, text) to anon, authenticated;
+
+-- Poll: vaults updated after timestamp (JWT — owner only)
+create or replace function public.note_vault_poll(
+  p_note_ids uuid[],
+  p_since timestamptz default null
+)
+returns setof public.note_cookie_vault
+language sql
+security definer
+set search_path = public
+as $$
+  select v.*
+  from public.note_cookie_vault v
+  inner join public.notes n on n.id = v.note_id
+  where n.user_id = auth.uid()
+    and v.note_id = any (p_note_ids)
+    and (p_since is null or v.updated_at > p_since);
+$$;
+
+revoke all on function public.note_vault_poll(uuid[], timestamptz) from public;
+grant execute on function public.note_vault_poll(uuid[], timestamptz) to authenticated;
+
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    alter publication supabase_realtime add table public.note_cookie_vault;
+  end if;
+exception
+  when duplicate_object then null;
+end $$;
+
+
+-- 20260525103000_note_folders.sql
+-- P0020 Notes folders: synced folder metadata + note assignment
+
+create table if not exists public.note_folders (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  name text not null,
+  color text not null default '#818cf8',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, name)
+);
+
+create table if not exists public.note_folder_notes (
+  note_id uuid primary key references public.notes (id) on delete cascade,
+  folder_id uuid not null references public.note_folders (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists note_folders_user_updated_idx
+  on public.note_folders (user_id, updated_at desc);
+
+create index if not exists note_folder_notes_folder_idx
+  on public.note_folder_notes (folder_id);
+
+alter table public.note_folders enable row level security;
+alter table public.note_folder_notes enable row level security;
+
+drop policy if exists "note_folders_select_own" on public.note_folders;
+drop policy if exists "note_folders_insert_own" on public.note_folders;
+drop policy if exists "note_folders_update_own" on public.note_folders;
+drop policy if exists "note_folders_delete_own" on public.note_folders;
+
+create policy "note_folders_select_own" on public.note_folders
+  for select to authenticated
+  using (auth.uid() = user_id);
+
+create policy "note_folders_insert_own" on public.note_folders
+  for insert to authenticated
+  with check (auth.uid() = user_id);
+
+create policy "note_folders_update_own" on public.note_folders
+  for update to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "note_folders_delete_own" on public.note_folders
+  for delete to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists "note_folder_notes_select_own" on public.note_folder_notes;
+drop policy if exists "note_folder_notes_insert_own" on public.note_folder_notes;
+drop policy if exists "note_folder_notes_update_own" on public.note_folder_notes;
+drop policy if exists "note_folder_notes_delete_own" on public.note_folder_notes;
+
+create policy "note_folder_notes_select_own" on public.note_folder_notes
+  for select to authenticated
+  using (auth.uid() = user_id);
+
+create policy "note_folder_notes_insert_own" on public.note_folder_notes
+  for insert to authenticated
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.notes n
+      where n.id = note_id and n.user_id = auth.uid()
+    )
+    and exists (
+      select 1 from public.note_folders f
+      where f.id = folder_id and f.user_id = auth.uid()
+    )
+  );
+
+create policy "note_folder_notes_update_own" on public.note_folder_notes
+  for update to authenticated
+  using (auth.uid() = user_id)
+  with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.notes n
+      where n.id = note_id and n.user_id = auth.uid()
+    )
+    and exists (
+      select 1 from public.note_folders f
+      where f.id = folder_id and f.user_id = auth.uid()
+    )
+  );
+
+create policy "note_folder_notes_delete_own" on public.note_folder_notes
+  for delete to authenticated
+  using (auth.uid() = user_id);
+
+grant select, insert, update, delete on public.note_folders to authenticated;
+grant select, insert, update, delete on public.note_folder_notes to authenticated;
+
+create or replace function public.note_folders_set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists note_folders_updated_at on public.note_folders;
+create trigger note_folders_updated_at
+  before update on public.note_folders
+  for each row
+  execute function public.note_folders_set_updated_at();
+
+create or replace function public.note_folder_notes_set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists note_folder_notes_updated_at on public.note_folder_notes;
+create trigger note_folder_notes_updated_at
+  before update on public.note_folder_notes
+  for each row
+  execute function public.note_folder_notes_set_updated_at();
+

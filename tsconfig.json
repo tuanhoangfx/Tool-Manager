@@ -17,9 +17,11 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/features/todo/p0019/*"],
+      "@dev/hub-load": ["../packages/hub-load/src/index.ts"],
       "@p0020/bridge": ["packages/p0020-bridge/src/index.js"],
-      "@p0020/bridge/*": ["packages/p0020-bridge/src/*"]
+      "@p0020/bridge/*": ["packages/p0020-bridge/src/*"],
+      "@tool-workspace/hub-ui": ["../../packages/hub-ui/src/index.ts"],
+      "@tool-workspace/hub-ui/*": ["../../packages/hub-ui/src/*"]
     }
   },
   "include": ["src", "eslint.config.js", "vite.config.ts"]

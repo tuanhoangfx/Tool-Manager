@@ -2,19 +2,31 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FilterValues } from "../../components/sales-shell";
 import { useAppToast } from "../../components/toast";
 import { readNoteIdFromUrl } from "../design-preview/design-nav";
-import { loadCookieBridgePrefs } from "../cookie/cookieBridge";
-import { useNotesCookieRealtime } from "../cookie/useNotesCookieRealtime";
+import { useNoteCookieRouteLock } from "../cookie/useNoteCookieRouteLock";
+import { useNotesCookieRouteIndex } from "../cookie/useNotesCookieRouteIndex";
 import { NoteEditorPanel } from "./NoteEditorPanel";
+import { NotesRouteDetailOverlay } from "./NotesRouteDetailOverlay";
 import { NotesHubChrome } from "./NotesHubChrome";
+import { NotesWorkspaceToolbar } from "./NotesWorkspaceToolbar";
 import { NotesListRail } from "./NotesListRail";
 import { NotesAuthGate } from "./NotesAuthGate";
 import { useNoteFolders } from "./noteFolders";
 import { filterNotes } from "./notes-filters";
 import { readNotesListPrefs, type NotesListDensity } from "./notes-list-prefs";
 import { slugifyTitle } from "./noteUtils";
+import { NOTES_AUTOSAVE_DEBOUNCE_MS } from "./notes-egress";
+import type { NoteRow } from "./types";
+import type { NoteSaveResult } from "./useNote";
 import { useNote } from "./useNote";
 import { useNotes } from "./useNotes";
 import { useNotesAuth } from "./useNotesAuth";
+import { readNoteDetailStale, writeNoteDetailCache } from "../../lib/note-detail-cache";
+import { readNoteRouteLockStale } from "../../lib/note-route-lock-cache";
+import { prefetchCookieBootBackground } from "../../lib/hub-background-prefetch";
+import {
+  publishWorkspaceListRefreshing,
+  WORKSPACE_REFRESH_REQUEST,
+} from "../../lib/workspace-refresh-bus";
 
 type Props = {
   navigate: (opts?: { note?: string; replace?: boolean }) => void;
@@ -23,11 +35,22 @@ type Props = {
 export function NotesWorkspaceScreen({ navigate }: Props) {
   const { pushToast } = useAppToast();
   const { session, loading: authLoading, isSupabaseConfigured } = useNotesAuth();
-  const { notes, loading: listLoading, error: listError, refresh, createNote, deleteNote } =
-    useNotes(session);
+  const {
+    notes,
+    loading: listLoading,
+    refreshing: listRefreshing,
+    error: listError,
+    refresh: refreshNotesList,
+    mergeNoteInList,
+    createNote,
+    deleteNote,
+  } = useNotes(session);
 
   const [selectedId, setSelectedId] = useState(readNoteIdFromUrl);
-  const { note, loading: noteLoading, error: noteError, saving, save } = useNote(session, selectedId);
+  const { note, loading: noteLoading, error: noteError, saving, save, refresh: refreshNote } =
+    useNote(session, selectedId);
+  const { routeLocked, routeInfos, refreshRouteLock } = useNoteCookieRouteLock(session, selectedId);
+  const { routeByNoteId } = useNotesCookieRouteIndex(session);
 
   const [query, setQuery] = useState("");
   const [filterValues, setFilterValues] = useState<FilterValues>({});
@@ -46,7 +69,9 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   const [actionError, setActionError] = useState("");
   const folders = useNoteFolders(session);
   const [dirty, setDirty] = useState(false);
+  const [routeDetailDomain, setRouteDetailDomain] = useState<string | null>(null);
   const lastAutosaveKey = useRef("");
+  const loadedEditorNoteId = useRef<string | null>(null);
 
   useEffect(() => {
     const sync = () => {
@@ -57,20 +82,79 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
     return () => window.removeEventListener("popstate", sync);
   }, []);
 
-  useNotesCookieRealtime(session, refresh, loadCookieBridgePrefs().realtimeSync);
+  useEffect(() => {
+    if (!session) return;
+    publishWorkspaceListRefreshing(listRefreshing);
+    return () => publishWorkspaceListRefreshing(false);
+  }, [listRefreshing, session]);
 
   useEffect(() => {
-    if (!note) return;
-    setTitle(note.title.trim() === "Note mới" ? "New note" : note.title);
-    setSlug(note.slug);
-    setDomain(note.domain);
-    setBody(note.body_md);
-    setPinned(note.pinned);
-    setShareEnabled(note.share_enabled);
-    setSharePassword("");
-    setActionError("");
+    if (!session) return;
+    const onRefresh = () => void refreshNotesList({ silent: true });
+    window.addEventListener(WORKSPACE_REFRESH_REQUEST, onRefresh);
+    return () => window.removeEventListener(WORKSPACE_REFRESH_REQUEST, onRefresh);
+  }, [refreshNotesList, session]);
+
+  useEffect(() => {
+    if (!session) return;
+    const warm = () => prefetchCookieBootBackground();
+    const idle = window.requestIdleCallback?.(warm, { timeout: 4000 });
+    if (idle == null) {
+      const t = window.setTimeout(warm, 1200);
+      return () => window.clearTimeout(t);
+    }
+    return () => window.cancelIdleCallback(idle);
+  }, [session]);
+
+  const applyNoteToEditor = useCallback(
+    (
+      row: {
+        id: string;
+        title: string;
+        slug: string;
+        domain: string;
+        body_md: string;
+        pinned: boolean;
+        share_enabled: boolean;
+      },
+      opts?: { routeLocked?: boolean },
+    ) => {
+      const locked = opts?.routeLocked ?? false;
+      setTitle(row.title.trim() === "Note mới" ? "New note" : row.title);
+      setSlug(row.slug);
+      setDomain(row.domain);
+      setBody(locked ? "" : row.body_md);
+      setPinned(row.pinned);
+      setShareEnabled(row.share_enabled);
+      setSharePassword("");
+      setActionError("");
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!note || !selectedId || note.id !== selectedId) return;
+    const switchingNote = loadedEditorNoteId.current !== note.id;
+    if (!switchingNote) return;
+    loadedEditorNoteId.current = note.id;
+    applyNoteToEditor(note, { routeLocked });
     setDirty(false);
-  }, [note]);
+  }, [applyNoteToEditor, note, routeLocked, selectedId]);
+
+  useEffect(() => {
+    if (!routeLocked) return;
+    const onFocus = () => {
+      void refreshNote();
+      void refreshRouteLock();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [routeLocked, refreshNote, refreshRouteLock]);
+
+  useEffect(() => {
+    if (!routeLocked || dirty) return;
+    setBody("");
+  }, [routeLocked, selectedId, dirty]);
 
   const filtered = useMemo(() => {
     const base = filterNotes(notes, query, filterValues, prefs.range);
@@ -79,26 +163,60 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   }, [filterValues, folders.filterId, folders.noteFolders, notes, prefs.range, query]);
 
   const pickNote = useCallback(
-    (id: string) => {
+    (id: string, seed?: NoteRow | null) => {
+      const hasRoute =
+        routeByNoteId.has(id) || (readNoteRouteLockStale(id)?.length ?? 0) > 0;
+      const cached = seed ?? readNoteDetailStale(id);
+      if (cached) {
+        loadedEditorNoteId.current = id;
+        applyNoteToEditor(cached, { routeLocked: hasRoute });
+        setDirty(false);
+        if (!seed) writeNoteDetailCache(id, cached);
+      } else {
+        loadedEditorNoteId.current = null;
+        const listItem = notes.find((n) => n.id === id);
+        if (listItem) {
+          applyNoteToEditor(
+            {
+              id: listItem.id,
+              title: listItem.title,
+              slug: listItem.slug,
+              domain: listItem.domain,
+              body_md: "",
+              pinned: listItem.pinned,
+              share_enabled: listItem.share_enabled,
+            },
+            { routeLocked: hasRoute },
+          );
+          setDirty(false);
+        }
+      }
       setSelectedId(id);
       navigate({ note: id });
     },
-    [navigate],
+    [applyNoteToEditor, navigate, notes, routeByNoteId],
   );
 
   useEffect(() => {
-    if (listLoading || filtered.length === 0) return;
-    const inList = selectedId && filtered.some((n) => n.id === selectedId);
-    if (!inList) pickNote(filtered[0].id);
-  }, [listLoading, filtered, selectedId, pickNote]);
+    if (listLoading || creating) return;
+    if (!selectedId) {
+      if (filtered.length > 0) pickNote(filtered[0].id);
+      return;
+    }
+    const stillExists = notes.some((n) => n.id === selectedId);
+    if (!stillExists && filtered.length > 0) pickNote(filtered[0].id);
+  }, [creating, listLoading, filtered, notes, selectedId, pickNote]);
 
   const onNew = async () => {
     setCreating(true);
+    setActionError("");
     try {
       const row = await createNote();
-      pickNote(row.id);
+      pickNote(row.id, row);
     } catch (err) {
-      console.error(err);
+      const msg = errorMessage(err, "Could not create note");
+      setActionError(msg);
+      pushToast(`New note failed: ${msg}`, "error", 8000);
     } finally {
       setCreating(false);
     }
@@ -110,11 +228,13 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   };
 
   const updateBody = (next: string) => {
+    if (routeLocked) return;
     setBody(next);
     setDirty(true);
   };
 
   const updateSharePassword = (next: string) => {
+    if (routeLocked) return;
     setSharePassword(next);
     setDirty(true);
   };
@@ -125,22 +245,22 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   }) => {
     if (!selectedId) throw new Error("No note selected");
     setActionError("");
-    const nextPinned = overrides?.pinned ?? pinned;
-    const nextShareEnabled = overrides?.shareEnabled ?? shareEnabled;
+    const nextPinned = routeLocked ? (note?.pinned ?? false) : (overrides?.pinned ?? pinned);
+    const nextShareEnabled = routeLocked ? (note?.share_enabled ?? false) : (overrides?.shareEnabled ?? shareEnabled);
     const saved = await save({
       title,
       slug: slug.trim() || slugifyTitle(title, note?.slug || selectedId),
-      domain,
-      body_md: body,
+      domain: routeLocked ? (note?.domain ?? domain) : domain,
+      body_md: routeLocked ? (note?.body_md ?? body) : body,
       pinned: nextPinned,
       share_enabled: nextShareEnabled,
-      share_password: sharePassword || undefined,
+      share_password: routeLocked ? undefined : sharePassword || undefined,
     });
     setPinned(saved.pinned);
     setShareEnabled(saved.share_enabled);
     setSlug(saved.slug);
     setSharePassword("");
-    await refresh();
+    mergeNoteInList(stripSaveResult(saved));
     setSavedHint("Saved");
     setTimeout(() => setSavedHint(""), 2500);
     return saved;
@@ -160,25 +280,32 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
 
   useEffect(() => {
     if (!dirty || !selectedId || saving || creating) return;
-    const key = `${selectedId}:${title}:${slug}:${domain}:${body}:${pinned}:${shareEnabled}:${sharePassword}`;
+    const key = routeLocked
+      ? `${selectedId}:${title}:${slug}`
+      : `${selectedId}:${title}:${slug}:${domain}:${body}:${pinned}:${shareEnabled}:${sharePassword}`;
     if (key === lastAutosaveKey.current) return;
     const timer = window.setTimeout(() => {
       lastAutosaveKey.current = key;
       void persistCurrentNote()
         .then(() => {
           setDirty(false);
-          pushToast("Autosaved", "success", 1800);
+          setSavedHint("Saved");
+          window.setTimeout(() => setSavedHint(""), 2500);
         })
         .catch((err) => {
           const msg = errorMessage(err, "Autosave failed");
           setActionError(msg);
           pushToast(msg, "error");
         });
-    }, 1400);
+    }, NOTES_AUTOSAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [body, creating, dirty, domain, pinned, pushToast, saving, selectedId, shareEnabled, sharePassword, slug, title]);
+  }, [body, creating, dirty, domain, pinned, pushToast, routeLocked, saving, selectedId, shareEnabled, sharePassword, slug, title]);
 
   const onPinnedToggle = async () => {
+    if (routeLocked) {
+      pushToast("Pin is disabled while a Cookie Auto route is active.", "info");
+      return;
+    }
     const next = !pinned;
     setPinned(next);
     try {
@@ -193,6 +320,10 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   };
 
   const onShareToggle = async () => {
+    if (routeLocked) {
+      pushToast("Share is disabled while a Cookie Auto route is active.", "info");
+      return;
+    }
     const next = !shareEnabled;
     setShareEnabled(next);
     try {
@@ -207,7 +338,11 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   };
 
   const onDelete = async () => {
-    if (!selectedId || !confirm("Delete this note?")) return;
+    if (!selectedId) return;
+    const msg = routeLocked
+      ? "This note is linked to Cookie Auto route(s). Deleting it breaks sync. Delete anyway?"
+      : "Delete this note?";
+    if (!confirm(msg)) return;
     try {
       await deleteNote(selectedId);
       setSelectedId(null);
@@ -226,9 +361,75 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
     );
   }
 
-  if (authLoading) {
-    return <div className="p-6 text-sm text-[var(--muted)]">Loading session…</div>;
+  if (!session && authLoading) {
+    return (
+      <div className="notes-workspace anim-fade flex min-h-0 flex-1 flex-col">
+        <NotesHubChrome
+          query={query}
+          onQueryChange={setQuery}
+          filterValues={filterValues}
+          onFilterValuesChange={setFilterValues}
+          notes={[]}
+          shown={0}
+          density={density}
+          onDensityChange={setDensity}
+          filterToolbar={null}
+        />
+        <p className="px-4 py-8 text-center text-[12px] text-[var(--muted)]">Signing in…</p>
+      </div>
+    );
   }
+
+  const workspaceToolbar = session ? (
+    <NotesWorkspaceToolbar
+      note={note}
+      pinned={pinned}
+      shareEnabled={shareEnabled}
+      sharePassword={sharePassword}
+      saving={saving}
+      creating={creating}
+      savedHint={savedHint}
+      routeLocked={routeLocked}
+      folders={folders.folders}
+      currentFolderId={note ? (folders.noteFolders[note.id] ?? null) : null}
+      folderFilterId={folders.filterId}
+      onNew={() => void onNew()}
+      onSave={() => void onSave()}
+      onDelete={() => void onDelete()}
+      onPinnedToggle={() => void onPinnedToggle()}
+      onShareToggle={() => void onShareToggle()}
+      onSharePasswordChange={updateSharePassword}
+      onCreateFolder={async (name) => {
+        const folder = await folders.createFolder(name);
+        if (!folder) return;
+        if (selectedId) await folders.assignNoteFolder(selectedId, folder.id);
+        pushToast(`Folder created: ${folder.name}`, "success");
+      }}
+      onSelectFolder={async (folderId) => {
+        if (!selectedId) return;
+        await folders.assignNoteFolder(selectedId, folderId);
+        const folder = folders.folders.find((f) => f.id === folderId);
+        pushToast(folder ? `Moved to ${folder.name}` : "Removed from folder", "success");
+      }}
+      onFolderFilterChange={(folderId) => {
+        folders.setFilterId(folderId);
+        const folder = folders.folders.find((f) => f.id === folderId);
+        pushToast(folder ? `Filtering: ${folder.name}` : "Showing all folders", "info");
+      }}
+      onRenameFolder={async (folderId, name) => {
+        await folders.renameFolder(folderId, name);
+        pushToast("Folder renamed", "success");
+      }}
+      onSetFolderColor={async (folderId, color) => {
+        await folders.setFolderColor(folderId, color);
+        pushToast("Folder color updated", "success");
+      }}
+      onDeleteFolder={async (folderId) => {
+        await folders.deleteFolder(folderId);
+        pushToast("Folder deleted", "success");
+      }}
+    />
+  ) : null;
 
   if (!session) {
     return (
@@ -242,6 +443,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           shown={0}
           density={density}
           onDensityChange={setDensity}
+          filterToolbar={null}
         />
         <div className="pt-5">
           <NotesAuthGate variant="notes" />
@@ -261,6 +463,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
         shown={filtered.length}
         density={density}
         onDensityChange={setDensity}
+        filterToolbar={workspaceToolbar}
       />
 
       {listError ? (
@@ -275,71 +478,52 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           selectedId={selectedId}
           density={density}
           loading={listLoading}
+          refreshing={listRefreshing}
+          cookieRouteByNoteId={routeByNoteId}
           onSelect={pickNote}
         />
         {noteError && selectedId ? (
           <div className="flex flex-1 items-center justify-center p-6 text-sm text-rose-200">{noteError}</div>
         ) : (
           <NoteEditorPanel
-            note={note}
-            loading={noteLoading && Boolean(selectedId)}
+            note={
+              note?.id === selectedId
+                ? note
+                : selectedId
+                  ? readNoteDetailStale(selectedId)
+                  : null
+            }
+            loading={Boolean(
+              selectedId && !readNoteDetailStale(selectedId) && note?.id !== selectedId && noteLoading,
+            )}
             title={title}
-            slug={slug}
-            domain={domain}
-            pinned={pinned}
-            shareEnabled={shareEnabled}
-            sharePassword={sharePassword}
             body={body}
-            saving={saving}
-            creating={creating}
-            savedHint={savedHint}
             actionError={actionError}
-            folders={folders.folders}
-            currentFolderId={note ? (folders.noteFolders[note.id] ?? null) : null}
-            folderFilterId={folders.filterId}
+            routeLocked={routeLocked}
+            routeInfos={routeInfos}
+            onOpenRouteDetail={(domain) => setRouteDetailDomain(domain)}
             onTitleChange={updateTitle}
-            onPinnedToggle={() => void onPinnedToggle()}
-            onShareToggle={() => void onShareToggle()}
-            onSharePasswordChange={updateSharePassword}
             onBodyChange={updateBody}
-            onNew={() => void onNew()}
-            onSave={() => void onSave()}
-            onDelete={() => void onDelete()}
             onSlugFromTitle={() => setSlug(slugifyTitle(title, slug))}
-            onCreateFolder={async (name) => {
-              const folder = await folders.createFolder(name);
-              if (!folder) return;
-              if (selectedId) await folders.assignNoteFolder(selectedId, folder.id);
-              pushToast(`Folder created: ${folder.name}`, "success");
-            }}
-            onSelectFolder={async (folderId) => {
-              if (!selectedId) return;
-              await folders.assignNoteFolder(selectedId, folderId);
-              const folder = folders.folders.find((f) => f.id === folderId);
-              pushToast(folder ? `Moved to ${folder.name}` : "Removed from folder", "success");
-            }}
-            onFolderFilterChange={(folderId) => {
-              folders.setFilterId(folderId);
-              const folder = folders.folders.find((f) => f.id === folderId);
-              pushToast(folder ? `Filtering: ${folder.name}` : "Showing all folders", "info");
-            }}
-            onRenameFolder={async (folderId, name) => {
-              await folders.renameFolder(folderId, name);
-              pushToast("Folder renamed", "success");
-            }}
-            onSetFolderColor={async (folderId, color) => {
-              await folders.setFolderColor(folderId, color);
-              pushToast("Folder color updated", "success");
-            }}
-            onDeleteFolder={async (folderId) => {
-              await folders.deleteFolder(folderId);
-              pushToast("Folder deleted", "success");
-            }}
           />
         )}
+        {session && note && routeDetailDomain ? (
+          <NotesRouteDetailOverlay
+            session={session}
+            note={note}
+            routeDomain={routeDetailDomain}
+            routeInfos={routeInfos}
+            onClose={() => setRouteDetailDomain(null)}
+          />
+        ) : null}
       </div>
     </div>
   );
+}
+
+function stripSaveResult(saved: NoteSaveResult) {
+  const { passMigrationHint: _hint, ...row } = saved;
+  return row;
 }
 
 function errorMessage(err: unknown, fallback: string): string {

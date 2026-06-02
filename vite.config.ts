@@ -12,7 +12,6 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) {
-            if (id.includes("features/todo/p0019")) return "app-todo";
             if (id.includes("features/notes")) return "app-notes";
             if (id.includes("features/twofa")) return "app-twofa";
             return;
@@ -32,9 +31,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      /** P0019 @/ imports — only used under src/features/todo/p0019 */
-      "@": path.resolve(rootDir, "src/features/todo/p0019"),
       "@p0020/bridge": path.resolve(rootDir, "packages/p0020-bridge/src"),
+      "@dev/hub-load": path.resolve(rootDir, "../packages/hub-load/src"),
+      "@tool-workspace/hub-ui": path.resolve(rootDir, "../../packages/hub-ui/src"),
     },
   },
 });

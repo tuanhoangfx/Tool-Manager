@@ -158,6 +158,38 @@ export async function getCookieRoutePublishStatus(
   return { ok: true, published: Boolean(data?.id), updatedAt: data?.updated_at ?? null };
 }
 
+export async function fetchEnabledCloudRoutesForNote(
+  session: Session | null,
+  noteId: string,
+): Promise<CloudResult<{ routes: CookieCloudRouteRow[] }>> {
+  const id = noteId.trim();
+  if (!session?.user?.id || !id) return { ok: true, routes: [] };
+
+  const { data, error } = await supabase
+    .from("cookie_bridge_routes")
+    .select("id,user_id,note_id,sync_id,domain,note_title,enabled,updated_at")
+    .eq("note_id", id)
+    .eq("enabled", true)
+    .order("updated_at", { ascending: false });
+
+  if (!error) {
+    return { ok: true, routes: (data ?? []) as CookieCloudRouteRow[] };
+  }
+
+  let accessible = await supabase.rpc("note_cookie_routes_accessible_v2");
+  if (accessible.error && /note_cookie_routes_accessible_v2|PGRST202|Could not find|schema cache|404/i.test(accessible.error.message ?? "")) {
+    accessible = await supabase.rpc("note_cookie_routes_accessible");
+  }
+  if (!accessible.error && Array.isArray(accessible.data)) {
+    const routes = (accessible.data as CookieCloudRouteRow[]).filter(
+      (row) => row.note_id === id && row.enabled !== false,
+    );
+    return { ok: true, routes };
+  }
+
+  return { ok: false, error: routeError(error, "Load routes for note failed.") };
+}
+
 export async function pullCookieRoutesFromCloud(
   session: Session | null,
   existing: CookieBinding[],

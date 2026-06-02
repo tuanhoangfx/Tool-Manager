@@ -6,6 +6,21 @@ export function generateSyncId(): string {
   return `TM-${hex}`;
 }
 
+/** Skip redundant editor/network updates when detail payload is unchanged. */
+export function noteEditorContentEqual(a: NoteRow, b: NoteRow): boolean {
+  return (
+    a.id === b.id &&
+    a.updated_at === b.updated_at &&
+    a.title === b.title &&
+    a.body_md === b.body_md &&
+    a.slug === b.slug &&
+    a.domain === b.domain &&
+    a.pinned === b.pinned &&
+    a.share_enabled === b.share_enabled &&
+    a.sync_status === b.sync_status
+  );
+}
+
 export function slugifyTitle(title: string, fallback = "note"): string {
   const base = title
     .trim()
@@ -47,6 +62,35 @@ export function syncMeta(status: NoteSyncStatus, syncedAt: string | null): Pick<
     default:
       return { syncLabel: "Manual", syncTone: "amber" };
   }
+}
+
+/** Matches `fetchNotesList` ordering — pinned first, then `updated_at` desc. */
+export function sortNoteRows(rows: NoteRow[]): NoteRow[] {
+  return [...rows].sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+  });
+}
+
+/** Patch list cache from a detail save without storing heavy columns from the save response. */
+export function mergeNoteRowForList(existing: NoteRow, saved: NoteRow): NoteRow {
+  return {
+    ...existing,
+    title: saved.title,
+    slug: saved.slug,
+    domain: saved.domain,
+    pinned: saved.pinned,
+    share_enabled: saved.share_enabled,
+    share_token: saved.share_token,
+    share_password_hash: saved.share_password_hash,
+    share_expires_at: saved.share_expires_at,
+    share_view_count: saved.share_view_count,
+    updated_at: saved.updated_at,
+    sync_id: saved.sync_id ?? existing.sync_id,
+    sync_pass_hash: saved.sync_pass_hash ?? existing.sync_pass_hash,
+    body_md: existing.body_md,
+    cookie_snapshot: existing.cookie_snapshot,
+  };
 }
 
 export function toListItem(row: NoteRow): NoteListItem {

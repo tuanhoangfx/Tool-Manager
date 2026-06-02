@@ -1,19 +1,37 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Cookie, FileText, KeyRound, ListTodo, LogOut, Mail, RefreshCcw, Settings2, ShieldCheck, User, Users, X } from "lucide-react";
+import {
+  Cookie,
+  ExternalLink,
+  FileText,
+  KeyRound,
+  LogOut,
+  Mail,
+  RefreshCcw,
+  Settings2,
+  ShieldCheck,
+  User,
+  X,
+} from "lucide-react";
+import { toolHubUsersUrl } from "../../lib/hub-identity-urls";
 import { APP_VERSION } from "../../lib/app-meta";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
 import { ToolAvatar } from "../ToolAvatar";
 import { toolIconName, toolSvgIcon } from "../../lib/visual";
+import { clearDataBoxSession } from "../../lib/data-box-session";
+import { clearHubIdentity } from "../../lib/hub-identity-session";
 import { useNotesAuth } from "../../features/notes/useNotesAuth";
+import { getIdentitySupabase } from "../../lib/supabase-identity";
 import { supabase } from "../../lib/supabase";
+import {
+  requestWorkspaceDataRefresh,
+  WORKSPACE_LIST_REFRESHING,
+} from "../../lib/workspace-refresh-bus";
 
 const items: { screen: WorkspaceNavScreen; label: string; icon: typeof FileText }[] = [
   { screen: "notes", label: "Notes", icon: FileText },
-  { screen: "todo", label: "Todo", icon: ListTodo },
   { screen: "twofa", label: "2FA", icon: KeyRound },
   { screen: "cookie", label: "Cookie Auto", icon: Cookie },
-  { screen: "users", label: "Users", icon: Users },
   { screen: "system", label: "System", icon: Settings2 },
 ];
 
@@ -64,6 +82,15 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
   const { session } = useNotesAuth();
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [listRefreshing, setListRefreshing] = useState(false);
+
+  useEffect(() => {
+    const onRefreshing = (event: Event) => {
+      setListRefreshing(Boolean((event as CustomEvent<boolean>).detail));
+    };
+    window.addEventListener(WORKSPACE_LIST_REFRESHING, onRefreshing);
+    return () => window.removeEventListener(WORKSPACE_LIST_REFRESHING, onRefreshing);
+  }, []);
   const user = session?.user ?? null;
   const email = user?.email ?? null;
   const footerUserLabel = email || shortId(user?.id) || "guest";
@@ -140,12 +167,20 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
                   onClick={() => {
                     void (async () => {
                       setSigningOut(true);
-                      const { error } = await supabase.auth.signOut();
+                      clearHubIdentity();
+                      clearDataBoxSession();
+                      const identity = getIdentitySupabase();
+                      const outs = await Promise.all([
+                        identity ? identity.auth.signOut() : Promise.resolve({ error: null }),
+                        supabase.auth.signOut(),
+                      ]);
                       setSigningOut(false);
+                      const error = outs.find((r) => r.error)?.error;
                       if (error) {
                         window.alert(error.message);
                         return;
                       }
+                      window.dispatchEvent(new CustomEvent("p0020:hub-identity"));
                       setUserModalOpen(false);
                     })();
                   }}
@@ -212,12 +247,22 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
             </span>
           }
         />
+        <a
+          href={toolHubUsersUrl()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={footerBtn}
+          title="Workspace users & roles (Tool Hub P0004)"
+        >
+          <ExternalLink size={15} className="shrink-0 text-indigo-300" />
+          <span className="flex-1 text-left">Tool Hub — Users</span>
+        </a>
         <SidebarFooterButton
           icon={RefreshCcw}
-          iconClass="text-indigo-300"
-          label="Refresh"
-          onClick={() => window.location.reload()}
-          title="Refresh workspace"
+          iconClass={`text-indigo-300 ${listRefreshing ? "animate-spin" : ""}`}
+          label={listRefreshing ? "Updating…" : "Refresh"}
+          onClick={() => requestWorkspaceDataRefresh()}
+          title={listRefreshing ? "Updating notes in background" : "Refresh notes list"}
         />
         {displayPrefs}
       </footer>

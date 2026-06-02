@@ -6,6 +6,26 @@ type Listener = () => void;
 let channel: RealtimeChannel | null = null;
 let boundUserId: string | null = null;
 const listeners = new Set<Listener>();
+let notifyTimer = 0;
+
+function notifyListeners() {
+  listeners.forEach((fn) => {
+    try {
+      fn();
+    } catch (err) {
+      console.error("[P0020] notes cookie realtime listener", err);
+    }
+  });
+}
+
+/** Coalesce burst updates (extension sync / route writes) to avoid UI flicker. */
+function scheduleNotify() {
+  window.clearTimeout(notifyTimer);
+  notifyTimer = window.setTimeout(() => {
+    notifyTimer = 0;
+    notifyListeners();
+  }, 800);
+}
 
 function ensureChannel(userId: string) {
   if (channel && boundUserId === userId) return;
@@ -28,15 +48,16 @@ function ensureChannel(userId: string) {
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
+        const prev = payload.old as Record<string, unknown> | undefined;
         const row = payload.new as Record<string, unknown>;
-        if ("cookie_snapshot" in row || "sync_status" in row || "synced_at" in row) {
-          listeners.forEach((fn) => {
-            try {
-              fn();
-            } catch (err) {
-              console.error("[P0020] notes cookie realtime listener", err);
-            }
-          });
+        const cookieChanged =
+          prev != null &&
+          JSON.stringify(prev.cookie_snapshot ?? null) !== JSON.stringify(row.cookie_snapshot ?? null);
+        const syncChanged =
+          prev != null &&
+          (prev.sync_status !== row.sync_status || prev.synced_at !== row.synced_at);
+        if (cookieChanged || syncChanged) {
+          scheduleNotify();
         }
       },
     )
@@ -49,13 +70,7 @@ function ensureChannel(userId: string) {
         filter: `user_id=eq.${userId}`,
       },
       () => {
-        listeners.forEach((fn) => {
-          try {
-            fn();
-          } catch (err) {
-            console.error("[P0020] route realtime listener", err);
-          }
-        });
+        scheduleNotify();
       },
     )
     .on(
@@ -67,13 +82,7 @@ function ensureChannel(userId: string) {
         filter: `owner_user_id=eq.${userId}`,
       },
       () => {
-        listeners.forEach((fn) => {
-          try {
-            fn();
-          } catch (err) {
-            console.error("[P0020] member owner realtime listener", err);
-          }
-        });
+        scheduleNotify();
       },
     )
     .on(
@@ -85,13 +94,7 @@ function ensureChannel(userId: string) {
         filter: `grantee_user_id=eq.${userId}`,
       },
       () => {
-        listeners.forEach((fn) => {
-          try {
-            fn();
-          } catch (err) {
-            console.error("[P0020] member grantee realtime listener", err);
-          }
-        });
+        scheduleNotify();
       },
     )
     .on(
@@ -103,13 +106,7 @@ function ensureChannel(userId: string) {
         filter: `user_id=eq.${userId}`,
       },
       () => {
-        listeners.forEach((fn) => {
-          try {
-            fn();
-          } catch (err) {
-            console.error("[P0020] vault realtime listener", err);
-          }
-        });
+        scheduleNotify();
       },
     )
     .subscribe();
@@ -117,6 +114,8 @@ function ensureChannel(userId: string) {
 
 function teardownIfIdle() {
   if (listeners.size > 0) return;
+  window.clearTimeout(notifyTimer);
+  notifyTimer = 0;
   if (channel) {
     void supabase.removeChannel(channel);
     channel = null;

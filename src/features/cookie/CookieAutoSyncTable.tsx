@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import {
   HubResultCount,
+  HubTimeRangeSelect,
   KpiStrip,
   MetricBadge,
   MiniBarChart,
@@ -45,10 +46,20 @@ import {
 } from "../../components/sales-shell";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import type { NoteListItem } from "../notes/types";
+import { matchesTimeRange } from "../notes/notes-filters";
+import { fetchNoteCookieSnapshot } from "../notes/notesRepository";
 import { cookieLines } from "../notes/noteUtils";
-import { DOMAIN_PRESETS, type CookieBinding } from "./cookieBridge";
-import brandIconRegistry from "./cookieBrandIcons.registry.json";
+import { DOMAIN_PRESETS, normalizeCookieDomain, type CookieBinding } from "./cookieBridge";
+import { readCookieDeepLink } from "./cookieDeepLink";
+import { resolveCookieSiteIcon } from "./cookieSiteIcon";
+import { buildAppUrl } from "../../lib/workspace-path";
+import { readHubListPrefs } from "../../lib/url-prefs";
 import { COOKIE_ROUTE_FILTER_DEFS } from "./cookie-route-filters";
+import { DEFAULT_COOKIE_CHART_KEYS, DEFAULT_COOKIE_KPI_KEYS } from "./cookie-display-prefs";
+
+function visibleSet(set: Set<string> | null, defaults: Set<string>) {
+  return set ?? defaults;
+}
 import { listNoteCookieMembers, upsertNoteCookieMember } from "./noteCookieMembersRepository";
 import type { CookieVaultRow } from "./useCookieVaultMap";
 import { vaultKey } from "./useCookieVaultMap";
@@ -151,22 +162,8 @@ function routeSource(binding: CookieBinding) {
   return binding.sourceBrowserId ? "locked" : "unset";
 }
 
-const THESVG_CDN = "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons";
-
-type CookieBrandIconEntry = {
-  label: string;
-  match: string;
-  source: { type: "thesvg"; slug: string } | { type: "local"; webSrc: string; extensionSrc: string };
-};
-
-const COOKIE_BRAND_ICON_REGISTRY = brandIconRegistry as CookieBrandIconEntry[];
-
 function siteIcon(domain: string) {
-  const host = domain.replace(/^\./, "").toLowerCase();
-  const hit = COOKIE_BRAND_ICON_REGISTRY.find((item) => new RegExp(item.match, "i").test(host));
-  if (!hit) return null;
-  const src = hit.source.type === "thesvg" ? `${THESVG_CDN}/${hit.source.slug}/default.svg` : hit.source.webSrc;
-  return { label: hit.label, src };
+  return resolveCookieSiteIcon(domain);
 }
 
 function shareStateLabel(binding: CookieBinding, shareCount: number | undefined) {
@@ -511,7 +508,7 @@ function HealthRow({ label, value, good }: { label: string; value: string; good?
   );
 }
 
-function CookieRouteDetailModal({
+export function CookieRouteDetailModal({
   row,
   vault,
   renderDetail,
@@ -529,7 +526,25 @@ function CookieRouteDetailModal({
   const { binding, note, lines } = row;
   const status = note?.sync_status ?? "pending";
   const idPrefix = `cookie-route-${binding.id}-`;
+  const [snapshotLines, setSnapshotLines] = useState(lines);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+
+  useEffect(() => {
+    setSnapshotLines(lines);
+  }, [lines]);
+
+  useEffect(() => {
+    const noteId = binding.noteId?.trim();
+    if (!noteId) return;
+    let cancelled = false;
+    void fetchNoteCookieSnapshot(noteId).then(({ data, error }) => {
+      if (cancelled || error || !data) return;
+      setSnapshotLines(cookieLines(data.cookie_snapshot));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [binding.noteId]);
   const sectionItems = useMemo(
     () => [
       { id: `${idPrefix}about`, label: "About", icon: Info, tone: "indigo" },
@@ -718,7 +733,7 @@ function CookieRouteDetailModal({
                     </div>
                     <div>
                       <span>Note snapshot</span>
-                      <strong>{lines.length ? `${lines.length} line(s)` : "Missing"}</strong>
+                      <strong>{snapshotLines.length ? `${snapshotLines.length} line(s)` : "Missing"}</strong>
                     </div>
                     <div>
                       <span>Publish browser</span>
@@ -825,6 +840,9 @@ export function CookieAutoSyncTable({
   const notesById = useMemo(() => new Map(notes.map((note) => [note.id, note])), [notes]);
   const rows = useMemo(() => buildRows(bindings, notesById), [bindings, notesById]);
   const { query: routeQuery, filterValues, setFilters, setToolbar, setFilterToolbar } = useWorkspaceSearch();
+  const [prefs, setPrefs] = useState(readHubListPrefs);
+  const visKpi = visibleSet(prefs.kpi, DEFAULT_COOKIE_KPI_KEYS);
+  const visCharts = visibleSet(prefs.charts, DEFAULT_COOKIE_CHART_KEYS);
   const [modal, setModal] = useState<RouteModalState>(null);
   const [draftNoteId, setDraftNoteId] = useState("");
   const [draftDomain, setDraftDomain] = useState(".facebook.com");
@@ -839,6 +857,26 @@ export function CookieAutoSyncTable({
   const [viewMode, setViewMode] = useState<HubViewMode>("card");
   const toolbarKeyRef = useRef("");
   const filterToolbarKeyRef = useRef("");
+  const routeDetailDeepLinkDone = useRef(false);
+
+  useEffect(() => {
+    if (routeDetailDeepLinkDone.current || loading) return;
+    const link = readCookieDeepLink();
+    if (!link.openRouteDetail || !link.noteId || !link.domain) return;
+    const domain = normalizeCookieDomain(link.domain);
+    const binding = bindings.find(
+      (b) => b.enabled && b.noteId === link.noteId && normalizeCookieDomain(b.domain) === domain,
+    );
+    if (!binding) return;
+    routeDetailDeepLinkDone.current = true;
+    setModal({ type: "detail", id: binding.id });
+    onSelect?.(binding.id);
+    const p = new URLSearchParams(window.location.search);
+    p.delete("routeDetail");
+    p.delete("detail");
+    const q = p.toString();
+    window.history.replaceState(null, "", q ? buildAppUrl("cookie", q) : buildAppUrl("cookie"));
+  }, [bindings, loading, onSelect]);
 
   const editing = modal?.type === "edit" ? bindings.find((b) => b.id === modal.id) : null;
   const deleting = modal?.type === "delete" ? bindings.filter((b) => modal.ids.includes(b.id)) : [];
@@ -875,10 +913,11 @@ export function CookieAutoSyncTable({
         (!normalizedQuery || haystack.includes(normalizedQuery)) &&
         (activeStatuses.length === 0 || activeStatuses.includes(status)) &&
         (activeTypes.length === 0 || activeTypes.includes(type)) &&
-        (activeSources.length === 0 || activeSources.includes(source))
+        (activeSources.length === 0 || activeSources.includes(source)) &&
+        matchesTimeRange(note?.updated_at, prefs.range)
       );
     });
-  }, [filterValues, routeQuery, rows]);
+  }, [filterValues, prefs.range, routeQuery, rows]);
   const allVisibleSelected =
     filteredRows.length > 0 && filteredRows.every((row) => selectedIds.includes(row.binding.id));
   const selectedBindings = useMemo(
@@ -890,23 +929,39 @@ export function CookieAutoSyncTable({
       .map((row) => vaultByKey[vaultKey(row.binding.noteId, row.binding.domain)])
       .filter((vault): vault is CookieVaultRow => Boolean(vault));
     const cookieCount = vaultRows.reduce((sum, vault) => sum + (vault.cookie_count ?? 0), 0);
-    return [
-      { label: "Routes (shown)", value: filteredRows.length, hint: `${rows.length} total`, icon: LayoutGrid, tone: "indigo" },
+    const all: KpiTileData[] = [
       {
+        prefKey: "routes_shown",
+        label: "Routes (shown)",
+        value: filteredRows.length,
+        hint: `${rows.length} total`,
+        icon: LayoutGrid,
+        tone: "indigo",
+      },
+      {
+        prefKey: "locked_browser",
         label: "Locked browser",
         value: rows.filter((row) => row.binding.sourceBrowserId).length,
         icon: LockKeyhole,
         tone: "emerald",
       },
-      { label: "Vault cookies", value: cookieCount, icon: Database, tone: "amber" },
       {
+        prefKey: "vault_cookies",
+        label: "Vault cookies",
+        value: cookieCount,
+        icon: Database,
+        tone: "amber",
+      },
+      {
+        prefKey: "owner_routes",
         label: "Owner routes",
         value: rows.filter((row) => !row.binding.sourceBrowserId).length,
         icon: Shield,
         tone: "emerald",
       },
     ];
-  }, [filteredRows.length, rows, vaultByKey]);
+    return all.filter((item) => item.prefKey && visKpi.has(item.prefKey));
+  }, [filteredRows.length, rows, vaultByKey, visKpi]);
   const charts = useMemo(() => {
     const statusCounts = countBy(rows.map((row) => row.note?.sync_status ?? "pending"));
     const typeCounts = countBy(rows.map((row) => routeType(row.binding.domain)));
@@ -936,6 +991,12 @@ export function CookieAutoSyncTable({
     }));
     return { statusItems, typeItems, sourceItems, vaultItems };
   }, [rows, vaultByKey]);
+
+  useEffect(() => {
+    const sync = () => setPrefs(readHubListPrefs());
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, []);
 
   useEffect(() => {
     setFilters(COOKIE_ROUTE_FILTER_DEFS);
@@ -1103,17 +1164,18 @@ export function CookieAutoSyncTable({
     [selectedBindingId, selectedIds],
   );
 
-  const toolbarKey = `${viewMode}:${filteredRows.length}:${rows.length}`;
+  const toolbarKey = `${viewMode}:${prefs.range}:${filteredRows.length}:${rows.length}`;
   useEffect(() => {
     if (toolbarKeyRef.current === toolbarKey) return;
     toolbarKeyRef.current = toolbarKey;
     setToolbar(
       <>
+        <HubTimeRangeSelect value={prefs.range} />
         <ViewToggle value={viewMode} onChange={setViewMode} />
         <HubResultCount icon={Boxes} shown={filteredRows.length} total={rows.length} />
       </>,
     );
-  }, [filteredRows.length, rows.length, setToolbar, toolbarKey, viewMode]);
+  }, [filteredRows.length, prefs.range, rows.length, setToolbar, toolbarKey, viewMode]);
 
   const filterToolbarKey = [
     toolbarActionsKey,
@@ -1383,15 +1445,32 @@ export function CookieAutoSyncTable({
         </CookieRouteModal>
       ) : null}
 
-      <div className="mt-5 space-y-5">
-        <KpiStrip items={routeKpis} />
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <MiniBarChart title="By Status" items={charts.statusItems} />
-          <MiniBarChart title="By Type" items={charts.typeItems} />
-          <MiniDonut title="Publish Mode" items={charts.sourceItems} />
-          <MiniDonut title="Vault Distribution" items={charts.vaultItems} />
+      {routeKpis.length > 0 ||
+      visCharts.has("status_bar") ||
+      visCharts.has("type_bar") ||
+      visCharts.has("source_donut") ||
+      visCharts.has("vault_donut") ? (
+        <div className="mt-5 space-y-5">
+          {routeKpis.length > 0 ? <KpiStrip items={routeKpis} /> : null}
+          {visCharts.has("status_bar") ||
+          visCharts.has("type_bar") ||
+          visCharts.has("source_donut") ||
+          visCharts.has("vault_donut") ? (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {visCharts.has("status_bar") ? (
+                <MiniBarChart title="By Status" items={charts.statusItems} />
+              ) : null}
+              {visCharts.has("type_bar") ? <MiniBarChart title="By Type" items={charts.typeItems} /> : null}
+              {visCharts.has("source_donut") ? (
+                <MiniDonut title="Publish Mode" items={charts.sourceItems} />
+              ) : null}
+              {visCharts.has("vault_donut") ? (
+                <MiniDonut title="Vault Distribution" items={charts.vaultItems} />
+              ) : null}
+            </div>
+          ) : null}
         </div>
-      </div>
+      ) : null}
 
       <CookieDataSectionRule />
 
@@ -1645,7 +1724,7 @@ export function CookieAutoSyncTable({
         </CookieRouteModal>
       ) : null}
 
-      {loading ? (
+      {loading && notes.length === 0 ? (
         <p className="py-3 text-center text-[11px] text-[var(--muted)]">Loading notes…</p>
       ) : null}
 

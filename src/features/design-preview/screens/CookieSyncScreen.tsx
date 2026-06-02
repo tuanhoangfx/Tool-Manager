@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { useAppToast } from "../../../components/toast";
 import type { Session } from "@supabase/supabase-js";
 import { useNotesAuth } from "../../notes/useNotesAuth";
@@ -18,15 +17,13 @@ import {
   type CookieBinding,
 } from "../../cookie/cookieBridge";
 import { useExtensionAuthHeartbeat } from "../../notes/useExtensionAuthHeartbeat";
+import { useCookieRouteDetailRenderers } from "../../cookie/useCookieRouteDetailRenderers";
+import { shouldShowExtensionLinkToast } from "../../../lib/extension-link-toast";
 import { supabase } from "../../../lib/supabase";
-import { Activity, Link2, RefreshCw, Settings } from "lucide-react";
+import { Activity, Link2, RefreshCw } from "lucide-react";
 import { EXTENSION_RELEASE_PAGE } from "../../cookie/extensionInstall";
 import { CookieInstallHeaderActions } from "../../cookie/CookieInstallHeaderActions";
-import { useAppView } from "../../../hooks/useAppView";
-import { CookieSettings } from "../../cookie/CookieSettings";
 import { CookieAutoSyncTable } from "../../cookie/CookieAutoSyncTable";
-import { CookieBrowserAgents } from "../../cookie/CookieBrowserAgents";
-import { CookieRouteMembers } from "../../cookie/CookieRouteMembers";
 import { hasCookieDeepLink, readCookieDeepLink } from "../../cookie/cookieDeepLink";
 import { useCookieBindings } from "../../cookie/useCookieBindings";
 import { useCookieVaultMap } from "../../cookie/useCookieVaultMap";
@@ -47,6 +44,7 @@ import { EXTENSION_BUILD } from "../../cookie/extensionBuildInfo";
 import { PageHeader } from "./PageHeader";
 import { useWorkspaceSearch } from "../../workspace/WorkspaceSearchContext";
 import { getOfflineMode } from "../../../lib/offlineMode";
+import { WorkspaceLoadingView } from "../../../components/sales-shell/HubLoadingView";
 
 type BridgeStatusBadge = {
   label: string;
@@ -56,7 +54,7 @@ type BridgeStatusBadge = {
 
 type BridgeActionsMenuProps = {
   status: BridgeStatusBadge;
-  onLinkExtension: () => void;
+  onLinkExtension: (opts?: { silent?: boolean }) => void | Promise<void>;
 };
 
 function BridgeActionsMenu({
@@ -111,7 +109,7 @@ function BridgeActionsMenu({
             type="button"
             role="menuitem"
             className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-[var(--text)] hover:bg-white/[.06]"
-            onClick={() => pick(onLinkExtension)}
+            onClick={() => pick(() => void onLinkExtension())}
           >
             <Link2 size={14} className="text-indigo-300" />
             Link extension runtime
@@ -194,13 +192,14 @@ function CookieSyncSignIn({ shellMode }: { shellMode?: boolean }) {
 function CookieSyncMain({
   session,
   shellMode,
+  tabActive = true,
 }: {
   session: Session;
   shellMode?: boolean;
+  tabActive?: boolean;
 }) {
   const offline = getOfflineMode();
   const cloudSession: Session | null = offline ? null : session;
-  const { isSettings, setView } = useAppView();
   const { setHeaderActions } = useWorkspaceSearch();
   const { notes, loading, refresh } = useNotes(session);
   const { bindings, setBindings, addBinding, connectAndCache, updateBinding, removeBinding, pushToExtension } =
@@ -217,7 +216,6 @@ function CookieSyncMain({
   const { health: schemaHealth, loading: schemaLoading, refresh: refreshSchemaHealth } = useCookieSchemaHealth(true);
   const { pushToast } = useAppToast();
   const [deepLinkDone, setDeepLinkDone] = useState(false);
-  const [realtimeOn, setRealtimeOn] = useState(() => loadCookieBridgePrefs().realtimeSync);
   const [selectedBindingId, setSelectedBindingId] = useState<string | null>(() => loadSelectedBindingId());
   const [autoRan, setAutoRan] = useState(false);
   const [autoRoutesLoaded, setAutoRoutesLoaded] = useState(false);
@@ -250,16 +248,17 @@ function CookieSyncMain({
   useExtensionAuthHeartbeat(session);
 
 
-  const onLinkExtension = useCallback(async () => {
+  const onLinkExtension = useCallback(async (opts?: { silent?: boolean }) => {
+    const showToast = opts?.silent !== true;
     if (offline) {
-      pushToast("Offline mode: linking extension runtime requires Supabase.", "warn");
+      if (showToast) pushToast("Offline mode: linking extension runtime requires Supabase.", "warn");
       return;
     }
     const {
       data: { session: s },
     } = await supabase.auth.getSession();
     if (!s) {
-      pushToast("Not signed in.", "warn");
+      if (showToast) pushToast("Not signed in.", "warn");
       return;
     }
     let nextBindings = bindings;
@@ -267,7 +266,7 @@ function CookieSyncMain({
     if (cloud.ok) {
       nextBindings = cloud.bindings;
       setBindings(cloud.bindings);
-    } else {
+    } else if (showToast) {
       pushToast(cloud.error, "warn", 8000);
     }
 
@@ -279,10 +278,14 @@ function CookieSyncMain({
     });
     if (nextBindings.length > 0) {
       pushToExtension(nextBindings);
-      pushToast("Extension runtime linked. Cloud routes will arrive via realtime.", "success");
+      if (showToast && shouldShowExtensionLinkToast()) {
+        pushToast("Extension runtime linked. Cloud routes will arrive via realtime.", "success");
+      }
     } else {
       pushToExtension([]);
-      pushToast("Session sent to extension. Create a new route to publish directly to cloud.", "info");
+      if (showToast && shouldShowExtensionLinkToast()) {
+        pushToast("Session sent to extension. Create a new route to publish directly to cloud.", "info");
+      }
     }
   }, [bindings, notes, pushToExtension, pushToast, setBindings]);
 
@@ -334,7 +337,7 @@ function CookieSyncMain({
     void refreshCloudRoutes({ silent: true });
   }, [refreshCloudRoutes, refresh, refreshVault]);
 
-  useNotesCookieRealtime(session, onRealtimeRefresh, realtimeOn);
+  useNotesCookieRealtime(session, onRealtimeRefresh, false);
 
   useEffect(() => {
     if (autoRoutesLoaded || loading || !session) return;
@@ -393,6 +396,12 @@ function CookieSyncMain({
     if (!hasCookieDeepLink(link)) return;
     if (!notes.length && !link.syncId && !link.noteId) return;
 
+    const deepKey = `p0020:deep-link:${link.noteId ?? ""}|${link.syncId ?? ""}|${link.domain ?? ""}`;
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(deepKey) === "1") {
+      setDeepLinkDone(true);
+      return;
+    }
+
     void connectAndCache({
       noteId: link.noteId ?? undefined,
       syncId: link.syncId ?? undefined,
@@ -400,11 +409,12 @@ function CookieSyncMain({
       pass: link.pass ?? undefined,
     }).then((res) => {
       setDeepLinkDone(true);
+      if (typeof sessionStorage !== "undefined") sessionStorage.setItem(deepKey, "1");
       if (res.ok) {
         void publishRouteToCloud(res.row, { silent: true }).then((ok) => {
           if (ok) pushToast("Route created from URL and published to cloud.", "success");
         });
-        void onLinkExtension();
+        void onLinkExtension({ silent: true });
       } else {
         pushToast(res.error, "error");
       }
@@ -432,10 +442,16 @@ function CookieSyncMain({
     if (!auto) return;
     const actions = new Set(auto.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean));
     if (!actions.size) return;
+    const autoKey = `p0020:auto:${auto}`;
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(autoKey) === "1") {
+      setAutoRan(true);
+      return;
+    }
     setAutoRan(true);
+    if (typeof sessionStorage !== "undefined") sessionStorage.setItem(autoKey, "1");
 
     void (async () => {
-      if (actions.has("link")) await onLinkExtension();
+      if (actions.has("link")) await onLinkExtension({ silent: true });
       if (actions.has("sync")) window.setTimeout(() => onSyncNow(), 1200);
     })();
   }, [autoRan, loading, onLinkExtension, onSyncNow]);
@@ -504,40 +520,19 @@ function CookieSyncMain({
     pushToast(`Locked source: ${agent.label || agent.browser_id.slice(0, 8)}. Targets are read-only.`, "success");
   };
 
-  const cookieSettingsHeaderAction = useMemo(
-    () => (
-      <button
-        type="button"
-        className="inline-grid h-7 w-7 place-items-center rounded-lg border border-white/10 bg-[var(--panel-2)] text-[var(--muted)] transition-colors hover:bg-white/5 hover:text-[var(--text)]"
-        onClick={() => setView("settings")}
-        title="Cookie settings"
-        aria-label="Cookie settings"
-      >
-        <Settings size={14} />
-      </button>
-    ),
-    [setView],
-  );
+  const { renderAccessDetail, renderAgentDetail } = useCookieRouteDetailRenderers(session, {
+    onShared: () => void refreshCloudRoutes({ silent: true }),
+    onSetSource: onSetSourceAgent,
+    onCommand: onAgentCommand,
+  });
 
-  const cookieHeaderActions = useMemo(
-    () => <CookieInstallHeaderActions trailing={cookieSettingsHeaderAction} />,
-    [cookieSettingsHeaderAction],
-  );
+  const cookieHeaderActions = useMemo(() => <CookieInstallHeaderActions />, []);
 
   useEffect(() => {
     if (!shellMode) return;
     setHeaderActions(cookieHeaderActions);
     return () => setHeaderActions(null);
   }, [cookieHeaderActions, setHeaderActions, shellMode]);
-
-  useEffect(() => {
-    if (!isSettings) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setView("main");
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [isSettings, setView]);
 
   const bridgeStatus = useMemo(
     () =>
@@ -551,6 +546,9 @@ function CookieSyncMain({
     [agents, agentsError, agentsLoading, schemaHealth, schemaLoading],
   );
   const routeActionsKey = `${bridgeStatus.tone}:${bridgeStatus.label}:${agents.length}:${schemaHealth?.ok ?? "unknown"}`;
+
+  const cookieBootLoading =
+    tabActive && ((schemaLoading && !schemaHealth) || (agentsLoading && agents.length === 0));
 
   const routeActions = useMemo(() => (
     <>
@@ -585,40 +583,17 @@ function CookieSyncMain({
   const pageHeaderActions = useMemo(
     () => (
       <>
-        <CookieInstallHeaderActions trailing={cookieSettingsHeaderAction} />
+        <CookieInstallHeaderActions />
         {routeActions}
       </>
     ),
-    [cookieSettingsHeaderAction, routeActions],
+    [routeActions],
   );
 
-  const settingsModal =
-    isSettings && typeof document !== "undefined"
-      ? createPortal(
-          <div
-            className="fixed inset-0 z-[1200] grid place-items-center bg-black/55 px-4 py-6 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Cookie settings"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) setView("main");
-            }}
-          >
-            <CookieSettings
-              variant="modal"
-              onBack={() => setView("main")}
-              onPrefsChange={(p) => {
-                setRealtimeOn(p.realtimeSync);
-                broadcastCookieBridgePrefs(p);
-              }}
-            />
-          </div>,
-          document.body,
-        )
-      : null;
-
   return (
-    <div className={shellMode ? "" : "p-6"}>
+    <>
+      {tabActive && cookieBootLoading ? <WorkspaceLoadingView screen="cookie" variant="overlay" /> : null}
+      <div className={shellMode ? "" : "p-6"}>
       {offline ? (
         <p className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
           Offline mode is enabled. Cloud routes, sharing, sync now, and vault status are disabled.
@@ -716,28 +691,8 @@ function CookieSyncMain({
           vaultError={vaultError}
           toolbarActions={shellMode ? routeActions : null}
           toolbarActionsKey={shellMode ? routeActionsKey : ""}
-          renderAccessDetail={(binding) => (
-            <CookieRouteMembers
-              binding={binding}
-              onToast={(message, tone = "success") => pushToast(message, tone, tone === "error" ? 8000 : undefined)}
-              onShared={() => {
-                void refreshCloudRoutes({ silent: true });
-                void refreshAgents();
-              }}
-            />
-          )}
-          renderAgentDetail={(binding) => (
-            <CookieBrowserAgents
-              agents={agents}
-              commands={agentCommands}
-              loading={agentsLoading}
-              error={agentsError}
-              selectedBinding={binding}
-              onRefresh={() => void refreshAgents()}
-              onCommand={onAgentCommand}
-              onSetSource={onSetSourceAgent}
-            />
-          )}
+          renderAccessDetail={renderAccessDetail}
+          renderAgentDetail={renderAgentDetail}
           onRefresh={() => {
             void refresh();
             if (!offline) {
@@ -758,24 +713,25 @@ function CookieSyncMain({
         }}
       />
 
-      {settingsModal}
-
-    </div>
+      </div>
+    </>
   );
 }
 
 export function CookieSyncScreen({
   shellMode,
+  tabActive = true,
 }: {
   shellMode?: boolean;
   query?: string;
+  tabActive?: boolean;
 } = {}) {
   const { session, loading: authLoading, offline } = useNotesAuth();
 
-  if (authLoading) {
+  if (!session && authLoading) {
     return (
-      <div className="grid min-h-[40vh] place-items-center p-8 text-sm text-[var(--muted)]" role="status">
-        Loading Cookie Auto…
+      <div className="flex flex-1 items-center justify-center p-6 text-[12px] text-[var(--muted)]">
+        Signing in…
       </div>
     );
   }
@@ -784,5 +740,5 @@ export function CookieSyncScreen({
     return <CookieSyncSignIn shellMode={shellMode} />;
   }
 
-  return <CookieSyncMain session={session} shellMode={shellMode} />;
+  return <CookieSyncMain session={session} shellMode={shellMode} tabActive={tabActive} />;
 }
