@@ -4,6 +4,33 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-03 - Git P0020: release standardization and Data-Box path
+
+- Version: `0.2.1`
+- Type: Minor
+- Product: P0020
+- Prompt: Git P0020 after Push; bump Minor tier and sync release pipeline
+- Commit: pending
+- Status: Draft
+
+### Changes
+
+- Minor version bump for ship keyword Git P0020 (release standardization complete).
+- Canonical folder `P0020-Data-Box`; Hub registry and docs paths updated.
+
+### Verification
+
+- `corepack pnpm build` — pass
+- Tag `v0.1.4` on commit `01d981c`
+
+### Rollback
+
+```powershell
+git checkout v0.1.4
+```
+
+---
+
 ## 2026-06-03 - Vendor hub-load/hub-ui for standalone Vercel build
 
 - Version: `0.1.4`

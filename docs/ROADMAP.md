@@ -26,4 +26,4 @@
 - [ ] Vercel env: `VITE_SUPABASE_*`, `VITE_GITHUB_TOKEN`
 - [ ] Extension publish Chrome Web Store (optional)
 - [ ] `share_expires_at` UI + view count RPC
-- [ ] Đổi folder `P0020-Data-Box`
+- [x] Đổi folder `P0020-Data-Box` (canonical `Tool/P0020-Data-Box`; empty `Workspace-Notes` stub → junction after IDE reload)

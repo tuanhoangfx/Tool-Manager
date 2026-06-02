@@ -18,7 +18,7 @@ Use this when the old project (`yhnqwxejjkfgmjmiquhb`) is restricted and you cre
 
 ## 2. Local env (P0020)
 
-Edit `Tool/P0020-Workspace-Notes/.env.local`:
+Edit `Tool/P0020-Data-Box/.env.local`:
 
 ```env
 VITE_SUPABASE_URL=https://<NEW_REF>.supabase.co
@@ -33,7 +33,7 @@ Keep existing `VITE_HUB_SUPABASE_*` as-is.
 Sync manifests + extension:
 
 ```bash
-cd Tool/P0020-Workspace-Notes
+cd Tool/P0020-Data-Box
 pnpm db:sync-manifest
 pnpm sync:e0001-databox
 ```
