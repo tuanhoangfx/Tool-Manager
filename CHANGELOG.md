@@ -40,7 +40,7 @@ git checkout v0.1.1
 - Type: Patch
 - Product: P0020
 - Prompt: Notes Hub-style search/filter and folder management
-- Commit: `913fa3e`
+- Commit: `15b41b1`
 - Status: Committed
 
 ### Changes
@@ -51,7 +51,7 @@ git checkout v0.1.1
 
 ### Verification
 
-- pending
+- Tag `v0.1.1` @ `15b41b1` (2026-05-25)
 
 ### Rollback
 
@@ -67,7 +67,7 @@ git checkout v0.1.0
 - Type: Minor
 - Product: P0020
 - Prompt: Initial Notes CRUD and deploy baseline
-- Commit: `913fa3e`
+- Commit: `9f217da`
 - Status: Committed
 
 ### Changes
@@ -82,5 +82,5 @@ git checkout v0.1.0
 ### Rollback
 
 ```powershell
-git checkout <initial-release-sha>
+git checkout 9f217da
 ```
