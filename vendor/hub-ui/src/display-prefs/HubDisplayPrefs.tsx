@@ -293,7 +293,7 @@ export function HubDisplayPrefs({
       ? (showHeaderPin && rawHpin !== null ? 1 : 0) +
         (rawSpin === "0" ? 1 : 0) +
         (showNavToggle && rawNavicon === "0" ? 1 : 0)
-      : (showRange && prefs.range !== "30d" ? 1 : 0) +
+      : (showRange && prefs.range !== "all" ? 1 : 0) +
         (showLimit && prefs.limit !== 100 ? 1 : 0) +
         (rawKpi !== null ? 1 : 0) +
         (rawCharts !== null ? 1 : 0) +
@@ -381,7 +381,7 @@ export function HubDisplayPrefs({
                   <button
                     key={r.value}
                     type="button"
-                    onClick={() => update({ range: r.value === "30d" ? null : r.value })}
+                    onClick={() => update({ range: r.value === "all" ? null : r.value })}
                     className={`rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
                       prefs.range === r.value
                         ? "bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-500/40"

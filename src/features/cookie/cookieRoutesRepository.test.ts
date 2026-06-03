@@ -69,6 +69,7 @@ describe("mergeCookieRoutes", () => {
       domain: ".facebook.com",
       pass: "local-secret",
       sourceBrowserId: "browser-source",
+      routeUpdatedAt: "2026-05-26T00:00:00Z",
     });
   });
 

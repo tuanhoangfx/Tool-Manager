@@ -46,7 +46,7 @@ import {
 } from "../../components/sales-shell";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import type { NoteListItem } from "../notes/types";
-import { matchesTimeRange } from "../notes/notes-filters";
+import { routeMatchesTimeRange } from "./cookie-route-activity";
 import { fetchNoteCookieSnapshot } from "../notes/notesRepository";
 import { cookieLines } from "../notes/noteUtils";
 import { DOMAIN_PRESETS, normalizeCookieDomain, type CookieBinding } from "./cookieBridge";
@@ -914,7 +914,7 @@ export function CookieAutoSyncTable({
         (activeStatuses.length === 0 || activeStatuses.includes(status)) &&
         (activeTypes.length === 0 || activeTypes.includes(type)) &&
         (activeSources.length === 0 || activeSources.includes(source)) &&
-        matchesTimeRange(note?.updated_at, prefs.range)
+        routeMatchesTimeRange(binding, note, prefs.range)
       );
     });
   }, [filterValues, prefs.range, routeQuery, rows]);

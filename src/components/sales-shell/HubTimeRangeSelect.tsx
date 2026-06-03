@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, ChevronDown } from "lucide-react";
-import { patchHubListPrefs, TIME_RANGES, type TimeRange } from "../../lib/url-prefs";
+import {
+  DEFAULT_HUB_TIME_RANGE,
+  patchHubListPrefs,
+  TIME_RANGES,
+  type TimeRange,
+} from "../../lib/url-prefs";
 
 export function HubTimeRangeSelect({ value }: { value: TimeRange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const label = TIME_RANGES.find((r) => r.value === value)?.label ?? "30 days";
+  const label = TIME_RANGES.find((r) => r.value === value)?.label ?? "All";
 
   useEffect(() => {
     if (!open) return;
@@ -17,7 +22,7 @@ export function HubTimeRangeSelect({ value }: { value: TimeRange }) {
   }, [open]);
 
   function pick(next: TimeRange) {
-    patchHubListPrefs({ range: next === "30d" ? null : next });
+    patchHubListPrefs({ range: next === DEFAULT_HUB_TIME_RANGE ? null : next });
     setOpen(false);
   }
 
@@ -27,7 +32,7 @@ export function HubTimeRangeSelect({ value }: { value: TimeRange }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={`inline-flex h-[34px] items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors ${
-          value !== "30d"
+          value !== DEFAULT_HUB_TIME_RANGE
             ? "border-amber-500/35 bg-amber-500/10 text-amber-200"
             : "border-white/10 bg-[var(--panel-2)] text-[var(--text)] hover:bg-white/5"
         }`}

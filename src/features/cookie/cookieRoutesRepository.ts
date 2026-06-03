@@ -91,6 +91,7 @@ export function mergeCookieRoutes(
       canApply: row.can_apply ?? true,
       canPublish: row.can_publish ?? row.access_role !== "member",
       canManage: row.can_manage ?? row.access_role !== "member",
+      routeUpdatedAt: row.updated_at ?? prev?.routeUpdatedAt ?? null,
     });
   }
 

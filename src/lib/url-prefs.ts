@@ -12,6 +12,9 @@ export const TIME_RANGES: { value: TimeRange; label: string }[] = [
 
 export const LIMIT_OPTIONS = [25, 50, 100, 200, 500] as const;
 
+/** Hub list time-range when URL has no `range` param (omit from URL = this value). */
+export const DEFAULT_HUB_TIME_RANGE: TimeRange = "all";
+
 export type HubListPrefs = {
   range: TimeRange;
   limit: number;
@@ -37,7 +40,7 @@ function parseSet(raw: string | null): Set<string> | null {
 export function readHubListPrefs(): HubListPrefs {
   if (typeof window === "undefined") {
     return {
-      range: "30d",
+      range: DEFAULT_HUB_TIME_RANGE,
       limit: 100,
       kpi: null,
       charts: null,
@@ -49,13 +52,13 @@ export function readHubListPrefs(): HubListPrefs {
     };
   }
   const sp = new URLSearchParams(window.location.search);
-  const range = (sp.get("range") ?? "30d") as TimeRange;
+  const range = (sp.get("range") ?? DEFAULT_HUB_TIME_RANGE) as TimeRange;
   const limitNum = Number(sp.get("limit"));
   const limit = (LIMIT_OPTIONS as readonly number[]).includes(limitNum) ? limitNum : 100;
   const hpin = sp.get("hpin");
   const spin = sp.get("spin");
   return {
-    range: TIME_RANGES.some((r) => r.value === range) ? range : "30d",
+    range: TIME_RANGES.some((r) => r.value === range) ? range : DEFAULT_HUB_TIME_RANGE,
     limit,
     kpi: parseSet(sp.get("kpi")),
     charts: parseSet(sp.get("charts")),

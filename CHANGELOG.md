@@ -4,6 +4,26 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-03 - Cookie routes: default filters All + shared route visibility
+
+- Version: `1.1.1`
+- Type: Major
+- Product: P0020
+- Prompt: Release P0020 — shared cookie routes visible; Hub default time range All
+- Commit: `21fe0ce`
+- Status: Committed
+
+### Changes
+
+- Hub time range default is **All** (was 30 days) when URL has no `range` param — Notes, Cookie Auto, 2FA.
+- Cookie route list uses cloud `routeUpdatedAt` for time filter so shared/member routes are not hidden.
+
+### Verification
+
+- `vitest run` cookie-route-activity + cookieRoutesRepository — pass
+
+---
+
 ## 2026-06-03 - Git P0020: release standardization and Data-Box path
 
 - Version: `0.2.1`

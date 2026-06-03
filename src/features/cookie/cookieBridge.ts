@@ -26,6 +26,8 @@ export type CookieBinding = {
   canPublish?: boolean;
   canManage?: boolean;
   enabled: boolean;
+  /** Cloud route row updated_at — used for Hub time-range filter when note is missing or stale */
+  routeUpdatedAt?: string | null;
 };
 
 export type CookieBridgeRole = "writer" | "reader";
