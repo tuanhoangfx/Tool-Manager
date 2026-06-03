@@ -220,6 +220,8 @@ export function AppTabHeader({
   const dividerClass = embedded || !dividerBelow ? "" : "border-b border-white/5";
   const gapBelow = embedded || !dividerBelow ? "" : "mb-[var(--app-tab-header-gap-below)]";
   const chromeClass = embedded ? "" : "-mx-6";
+  const metaVisibility = (index: number) =>
+    index === 0 ? "hidden sm:inline-flex" : index === 1 ? "hidden md:inline-flex" : "hidden lg:inline-flex";
 
   return (
     <header
@@ -242,18 +244,20 @@ export function AppTabHeader({
             <h1 className="shrink-0 text-base font-semibold leading-none tracking-tight text-[var(--text)]">{title}</h1>
           </>
         )}
+        <span className="hidden items-center gap-x-2.5 sm:inline-flex">
+          <Rule />
+          <span className="inline-flex items-center gap-1.5 text-[13px] leading-none text-[var(--muted)]">
+            <Clock size={14} className="shrink-0 text-indigo-400/90" aria-hidden />
+            <span>Session</span>
+            <span className="tabular-nums text-[var(--text)]/90">{sessionMmSs}</span>
+          </span>
+        </span>
         {metaItems.map((item, index) => (
-          <span key={`${item.title}-${index}`} className="inline-flex items-center gap-x-2.5">
+          <span key={`${item.title ?? "meta"}-${index}`} className={`${metaVisibility(index)} items-center gap-x-2.5`}>
             <Rule visibleFrom={index === 0 ? "sm" : index === 1 ? "md" : "lg"} />
             <MetaLine {...item} />
           </span>
         ))}
-        <span className="inline-flex items-center gap-1.5 text-[13px] leading-none text-[var(--muted)]">
-          <Rule visibleFrom="sm" />
-          <Clock size={14} className="shrink-0 text-indigo-400/90" aria-hidden />
-          <span>Session</span>
-          <span className="tabular-nums text-[var(--text)]/90">{sessionMmSs}</span>
-        </span>
         {leftActions ? (
           <span className="ml-1 inline-flex items-center gap-1.5">
             <Rule visibleFrom="sm" />

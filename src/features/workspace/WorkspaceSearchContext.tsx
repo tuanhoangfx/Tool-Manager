@@ -13,8 +13,6 @@ type Ctx = {
   setToolbar: (toolbar: ReactNode) => void;
   filterToolbar: ReactNode;
   setFilterToolbar: (toolbar: ReactNode) => void;
-  headerActions: ReactNode;
-  setHeaderActions: (actions: ReactNode) => void;
   centerStats: TabHeaderStatItem[];
   setCenterStats: (stats: TabHeaderStatItem[]) => void;
 };
@@ -32,8 +30,6 @@ export function WorkspaceSearchProvider({
   setToolbar,
   filterToolbar,
   setFilterToolbar,
-  headerActions,
-  setHeaderActions,
   centerStats,
   setCenterStats,
   children,
@@ -48,8 +44,6 @@ export function WorkspaceSearchProvider({
   setToolbar: (toolbar: ReactNode) => void;
   filterToolbar: ReactNode;
   setFilterToolbar: (toolbar: ReactNode) => void;
-  headerActions: ReactNode;
-  setHeaderActions: (actions: ReactNode) => void;
   centerStats: TabHeaderStatItem[];
   setCenterStats: (stats: TabHeaderStatItem[]) => void;
   children: ReactNode;
@@ -67,8 +61,6 @@ export function WorkspaceSearchProvider({
         setToolbar,
         filterToolbar,
         setFilterToolbar,
-        headerActions,
-        setHeaderActions,
         centerStats,
         setCenterStats,
       }}
@@ -92,8 +84,6 @@ export function useWorkspaceSearch() {
       setToolbar: () => {},
       filterToolbar: null,
       setFilterToolbar: () => {},
-      headerActions: null,
-      setHeaderActions: () => {},
       centerStats: [],
       setCenterStats: () => {},
     };

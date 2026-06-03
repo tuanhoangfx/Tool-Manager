@@ -1,0 +1,20 @@
+[
+  { "label": "Google", "match": "gmail|google", "source": { "type": "local", "src": "/icons/google.svg" } },
+  { "label": "OpenAI", "match": "chatgpt|openai|gpt", "source": { "type": "local", "src": "/icons/openai.svg" } },
+  { "label": "GitHub", "match": "github", "source": { "type": "local", "src": "/icons/github.svg" } },
+  { "label": "Microsoft", "match": "microsoft|outlook|hotmail|live|azure|xbox", "source": { "type": "local", "src": "/icons/microsoft.svg" } },
+  { "label": "Facebook", "match": "facebook|meta", "source": { "type": "thesvg", "slug": "facebook" } },
+  { "label": "Instagram", "match": "instagram", "source": { "type": "thesvg", "slug": "instagram" } },
+  { "label": "X", "match": "twitter|\\bx\\b", "source": { "type": "thesvg", "slug": "x" } },
+  { "label": "LinkedIn", "match": "linkedin", "source": { "type": "thesvg", "slug": "linkedin" } },
+  { "label": "Amazon", "match": "amazon|aws", "source": { "type": "thesvg", "slug": "amazon" } },
+  { "label": "Netflix", "match": "netflix", "source": { "type": "thesvg", "slug": "netflix" } },
+  { "label": "Discord", "match": "discord", "source": { "type": "thesvg", "slug": "discord" } },
+  { "label": "TikTok", "match": "tiktok", "source": { "type": "thesvg", "slug": "tiktok" } },
+  { "label": "YouTube", "match": "youtube", "source": { "type": "local", "src": "/icons/youtube.svg" } },
+  { "label": "Shopee", "match": "shopee", "source": { "type": "thesvg", "slug": "shopee" } },
+  { "label": "Zalo", "match": "zalo", "source": { "type": "local", "src": "/icons/zalo.svg" } },
+  { "label": "Vercel", "match": "vercel", "source": { "type": "local", "src": "/icons/vercel.svg" } },
+  { "label": "Docker", "match": "docker", "source": { "type": "local", "src": "/icons/docker.svg" } },
+  { "label": "npm", "match": "\\bnpm\\b", "source": { "type": "local", "src": "/icons/npm.svg" } }
+]

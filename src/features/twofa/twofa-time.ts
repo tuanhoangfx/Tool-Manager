@@ -5,6 +5,20 @@ export function twofaActivityAt(account: TwofaAccount): string {
   return account.lastUsedAt?.trim() || account.updatedAt;
 }
 
+/** P0004 Users table date format (en-GB). */
+export function fmtHubDate(value: string | null | undefined): string {
+  if (!value?.trim()) return "—";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function formatLastUsed(iso: string | undefined): string {
   if (!iso?.trim()) return "—";
   const at = new Date(iso).getTime();

@@ -186,13 +186,13 @@
         "9Router",
         "Admin UI"
       ],
-      "appUrl": "https://zaloai.infi.io.vn/p0005",
+      "appUrl": "https://zaloai.infi.io.vn",
       "localUrl": "http://127.0.0.1:3920",
       "deployTarget": "vps",
       "usage": [
         "Dev: pnpm run admin",
         "Run the configured build command from package.json.",
-        "App: https://zaloai.infi.io.vn/p0005"
+        "App: https://zaloai.infi.io.vn"
       ],
       "downloadHint": "Use GitHub release asset when available, otherwise clone the repository.",
       "manifestPath": "tool.manifest.json",

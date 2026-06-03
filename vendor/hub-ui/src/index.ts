@@ -17,3 +17,11 @@ export {
 } from "./loading/hub-loader-dom";
 export { HubLoaderRoot } from "./shell/HubLoaderRoot";
 export { HubLoadingView, type HubLoadingViewProps } from "./shell/HubLoadingView";
+export {
+  AppTabHeader,
+  type TabHeaderMetaItem,
+  type TabHeaderStatItem,
+  type TabTitleMenuItem,
+} from "./shell/AppTabHeader";
+export { WorkspaceTabHeader, type WorkspaceTabHeaderProps } from "./shell/WorkspaceTabHeader";
+export { buildVersionMetaItems } from "./shell/workspace-tab-header-meta";

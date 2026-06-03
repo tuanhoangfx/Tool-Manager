@@ -4,6 +4,407 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-03 - Release: 2FA Hub directory + workspace chrome
+
+- Version: `2.1.1`
+- Type: Major
+- Product: P0020
+- Prompt: Release P0020 — ship 2FA Users-style table, Add/bulk flows, Cookie-parity icons, hub tab chrome
+- Commit: `e9acd17`
+- Status: Committed
+
+### Changes
+
+- 2FA: P0004 Hub users table skin, bulk add/edit/delete, auth-gate Add modal + embedded search-miss form, platform brand icons, Chrome autofill guard, readable chips/typography.
+- Workspace: Hub-style tab headers, Cookie extension FAB + download confirm, shared hub-ui vendor shell.
+- Cookie: default filters All, shared route visibility, cloud-first sync polish.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+- Production smoke via `ship-product.ps1 -Keyword Release`
+
+Version: `1.1.20` → `2.1.1`
+
+---
+
+## 2026-06-03 - 2FA table typography (readable chips)
+
+- Version: `1.1.20`
+- Type: Patch
+- Product: P0020
+- Prompt: Default font info; slightly larger table text, account badge, and TOTP code chip
+- Status: Draft
+
+### Changes
+
+- `hub-users-table.css` (`--twofa`): body 13px, headers 12px, service title 13px, muted dates 11px, period label 12px.
+- `TwofaAccountsTable`: account/secret/password chips 10px + padding; code chip 11px semibold; chip icons 11px.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+Version: `1.1.19` → `1.1.20`
+
+---
+
+## 2026-06-03 - 2FA Add form: disable Chrome autofill
+
+- Version: `1.1.19`
+- Type: Patch
+- Product: P0020
+- Prompt: Stop Chrome prefilling ID/Password on Add accounts modal
+- Status: Draft
+
+### Changes
+
+- `TwofaAddForm`: `autocomplete=off` form, non-login field names, masked text password (not `type=password`), `readOnly` until focus on add.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA platform icon size (Cookie parity)
+
+- Version: `1.1.18`
+- Type: Patch
+- Product: P0020
+- Prompt: Shrink Service icons to match Cookie tab (h-4 w-4)
+- Status: Draft
+
+### Changes
+
+- `TwofaPlatformIcon`: 16px like Cookie route table; `referrerPolicy` + `onError` fallback.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA embedded Add form + platform brand icons
+
+- Version: `1.1.17`
+- Type: Patch
+- Product: P0020
+- Prompt: Show Add form in main area (not modal) on search miss; platform icons (Gmail→Google, ChatGPT, …)
+- Status: Draft
+
+### Changes
+
+- `TwofaAddForm` embedded in content when search has no rows (same auth-gate form as modal).
+- `twofa-platform-icons.registry.json` + `TwofaPlatformIcon` in Service column (replaces KeyRound marker).
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA search no-match uses Add modal (no custom inline UI)
+
+- Version: `1.1.16`
+- Type: Patch
+- Product: P0020
+- Prompt: Keep same Add modal form centered when search has no match; remove redesigned inline panel
+- Status: Draft
+
+### Changes
+
+- Search with no rows auto-opens `TwofaAddModal` (prefilled); removed `TwofaInlineSingleForm`.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA in-app delete confirm + inline search add
+
+- Version: `1.1.15`
+- Type: Patch
+- Product: P0020
+- Prompt: Replace Chrome confirm; show Single add form in main UI when search has no match
+- Status: Draft
+
+### Changes
+
+- `TwofaConfirmDialog` (auth-gate skin) replaces `window.confirm` on bulk delete.
+- `TwofaInlineSingleForm` when search returns no rows — prefilled Platform/ID/secret panel + Bulk link.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA Password field + bulk Pass format
+
+- Version: `1.1.14`
+- Type: Patch
+- Product: P0020
+- Prompt: Add Password field; bulk `Platform|ID|2FA` and `Platform|ID|Pass|2FA`
+- Status: Draft
+
+### Changes
+
+- Optional `password` on account (form, table column, localStorage).
+- Bulk parser: 3-field and 4-field lines; headers for both formats.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA Add modal → P0004 auth-gate pattern
+
+- Version: `1.1.13`
+- Type: Patch
+- Product: P0020
+- Prompt: Unify Add account modal with P0004 Tool Hub modal standard
+- Status: Draft
+
+### Changes
+
+- `TwofaAddModal`: `auth-gate-modal` (same as P0004 `HubAuthGate` / Notes sign-in), not `modal-shell--form` (no CSS in P0004).
+- Import `theme/hub-auth.css` in `styles.css` (was missing in P0020).
+
+### Note
+
+- `@tool-workspace/hub-ui` has no `HubFormModal`; P0004 compact forms use `hub-auth.css`.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA modal Hub form + select column colgroup
+
+- Version: `1.1.12`
+- Type: Patch
+- Product: P0020
+- Prompt: Fix Add modal; checkbox column width like P0004 Users (/hub-ui)
+- Status: Draft
+
+### Changes
+
+- `TwofaAddModal`: portal + `modal-shell--form`, `btn` footer, bulk Import enabled when pasted/file (not gray placeholder).
+- Table: `colgroup` + 36px select column; 2FA column % sum 100% (no extra width on checkbox col).
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA bulk add modal + checkbox column fix
+
+- Version: `1.1.11`
+- Type: Patch
+- Product: P0020
+- Prompt: Narrow checkbox column like Users tab; add single/bulk (paste Platform|ID|2FA or Excel)
+- Status: Draft
+
+### Changes
+
+- `TwofaAddModal`: Single + Bulk tabs; paste `Platform|ID|2FA` or import `.xlsx/.csv`; `addMany` + `parse-twofa-bulk`.
+- Checkbox column: `th`/`td` select padding override (matches P0004 Users 36px).
+- Toolbar Add opens modal (no inline form in shell).
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA compact checkbox + Hub bulk button tokens
+
+- Version: `1.1.10`
+- Type: Patch
+- Product: P0020
+- Prompt: Narrow checkbox column; standardize Add/Edit/Delete like P0004 Hub controls
+- Status: Draft
+
+### Changes
+
+- `.theme-hub`: `--hub-control-h` and related tokens (P0004 parity).
+- `hub-bulk-actions.css` + `TwofaBulkActionBar` uses `hub-bulk-action-btn` variants.
+- 2FA table select column 28px, 14px checkboxes.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA Users-style table + bulk actions
+
+- Version: `1.1.9`
+- Type: Patch
+- Product: P0020
+- Prompt: Clone P0004 Users tab for 2FA — checkboxes, Add/Edit/Delete on search bar, Created column, orange Code badge
+- Status: Draft
+
+### Changes
+
+- Row checkboxes + select-all; bulk Add/Edit/Delete on search row right (`filterToolbar`, P0004 button sizing).
+- Removed Actions column; added Created; Code badge amber; Account header icon Mail.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA account copy badge
+
+- Version: `1.1.8`
+- Type: Patch
+- Product: P0020
+- Prompt: Remove @ prefix on account; account as copyable badge
+- Status: Draft
+
+### Changes
+
+- Account cell: `CopyMetaChip` (sky/cyan pill), no `@` prefix; click to copy email/account.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA table header column alignment
+
+- Version: `1.1.7`
+- Type: Patch
+- Product: P0020
+- Prompt: Align column headers with left/center body cells (Account, Secret, Code)
+- Status: Draft
+
+### Changes
+
+- Left columns: `hub-users-th-btn--align-start` on header (matches td `text-align: left`).
+- Center columns (Time, Last used, Actions): headers stay centered.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA badges full text + inline period
+
+- Version: `1.1.6`
+- Type: Patch
+- Product: P0020
+- Prompt: Show full Secret/Code; period dot then bold time on one line
+- Status: Draft
+
+### Changes
+
+- Secret/Code chips: no truncate; wider columns; `!max-w-none` on copy badges.
+- Time: horizontal dot + bold `Ns` (single row).
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - 2FA table columns prefs + period dot
+
+- Version: `1.1.5`
+- Type: Patch
+- Product: P0020
+- Prompt: Display prefs hide Secret column; brighter Code badge; compact secret/code; Time dot animation 30/20/10s
+- Status: Draft
+
+### Changes
+
+- Settings → Table: toggle 2FA columns (Secret optional; Service/Code/Actions required).
+- Code badge: `CopyMetaChip` cyan (matches Secret pill style, smaller).
+- Time: colored dot (cyan → amber → rose pulse), no progress bar.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+### Rollback
+
+- Revert `twofa-table-prefs`, `TwofaTableColumnsSettings`, `TwofaAccountsTable`, `hub-users-table.css`.
+
+---
+
+## 2026-06-03 - 2FA table: secret column + Hub copy badges
+
+- Version: `1.1.4`
+- Type: Patch
+- Product: P0020
+- Prompt: No uppercase column titles; 100% P0004 Users table style; secret column with note-ID copy badge
+- Status: Draft
+
+### Changes
+
+- `hub-users-table.css`: full P0004 sync; 2FA uses `hub-users-table--twofa` (sentence-case headers).
+- 2FA: Secret column — full Base32 via `CopyMetaChip` (same pattern as note ID); Code via `HubCopyBadge` (Users ID style).
+- Shared `CopyMetaChip`, `HubCopyBadge`; `NoteEditorMetaStrip` imports shared chip.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+### Rollback
+
+- Revert `TwofaAccountsTable.tsx`, `hub-users-table.css`, shared badge components.
+
+---
+
+## 2026-06-03 - hub-ui WorkspaceTabHeader + Cookie FAB confirm
+
+- Version: `1.1.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Export WorkspaceTabHeader to hub-ui; smaller FAB; extension confirm before download
+- Status: Draft
+
+### Changes
+
+- `@tool-workspace/hub-ui`: `WorkspaceTabHeader`, `buildVersionMetaItems`; sync script copies from P0020 to P0004 vendor.
+- Cookie FAB: 40px, bottom-right; Download opens confirm sheet (version, ZIP, install steps) before fetch.
+- Guide FAB uses `CircleHelp` icon.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
+## 2026-06-03 - Hub-style tab headers + Cookie extension FAB
+
+- Version: `1.1.2`
+- Type: Patch
+- Product: P0020
+- Prompt: Standardize all tab headers like P0004 Hub; move Download Cookie to right FAB
+- Status: Draft
+
+### Changes
+
+- Shared header chrome: tab title, session, `vX.Y.Z · release date`, center stats, Log + Settings.
+- `WorkspaceHeaderActions`, `WorkspaceLogProvider`, `buildWorkspaceVersionMetaItems` (P0004 Hub pattern).
+- Cookie Auto: header stats (routes / agents / vault); Download + Guide as floating round buttons (right edge).
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+---
+
 ## 2026-06-03 - Cookie routes: default filters All + shared route visibility
 
 - Version: `1.1.1`

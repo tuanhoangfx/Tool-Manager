@@ -1,86 +1,61 @@
-import { useEffect, useMemo, useState } from "react";
-import { Copy, KeyRound, Pencil, Plus, Shield, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { KeyRound, Plus, Shield } from "lucide-react";
 import { PageHeader } from "../design-preview/screens/PageHeader";
-import { generateCode, secondsRemaining } from "./totp";
 import { useTwofaAccounts } from "./useTwofaAccounts";
-import type { TwofaAccount } from "./types";
-import { useNotesAuth } from "../notes/useNotesAuth";
-import { NotesAuthGate } from "../notes/NotesAuthGate";
+import type { TwofaAccount, TwofaDraft } from "./types";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import { readHubListPrefs } from "../../lib/url-prefs";
-import { matchesTimeRange } from "../notes/notes-filters";
 import { TwofaFilterToolbar } from "./TwofaFilterToolbar";
+import { DEFAULT_TWOFA_HEADER_STAT_KEYS } from "./twofa-display-prefs";
 import {
-  DEFAULT_TWOFA_HEADER_STAT_KEYS,
-} from "./twofa-display-prefs";
-import { formatLastUsed, twofaActivityAt } from "./twofa-time";
+  buildTwofaServiceFilterOptions,
+  filterTwofaAccounts,
+  TWOFA_FILTER_DEFS,
+} from "./twofa-filters";
+import { parseTwofaSearchQuery } from "./parse-twofa-search";
+import { TwofaAccountsTable } from "./TwofaAccountsTable";
+import { TwofaBulkActionBar } from "./TwofaBulkActionBar";
+import { TwofaAddForm } from "./TwofaAddForm";
+import { TwofaAddModal } from "./TwofaAddModal";
+import { TwofaConfirmDialog } from "./TwofaConfirmDialog";
+import { readTwofaTableColumns } from "./twofa-table-prefs";
 
-function maskSecret(secret: string) {
-  if (secret.length <= 8) return "••••••••";
-  return `${secret.slice(0, 4)}…${secret.slice(-4)}`;
-}
-
-function CodeCell({
-  account,
-  onUsed,
-}: {
-  account: TwofaAccount;
-  onUsed: (id: string) => void;
-}) {
-  const code = generateCode(account.service, account.account, account.secret);
-  const left = secondsRemaining();
-  const pct = (left / 30) * 100;
-
-  const copy = async () => {
-    if (!code) return;
-    try {
-      await navigator.clipboard.writeText(code);
-      onUsed(account.id);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-1">
-      <button
-        type="button"
-        onClick={() => void copy()}
-        className="inline-flex items-center gap-2 rounded-lg bg-cyan-500/20 px-3 py-1 font-mono text-lg tracking-[0.35em] text-cyan-200 transition hover:bg-cyan-500/30"
-        title="Copy code"
-      >
-        {code ?? "------"}
-        <Copy size={14} className="tracking-normal opacity-70" />
-      </button>
-      <div className="flex items-center gap-2 text-[10px] text-amber-200/90">
-        <span>{left}s</span>
-        <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
-          <div
-            className="h-full rounded-full bg-amber-400/80 transition-all duration-1000"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
+type AddModalState =
+  | { mode: "add"; draft?: Partial<TwofaDraft> }
+  | { mode: "edit"; account: TwofaAccount }
+  | null;
 
 export function TwofaManagerScreen({
   shellMode,
-  query = "",
+  query: queryProp = "",
 }: {
   shellMode?: boolean;
   query?: string;
 } = {}) {
-  const { session, loading } = useNotesAuth();
-  const { accounts, add, update, remove, touchLastUsed } = useTwofaAccounts();
-  const { setToolbar, setCenterStats } = useWorkspaceSearch();
+  const { accounts, tick, add, addMany, update, remove, touchLastUsed } = useTwofaAccounts();
+  const {
+    query: wsQuery,
+    setQuery: setWsQuery,
+    filterValues,
+    setFilters,
+    setToolbar,
+    setFilterToolbar,
+    setCenterStats,
+  } = useWorkspaceSearch();
+  const query = shellMode ? wsQuery : queryProp;
+
   const [hubPrefs, setHubPrefs] = useState(readHubListPrefs);
-  const [service, setService] = useState("");
-  const [accountName, setAccountName] = useState("");
-  const [secret, setSecret] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [addModal, setAddModal] = useState<AddModalState>(null);
+  const [pendingDelete, setPendingDelete] = useState<TwofaAccount[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [visibleColumns, setVisibleColumns] = useState(() => readTwofaTableColumns());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    const sync = () => setVisibleColumns(readTwofaTableColumns());
+    window.addEventListener("twofa-table-columns-change", sync);
+    return () => window.removeEventListener("twofa-table-columns-change", sync);
+  }, []);
 
   useEffect(() => {
     const sync = () => setHubPrefs(readHubListPrefs());
@@ -88,19 +63,155 @@ export function TwofaManagerScreen({
     return () => window.removeEventListener("popstate", sync);
   }, []);
 
-  const editing = useMemo(() => accounts.find((a) => a.id === editingId), [accounts, editingId]);
+  const serviceOptions = useMemo(() => buildTwofaServiceFilterOptions(accounts), [accounts]);
 
-  const displayedAccounts = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return accounts.filter((a) => {
-      const matchQuery =
-        !q || a.service.toLowerCase().includes(q) || a.account.toLowerCase().includes(q);
-      const matchTime = matchesTimeRange(twofaActivityAt(a), hubPrefs.range);
-      return matchQuery && matchTime;
+  useEffect(() => {
+    if (!shellMode) return;
+    setFilters(
+      TWOFA_FILTER_DEFS.map((def) =>
+        def.key === "service" ? { ...def, options: serviceOptions } : def,
+      ),
+    );
+    return () => setFilters([]);
+  }, [serviceOptions, setFilters, shellMode]);
+
+  const displayedAccounts = useMemo(
+    () => filterTwofaAccounts(accounts, query, filterValues, hubPrefs.range),
+    [accounts, filterValues, hubPrefs.range, query],
+  );
+
+  const parsedSearch = useMemo(() => parseTwofaSearchQuery(query), [query]);
+  const showInlineAdd = Boolean(query.trim()) && displayedAccounts.length === 0;
+
+  const inlineDraft = useMemo(
+    (): Partial<TwofaDraft> => ({
+      service: parsedSearch.service,
+      account: parsedSearch.account,
+      secret: parsedSearch.secret || (parsedSearch.isSecretQuery ? query.trim() : ""),
+    }),
+    [parsedSearch, query],
+  );
+
+  const selectedRows = useMemo(
+    () => displayedAccounts.filter((row) => selectedIds.has(row.id)),
+    [displayedAccounts, selectedIds],
+  );
+  const allVisibleSelected =
+    displayedAccounts.length > 0 && displayedAccounts.every((row) => selectedIds.has(row.id));
+  const hasSelection = selectedIds.size > 0;
+
+  const closeModal = useCallback(() => {
+    setAddModal(null);
+    setError(null);
+  }, []);
+
+  const openAddModal = useCallback((draft?: Partial<TwofaDraft>) => {
+    setAddModal({ mode: "add", draft });
+    setError(null);
+  }, []);
+
+  const startEdit = useCallback((row: TwofaAccount) => {
+    setAddModal({ mode: "edit", account: row });
+    setError(null);
+  }, []);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
-  }, [accounts, hubPrefs.range, query]);
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (displayedAccounts.every((row) => prev.has(row.id))) {
+        const next = new Set(prev);
+        displayedAccounts.forEach((row) => next.delete(row.id));
+        return next;
+      }
+      const next = new Set(prev);
+      displayedAccounts.forEach((row) => next.add(row.id));
+      return next;
+    });
+  }, [displayedAccounts]);
+
+  const requestBulkDelete = useCallback(() => {
+    if (selectedRows.length === 0) return;
+    setPendingDelete(selectedRows);
+  }, [selectedRows]);
+
+  const confirmBulkDelete = useCallback(() => {
+    if (!pendingDelete?.length) return;
+    for (const row of pendingDelete) remove(row.id);
+    setSelectedIds(new Set());
+    setPendingDelete(null);
+    closeModal();
+  }, [closeModal, pendingDelete, remove]);
+
+  const handleBulkEdit = useCallback(() => {
+    const target = selectedRows[0];
+    if (target) startEdit(target);
+  }, [selectedRows, startEdit]);
+
+  const handleSaveSingle = useCallback(
+    (draft: TwofaDraft) => {
+      if (addModal?.mode === "edit") {
+        return update(addModal.account.id, draft);
+      }
+      const ok = add(draft);
+      if (ok) setError(null);
+      return ok;
+    },
+    [add, addModal, update],
+  );
+
+  const handleImportMany = useCallback(
+    (drafts: TwofaDraft[]) => {
+      const { added } = addMany(drafts);
+      return added;
+    },
+    [addMany],
+  );
 
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_TWOFA_HEADER_STAT_KEYS;
+  const editingId = addModal?.mode === "edit" ? addModal.account.id : null;
+
+  const modalInitialDraft =
+    addModal?.mode === "add" && addModal.draft
+      ? {
+          service: addModal.draft.service ?? "",
+          account: addModal.draft.account ?? "",
+          password: addModal.draft.password ?? "",
+          secret: addModal.draft.secret ?? "",
+        }
+      : null;
+
+  const deleteTitle =
+    pendingDelete?.length === 1 ? "Delete account?" : `Delete ${pendingDelete?.length ?? 0} accounts?`;
+
+  const deleteMessage =
+    pendingDelete && pendingDelete.length > 0 ? (
+      <>
+        Remove{" "}
+        {pendingDelete.length === 1 ? (
+          <strong>{pendingDelete[0].service}</strong>
+        ) : (
+          <>
+            <strong>{pendingDelete.length} accounts</strong>
+            {pendingDelete.length <= 4 ? (
+              <>
+                {" "}
+                (
+                {pendingDelete.map((r) => r.service).join(", ")})
+              </>
+            ) : null}
+          </>
+        )}{" "}
+        from this device? This cannot be undone.
+      </>
+    ) : null;
 
   useEffect(() => {
     if (!shellMode) return;
@@ -109,6 +220,15 @@ export function TwofaManagerScreen({
         range={hubPrefs.range}
         shown={displayedAccounts.length}
         total={accounts.length}
+      />,
+    );
+    setFilterToolbar(
+      <TwofaBulkActionBar
+        hasSelection={hasSelection}
+        selectedCount={selectedIds.size}
+        onAdd={() => openAddModal()}
+        onEdit={handleBulkEdit}
+        onDelete={requestBulkDelete}
       />,
     );
     setCenterStats(
@@ -126,7 +246,7 @@ export function TwofaManagerScreen({
           ? {
               key: "twofa-in-range",
               icon: KeyRound,
-              label: "in range",
+              label: "shown",
               value: displayedAccounts.length,
               toneClass: "text-cyan-300",
             }
@@ -135,160 +255,109 @@ export function TwofaManagerScreen({
     );
     return () => {
       setToolbar(null);
+      setFilterToolbar(null);
       setCenterStats([]);
     };
   }, [
     accounts.length,
     displayedAccounts.length,
+    handleBulkEdit,
+    hasSelection,
     hubPrefs.range,
+    openAddModal,
+    requestBulkDelete,
+    selectedIds.size,
     shellMode,
     setCenterStats,
+    setFilterToolbar,
     setToolbar,
     visHeaderStats,
   ]);
-
-  if (loading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center text-sm text-[var(--muted)]">
-        Loading…
-      </div>
-    );
-  }
-
-  if (!session) {
-    return <NotesAuthGate variant="twofa" />;
-  }
-
-  const resetForm = () => {
-    setService("");
-    setAccountName("");
-    setSecret("");
-    setEditingId(null);
-    setError(null);
-  };
-
-  const startEdit = (row: TwofaAccount) => {
-    setEditingId(row.id);
-    setService(row.service);
-    setAccountName(row.account);
-    setSecret(row.secret);
-    setError(null);
-  };
-
-  const onSubmit = () => {
-    const draft = { service, account: accountName, secret };
-    const testCode = generateCode(draft.service, draft.account, draft.secret);
-    if (!testCode) {
-      setError("Invalid secret (Base32 TOTP). Please verify the value from your authenticator app.");
-      return;
-    }
-    const ok = editingId ? update(editingId, draft) : add(draft);
-    if (!ok) {
-      setError("Please fill Service, Account, and Secret.");
-      return;
-    }
-    resetForm();
-  };
 
   return (
     <div className="anim-fade">
       {!shellMode ? (
         <PageHeader
           title="2FA Manager"
-          desc="Local TOTP — Service · Account · Secret · 6-digit codes rotate every 30s. Data is stored in your browser."
-          actions={
-            editing ? (
-              <button type="button" className="btn-ghost btn text-[12px]" onClick={resetForm}>
-                Cancel edit
-              </button>
-            ) : null
-          }
+          desc="Local TOTP — stored in this browser (localStorage). No sign-in required."
         />
       ) : null}
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-3">
-        <input
-          className="field text-[12px]"
-          placeholder="Service (Google, GitHub…)"
-          value={service}
-          onChange={(e) => setService(e.target.value)}
-        />
-        <input
-          className="field text-[12px]"
-          placeholder="Account name"
-          value={accountName}
-          onChange={(e) => setAccountName(e.target.value)}
-        />
-        <input
-          className="field font-mono text-[12px]"
-          placeholder="Secret (Base32)"
-          value={secret}
-          onChange={(e) => setSecret(e.target.value)}
-        />
-      </div>
-      {error ? <p className="mb-3 text-[12px] text-rose-300">{error}</p> : null}
-      <button type="button" className="btn mb-4 inline-flex gap-2 text-[12px]" onClick={onSubmit}>
-        {editing ? <Pencil size={14} /> : <Plus size={14} />}
-        {editing ? "Update" : "Add"}
-      </button>
+      {!shellMode ? (
+        <p className="mb-3 text-[11px] text-[var(--muted)]">
+          Data stays on this device only. Sign in to Notes/Cookie is optional for 2FA.
+        </p>
+      ) : null}
 
-      {displayedAccounts.length === 0 ? (
+      {error && !addModal ? (
+        <p className="mb-3 text-[12px] text-rose-300">{error}</p>
+      ) : null}
+
+      {!shellMode && !showInlineAdd ? (
+        <button
+          type="button"
+          className="btn mb-3 inline-flex gap-2 text-[12px]"
+          onClick={() => openAddModal()}
+        >
+          <Plus size={14} />
+          Add account
+        </button>
+      ) : null}
+
+      {showInlineAdd ? (
+        <TwofaAddForm
+          active
+          variant="embedded"
+          mode="add"
+          initialDraft={inlineDraft}
+          searchQuery={query}
+          onClose={() => {
+            if (shellMode) setWsQuery("");
+          }}
+          onSaveSingle={handleSaveSingle}
+          onImportMany={handleImportMany}
+        />
+      ) : displayedAccounts.length === 0 ? (
         <div className="rounded-xl border border-dashed border-white/15 bg-white/[.02] px-6 py-10 text-center text-sm text-[var(--muted)]">
-          <Shield className="mx-auto mb-2 text-indigo-300" size={28} />
+          <Shield className="mx-auto mb-2 text-amber-300/80" size={28} />
           {accounts.length === 0
-            ? "No 2FA entries yet. Add a Base32 secret from Google Authenticator or an export."
-            : "No accounts match search or the selected time range."}
+            ? "No 2FA entries yet. Search a service name or paste a Base32 secret to add one."
+            : "No accounts match search or filters."}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/10">
-          <table className="w-full min-w-[40rem] text-left text-[12px]">
-            <thead className="border-b border-white/10 bg-white/[.03] text-[10px] uppercase text-[var(--muted)]">
-              <tr>
-                <th className="p-2.5">Service</th>
-                <th className="p-2.5">Account</th>
-                <th className="p-2.5">Secret</th>
-                <th className="p-2.5">Last used</th>
-                <th className="p-2.5">2FA Code</th>
-                <th className="w-28 p-2.5">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayedAccounts.map((row) => (
-                <tr key={row.id} className="border-t border-white/5 hover:bg-white/[.02]">
-                  <td className="p-2.5 font-medium">{row.service}</td>
-                  <td className="max-w-[12rem] truncate p-2.5 text-[var(--muted)]" title={row.account}>
-                    {row.account}
-                  </td>
-                  <td className="max-w-[8rem] truncate p-2.5 font-mono text-[10px]" title={row.secret}>
-                    {maskSecret(row.secret)}
-                  </td>
-                  <td
-                    className="p-2.5 text-[11px] tabular-nums text-[var(--muted)]"
-                    title={twofaActivityAt(row)}
-                  >
-                    {formatLastUsed(twofaActivityAt(row))}
-                  </td>
-                  <td className="p-2.5">
-                    <CodeCell account={row} onUsed={touchLastUsed} />
-                  </td>
-                  <td className="p-2.5">
-                    <button type="button" className="btn-ghost btn mr-1 text-[10px]" onClick={() => startEdit(row)}>
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-ghost btn text-[10px] text-rose-300"
-                      onClick={() => remove(row.id)}
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TwofaAccountsTable
+          rows={displayedAccounts}
+          tick={tick}
+          visibleColumns={visibleColumns}
+          editingId={editingId}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          allVisibleSelected={allVisibleSelected}
+          onUsed={touchLastUsed}
+        />
       )}
+
+      <TwofaAddModal
+        open={addModal !== null && !showInlineAdd}
+        mode={addModal?.mode ?? "add"}
+        initial={addModal?.mode === "edit" ? addModal.account : null}
+        initialDraft={modalInitialDraft}
+        onClose={closeModal}
+        onSaveSingle={handleSaveSingle}
+        onImportMany={handleImportMany}
+      />
+
+      <TwofaConfirmDialog
+        open={pendingDelete !== null}
+        title={deleteTitle}
+        message={deleteMessage}
+        confirmLabel={
+          pendingDelete?.length === 1 ? "Delete account" : `Delete ${pendingDelete?.length ?? 0}`
+        }
+        onConfirm={confirmBulkDelete}
+        onClose={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

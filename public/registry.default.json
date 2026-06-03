@@ -139,14 +139,14 @@
       "9Router",
       "Admin UI"
     ],
-    "appUrl": "https://zaloai.infi.io.vn/p0005",
+    "appUrl": "https://zaloai.infi.io.vn",
     "localUrl": "http://127.0.0.1:3920",
     "deployTarget": "vps",
     "usage": [
       "Local: pnpm run admin (admin dashboard at http://127.0.0.1:3920)",
       "Login: pnpm run login (Zalo QR)",
       "Bot: pnpm run bot",
-      "Production: https://zaloai.infi.io.vn/p0005"
+      "Production: https://zaloai.infi.io.vn"
     ],
     "downloadHint": "Clone the repo — runtime data stays local, not in the repo.",
     "manifestPath": "tool.manifest.json",

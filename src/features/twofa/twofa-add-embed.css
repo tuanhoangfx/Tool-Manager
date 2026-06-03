@@ -1,0 +1,20 @@
+.twofa-add-embed {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1.5rem 1rem 2rem;
+  min-height: min(420px, 55vh);
+}
+
+.twofa-add-panel--embedded {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  margin: 0;
+}
+
+/* Not type=password — avoids Chrome login autofill on ID + pass pair */
+.twofa-add-field-masked {
+  -webkit-text-security: disc;
+  text-security: disc;
+}

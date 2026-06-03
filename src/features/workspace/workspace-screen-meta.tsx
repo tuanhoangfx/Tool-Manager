@@ -1,8 +1,5 @@
 import type { ElementType } from "react";
-import { Cookie, FileText, KeyRound, Package, Settings2 } from "lucide-react";
-import { APP_VERSION } from "../../lib/app-meta";
-import { EXTENSION_BUILD } from "../cookie/extensionBuildInfo";
-import { EXTENSION_INSTALL_LABEL } from "../cookie/extensionInstall";
+import { Cookie, FileText, KeyRound, Settings2 } from "lucide-react";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import type { TabHeaderMetaItem } from "../../components/sales-shell";
 
@@ -14,12 +11,9 @@ export type ScreenChromeConfig = {
   searchPlaceholder: string;
   showSearch: boolean;
   filterParam: "hfilt" | "nfilt" | "cfilt" | "afilt";
-  metaItems: TabHeaderMetaItem[];
+  /** Extra left meta after version · release (tab-specific). */
+  extraMetaItems?: TabHeaderMetaItem[];
 };
-
-const BASE_META: TabHeaderMetaItem[] = [
-  { icon: FileText, title: "Build", value: `v${APP_VERSION}` },
-];
 
 export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig {
   switch (screen) {
@@ -33,7 +27,6 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         searchPlaceholder: "Search notes, domain, slug…",
         showSearch: screen === "notes",
         filterParam: "nfilt",
-        metaItems: BASE_META,
       };
     case "twofa":
       return {
@@ -44,7 +37,6 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         searchPlaceholder: "Search service or account…",
         showSearch: true,
         filterParam: "afilt",
-        metaItems: BASE_META,
       };
     case "cookie":
       return {
@@ -55,20 +47,6 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         searchPlaceholder: "Search domain, note, sync ID…",
         showSearch: true,
         filterParam: "cfilt",
-        metaItems: [
-          ...BASE_META,
-          {
-            icon: Cookie,
-            title: "Extension",
-            value: `v${EXTENSION_BUILD.version}`,
-            live: true,
-          },
-          {
-            icon: Package,
-            title: "Install",
-            value: EXTENSION_INSTALL_LABEL,
-          },
-        ],
       };
     case "system":
       return {
@@ -79,7 +57,6 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         searchPlaceholder: "Search design templates…",
         showSearch: false,
         filterParam: "hfilt",
-        metaItems: BASE_META,
       };
     default:
       return {
@@ -89,7 +66,6 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         searchPlaceholder: "Search…",
         showSearch: false,
         filterParam: "hfilt",
-        metaItems: BASE_META,
       };
   }
 }

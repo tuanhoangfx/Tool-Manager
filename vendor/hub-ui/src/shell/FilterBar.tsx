@@ -14,9 +14,9 @@ import {
   BriefcaseBusiness,
   Package,
 } from "lucide-react";
-import type { FilterIconMeta } from "../../lib/badge-registry";
-import { resolveFilterAllIcon, resolveFilterOptionIcon } from "../../lib/badge-registry";
-import { compactIconSize } from "../../lib/ui-scale";
+import type { FilterIconMeta } from "../lib/badge-registry";
+import { resolveFilterAllIcon, resolveFilterOptionIcon } from "../lib/badge-registry";
+import { compactIconSize } from "../ui-scale";
 
 export type FilterOption = { value: string; label: string; color?: string; count?: number };
 export type FilterDef = {
@@ -183,12 +183,10 @@ export function FilterBar({
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             {row2Leading ? <div className="flex shrink-0 flex-wrap items-center gap-2">{row2Leading}</div> : null}
             {filterDropdowns}
+            {clearFiltersBtn}
           </div>
-          {row2Actions || clearFiltersBtn ? (
-            <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
-              {row2Actions}
-              {clearFiltersBtn}
-            </div>
+          {row2Actions ? (
+            <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">{row2Actions}</div>
           ) : null}
         </div>
       </div>

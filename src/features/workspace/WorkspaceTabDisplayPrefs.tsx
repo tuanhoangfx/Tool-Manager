@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Cookie, Shield, ShieldAlert } from "lucide-react";
 import { DisplayPrefs } from "../../components/sales-shell";
 import type { FilterDef } from "../../components/sales-shell/FilterBar";
@@ -8,8 +9,10 @@ import { CookieVaultSection } from "../cookie/CookieVaultSection";
 import {
   COOKIE_CHART_DEFS,
   COOKIE_FILTER_DEFS,
+  COOKIE_HEADER_STAT_DEFS,
   COOKIE_KPI_DEFS,
   DEFAULT_COOKIE_CHART_KEYS,
+  DEFAULT_COOKIE_HEADER_STAT_KEYS,
   DEFAULT_COOKIE_KPI_KEYS,
 } from "../cookie/cookie-display-prefs";
 import { DEFAULT_COOKIE_ROUTE_FILTER_KEYS } from "../cookie/cookie-route-filters";
@@ -25,7 +28,44 @@ import {
   DEFAULT_TWOFA_HEADER_STAT_KEYS,
   TWOFA_HEADER_STAT_DEFS,
 } from "../twofa/twofa-display-prefs";
+import { DEFAULT_TWOFA_FILTER_KEYS, TWOFA_FILTER_DEFS } from "../twofa/twofa-filters";
+import {
+  countHiddenTwofaTableColumns,
+  TwofaTableColumnsSettings,
+} from "../twofa/TwofaTableColumnsSettings";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
+
+function TwofaTabDisplayPrefs({ screenFilters }: { screenFilters: FilterDef[] }) {
+  const [hiddenCols, setHiddenCols] = useState(() => countHiddenTwofaTableColumns());
+
+  useEffect(() => {
+    const sync = () => setHiddenCols(countHiddenTwofaTableColumns());
+    window.addEventListener("twofa-table-columns-change", sync);
+    return () => window.removeEventListener("twofa-table-columns-change", sync);
+  }, []);
+
+  const filters = screenFilters.length ? screenFilters : TWOFA_FILTER_DEFS;
+
+  return (
+    <DisplayPrefs
+      filters={filters.map(({ key, label }) => ({ key, label }))}
+      defaultFilterKeys={DEFAULT_TWOFA_FILTER_KEYS}
+      filterParam="afilt"
+      filtersFromUrl
+      headerStats={TWOFA_HEADER_STAT_DEFS}
+      defaultHeaderStatKeys={DEFAULT_TWOFA_HEADER_STAT_KEYS}
+      showRange={false}
+      showLimit={false}
+      showHeaderPin
+      panelWidth={360}
+      maxPanelHeight="min(78vh, 36rem)"
+      headerStatLabel={() => "2FA header"}
+      scope="tab"
+      tablePanel={<TwofaTableColumnsSettings />}
+      tableActiveCount={hiddenCols}
+    />
+  );
+}
 
 type Props = {
   screen: WorkspaceScreen;
@@ -60,8 +100,8 @@ export function WorkspaceTabDisplayPrefs({
         defaultFilterKeys={defaultFilterKeys}
         filterParam="cfilt"
         filtersFromUrl
-        headerStats={[]}
-        defaultHeaderStatKeys={new Set()}
+        headerStats={COOKIE_HEADER_STAT_DEFS}
+        defaultHeaderStatKeys={DEFAULT_COOKIE_HEADER_STAT_KEYS}
         showRange={false}
         showLimit={false}
         showHeaderPin
@@ -117,24 +157,7 @@ export function WorkspaceTabDisplayPrefs({
   }
 
   if (screen === "twofa") {
-    const filters = screenFilters.map(({ key, label }) => ({ key, label }));
-    return (
-      <DisplayPrefs
-        filters={filters}
-        defaultFilterKeys={filters.length ? new Set(filters.map((f) => f.key)) : new Set()}
-        filterParam="afilt"
-        filtersFromUrl={filters.length > 0}
-        headerStats={TWOFA_HEADER_STAT_DEFS}
-        defaultHeaderStatKeys={DEFAULT_TWOFA_HEADER_STAT_KEYS}
-        showRange={false}
-        showLimit={false}
-        showHeaderPin
-        panelWidth={360}
-        maxPanelHeight="min(78vh, 36rem)"
-        headerStatLabel={() => "2FA header"}
-        scope="tab"
-      />
-    );
+    return <TwofaTabDisplayPrefs screenFilters={screenFilters} />;
   }
 
   if (screen === "system") {

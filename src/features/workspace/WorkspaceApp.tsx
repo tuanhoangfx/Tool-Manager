@@ -22,6 +22,7 @@ import { TwofaManagerScreen } from "../twofa/TwofaManagerScreen";
 import { CookieSyncScreen } from "../cookie/CookieSyncScreen";
 import { SystemDesignTemplateScreen } from "../system/SystemDesignTemplateScreen";
 import { prefetchNotesListBackground } from "../../lib/hub-background-prefetch";
+import { WorkspaceLogProvider } from "./WorkspaceLogProvider";
 import { WorkspaceShellTabFrame } from "./WorkspaceShellTabFrame";
 import { WorkspaceVisitedTabPanel } from "./WorkspaceVisitedTabPanel";
 
@@ -126,6 +127,7 @@ function WorkspaceAppInner() {
   const mainClass = isNotesLayout ? "hub-main hub-main--notes" : "hub-main hub-main--tab";
 
   return (
+    <WorkspaceLogProvider>
     <div className="hub-app theme-hub flex h-full min-h-0 w-full overflow-hidden">
       <WorkspaceSidebar
         screen={activeNav}
@@ -161,6 +163,7 @@ function WorkspaceAppInner() {
       </main>
       <ToastContainer />
     </div>
+    </WorkspaceLogProvider>
   );
 }
 

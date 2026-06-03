@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AppTabHeader, FilterBar } from "../../components/sales-shell";
-import { WorkspaceTabDisplayPrefs } from "./WorkspaceTabDisplayPrefs";
+import { FilterBar } from "../../components/sales-shell";
+import { WorkspaceTabHeader } from "@tool-workspace/hub-ui";
 import type { TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
-import { useExtensionRelease } from "../cookie/useExtensionRelease";
 import { screenChromeConfig } from "./workspace-screen-meta";
+import { workspaceVersionLine } from "./workspace-tab-header-meta";
+import { WorkspaceHeaderActions } from "./WorkspaceHeaderActions";
 
 function readVisibleFilterKeys(param: string): Set<string> | null {
   if (typeof window === "undefined") return null;
@@ -19,7 +20,6 @@ type Props = {
   onQueryChange: (q: string) => void;
   toolbar?: ReactNode;
   filterToolbar?: ReactNode;
-  headerActions?: ReactNode;
   centerStats?: TabHeaderStatItem[];
   filters?: FilterDef[];
   filterValues?: FilterValues;
@@ -34,24 +34,14 @@ export function WorkspaceScreenChrome({
   onQueryChange,
   toolbar,
   filterToolbar,
-  headerActions,
   centerStats = [],
   filters = [],
   filterValues = {},
   onFilterValuesChange = () => {},
   children,
 }: Props) {
-  const extensionRelease = useExtensionRelease();
-  const cfg = useMemo(() => {
-    const base = screenChromeConfig(screen);
-    if (screen !== "cookie") return base;
-    return {
-      ...base,
-      metaItems: base.metaItems.map((item) =>
-        item.title === "Extension" ? { ...item, value: `v${extensionRelease.version}`, live: true } : item,
-      ),
-    };
-  }, [extensionRelease.version, screen]);
+  const cfg = useMemo(() => screenChromeConfig(screen), [screen]);
+  const version = useMemo(() => workspaceVersionLine(), []);
   const [visibleFilterKeys, setVisibleFilterKeys] = useState(() => readVisibleFilterKeys(cfg.filterParam));
 
   useEffect(() => {
@@ -90,19 +80,16 @@ export function WorkspaceScreenChrome({
       data-header-pin={cfg.showSearch ? true : undefined}
     >
       <div className="hub-chrome-sticky sticky top-0 z-40 -mx-6 border-b border-white/5 bg-[var(--bg)]">
-        <AppTabHeader
+        <WorkspaceTabHeader
           ariaLabel={cfg.ariaLabel}
           titleIcon={cfg.titleIcon}
           titleIconClass={cfg.titleIconClass}
           title={cfg.title}
-          metaItems={cfg.metaItems}
+          versionLine={version.line}
+          versionLive={version.live}
+          extraMetaItems={cfg.extraMetaItems}
           centerStats={centerStats}
-          actions={
-            <div className="flex shrink-0 items-center gap-1.5">
-              {headerActions}
-              <WorkspaceTabDisplayPrefs screen={screen} screenFilters={filters} />
-            </div>
-          }
+          actions={<WorkspaceHeaderActions screen={screen} screenFilters={filters} />}
           pinSticky={false}
           dividerBelow={false}
           embedded

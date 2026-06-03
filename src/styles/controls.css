@@ -119,21 +119,12 @@
   box-shadow: var(--shadow-soft);
 }
 
-.filter-toolbar.has-picker {
-  flex-direction: column;
-  align-items: stretch;
-}
-
 .filter-toolbar-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-}
-
-.filter-toolbar.has-picker .filter-toolbar-row {
-  flex-wrap: wrap;
 }
 
 .search-box {
@@ -210,52 +201,6 @@
   border-radius: 8px;
   background: var(--color-bg-alt);
   border: 1px solid var(--color-border-subtle);
-}
-
-.tool-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  max-height: 88px;
-  overflow-y: auto;
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  height: 28px;
-  padding: 0 0.55rem;
-  border-radius: 8px;
-  border: 1px solid var(--field-border);
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.pill:hover {
-  background: var(--hover-overlay);
-  color: var(--color-text-main);
-}
-
-.pill.active {
-  border-color: rgba(229, 106, 74, 0.45);
-  background: rgba(229, 106, 74, 0.12);
-  color: var(--color-primary);
-}
-
-.pill-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-.pill-dot.ok {
-  background: var(--color-success);
-}
-.pill-dot.warn {
-  background: var(--color-warning);
 }
 
 /* Buttons */
@@ -352,4 +297,56 @@
     transform: none;
   }
 }
+
+/* Hub circular checkbox — green tick when checked */
+.hub-checkbox,
+.hub-users-checkbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  background: rgba(0, 0, 0, 0.25);
+  display: inline-grid;
+  place-items: center;
+  vertical-align: middle;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.hub-checkbox:hover:not(:disabled),
+.hub-users-checkbox:hover:not(:disabled) {
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.hub-checkbox:checked,
+.hub-users-checkbox:checked {
+  border-color: #22c55e;
+  background-color: #22c55e;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 6.2L5 8.7L9.5 3.8' stroke='white' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 10px;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25);
+}
+
+.hub-checkbox:focus-visible,
+.hub-users-checkbox:focus-visible {
+  outline: 2px solid rgba(34, 197, 94, 0.55);
+  outline-offset: 2px;
+}
+
+.hub-checkbox:disabled,
+.hub-users-checkbox:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* .hub-check-indicator — @tool-workspace/hub-ui/styles/hub-check-indicator.css */
 

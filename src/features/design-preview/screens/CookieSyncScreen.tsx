@@ -20,9 +20,11 @@ import { useExtensionAuthHeartbeat } from "../../notes/useExtensionAuthHeartbeat
 import { useCookieRouteDetailRenderers } from "../../cookie/useCookieRouteDetailRenderers";
 import { shouldShowExtensionLinkToast } from "../../../lib/extension-link-toast";
 import { supabase } from "../../../lib/supabase";
-import { Activity, Link2, RefreshCw } from "lucide-react";
+import { Activity, Boxes, Link2, RefreshCw, Shield } from "lucide-react";
 import { EXTENSION_RELEASE_PAGE } from "../../cookie/extensionInstall";
-import { CookieInstallHeaderActions } from "../../cookie/CookieInstallHeaderActions";
+import { CookieExtensionFab } from "../../cookie/CookieExtensionFab";
+import { DEFAULT_COOKIE_HEADER_STAT_KEYS } from "../../cookie/cookie-display-prefs";
+import { readHubListPrefs } from "../../../lib/url-prefs";
 import { CookieAutoSyncTable } from "../../cookie/CookieAutoSyncTable";
 import { hasCookieDeepLink, readCookieDeepLink } from "../../cookie/cookieDeepLink";
 import { useCookieBindings } from "../../cookie/useCookieBindings";
@@ -178,14 +180,6 @@ function bridgeStatusFromState({
 }
 
 function CookieSyncSignIn({ shellMode }: { shellMode?: boolean }) {
-  const { setHeaderActions } = useWorkspaceSearch();
-
-  useEffect(() => {
-    if (!shellMode) return;
-    setHeaderActions(<CookieInstallHeaderActions />);
-    return () => setHeaderActions(null);
-  }, [setHeaderActions, shellMode]);
-
   return <NotesAuthGate variant="cookie-auto" />;
 }
 
@@ -200,7 +194,14 @@ function CookieSyncMain({
 }) {
   const offline = getOfflineMode();
   const cloudSession: Session | null = offline ? null : session;
-  const { setHeaderActions } = useWorkspaceSearch();
+  const { setCenterStats } = useWorkspaceSearch();
+  const [hubPrefs, setHubPrefs] = useState(readHubListPrefs);
+
+  useEffect(() => {
+    const sync = () => setHubPrefs(readHubListPrefs());
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, []);
   const { notes, loading, refresh } = useNotes(session);
   const { bindings, setBindings, addBinding, connectAndCache, updateBinding, removeBinding, pushToExtension } =
     useCookieBindings(notes);
@@ -526,13 +527,12 @@ function CookieSyncMain({
     onCommand: onAgentCommand,
   });
 
-  const cookieHeaderActions = useMemo(() => <CookieInstallHeaderActions />, []);
-
-  useEffect(() => {
-    if (!shellMode) return;
-    setHeaderActions(cookieHeaderActions);
-    return () => setHeaderActions(null);
-  }, [cookieHeaderActions, setHeaderActions, shellMode]);
+  const enabledRoutes = useMemo(() => bindings.filter((b) => b.enabled).length, [bindings]);
+  const onlineAgentCount = useMemo(
+    () => agents.filter((a) => Date.now() - new Date(a.last_seen_at).getTime() < 25_000).length,
+    [agents],
+  );
+  const vaultCookieCount = useMemo(() => Object.keys(vaultByKey).length, [vaultByKey]);
 
   const bridgeStatus = useMemo(
     () =>
@@ -549,6 +549,53 @@ function CookieSyncMain({
 
   const cookieBootLoading =
     tabActive && ((schemaLoading && !schemaHealth) || (agentsLoading && agents.length === 0));
+
+  useEffect(() => {
+    if (!shellMode) {
+      setCenterStats([]);
+      return;
+    }
+    const vis = hubPrefs.headerStats ?? DEFAULT_COOKIE_HEADER_STAT_KEYS;
+    setCenterStats(
+      [
+        vis.has("cookie-routes")
+          ? {
+              key: "cookie-routes",
+              icon: Boxes,
+              label: "routes",
+              value: enabledRoutes,
+              toneClass: "text-violet-300",
+            }
+          : null,
+        vis.has("cookie-agents")
+          ? {
+              key: "cookie-agents",
+              icon: Activity,
+              label: "agents online",
+              value: onlineAgentCount,
+              toneClass: "text-emerald-300",
+            }
+          : null,
+        vis.has("cookie-vault")
+          ? {
+              key: "cookie-vault",
+              icon: Shield,
+              label: "vault keys",
+              value: vaultCookieCount,
+              toneClass: "text-indigo-300",
+            }
+          : null,
+      ].filter((s): s is NonNullable<typeof s> => s !== null),
+    );
+    return () => setCenterStats([]);
+  }, [
+    enabledRoutes,
+    hubPrefs.headerStats,
+    onlineAgentCount,
+    setCenterStats,
+    shellMode,
+    vaultCookieCount,
+  ]);
 
   const routeActions = useMemo(() => (
     <>
@@ -580,18 +627,11 @@ function CookieSyncMain({
     onSyncNow,
   ]);
 
-  const pageHeaderActions = useMemo(
-    () => (
-      <>
-        <CookieInstallHeaderActions />
-        {routeActions}
-      </>
-    ),
-    [routeActions],
-  );
+  const pageHeaderActions = useMemo(() => <>{routeActions}</>, [routeActions]);
 
   return (
     <>
+      {shellMode ? <CookieExtensionFab /> : null}
       {tabActive && cookieBootLoading ? <WorkspaceLoadingView screen="cookie" variant="overlay" /> : null}
       <div className={shellMode ? "" : "p-6"}>
       {offline ? (

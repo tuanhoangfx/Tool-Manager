@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, FileText, Pin, StickyNote } from "lucide-react";
-import { AppTabHeader, FilterBar, type FilterDef, type FilterValues } from "../../components/sales-shell";
-import { WorkspaceTabDisplayPrefs } from "../workspace/WorkspaceTabDisplayPrefs";
+import { CheckCircle2, Pin, StickyNote } from "lucide-react";
+import { FilterBar, type FilterDef, type FilterValues } from "../../components/sales-shell";
+import { WorkspaceTabHeader } from "@tool-workspace/hub-ui";
 import { readHubListPrefs } from "../../lib/url-prefs";
 import { DEFAULT_NOTES_HEADER_STAT_KEYS } from "./notes-display-prefs";
-import { APP_VERSION } from "../../lib/app-meta";
 import { NotesFilterToolbar } from "./NotesFilterToolbar";
 import {
   DEFAULT_NOTES_FILTER_KEYS,
   readNotesListPrefs,
+  type NotesListDensity,
 } from "./notes-list-prefs";
 import { NOTES_FILTER_DEFS, notesFilterOptions } from "./notes-filters";
 import type { NoteListItem } from "./types";
-import type { NotesListDensity } from "./notes-list-prefs";
+import { workspaceVersionLine } from "../workspace/workspace-tab-header-meta";
+import { WorkspaceHeaderActions } from "../workspace/WorkspaceHeaderActions";
 
 type Props = {
   query: string;
@@ -23,9 +24,7 @@ type Props = {
   shown: number;
   density: NotesListDensity;
   onDensityChange: (d: NotesListDensity) => void;
-  /** Row 2 — note actions beside filters. */
   filterToolbar?: React.ReactNode;
-  headerActions?: React.ReactNode;
 };
 
 export function NotesHubChrome({
@@ -38,7 +37,6 @@ export function NotesHubChrome({
   density,
   onDensityChange,
   filterToolbar,
-  headerActions,
 }: Props) {
   const [prefs, setPrefs] = useState(readNotesListPrefs);
   const [hubPrefs, setHubPrefs] = useState(readHubListPrefs);
@@ -52,13 +50,12 @@ export function NotesHubChrome({
     return () => window.removeEventListener("popstate", sync);
   }, []);
 
-  const visHeaderStats =
-    hubPrefs.headerStats ?? DEFAULT_NOTES_HEADER_STAT_KEYS;
-
+  const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_NOTES_HEADER_STAT_KEYS;
   const visFilterKeys = prefs.noteFilters ?? DEFAULT_NOTES_FILTER_KEYS;
   const opts = useMemo(() => notesFilterOptions(notes), [notes]);
   const pinnedCount = useMemo(() => notes.filter((n) => n.pinned).length, [notes]);
   const syncedCount = useMemo(() => notes.filter((n) => n.sync_status === "synced").length, [notes]);
+  const version = useMemo(() => workspaceVersionLine(), []);
 
   const hubFilters: FilterDef[] = useMemo(
     () =>
@@ -99,12 +96,13 @@ export function NotesHubChrome({
   return (
     <div data-search-pin data-header-pin>
       <div className="hub-chrome-sticky sticky top-0 z-40 -mx-6 border-b border-white/5 bg-[var(--bg)]">
-        <AppTabHeader
+        <WorkspaceTabHeader
           ariaLabel="Notes header"
           titleIcon={StickyNote}
           titleIconClass="text-indigo-400"
           title="Notes"
-          metaItems={[{ icon: FileText, title: "Build", value: `v${APP_VERSION}` }]}
+          versionLine={version.line}
+          versionLive={version.live}
           centerStats={[
             visHeaderStats.has("notes-total")
               ? {
@@ -135,14 +133,11 @@ export function NotesHubChrome({
               : null,
           ].filter((stat): stat is NonNullable<typeof stat> => stat !== null)}
           actions={
-            <div className="flex shrink-0 items-center gap-1.5">
-              {headerActions}
-              <WorkspaceTabDisplayPrefs
-                screen="notes"
-                notesDensity={density}
-                onNotesDensityChange={onDensityChange}
-              />
-            </div>
+            <WorkspaceHeaderActions
+              screen="notes"
+              notesDensity={density}
+              onNotesDensityChange={onDensityChange}
+            />
           }
           pinSticky={false}
           dividerBelow={false}

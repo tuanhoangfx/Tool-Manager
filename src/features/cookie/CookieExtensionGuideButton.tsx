@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Cookie, Download, ExternalLink, X } from "lucide-react";
+import { BookOpen, Cookie, Download, ExternalLink, X, type LucideIcon } from "lucide-react";
 import { cookieScreenUrl } from "../../lib/app-urls";
 import { triggerExtensionZipDownload } from "./extensionDownload";
 import { fetchLatestExtensionRelease } from "./extensionReleaseApi";
 import { useExtensionRelease } from "./useExtensionRelease";
+import "./cookie-extension-fab.css";
 
 type Props = {
   className?: string;
+  /** Round FAB on the right edge (Cookie Auto tab). */
+  variant?: "inline" | "fab";
+  icon?: LucideIcon;
 };
 
 function GuideSection({ title, children }: { title: string; children: ReactNode }) {
@@ -30,7 +34,11 @@ function Step({ n, children }: { n: number; children: ReactNode }) {
   );
 }
 
-export function CookieExtensionGuideButton({ className = "" }: Props) {
+export function CookieExtensionGuideButton({
+  className = "",
+  variant = "inline",
+  icon: FabIcon = BookOpen,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [zipBusy, setZipBusy] = useState(false);
   const release = useExtensionRelease();
@@ -276,8 +284,18 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
         )
       : null;
 
-  return (
-    <>
+  const trigger =
+    variant === "fab" ? (
+      <button
+        type="button"
+        className={`workspace-fab workspace-fab--guide ${className}`.trim()}
+        onClick={() => setOpen(true)}
+        title="Install & usage guide"
+        aria-label="Open Cookie Auto Extension install and usage guide"
+      >
+        <FabIcon size={17} strokeWidth={2.25} aria-hidden />
+      </button>
+    ) : (
       <button
         type="button"
         className={`inline-flex h-7 items-center gap-1 rounded-lg border border-indigo-400/35 bg-indigo-500/15 px-2 text-[11px] font-medium text-indigo-100 transition-colors hover:bg-indigo-500/25 hover:text-white ${className}`.trim()}
@@ -288,6 +306,11 @@ export function CookieExtensionGuideButton({ className = "" }: Props) {
         <BookOpen size={13} aria-hidden />
         <span>Guide</span>
       </button>
+    );
+
+  return (
+    <>
+      {trigger}
       {modal}
     </>
   );

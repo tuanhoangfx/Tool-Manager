@@ -18,9 +18,7 @@ export function WorkspaceShellTabFrame({ screen, active, children }: Props) {
   const [screenFilterValues, setScreenFilterValues] = useState<FilterValues>({});
   const [screenToolbar, setScreenToolbar] = useState<ReactNode>(null);
   const [screenFilterToolbar, setScreenFilterToolbar] = useState<ReactNode>(null);
-  const [screenHeaderActions, setScreenHeaderActions] = useState<ReactNode>(null);
   const [screenCenterStats, setScreenCenterStats] = useState<TabHeaderStatItem[]>([]);
-
   return (
     <div
       className={active ? "flex min-h-0 min-w-0 flex-1 flex-col" : "hidden"}
@@ -37,8 +35,6 @@ export function WorkspaceShellTabFrame({ screen, active, children }: Props) {
         setToolbar={setScreenToolbar}
         filterToolbar={screenFilterToolbar}
         setFilterToolbar={setScreenFilterToolbar}
-        headerActions={screenHeaderActions}
-        setHeaderActions={setScreenHeaderActions}
         centerStats={screenCenterStats}
         setCenterStats={setScreenCenterStats}
       >
@@ -51,7 +47,6 @@ export function WorkspaceShellTabFrame({ screen, active, children }: Props) {
           onFilterValuesChange={setScreenFilterValues}
           toolbar={screenToolbar}
           filterToolbar={screenFilterToolbar}
-          headerActions={screenHeaderActions}
           centerStats={screenCenterStats}
         >
           {children}

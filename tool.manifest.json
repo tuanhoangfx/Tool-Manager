@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "1.1.1",
+    "version": "2.1.1",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -105,5 +105,9 @@
     "status": "Beta",
     "note": "Notes Supabase CRUD; https://tool-manager-zeta.vercel.app"
   },
-  "manifestUpdatedAt": "2026-06-03T09:14:34.011Z"
+  "uiScreens": [
+    { "screen": "notes", "template": "workspace-composer", "golden": "P0020/notes" },
+    { "screen": "auth", "template": "auth-gate", "golden": "P0020/auth" }
+  ],
+  "manifestUpdatedAt": "2026-06-03T13:22:09.398Z"
 }
