@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Search,
   X,
@@ -14,9 +15,10 @@ import {
   BriefcaseBusiness,
   Package,
 } from "lucide-react";
-import type { FilterIconMeta } from "../lib/badge-registry";
-import { resolveFilterAllIcon, resolveFilterOptionIcon } from "../lib/badge-registry";
+import type { FilterIconMeta } from "./filter-icons";
+import { resolveFilterAllIcon, resolveFilterOptionIcon } from "./filter-icons";
 import { compactIconSize } from "../ui-scale";
+import { registerHubSearchFocus } from "../keyboard/hub-keyboard-shortcuts";
 
 export type FilterOption = { value: string; label: string; color?: string; count?: number };
 export type FilterDef = {
@@ -71,6 +73,7 @@ type FilterBarProps = {
   headerPinned?: boolean;
   /** Panel only (inside shared sticky chrome with header). */
   embedded?: boolean;
+  shortcutScope?: string;
 };
 
 export function FilterBar({
@@ -88,20 +91,16 @@ export function FilterBar({
   pinSticky = false,
   headerPinned = true,
   embedded = false,
+  shortcutScope = "default",
 }: FilterBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    return registerHubSearchFocus(shortcutScope, () => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+  }, [shortcutScope]);
 
   function setFilter(key: string, selected: string[]) {
     const next = { ...values };
@@ -128,12 +127,13 @@ export function FilterBar({
         onChange={(e) => onQueryChange(e.target.value)}
         placeholder={placeholder}
         className="field w-full"
-        style={{ paddingLeft: 31, paddingRight: query ? 25 : 50 }}
+        style={{ paddingLeft: 31, paddingRight: query ? 25 : 36 }}
       />
       {!query ? (
-        <span className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 sm:flex">
-          <kbd className="rounded border border-white/15 bg-white/5 px-1 py-0.5 font-mono text-[10px] text-[var(--muted)]">Ctrl</kbd>
-          <kbd className="rounded border border-white/15 bg-white/5 px-1 py-0.5 font-mono text-[10px] text-[var(--muted)]">K</kbd>
+        <span className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 sm:flex">
+          <kbd className="rounded border border-white/15 bg-white/5 px-1.5 py-0.5 font-mono text-[10px] text-indigo-200/90">
+            F
+          </kbd>
         </span>
       ) : null}
       {query ? (
@@ -248,7 +248,7 @@ function FilterOptionCount({ value }: { value?: number }) {
 }
 
 function FilterOptionGlyph({ filterKey, option }: { filterKey: string; option: FilterOption }) {
-  const meta = resolveFilterOptionIcon(filterKey, option);
+  const meta = resolveFilterOptionIcon(filterKey, option.value);
   if (!meta) {
     return option.color ? (
       <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: option.color }} aria-hidden />
@@ -261,7 +261,7 @@ function resolveFilterTriggerIcon(filter: FilterDef, selected: string[]): Filter
   if (selected.length === 1) {
     const opt = filter.options.find((o) => o.value === selected[0]);
     if (opt) {
-      const icon = resolveFilterOptionIcon(filter.key, opt);
+      const icon = resolveFilterOptionIcon(filter.key, opt.value);
       if (icon) return icon;
     }
   }
@@ -402,6 +402,159 @@ function MultiFilterDropdown({
   );
 }
 
+export type HubSingleFilterDropdownProps = {
+  filterKey: string;
+  label: string;
+  options: FilterOption[];
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  className?: string;
+  usePortal?: boolean;
+};
+
+/** Single-select — identical trigger/panel chrome as `MultiFilterDropdown`. */
+export function HubSingleFilterDropdown({
+  filterKey,
+  label,
+  options,
+  value,
+  onChange,
+  disabled = false,
+  className = "",
+  usePortal = true,
+}: HubSingleFilterDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [panelPos, setPanelPos] = useState({ top: 0, left: 0, width: 288 });
+
+  const filter: FilterDef = { key: filterKey, label, options };
+  const selected = value ? [value] : [];
+
+  useLayoutEffect(() => {
+    if (!open || !usePortal || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPanelPos({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: Math.max(rect.width, 288),
+    });
+  }, [open, usePortal]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (ref.current?.contains(t)) return;
+      if (usePortal && (e.target as Element).closest?.("[data-hub-single-filter-panel]")) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open, usePortal]);
+
+  const filtered = options.filter(
+    (o) => !search || o.label.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const opt = options.find((o) => o.value === value);
+  const buttonLabel = opt ? `${label}: ${opt.label}` : label;
+  const triggerIcon = resolveFilterTriggerIcon(filter, selected);
+
+  const panelInner = (
+    <>
+      <div className="border-b border-white/5 p-2">
+        <div className="relative">
+          <Search
+            size={compactIconSize(12)}
+            className="pointer-events-none absolute left-2.5 top-1/2 z-10 -translate-y-1/2 text-[var(--muted)]"
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Search ${label.toLowerCase()}...`}
+            className="field text-xs"
+            style={{ paddingLeft: 25, paddingTop: 4, paddingBottom: 4 }}
+            autoFocus
+          />
+        </div>
+      </div>
+      <div className="max-h-72 overflow-auto p-1">
+        {filtered.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => {
+              onChange(o.value);
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-white/5"
+          >
+            <Circle checked={o.value === value} />
+            <FilterOptionGlyph filterKey={filterKey} option={o} />
+            <span className="flex-1 truncate text-left" title={o.label}>
+              {o.label}
+            </span>
+            <FilterOptionCount value={o.count} />
+          </button>
+        ))}
+        {filtered.length === 0 ? (
+          <div className="py-4 text-center text-xs text-[var(--muted)]">No matches</div>
+        ) : null}
+      </div>
+    </>
+  );
+
+  const panelEl = open ? (
+    <div
+      data-hub-single-filter-panel
+      className="anim-pop w-72 rounded-xl border border-white/10 bg-[var(--panel)] shadow-xl shadow-black/40"
+      style={
+        usePortal
+          ? {
+              position: "fixed",
+              top: panelPos.top,
+              left: panelPos.left,
+              width: panelPos.width,
+              zIndex: 2500,
+            }
+          : undefined
+      }
+      role="listbox"
+    >
+      {panelInner}
+    </div>
+  ) : null;
+
+  return (
+    <div ref={ref} className={`relative shrink-0 ${className}`}>
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => !disabled && setOpen((v) => !v)}
+        className={`inline-flex h-[var(--hub-control-h)] items-center gap-1.5 rounded-lg border px-3 text-xs transition-colors ${
+          selected.length > 0
+            ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-200"
+            : "border-white/10 bg-[var(--panel-2)] text-[var(--text)] hover:bg-white/5"
+        }`}
+      >
+        {triggerIcon ? <FilterIconGlyph meta={triggerIcon} size={compactIconSize(12)} /> : null}
+        <span>{buttonLabel}</span>
+        <ChevronDown size={compactIconSize(12)} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {panelEl &&
+        (usePortal ? createPortal(panelEl, document.body) : (
+          <div className="absolute left-0 top-full z-30 mt-1">{panelEl}</div>
+        ))}
+    </div>
+  );
+}
+
 function Circle({ checked, indeterminate }: { checked: boolean; indeterminate?: boolean }) {
   return (
     <div
@@ -447,7 +600,7 @@ function ActivePills({
         key: f.key,
         value: v,
         label: `${f.label}: ${opt?.label ?? v}`,
-        iconMeta: opt ? resolveFilterOptionIcon(f.key, opt) : null,
+        iconMeta: opt ? resolveFilterOptionIcon(f.key, opt.value) : null,
       });
     }
   }

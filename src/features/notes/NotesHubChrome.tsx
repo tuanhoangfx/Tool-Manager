@@ -25,6 +25,7 @@ type Props = {
   density: NotesListDensity;
   onDensityChange: (d: NotesListDensity) => void;
   filterToolbar?: React.ReactNode;
+  folderSettingsPanel?: React.ReactNode;
 };
 
 export function NotesHubChrome({
@@ -37,6 +38,7 @@ export function NotesHubChrome({
   density,
   onDensityChange,
   filterToolbar,
+  folderSettingsPanel,
 }: Props) {
   const [prefs, setPrefs] = useState(readNotesListPrefs);
   const [hubPrefs, setHubPrefs] = useState(readHubListPrefs);
@@ -137,6 +139,7 @@ export function NotesHubChrome({
               screen="notes"
               notesDensity={density}
               onNotesDensityChange={onDensityChange}
+              notesFolderSettings={folderSettingsPanel}
             />
           }
           pinSticky={false}

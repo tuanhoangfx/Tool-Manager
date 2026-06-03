@@ -10,7 +10,8 @@ import { NotesHubChrome } from "./NotesHubChrome";
 import { NotesWorkspaceToolbar } from "./NotesWorkspaceToolbar";
 import { NotesListRail } from "./NotesListRail";
 import { NotesAuthGate } from "./NotesAuthGate";
-import { useNoteFolders } from "./noteFolders";
+import { noteMatchesFolderFilter, useNoteFolders } from "./noteFolders";
+import { NotesFoldersSettingsPanel } from "./NotesFoldersSettingsPanel";
 import { filterNotes } from "./notes-filters";
 import { readNotesListPrefs, type NotesListDensity } from "./notes-list-prefs";
 import { slugifyTitle } from "./noteUtils";
@@ -167,9 +168,8 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
 
   const filtered = useMemo(() => {
     const base = filterNotes(notes, query, filterValues, prefs.range);
-    if (!folders.filterId) return base;
-    return base.filter((n) => folders.noteFolders[n.id] === folders.filterId);
-  }, [filterValues, folders.filterId, folders.noteFolders, notes, prefs.range, query]);
+    return base.filter((n) => noteMatchesFolderFilter(folders.noteFolders, n.id, folders.filterIds));
+  }, [filterValues, folders.filterIds, folders.noteFolders, notes, prefs.range, query]);
 
   const pickNote = useCallback(
     (id: string, seed?: NoteRow | null) => {
@@ -389,41 +389,19 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
     );
   }
 
-  const workspaceToolbar = session ? (
-    <NotesWorkspaceToolbar
-      note={note}
-      pinned={pinned}
-      shareEnabled={shareEnabled}
-      sharePassword={sharePassword}
-      saving={saving}
-      creating={creating}
-      savedHint={savedHint}
-      routeLocked={routeLocked}
+  const folderSettingsPanel = session ? (
+    <NotesFoldersSettingsPanel
       folders={folders.folders}
-      currentFolderId={note ? (folders.noteFolders[note.id] ?? null) : null}
-      folderFilterId={folders.filterId}
-      onNew={() => void onNew()}
-      onSave={() => void onSave()}
-      onDelete={() => void onDelete()}
-      onPinnedToggle={() => void onPinnedToggle()}
-      onShareToggle={() => void onShareToggle()}
-      onSharePasswordChange={updateSharePassword}
+      selectedNoteId={selectedId}
+      selectedNoteFolderIds={selectedId ? (folders.noteFolders[selectedId] ?? []) : []}
+      routeLocked={routeLocked}
       onCreateFolder={async (name) => {
         const folder = await folders.createFolder(name);
-        if (!folder) return;
-        if (selectedId) await folders.assignNoteFolder(selectedId, folder.id);
-        pushToast(`Folder created: ${folder.name}`, "success");
+        if (folder) pushToast(`Folder created: ${folder.name}`, "success");
       }}
-      onSelectFolder={async (folderId) => {
+      onToggleNoteFolder={async (folderId, enabled) => {
         if (!selectedId) return;
-        await folders.assignNoteFolder(selectedId, folderId);
-        const folder = folders.folders.find((f) => f.id === folderId);
-        pushToast(folder ? `Moved to ${folder.name}` : "Removed from folder", "success");
-      }}
-      onFolderFilterChange={(folderId) => {
-        folders.setFilterId(folderId);
-        const folder = folders.folders.find((f) => f.id === folderId);
-        pushToast(folder ? `Filtering: ${folder.name}` : "Showing all folders", "info");
+        await folders.toggleNoteFolder(selectedId, folderId, enabled);
       }}
       onRenameFolder={async (folderId, name) => {
         await folders.renameFolder(folderId, name);
@@ -437,6 +415,31 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
         await folders.deleteFolder(folderId);
         pushToast("Folder deleted", "success");
       }}
+    />
+  ) : null;
+
+  const workspaceToolbar = session ? (
+    <NotesWorkspaceToolbar
+      note={note}
+      pinned={pinned}
+      shareEnabled={shareEnabled}
+      sharePassword={sharePassword}
+      saving={saving}
+      creating={creating}
+      savedHint={savedHint}
+      routeLocked={routeLocked}
+      folders={folders.folders}
+      folderFilterIds={folders.filterIds}
+      onNew={() => void onNew()}
+      onSave={() => void onSave()}
+      onDelete={() => void onDelete()}
+      onPinnedToggle={() => void onPinnedToggle()}
+      onShareToggle={() => void onShareToggle()}
+      onSharePasswordChange={updateSharePassword}
+      onToggleFolderFilter={(folderId) => {
+        folders.toggleFilterId(folderId);
+      }}
+      onClearFolderFilter={() => folders.clearFilterIds()}
     />
   ) : null;
 
@@ -473,6 +476,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
         density={density}
         onDensityChange={setDensity}
         filterToolbar={workspaceToolbar}
+        folderSettingsPanel={folderSettingsPanel}
       />
 
       {listError ? (

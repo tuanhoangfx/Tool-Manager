@@ -18,6 +18,15 @@ export {
 export { HubLoaderRoot } from "./shell/HubLoaderRoot";
 export { HubLoadingView, type HubLoadingViewProps } from "./shell/HubLoadingView";
 export {
+  FilterBar,
+  HubSingleFilterDropdown,
+  type FilterDef,
+  type FilterOption,
+  type FilterValues,
+  type HubSingleFilterDropdownProps,
+} from "./shell/FilterBar";
+export { HubFilterSelect, type HubFilterSelectOption } from "./shell/HubFilterSelect";
+export {
   AppTabHeader,
   type TabHeaderMetaItem,
   type TabHeaderStatItem,
@@ -25,3 +34,50 @@ export {
 } from "./shell/AppTabHeader";
 export { WorkspaceTabHeader, type WorkspaceTabHeaderProps } from "./shell/WorkspaceTabHeader";
 export { buildVersionMetaItems } from "./shell/workspace-tab-header-meta";
+export { KpiStrip, type KpiTileData } from "./shell/KpiStrip";
+export { MiniBarChart, type BarItem } from "./shell/MiniBarChart";
+export { MiniDonut, type DonutItem } from "./shell/MiniDonut";
+export { MetricBadge, RegistryMetricBadge, type MetricBadgeProps, type MetricBadgeTone } from "./shell/MetricBadge";
+export { HubResultCount } from "./shell/HubResultCount";
+export { ViewToggle, type HubViewMode } from "./shell/ViewToggle";
+export {
+  HubTabChrome,
+  HubTabBody,
+  configureHubChromePrefs,
+  useHubChromePrefs,
+  type HubChromePrefs,
+} from "./shell/HubTabChrome";
+export { HubTabSectionRule } from "./shell/HubTabSectionRule";
+export { HubAlert } from "./content/HubAlert";
+export { HubDataTable, HubTableEmptyRow, type HubTableColumn } from "./content/HubDataTable";
+export { HubPanel } from "./content/HubPanel";
+export { HubDirectoryCard } from "./content/HubDirectoryCard";
+export { HubTabScreenBody } from "./content/HubTabScreenBody";
+export { HubDirectoryScreen, type HubDirectoryScreenProps } from "./templates/HubDirectoryScreen";
+export {
+  HUB_UI_TEMPLATES,
+  GOLDEN_SOURCES,
+  isHubUiTemplate,
+  type HubUiTemplate,
+  type UiScreenEntry,
+} from "./ui-template-types";
+export {
+  configureFilterIcons,
+  resolveFilterAllIcon,
+  resolveFilterOptionIcon,
+  type FilterIconMeta,
+  type FilterIconResolver,
+} from "./shell/filter-icons";
+export { usePageSessionSeconds } from "./hooks/usePageSessionSeconds";
+export {
+  HUB_SHORTCUT_LEGEND,
+  configureHubPageShortcuts,
+  getHubActiveScreen,
+  registerHubPageShortcuts,
+  registerHubSearchFocus,
+  setHubActiveScreen,
+  type HubPageShortcutHandlers,
+  type HubShortcutId,
+} from "./keyboard/hub-keyboard-shortcuts";
+export { useHubPageShortcuts } from "./keyboard/useHubPageShortcuts";
+export { HubKeyboardHints } from "./keyboard/HubKeyboardHints";

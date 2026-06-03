@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Cookie, Shield, ShieldAlert } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Cookie, FolderOpen, Shield, ShieldAlert } from "lucide-react";
 import { DisplayPrefs } from "../../components/sales-shell";
 import type { FilterDef } from "../../components/sales-shell/FilterBar";
 import { compactIconSize } from "../../lib/ui-scale";
@@ -73,6 +73,7 @@ type Props = {
   screenFilters?: FilterDef[];
   notesDensity?: NotesListDensity;
   onNotesDensityChange?: (d: NotesListDensity) => void;
+  notesFolderSettings?: ReactNode;
 };
 
 /** Per-tab header Settings — same contract as P0004 Hub `AppDisplayPrefs`. */
@@ -81,6 +82,7 @@ export function WorkspaceTabDisplayPrefs({
   screenFilters = [],
   notesDensity = "comfort",
   onNotesDensityChange,
+  notesFolderSettings,
 }: Props) {
   if (screen === "cookie") {
     const filters = screenFilters.length
@@ -147,6 +149,18 @@ export function WorkspaceTabDisplayPrefs({
         showHeaderPin
         generalExtras={
           <NotesDensityExtras density={notesDensity} onDensityChange={onNotesDensityChange} />
+        }
+        extraTabs={
+          notesFolderSettings
+            ? [
+                {
+                  id: "folders",
+                  label: "Folders",
+                  icon: <FolderOpen size={compactIconSize(12)} className="text-amber-300" />,
+                  content: notesFolderSettings,
+                },
+              ]
+            : undefined
         }
         panelWidth={360}
         maxPanelHeight="min(78vh, 36rem)"

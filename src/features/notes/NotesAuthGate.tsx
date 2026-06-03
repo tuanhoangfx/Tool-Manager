@@ -23,9 +23,17 @@ type Props = {
 type ModalProps = {
   onAuthed?: () => void;
   onClose: () => void;
+  variant: NonNullable<Props["variant"]>;
 };
 
-function AuthGateModal({ onAuthed, onClose }: ModalProps) {
+/** Modal copy aligned with P0004 `HubAuthGate` (hub vs users subtitle). */
+function authGateModalSubtitle(variant: ModalProps["variant"]) {
+  return variant === "cookie-auto" || variant === "twofa" || variant === "system"
+    ? "Sign in with User ID or email. Link email later for password recovery."
+    : "Sign in with User ID or email (x1z10 P01).";
+}
+
+function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
   const { adoptSession } = useNotesAuth();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -37,9 +45,8 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
     const msg = String(raw || "").trim();
     const lower = msg.toLowerCase();
     if (lower.includes("rate limit")) return "Temporary sign-in issue. Please try again in a moment.";
-    if (lower.includes("invalid login credentials")) {
-      return "Incorrect user ID/email or password. Use the same credentials as Tool Hub (P0004).";
-    }
+    if (lower.includes("invalid login credentials")) return "Incorrect user ID/email or password.";
+    if (lower.includes("user already registered")) return "This user ID or email is already registered.";
     if (lower.includes("exceed_egress_quota") || lower.includes("egress_quota")) {
       return "Data Box Supabase is paused (egress quota exceeded). Restore the project in Supabase Dashboard → Billing, or use Offline mode for local-only work.";
     }
@@ -84,7 +91,7 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
     try {
       const resolved = resolveHubLogin(login);
       if (!resolved.isEmailLogin || !canUseEmailPasswordRecovery(resolved.authEmail)) {
-        setMessage("Link email on Tool Hub (Account), or ask an admin to reset your password.");
+        setMessage("Link your email in Account after sign-in, or ask an admin to reset your password.");
         setBusy(false);
         return;
       }
@@ -99,10 +106,10 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
       });
       setBusy(false);
       if (error) setMessage(error.message);
-      else setMessage("Check your inbox for a Hub password reset link.");
+      else setMessage("Check your inbox for a reset link.");
     } catch (err) {
       setBusy(false);
-      setMessage(err instanceof Error ? err.message : "Enter your linked email or user ID.");
+      setMessage(err instanceof Error ? err.message : "Enter your linked email first.");
     }
   };
 
@@ -110,12 +117,7 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
     <div className="auth-gate-root" role="presentation">
       <div className="auth-gate-backdrop" aria-hidden onClick={onClose} />
       <div className="auth-gate-modal" role="dialog" aria-modal="true" aria-labelledby="auth-gate-title">
-        <button
-          type="button"
-          className="auth-gate-close"
-          onClick={onClose}
-          aria-label="Close sign in"
-        >
+        <button type="button" className="auth-gate-close" onClick={onClose} aria-label="Close sign in">
           <X size={16} />
         </button>
         <div className="auth-gate-brand">
@@ -127,8 +129,9 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
           />
         </div>
         <h2 id="auth-gate-title" className="auth-gate-title">
-          Sign in to P0020 Data Box
+          Welcome to Data Box
         </h2>
+        <p className="auth-gate-subtitle">{authGateModalSubtitle(variant)}</p>
 
         <div className="auth-gate-tabs" role="tablist">
           <button
@@ -167,11 +170,11 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
             onChange={(e) => setLogin(e.target.value)}
             required
           />
-          {mode === "signup" ? (
-            <p className="auth-gate-hint">
-              User ID: 3–32 chars (a–z, 0–9, . _ -). Link a real email later on Tool Hub.
-            </p>
-          ) : null}
+          <p className="auth-gate-hint">
+            {mode === "signup"
+              ? "User ID: 3–32 characters (a–z, 0–9, . _ -). You can link a real email after sign-in."
+              : "Use your User ID or the email you linked to this account."}
+          </p>
           <div className="auth-gate-password-wrap">
             <input
               className="field auth-gate-field w-full"
@@ -207,25 +210,25 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
 export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
   const [showModal, setShowModal] = useState(false);
 
-  const COPY: Record<NonNullable<Props["variant"]>, { title: string; sub: string }> = {
+  const INLINE_COPY: Record<NonNullable<Props["variant"]>, { title: string; sub: string }> = {
     notes: {
       title: "Sign in to manage your notes.",
       sub: "Create, edit, and share notes from one place.",
     },
     "cookie-auto": {
       title: "Sign in to enable cloud-first cookie sync.",
-      sub: "User ID or linked email + password (Tool Hub account).",
+      sub: "User ID or email — same Tool Hub account.",
     },
     twofa: {
       title: "Sign in to manage 2FA codes.",
-      sub: "User ID or linked email + password. Offline mode keeps local TOTP only.",
+      sub: "User ID or email — sync with cloud vault when configured.",
     },
     system: {
       title: "Sign in to access system tools.",
       sub: "Design templates and system utilities live here.",
     },
   };
-  const copy = COPY[variant];
+  const copy = INLINE_COPY[variant];
 
   return (
     <>
@@ -235,19 +238,21 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
           <div className="auth-inline-sub">{copy.sub}</div>
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" className="auth-inline-btn" onClick={() => setShowModal(true)}>
-              Sign in
+              Login
             </button>
-            <button
-              type="button"
-              className="auth-inline-btn auth-inline-btn--ghost"
-              onClick={() => {
-                setOfflineMode(true);
-                onAuthed?.();
-              }}
-              title="Use offline mode (limited features)"
-            >
-              Offline mode
-            </button>
+            {variant === "twofa" || variant === "notes" ? (
+              <button
+                type="button"
+                className="auth-inline-btn auth-inline-btn--ghost"
+                onClick={() => {
+                  setOfflineMode(true);
+                  onAuthed?.();
+                }}
+                title="Use offline mode (limited features)"
+              >
+                Offline mode
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -258,6 +263,7 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
             onAuthed?.();
           }}
           onClose={() => setShowModal(false)}
+          variant={variant}
         />
       ) : null}
     </>

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { NoteRouteLockInfo } from "../cookie/noteRouteLockInfo";
 import { NoteCookieSnapshotBlock } from "./NoteCookieSnapshotBlock";
 import { NoteEditorMetaStrip } from "./NoteEditorMetaStrip";
@@ -19,6 +20,12 @@ type Props = {
   onSlugFromTitle: () => void;
 };
 
+function syncTextareaHeight(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${Math.max(el.scrollHeight, 224)}px`;
+}
+
 export function NoteEditorPanel({
   note,
   loading,
@@ -32,15 +39,20 @@ export function NoteEditorPanel({
   onBodyChange,
   onSlugFromTitle,
 }: Props) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const cookieSnapshotLines = note ? cookieLines(note.cookie_snapshot) : [];
   const showCookieSnapshot = Boolean(
     note &&
       (routeLocked || cookieSnapshotLines.length > 0 || note.sync_status === "synced"),
   );
 
+  useEffect(() => {
+    syncTextareaHeight(textareaRef.current);
+  }, [body, routeLocked, showCookieSnapshot]);
+
   return (
     <section className="notes-editor flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-white/10">
-      <div className="notes-editor__header flex min-h-[2.375rem] shrink-0 items-center gap-2 border-b border-white/5 px-2.5 py-1.5">
+      <div className="notes-editor__header flex min-h-[2.375rem] shrink-0 items-center gap-2 border-b border-white/5 px-3 py-1.5">
         <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
           {routeLocked && routeInfos.length > 0 && onOpenRouteDetail ? (
             <NoteEditorRouteOpenButtons routes={routeInfos} onOpenRoute={onOpenRouteDetail} />
@@ -58,30 +70,32 @@ export function NoteEditorPanel({
       </div>
 
       {actionError ? (
-        <p className="shrink-0 border-b border-rose-500/20 bg-rose-500/10 px-2.5 py-1.5 text-[11px] text-rose-200">
+        <p className="shrink-0 border-b border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-[11px] text-rose-200">
           {actionError}
         </p>
       ) : null}
 
-      <div className="notes-editor__body min-h-0 flex-1 overflow-y-auto px-2.5 py-2">
+      <div className="notes-editor__body min-h-0 flex-1 overflow-y-auto">
         {showCookieSnapshot ? (
-          <div className="mb-3">
-            <NoteCookieSnapshotBlock
-              lines={cookieSnapshotLines}
-              syncStatus={note?.sync_status ?? "pending"}
-              syncedAt={note?.synced_at ?? null}
-              bodyMd={body}
-              routeLocked={routeLocked}
-              onInsertIntoMarkdown={onBodyChange}
-            />
-          </div>
+          <NoteCookieSnapshotBlock
+            lines={cookieSnapshotLines}
+            syncStatus={note?.sync_status ?? "pending"}
+            syncedAt={note?.synced_at ?? null}
+            bodyMd={body}
+            routeLocked={routeLocked}
+            onInsertIntoMarkdown={onBodyChange}
+          />
         ) : null}
         {!routeLocked ? (
           <textarea
-            className="notes-editor__textarea min-h-[14rem] w-full resize-none rounded-lg px-1 py-2 font-sans text-[13px] leading-relaxed outline-none"
+            ref={textareaRef}
+            className="notes-editor__textarea w-full resize-none font-sans text-[13px] leading-relaxed outline-none"
             placeholder="Write markdown…"
             value={body}
-            onChange={(e) => onBodyChange(e.target.value)}
+            onChange={(e) => {
+              onBodyChange(e.target.value);
+              syncTextareaHeight(e.target);
+            }}
             onBlur={() => {
               if (!title.trim()) onSlugFromTitle();
             }}

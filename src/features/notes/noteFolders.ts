@@ -9,12 +9,14 @@ export type NoteFolder = {
 };
 
 type FolderStore = {
+  version: 2;
   folders: NoteFolder[];
-  noteFolders: Record<string, string | null>;
-  filterId: string | null;
+  noteFolders: Record<string, string[]>;
+  filterIds: string[];
 };
 
-const STORAGE_KEY = "p0020:notes:folders:v1";
+const STORAGE_KEY = "p0020:notes:folders:v2";
+const LEGACY_STORAGE_KEY = "p0020:notes:folders:v1";
 const CHANGE_EVENT = "notes-folders-change";
 const COLORS = ["#818cf8", "#22d3ee", "#f59e0b", "#a78bfa", "#34d399", "#fb7185"];
 
@@ -30,17 +32,43 @@ type NoteFolderRow = {
 };
 
 function defaultStore(): FolderStore {
-  return { folders: [], noteFolders: {}, filterId: null };
+  return { version: 2, folders: [], noteFolders: {}, filterIds: [] };
+}
+
+function normalizeNoteFolders(raw: unknown): Record<string, string[]> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, string[]> = {};
+  for (const [noteId, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (Array.isArray(value)) {
+      out[noteId] = value.filter((id): id is string => typeof id === "string");
+    } else if (typeof value === "string") {
+      out[noteId] = [value];
+    } else {
+      out[noteId] = [];
+    }
+  }
+  return out;
 }
 
 function readStore(): FolderStore {
   if (typeof window === "undefined") return defaultStore();
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null") as Partial<FolderStore> | null;
+    const raw = window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    const parsed = JSON.parse(raw ?? "null") as Partial<FolderStore> & {
+      filterId?: string | null;
+      noteFolders?: Record<string, string | null | string[]>;
+    } | null;
+    if (!parsed) return defaultStore();
+    const filterIds = Array.isArray(parsed.filterIds)
+      ? parsed.filterIds.filter((id): id is string => typeof id === "string")
+      : typeof parsed.filterId === "string"
+        ? [parsed.filterId]
+        : [];
     return {
-      folders: Array.isArray(parsed?.folders) ? parsed.folders : [],
-      noteFolders: parsed?.noteFolders && typeof parsed.noteFolders === "object" ? parsed.noteFolders : {},
-      filterId: typeof parsed?.filterId === "string" ? parsed.filterId : null,
+      version: 2,
+      folders: Array.isArray(parsed.folders) ? parsed.folders : [],
+      noteFolders: normalizeNoteFolders(parsed.noteFolders),
+      filterIds,
     };
   } catch {
     return defaultStore();
@@ -63,6 +91,16 @@ function slugId(name: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return `${slug || "folder"}-${Date.now().toString(36)}`;
+}
+
+export function noteMatchesFolderFilter(
+  noteFolders: Record<string, string[]>,
+  noteId: string,
+  filterIds: string[],
+): boolean {
+  if (filterIds.length === 0) return true;
+  const ids = noteFolders[noteId] ?? [];
+  return filterIds.some((folderId) => ids.includes(folderId));
 }
 
 export function useNoteFolders(session: Session | null) {
@@ -103,16 +141,23 @@ export function useNoteFolders(session: Session | null) {
         return;
       }
 
+      const noteFolders: Record<string, string[]> = {};
+      for (const row of (mappingsRes.data ?? []) as NoteFolderRow[]) {
+        if (!noteFolders[row.note_id]) noteFolders[row.note_id] = [];
+        if (!noteFolders[row.note_id].includes(row.folder_id)) {
+          noteFolders[row.note_id].push(row.folder_id);
+        }
+      }
+
       const next: FolderStore = {
+        version: 2,
         folders: ((foldersRes.data ?? []) as FolderRow[]).map((f) => ({
           id: f.id,
           name: f.name,
           color: f.color,
         })),
-        noteFolders: Object.fromEntries(
-          ((mappingsRes.data ?? []) as NoteFolderRow[]).map((m) => [m.note_id, m.folder_id]),
-        ),
-        filterId: readStore().filterId,
+        noteFolders,
+        filterIds: readStore().filterIds,
       };
       writeStore(next);
       setStore(next);
@@ -171,24 +216,33 @@ export function useNoteFolders(session: Session | null) {
     [commit, remoteReady, session],
   );
 
-  const assignNoteFolder = useCallback(
-    async (noteId: string, folderId: string | null) => {
+  const toggleNoteFolder = useCallback(
+    async (noteId: string, folderId: string, enabled: boolean) => {
+      const current = readStore().noteFolders[noteId] ?? [];
+      const next = enabled
+        ? [...new Set([...current, folderId])]
+        : current.filter((id) => id !== folderId);
+
       if (session && remoteReady) {
-        if (folderId) {
-          const { error } = await supabase.from("note_folder_notes").upsert({
-            note_id: noteId,
-            folder_id: folderId,
-            user_id: session.user.id,
-          });
+        if (enabled) {
+          const { error } = await supabase.from("note_folder_notes").upsert(
+            { note_id: noteId, folder_id: folderId, user_id: session.user.id },
+            { onConflict: "note_id,folder_id" },
+          );
           if (error && !isMissingFolderTable(error.message)) throw error;
         } else {
-          const { error } = await supabase.from("note_folder_notes").delete().eq("note_id", noteId);
+          const { error } = await supabase
+            .from("note_folder_notes")
+            .delete()
+            .eq("note_id", noteId)
+            .eq("folder_id", folderId);
           if (error && !isMissingFolderTable(error.message)) throw error;
         }
       }
+
       commit((cur) => ({
         ...cur,
-        noteFolders: { ...cur.noteFolders, [noteId]: folderId },
+        noteFolders: { ...cur.noteFolders, [noteId]: next },
       }));
     },
     [commit, remoteReady, session],
@@ -233,48 +287,67 @@ export function useNoteFolders(session: Session | null) {
       commit((cur) => ({
         ...cur,
         folders: cur.folders.filter((f) => f.id !== folderId),
-        filterId: cur.filterId === folderId ? null : cur.filterId,
+        filterIds: cur.filterIds.filter((id) => id !== folderId),
         noteFolders: Object.fromEntries(
-          Object.entries(cur.noteFolders).map(([noteId, id]) => [noteId, id === folderId ? null : id]),
+          Object.entries(cur.noteFolders).map(([noteId, ids]) => [noteId, ids.filter((id) => id !== folderId)]),
         ),
       }));
     },
     [commit, remoteReady, session],
   );
 
-  const setFilterId = useCallback(
-    (folderId: string | null) => {
-      commit((cur) => ({ ...cur, filterId: folderId }));
+  const setFilterIds = useCallback(
+    (folderIds: string[]) => {
+      commit((cur) => ({ ...cur, filterIds: [...new Set(folderIds)] }));
     },
     [commit],
   );
 
-  const value = useMemo(
+  const toggleFilterId = useCallback(
+    (folderId: string) => {
+      commit((cur) => {
+        const has = cur.filterIds.includes(folderId);
+        return {
+          ...cur,
+          filterIds: has ? cur.filterIds.filter((id) => id !== folderId) : [...cur.filterIds, folderId],
+        };
+      });
+    },
+    [commit],
+  );
+
+  const clearFilterIds = useCallback(() => {
+    commit((cur) => ({ ...cur, filterIds: [] }));
+  }, [commit]);
+
+  return useMemo(
     () => ({
       folders: store.folders,
       noteFolders: store.noteFolders,
-      filterId: store.filterId,
+      filterIds: store.filterIds,
       createFolder,
-      assignNoteFolder,
+      toggleNoteFolder,
       renameFolder,
       setFolderColor,
       deleteFolder,
-      setFilterId,
+      setFilterIds,
+      toggleFilterId,
+      clearFilterIds,
       remoteReady,
     }),
     [
-      assignNoteFolder,
+      clearFilterIds,
       createFolder,
       deleteFolder,
       remoteReady,
       renameFolder,
-      setFilterId,
+      setFilterIds,
       setFolderColor,
-      store.filterId,
+      store.filterIds,
       store.folders,
       store.noteFolders,
+      toggleFilterId,
+      toggleNoteFolder,
     ],
   );
-
-  return value;
 }

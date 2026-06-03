@@ -11,6 +11,7 @@ type Props = {
   screenFilters?: FilterDef[];
   notesDensity?: NotesListDensity;
   onNotesDensityChange?: (d: NotesListDensity) => void;
+  notesFolderSettings?: ReactNode;
   /** Rare tab-specific actions before Log (avoid download CTAs — use FAB). */
   trailing?: ReactNode;
 };
@@ -21,6 +22,7 @@ export function WorkspaceHeaderActions({
   screenFilters = [],
   notesDensity,
   onNotesDensityChange,
+  notesFolderSettings,
   trailing,
 }: Props) {
   const { logs } = useWorkspaceLogs();
@@ -34,6 +36,7 @@ export function WorkspaceHeaderActions({
         screenFilters={screenFilters}
         notesDensity={notesDensity}
         onNotesDensityChange={onNotesDensityChange}
+        notesFolderSettings={notesFolderSettings}
       />
     </div>
   );

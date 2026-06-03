@@ -4,6 +4,25 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-04 - Auth gate aligned with P0004 Tool Hub
+
+- Version: `2.2.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Chuẩn hóa Sign In/Sign Up giống 100% P0004 Tool Hub
+- Status: Committed
+
+### Changes
+
+- `NotesAuthGate`: same modal structure/copy/hints as `HubAuthGate` (Welcome title, subtitle, tabs, fields).
+- `hub-auth.css`: canonical styles from P0004; P0020-only extensions (2FA modal, offline Login).
+- `vendor/hub-ui`: sync missing `hub-fields.css` (+ shell CSS); `predev`/`prebuild` run `sync-hub-ui-vendor.cjs`.
+- `packages/hub-ui`: export `WorkspaceTabHeader` + `buildVersionMetaItems` so vendor sync keeps TS build green.
+
+Version: `2.2.2` → `2.2.3`
+
+---
+
 ## 2026-06-04 - Trim auth modal copy
 
 - Version: `2.2.2`
@@ -37,6 +56,25 @@ Version: `2.2.1` → `2.2.2`
 - `pnpm-lock.yaml` synced for `@tool-workspace/hub-identity` (Vercel frozen-lockfile).
 
 Version: `2.1.9` → `2.2.0`
+
+---
+
+## 2026-06-04 - Notes: multi-folder filter + editor scroll/padding
+
+- Version: `2.2.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Folder→Filter; multi-folder; folder CRUD in Tab Settings; fix scroll; unify padding
+- Status: Draft
+
+### Changes
+
+- **Filter** button (multi-folder list filter); folder tag CRUD + note checkboxes in **Settings → Folders**.
+- **Multi-folder** per note (`noteFolders` arrays + migration `20260604120000_note_folder_multi.sql`).
+- Editor scroll: remove workspace `max-height` cap; textarea auto-grow so body scroll reaches bottom.
+- Unified content padding (`0.75rem 0.875rem`); `fm-cookie-panel` styles aligned with editor body.
+
+Version: `2.2.2` → `2.2.3`
 
 ---
 

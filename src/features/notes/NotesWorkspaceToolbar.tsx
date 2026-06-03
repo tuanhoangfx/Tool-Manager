@@ -1,6 +1,6 @@
 import {
   CheckCircle2,
-  FolderOpen,
+  Filter,
   Lock,
   Pin,
   Plus,
@@ -24,20 +24,15 @@ type Props = {
   savedHint?: string;
   routeLocked?: boolean;
   folders: NoteFolder[];
-  currentFolderId: string | null;
-  folderFilterId: string | null;
+  folderFilterIds: string[];
   onNew: () => void;
   onSave: () => void;
   onDelete: () => void;
   onPinnedToggle: () => void;
   onShareToggle: () => void;
   onSharePasswordChange: (v: string) => void;
-  onCreateFolder: (name: string) => Promise<void>;
-  onSelectFolder: (folderId: string | null) => Promise<void>;
-  onFolderFilterChange: (folderId: string | null) => void;
-  onRenameFolder: (folderId: string, name: string) => Promise<void>;
-  onSetFolderColor: (folderId: string, color: string) => Promise<void>;
-  onDeleteFolder: (folderId: string) => Promise<void>;
+  onToggleFolderFilter: (folderId: string) => void;
+  onClearFolderFilter: () => void;
 };
 
 export function NotesWorkspaceToolbar({
@@ -50,26 +45,26 @@ export function NotesWorkspaceToolbar({
   savedHint,
   routeLocked = false,
   folders,
-  currentFolderId,
-  folderFilterId,
+  folderFilterIds,
   onNew,
   onSave,
   onDelete,
   onPinnedToggle,
   onShareToggle,
   onSharePasswordChange,
-  onCreateFolder,
-  onSelectFolder,
-  onFolderFilterChange,
-  onRenameFolder,
-  onSetFolderColor,
-  onDeleteFolder,
+  onToggleFolderFilter,
+  onClearFolderFilter,
 }: Props) {
-  const [folderOpen, setFolderOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
   const shareUrl = note?.share_token && shareEnabled ? buildShareUrl(note.share_token) : "";
   const hasNote = Boolean(note?.id);
+  const filterLabel =
+    folderFilterIds.length === 0
+      ? "Filter"
+      : folderFilterIds.length === 1
+        ? (folders.find((f) => f.id === folderFilterIds[0])?.name ?? "Filter")
+        : `Filter (${folderFilterIds.length})`;
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
@@ -77,29 +72,20 @@ export function NotesWorkspaceToolbar({
       <ToolbarButton icon={<Plus size={12} />} label={creating ? "Creating…" : "New"} tone="indigo" disabled={creating} onClick={onNew} />
       <div className="relative">
         <ToolbarButton
-          icon={<FolderOpen size={12} />}
-          label={folderName(folders, currentFolderId) ?? "Folder"}
+          icon={<Filter size={12} />}
+          label={filterLabel}
           tone="amber"
-          disabled={!hasNote || routeLocked}
-          title={routeLocked ? "Folder disabled while Cookie route is active" : "Folder"}
-          onClick={() => setFolderOpen((v) => !v)}
+          active={folderFilterIds.length > 0}
+          title="Filter notes by folder"
+          onClick={() => setFilterOpen((v) => !v)}
         />
-        {folderOpen && hasNote ? (
-          <FolderMenu
+        {filterOpen ? (
+          <FolderFilterMenu
             folders={folders}
-            currentFolderId={currentFolderId}
-            filterId={folderFilterId}
-            newFolderName={newFolderName}
-            onNewFolderNameChange={setNewFolderName}
-            onCreate={() => {
-              void onCreateFolder(newFolderName);
-              setNewFolderName("");
-            }}
-            onSelectFolder={onSelectFolder}
-            onFilterChange={onFolderFilterChange}
-            onRenameFolder={onRenameFolder}
-            onSetFolderColor={onSetFolderColor}
-            onDeleteFolder={onDeleteFolder}
+            filterIds={folderFilterIds}
+            onToggle={onToggleFolderFilter}
+            onClear={onClearFolderFilter}
+            onClose={() => setFilterOpen(false)}
           />
         ) : null}
       </div>
@@ -186,111 +172,58 @@ function ToolbarButton({
   );
 }
 
-function FolderMenu({
+function FolderFilterMenu({
   folders,
-  currentFolderId,
-  filterId,
-  newFolderName,
-  onNewFolderNameChange,
-  onCreate,
-  onSelectFolder,
-  onFilterChange,
-  onRenameFolder,
-  onSetFolderColor,
-  onDeleteFolder,
+  filterIds,
+  onToggle,
+  onClear,
+  onClose,
 }: {
   folders: NoteFolder[];
-  currentFolderId: string | null;
-  filterId: string | null;
-  newFolderName: string;
-  onNewFolderNameChange: (v: string) => void;
-  onCreate: () => void;
-  onSelectFolder: (folderId: string | null) => void;
-  onFilterChange: (folderId: string | null) => void;
-  onRenameFolder: (folderId: string, name: string) => Promise<void>;
-  onSetFolderColor: (folderId: string, color: string) => Promise<void>;
-  onDeleteFolder: (folderId: string) => Promise<void>;
+  filterIds: string[];
+  onToggle: (folderId: string) => void;
+  onClear: () => void;
+  onClose: () => void;
 }) {
   return (
-    <div className="anim-pop absolute right-0 top-full z-50 mt-1.5 w-72 rounded-xl border border-white/10 bg-[var(--panel)] p-3 shadow-2xl shadow-black/45">
-      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Note folder</div>
+    <div className="anim-pop absolute right-0 top-full z-50 mt-1.5 w-64 rounded-xl border border-white/10 bg-[var(--panel)] p-3 shadow-2xl shadow-black/45">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold text-[var(--text)]">Folder filter</span>
+        {filterIds.length > 0 ? (
+          <button type="button" className="text-[10px] text-indigo-200 hover:underline" onClick={onClear}>
+            Clear
+          </button>
+        ) : null}
+      </div>
       <div className="space-y-1">
-        <FolderOption active={!currentFolderId} color="#64748b" label="No folder" onClick={() => onSelectFolder(null)} />
-        {folders.map((folder) => (
-          <div key={folder.id} className="rounded-lg border border-white/5 bg-white/[.02] p-1">
-            <FolderOption
-              active={currentFolderId === folder.id}
-              color={folder.color}
-              label={folder.name}
-              onClick={() => onSelectFolder(folder.id)}
-            />
-            <div className="mt-1 flex flex-wrap items-center gap-1 px-1 pb-1">
-              {FOLDER_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className={`h-4 w-4 rounded-full border ${folder.color === color ? "border-white" : "border-white/10"}`}
-                  style={{ background: color }}
-                  title="Set folder color"
-                  onClick={() => void onSetFolderColor(folder.id, color)}
-                />
-              ))}
+        {folders.length === 0 ? (
+          <p className="px-1 py-2 text-[10px] text-[var(--muted)]">No folders — create in Tab Settings → Folders.</p>
+        ) : (
+          folders.map((folder) => {
+            const active = filterIds.includes(folder.id);
+            return (
               <button
+                key={folder.id}
                 type="button"
-                className="ml-auto rounded px-1.5 py-0.5 text-[10px] text-indigo-200 hover:bg-white/[.06]"
-                onClick={() => {
-                  const next = window.prompt("Rename folder", folder.name);
-                  if (next?.trim()) void onRenameFolder(folder.id, next);
-                }}
+                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] transition-colors ${
+                  active ? "bg-white/[.08] text-[var(--text)]" : "text-[var(--muted)] hover:bg-white/[.05] hover:text-[var(--text)]"
+                }`}
+                onClick={() => onToggle(folder.id)}
               >
-                Rename
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: folder.color }} />
+                <span className="min-w-0 flex-1 truncate">{folder.name}</span>
+                {active ? <CheckCircle2 size={12} className="text-emerald-300" /> : null}
               </button>
-              <button
-                type="button"
-                className="rounded px-1.5 py-0.5 text-[10px] text-rose-200 hover:bg-rose-500/10"
-                onClick={() => {
-                  if (window.confirm(`Delete folder "${folder.name}"?`)) void onDeleteFolder(folder.id);
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
+            );
+          })
+        )}
       </div>
-      <div className="mt-3 flex gap-2">
-        <input
-          className="field h-8 min-w-0 flex-1 text-[11px]"
-          value={newFolderName}
-          placeholder="New folder name"
-          onChange={(e) => onNewFolderNameChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onCreate();
-          }}
-        />
-        <button type="button" className="btn text-[11px] !px-2" onClick={onCreate}>
-          Add
-        </button>
-      </div>
-      <div className="my-3 border-t border-white/5" />
-      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Filter list</div>
-      <div className="space-y-1">
-        <FolderOption active={!filterId} color="#64748b" label="All folders" onClick={() => onFilterChange(null)} />
-        {folders.map((folder) => (
-          <FolderOption
-            key={`filter-${folder.id}`}
-            active={filterId === folder.id}
-            color={folder.color}
-            label={folder.name}
-            onClick={() => onFilterChange(folder.id)}
-          />
-        ))}
-      </div>
+      <button type="button" className="mt-2 w-full rounded-lg border border-white/8 py-1 text-[10px] text-[var(--muted)] hover:bg-white/[.03]" onClick={onClose}>
+        Close
+      </button>
     </div>
   );
 }
-
-const FOLDER_COLORS = ["#818cf8", "#22d3ee", "#f59e0b", "#a78bfa", "#34d399", "#fb7185"];
 
 function ShareMenu({
   enabled,
@@ -354,35 +287,4 @@ function ShareMenu({
       </div>
     </div>
   );
-}
-
-function FolderOption({
-  active,
-  color,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  color: string;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] transition-colors ${
-        active ? "bg-white/[.08] text-[var(--text)]" : "text-[var(--muted)] hover:bg-white/[.05] hover:text-[var(--text)]"
-      }`}
-      onClick={onClick}
-    >
-      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      {active ? <CheckCircle2 size={12} className="text-emerald-300" /> : null}
-    </button>
-  );
-}
-
-function folderName(folders: NoteFolder[], folderId: string | null) {
-  if (!folderId) return null;
-  return folders.find((f) => f.id === folderId)?.name ?? null;
 }
