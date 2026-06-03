@@ -103,8 +103,8 @@ export function CookieBridgeExtensionSection() {
         onChange={() => persist({ realtimeSync: !prefs.realtimeSync })}
       />
       <p className="text-[10px] leading-relaxed text-[var(--muted)]">
-        Auto-refresh Cookie Auto when notes, routes, or vault change. UI list refresh is currently paused for egress
-        savings; extension sync interval still applies.
+        Pull Notes list, open note, and Cookie Auto from Supabase when notes, routes, or vault change on another tab or
+        device. Off by default to save egress; tab focus still refreshes Notes quietly.
       </p>
     </Section>
   );

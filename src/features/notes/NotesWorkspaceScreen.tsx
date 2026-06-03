@@ -142,14 +142,23 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   }, [applyNoteToEditor, note, routeLocked, selectedId]);
 
   useEffect(() => {
-    if (!routeLocked) return;
-    const onFocus = () => {
-      void refreshNote();
-      void refreshRouteLock();
+    if (!session) return;
+    const pullFromCloud = () => {
+      void refreshNotesList({ silent: true });
+      if (selectedId) void refreshNote({ silent: true });
+      if (routeLocked) void refreshRouteLock();
+    };
+    const onFocus = () => pullFromCloud();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") pullFromCloud();
     };
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [routeLocked, refreshNote, refreshRouteLock]);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [session, selectedId, routeLocked, refreshNotesList, refreshNote, refreshRouteLock]);
 
   useEffect(() => {
     if (!routeLocked || dirty) return;

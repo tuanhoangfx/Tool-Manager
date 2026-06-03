@@ -4,6 +4,164 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-03 - Release: Notes sync, 2FA cloud vault, Cookie FAB chrome
+
+- Version: `3.1.1`
+- Type: Major
+- Product: P0020
+- Prompt: Release Vercel — Notes đồng bộ cùng tài khoản Supabase + batch 2.1.x
+- Commit: `f9ab6d1`
+- Status: Committed
+
+### Changes
+
+- Notes: list cache scoped by `user_id`; focus/visibility pull from Supabase; Realtime UI toggle wired to Cookie settings; realtime INSERT/UPDATE/DELETE on `notes`.
+- 2FA: dedicated Supabase vault project, cloud delta sync, `twofa_accounts` migrations.
+- Cookie: extension FAB dock/inset, Hub auth-gate modals on route dialogs, default 25-row limit, row-limit control in chrome.
+- Workspace: dual sign-in mirrors Hub → Data Box → 2FA vault.
+
+### Verification
+
+- `corepack pnpm run build` — pending (Release pipeline)
+- Production smoke — pending
+
+Version: `2.1.8` → `3.1.1`
+
+---
+
+## 2026-06-03 - Cookie FAB inset fix (+0.5rem)
+
+- Version: `2.1.8`
+- Type: Patch
+- Product: P0020
+- Prompt: FAB vẫn sát lề — căn trái/lên thêm 0.5rem
+- Status: Draft
+
+### Changes
+
+- `cookie-extension-fab.css`: `.workspace-fab-stack` was overriding `--cookie` (0.65rem won); use `.workspace-fab-stack.workspace-fab-stack--cookie` at `right`/`bottom` **10.5rem**.
+
+Version: `2.1.7` → `2.1.8`
+
+---
+
+## 2026-06-03 - Cookie FAB 10rem inset + Hub auth-gate modals
+
+- Version: `2.1.7`
+- Type: Patch
+- Product: P0020
+- Prompt: FAB lệch trái/lên 10rem; Add/Share/Edit/Delete modals theo theme User tab (P0004)
+- Status: Draft
+
+### Changes
+
+- `cookie-extension-fab.css`: FAB `right` / `bottom` → `10rem`.
+- `CookieAutoSyncTable.tsx`: `CookieRouteModal` → `auth-gate-root` / `auth-gate-modal` (Add, Share, Edit, Delete).
+
+Version: `2.1.6` → `2.1.7`
+
+---
+
+## 2026-06-03 - Cookie FAB inset (away from edges)
+
+- Version: `2.1.6`
+- Type: Patch
+- Product: P0020
+- Prompt: Move download FAB further into content (less flush to right/bottom edges)
+- Status: Draft
+
+### Changes
+
+- `cookie-extension-fab.css`: FAB inset `right` 2.5rem, `bottom` 2.25rem.
+
+Version: `2.1.5` → `2.1.6`
+
+---
+
+## 2026-06-03 - Cookie FAB size and content-zone position
+
+- Version: `2.1.5`
+- Type: Patch
+- Product: P0020
+- Prompt: FAB slightly larger; dock in bottom-right content area (not screen edge)
+- Status: Draft
+
+### Changes
+
+- Cookie download FAB: 36px, icon 16px; `right/bottom` inset 1.5rem / 1.25rem (hub-main padding zone).
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+Version: `2.1.4` → `2.1.5`
+
+---
+
+## 2026-06-03 - Default 25 rows + Cookie FAB viewport dock
+
+- Version: `2.1.4`
+- Type: Patch
+- Product: P0020
+- Prompt: Default row limit 25; Cookie extension FAB smaller, viewport-fixed with glow
+- Status: Draft
+
+### Changes
+
+- `DEFAULT_HUB_ROW_LIMIT` = 25 (`url-prefs`, `HubRowLimitSelect`).
+- `CookieExtensionFab`: portal to `document.body`, fixed bottom-right, compact + pulse; only when Cookie tab active.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+Version: `2.1.3` → `2.1.4`
+
+---
+
+## 2026-06-03 - 2FA table perf + Hub row limit control
+
+- Version: `2.1.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Fix lag with ~1000 rows; clone P0004 Hub row limit selector (25–500)
+- Status: Draft
+
+### Changes
+
+- `HubRowLimitSelect` on 2FA toolbar (same as P0004 Hub); table renders `slice(0, limit)` only.
+- Memoized table rows; debounced `localStorage` save; TOTP cells update on tick without re-rendering full vault.
+
+### Verification
+
+- `corepack pnpm run build` — pass
+
+Version: `2.1.2` → `2.1.3`
+
+---
+
+## 2026-06-03 - 2FA dedicated Supabase (czprofess P01) + Phase B sync
+
+- Version: `2.1.2`
+- Type: Patch
+- Product: P0020
+- Prompt: Wire 2FA vault to project zurfouqanjcubgneuctp (B + separate project); Hub login mirror
+- Status: Draft
+
+### Changes
+
+- `supabase-twofa/migrations/20260603100000_twofa_accounts.sql` — RLS `twofa_accounts`.
+- Client: `VITE_TWOFA_SUPABASE_*`, `signInWorkspaceDual` → `authenticateTwofaVault`, delta/paginated `twofa-cloud-sync`.
+- Docs: `docs/TWOFA-SUPABASE.md`; `tool.manifest.json` → `supabase.twofaVault`.
+
+### Verification
+
+- Apply SQL on project `zurfouqanjcubgneuctp`, set `.env.local` anon key, `pnpm build`, sign-in → 2FA cloud sync.
+
+Version: `2.1.1` → `2.1.2`
+
+---
+
 ## 2026-06-03 - Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v2.1.1
 
 - Version: `2.1.1`

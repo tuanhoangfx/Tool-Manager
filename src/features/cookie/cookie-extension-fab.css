@@ -1,12 +1,14 @@
+/* Viewport-fixed FAB (portaled to body) — inset like hub-main padding (bottom-right content zone) */
+
 .workspace-fab-stack {
   position: fixed;
-  right: 0.875rem;
-  bottom: 0.75rem;
-  z-index: 45;
+  right: max(0.65rem, env(safe-area-inset-right, 0px));
+  bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+  z-index: 44;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   pointer-events: none;
 }
 
@@ -14,34 +16,50 @@
   pointer-events: auto;
 }
 
+/* Higher specificity than .workspace-fab-stack alone (both classes on Cookie FAB) */
+.workspace-fab-stack.workspace-fab-stack--cookie {
+  right: max(10.5rem, calc(10.5rem + env(safe-area-inset-right, 0px)));
+  bottom: max(10.5rem, calc(10.5rem + env(safe-area-inset-bottom, 0px)));
+  align-items: flex-end;
+}
+
+.workspace-fab-stack.workspace-fab-stack--cookie > * {
+  pointer-events: auto;
+}
+
 .workspace-fab-stack--single {
   gap: 0;
 }
 
+.workspace-fab-stack--cookie .workspace-fab {
+  height: 2.25rem;
+  width: 2.25rem;
+}
+
 .workspace-fab {
   display: inline-flex;
-  height: 2.375rem;
-  width: 2.375rem;
+  height: 2.25rem;
+  width: 2.25rem;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
   border: 1px solid rgb(255 255 255 / 0.14);
   box-shadow:
-    0 3px 12px rgb(0 0 0 / 0.32),
+    0 2px 10px rgb(0 0 0 / 0.35),
     0 0 0 1px rgb(255 255 255 / 0.05) inset;
   transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    filter 0.15s ease;
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
 }
 
 .workspace-fab:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.08);
+  transform: translateY(-2px) scale(1.04);
+  filter: brightness(1.1);
 }
 
 .workspace-fab:active {
-  transform: translateY(0) scale(0.97);
+  transform: translateY(0) scale(0.96);
 }
 
 .workspace-fab:disabled {
@@ -51,11 +69,35 @@
 }
 
 .workspace-fab--download {
-  background: linear-gradient(160deg, rgb(109 40 217), rgb(79 70 229));
+  background: linear-gradient(155deg, rgb(109 40 217), rgb(79 70 229));
   color: rgb(245 243 255);
   box-shadow:
-    0 4px 16px rgb(109 40 217 / 0.5),
+    0 3px 14px rgb(109 40 217 / 0.45),
     0 0 0 1px rgb(255 255 255 / 0.1) inset;
+}
+
+.workspace-fab--download:hover {
+  box-shadow:
+    0 6px 20px rgb(109 40 217 / 0.55),
+    0 0 0 1px rgb(255 255 255 / 0.14) inset;
+}
+
+.workspace-fab--pulse {
+  animation: workspace-fab-glow 2.8s ease-in-out infinite;
+}
+
+@keyframes workspace-fab-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 3px 14px rgb(109 40 217 / 0.4),
+      0 0 0 0 rgb(167 139 250 / 0);
+  }
+  50% {
+    box-shadow:
+      0 4px 18px rgb(109 40 217 / 0.55),
+      0 0 0 4px rgb(167 139 250 / 0.12);
+  }
 }
 
 .workspace-fab--guide {
@@ -70,5 +112,8 @@
   }
   .workspace-fab:hover {
     transform: none;
+  }
+  .workspace-fab--pulse {
+    animation: none;
   }
 }

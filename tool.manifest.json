@@ -38,13 +38,14 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "2.1.1",
+"version": "3.1.1",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
       "notes-sync-id-pass",
       "lazy-hub-screens",
       "twofa-local",
+      "twofa-cloud-vault",
       "cookie-bridge"
     ],
     "latestPublished": {
@@ -92,6 +93,16 @@
       "migrateDoc": "docs/DATABOX-MIGRATION.md",
       "generateApply": "pnpm generate:apply-all",
       "verify": "pnpm verify:cookie"
+    },
+    "twofaVault": {
+      "projectRef": "zurfouqanjcubgneuctp",
+      "url": "https://zurfouqanjcubgneuctp.supabase.co",
+      "name": "czprofess P01",
+      "migrationsDir": "supabase-twofa/migrations",
+      "applySql": "supabase-twofa/migrations/20260603100000_twofa_accounts.sql",
+      "migrateDoc": "docs/TWOFA-SUPABASE.md",
+      "apply": "pnpm twofa:db:apply",
+      "env": ["VITE_TWOFA_SUPABASE_URL", "VITE_TWOFA_SUPABASE_ANON_KEY"]
     }
   },
   "relatedProjects": {

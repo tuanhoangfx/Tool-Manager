@@ -1,0 +1,3 @@
+-- Run in Supabase Dashboard → SQL Editor (project zurfouqanjcubgneuctp)
+-- Or: TWOFA_SUPABASE_DB_URL in .env.local → pnpm twofa:db:apply
+-- Paste contents of: supabase-twofa/migrations/20260603100000_twofa_accounts.sql

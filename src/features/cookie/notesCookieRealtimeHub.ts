@@ -42,24 +42,32 @@ function ensureChannel(userId: string) {
     .on(
       "postgres_changes",
       {
+        event: "INSERT",
+        schema: "public",
+        table: "notes",
+        filter: `user_id=eq.${userId}`,
+      },
+      () => scheduleNotify(),
+    )
+    .on(
+      "postgres_changes",
+      {
         event: "UPDATE",
         schema: "public",
         table: "notes",
         filter: `user_id=eq.${userId}`,
       },
-      (payload) => {
-        const prev = payload.old as Record<string, unknown> | undefined;
-        const row = payload.new as Record<string, unknown>;
-        const cookieChanged =
-          prev != null &&
-          JSON.stringify(prev.cookie_snapshot ?? null) !== JSON.stringify(row.cookie_snapshot ?? null);
-        const syncChanged =
-          prev != null &&
-          (prev.sync_status !== row.sync_status || prev.synced_at !== row.synced_at);
-        if (cookieChanged || syncChanged) {
-          scheduleNotify();
-        }
+      () => scheduleNotify(),
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "DELETE",
+        schema: "public",
+        table: "notes",
+        filter: `user_id=eq.${userId}`,
       },
+      () => scheduleNotify(),
     )
     .on(
       "postgres_changes",

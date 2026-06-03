@@ -12,6 +12,9 @@ export const TIME_RANGES: { value: TimeRange; label: string }[] = [
 
 export const LIMIT_OPTIONS = [25, 50, 100, 200, 500] as const;
 
+/** Default table/page row cap when URL has no `limit` param (P0020 2FA + Hub-style toolbars). */
+export const DEFAULT_HUB_ROW_LIMIT = 25;
+
 /** Hub list time-range when URL has no `range` param (omit from URL = this value). */
 export const DEFAULT_HUB_TIME_RANGE: TimeRange = "all";
 
@@ -41,7 +44,7 @@ export function readHubListPrefs(): HubListPrefs {
   if (typeof window === "undefined") {
     return {
       range: DEFAULT_HUB_TIME_RANGE,
-      limit: 100,
+      limit: DEFAULT_HUB_ROW_LIMIT,
       kpi: null,
       charts: null,
       hubFilters: null,
@@ -54,7 +57,7 @@ export function readHubListPrefs(): HubListPrefs {
   const sp = new URLSearchParams(window.location.search);
   const range = (sp.get("range") ?? DEFAULT_HUB_TIME_RANGE) as TimeRange;
   const limitNum = Number(sp.get("limit"));
-  const limit = (LIMIT_OPTIONS as readonly number[]).includes(limitNum) ? limitNum : 100;
+  const limit = (LIMIT_OPTIONS as readonly number[]).includes(limitNum) ? limitNum : DEFAULT_HUB_ROW_LIMIT;
   const hpin = sp.get("hpin");
   const spin = sp.get("spin");
   return {

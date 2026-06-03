@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -9,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import "../twofa/twofa-confirm.css";
 import {
   Activity,
   Bot,
@@ -369,6 +371,8 @@ function CookieRouteModal({
   children: ReactNode;
   onClose: () => void;
 }) {
+  const titleId = useId();
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -382,27 +386,27 @@ function CookieRouteModal({
   }, [onClose]);
 
   return createPortal(
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+    <div className="auth-gate-root" role="presentation">
+      <div className="auth-gate-backdrop" aria-hidden onClick={onClose} />
       <div
-        className="modal-shell modal-shell--form"
+        className="auth-gate-modal auth-gate-modal--wide"
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-labelledby={titleId}
         onClick={(event) => event.stopPropagation()}
       >
-        <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+        <button type="button" className="auth-gate-close" onClick={onClose} aria-label="Close">
           <X size={16} />
         </button>
-        <div className="flex items-start gap-3 pr-10">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-indigo-400/20 bg-indigo-500/15 text-indigo-200 shadow-[0_0_20px_rgba(99,102,241,0.12)]">
-            <Cookie size={16} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-300">Cookie route</p>
-            <h2 className="mt-1 text-lg font-semibold text-[var(--text)]">{title}</h2>
-            {subtitle ? <p className="mt-1 max-w-3xl text-xs leading-relaxed text-[var(--muted)]">{subtitle}</p> : null}
+        <div className="auth-gate-brand">
+          <div className="auth-gate-icon" aria-hidden>
+            <Cookie size={20} />
           </div>
         </div>
+        <h2 id={titleId} className="auth-gate-title">
+          {title}
+        </h2>
+        {subtitle ? <p className="auth-gate-subtitle">{subtitle}</p> : null}
         {children}
       </div>
     </div>,
@@ -1283,109 +1287,109 @@ export function CookieAutoSyncTable({
           subtitle="Create a cloud route or join a route shared by Note ID."
           onClose={() => setModal(null)}
         >
-          <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/[.03] p-1">
+          <div className="auth-gate-tabs" role="tablist" aria-label="Add route mode">
             <button
               type="button"
-              className={`rounded-lg px-3 py-2 text-xs font-medium transition ${addMode === "create" ? "bg-indigo-500/25 text-indigo-100" : "text-[var(--muted)] hover:bg-white/5"}`}
+              role="tab"
+              aria-selected={addMode === "create"}
+              className={`auth-gate-tab${addMode === "create" ? " auth-gate-tab--active" : ""}`}
               onClick={() => setAddMode("create")}
             >
               Create route
             </button>
             <button
               type="button"
-              className={`rounded-lg px-3 py-2 text-xs font-medium transition ${addMode === "join" ? "bg-sky-500/25 text-sky-100" : "text-[var(--muted)] hover:bg-white/5"}`}
+              role="tab"
+              aria-selected={addMode === "join"}
+              className={`auth-gate-tab${addMode === "join" ? " auth-gate-tab--active" : ""}`}
               onClick={() => setAddMode("join")}
             >
               Add by Note ID
             </button>
           </div>
-          {addMode === "create" ? (
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div>
-                <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Target note</label>
-                <select
-                  className="field mt-1 w-full text-[12px]"
-                  value={draftNoteId}
-                  onChange={(e) => setDraftNoteId(e.target.value)}
-                >
-                  {notes.map((n) => (
-                    <option key={n.id} value={n.id}>
-                      {n.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Auto domain</label>
-                <input
-                  className="field mt-1 font-mono text-[12px]"
-                  value={draftDomain}
-                  onChange={(e) => setDraftDomain(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Sync pass (optional)</label>
-                <input
-                  type="password"
-                  className="field mt-1 text-[12px]"
-                  value={draftPass}
-                  onChange={(e) => setDraftPass(e.target.value)}
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="rounded-xl border border-sky-400/15 bg-sky-500/[.06] px-3 py-2 text-[12px] leading-relaxed text-sky-100/90">
-                Paste the Note ID shared by owner. Supabase checks <code className="font-mono">note_cookie_members</code> before returning routes.
-              </div>
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_180px]">
-                <div>
-                  <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Shared Note ID</label>
-                  <input
-                    className="field mt-1 font-mono text-[12px]"
+          <div className="auth-gate-form">
+            {addMode === "create" ? (
+              <>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-medium text-[var(--muted)]">Target note</span>
+                  <select
+                    className="field auth-gate-field w-full"
                     value={draftNoteId}
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                     onChange={(e) => setDraftNoteId(e.target.value)}
-                  />
+                  >
+                    {notes.map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {n.title}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Domain</label>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-medium text-[var(--muted)]">Auto domain</span>
                   <input
-                    className="field mt-1 font-mono text-[12px]"
+                    className="field auth-gate-field w-full font-mono"
                     value={draftDomain}
                     onChange={(e) => setDraftDomain(e.target.value)}
                   />
                 </div>
-              </div>
-            </>
-          )}
-          <div className="flex flex-wrap gap-1">
-            {DOMAIN_PRESETS.map((p) => (
-              <button
-                key={p.domain}
-                type="button"
-                className="rounded-full border border-white/10 px-2 py-0.5 text-[9px] text-[var(--muted)] hover:border-emerald-400/40"
-                onClick={() => setDraftDomain(p.domain)}
-              >
-                + {p.label}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-medium text-[var(--muted)]">Sync pass (optional)</span>
+                  <input
+                    type="password"
+                    className="field auth-gate-field w-full"
+                    value={draftPass}
+                    onChange={(e) => setDraftPass(e.target.value)}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="auth-gate-hint">
+                  Paste the Note ID shared by owner. Supabase checks{" "}
+                  <span className="auth-gate-mono">note_cookie_members</span> before returning routes.
+                </p>
+                <input
+                  className="field auth-gate-field w-full font-mono"
+                  value={draftNoteId}
+                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  onChange={(e) => setDraftNoteId(e.target.value)}
+                />
+                <input
+                  className="field auth-gate-field w-full font-mono"
+                  value={draftDomain}
+                  placeholder="Domain"
+                  onChange={(e) => setDraftDomain(e.target.value)}
+                />
+              </>
+            )}
+            <div className="flex flex-wrap gap-1">
+              {DOMAIN_PRESETS.map((p) => (
+                <button
+                  key={p.domain}
+                  type="button"
+                  className="auth-gate-file-btn !px-2 !py-0.5 !text-[10px]"
+                  onClick={() => setDraftDomain(p.domain)}
+                >
+                  + {p.label}
+                </button>
+              ))}
+            </div>
+            <div className="auth-gate-actions">
+              <button type="button" className="auth-gate-secondary" onClick={() => setModal(null)}>
+                Cancel
               </button>
-            ))}
-          </div>
-          <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
-            <button
-              type="button"
-              className="btn text-[11px]"
-              disabled={addMode === "join" ? !draftNoteId.trim() || joinBusy : !draftNoteId.trim()}
-              onClick={() => {
-                if (addMode === "join") void submitJoin();
-                else submitAdd();
-              }}
-            >
-              {addMode === "join" ? (joinBusy ? "Joining..." : "Join shared route") : "Create cloud route"}
-            </button>
-            <button type="button" className="btn-ghost btn text-[11px]" onClick={() => setModal(null)}>
-              Cancel
-            </button>
+              <button
+                type="button"
+                className="auth-gate-submit"
+                disabled={addMode === "join" ? !draftNoteId.trim() || joinBusy : !draftNoteId.trim()}
+                onClick={() => {
+                  if (addMode === "join") void submitJoin();
+                  else submitAdd();
+                }}
+              >
+                {addMode === "join" ? (joinBusy ? "Joining…" : "Join shared route") : "Create cloud route"}
+              </button>
+            </div>
           </div>
         </CookieRouteModal>
       ) : null}
@@ -1396,51 +1400,53 @@ export function CookieAutoSyncTable({
           subtitle="Grant another user access to this route by email. The recipient can add it by Note ID or refresh accessible routes."
           onClose={() => setModal(null)}
         >
-          <div className="rounded-2xl border border-emerald-400/15 bg-emerald-500/[.06] p-3">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-xs font-semibold text-emerald-100">{shareBinding.noteTitle ?? "Cookie route"}</p>
-                <p className="font-mono text-[10px] text-emerald-100/65">{shareBinding.noteId}</p>
+          <div className="auth-gate-form">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-[var(--text)]">{shareBinding.noteTitle ?? "Cookie route"}</p>
+                <p className="auth-gate-mono truncate text-[10px] text-[var(--muted)]">{shareBinding.noteId}</p>
               </div>
               <button
                 type="button"
-                className="rounded-full border border-emerald-300/25 px-2 py-1 text-[10px] text-emerald-100 hover:bg-emerald-500/10"
+                className="auth-gate-file-btn shrink-0"
                 onClick={() => void navigator.clipboard?.writeText(shareBinding.noteId)}
               >
+                <Copy size={12} aria-hidden />
                 Copy Note ID
               </button>
             </div>
-            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px]">
-              <div>
-                <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">User email</label>
-                <input
-                  className="field mt-1 text-[12px]"
-                  value={shareEmail}
-                  placeholder="user@example.com"
-                  onChange={(event) => setShareEmail(event.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Permission</label>
-                <select
-                  className="field mt-1 text-[12px]"
-                  value={shareRole}
-                  onChange={(event) => setShareRole(event.target.value as ShareRole)}
-                >
-                  <option value="load">Load only</option>
-                  <option value="sync">Can sync</option>
-                  <option value="manager">Manager</option>
-                </select>
-              </div>
+            <input
+              className="field auth-gate-field w-full"
+              type="email"
+              value={shareEmail}
+              placeholder="user@example.com"
+              onChange={(event) => setShareEmail(event.target.value)}
+            />
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-medium text-[var(--muted)]">Permission</span>
+              <select
+                className="field auth-gate-field w-full"
+                value={shareRole}
+                onChange={(event) => setShareRole(event.target.value as ShareRole)}
+              >
+                <option value="load">Load only</option>
+                <option value="sync">Can sync</option>
+                <option value="manager">Manager</option>
+              </select>
             </div>
-          </div>
-          <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
-            <button type="button" className="btn text-[11px]" disabled={!shareEmail.trim() || shareBusy} onClick={() => void submitShare()}>
-              {shareBusy ? "Sharing..." : "Share route"}
-            </button>
-            <button type="button" className="btn-ghost btn text-[11px]" onClick={() => setModal(null)}>
-              Cancel
-            </button>
+            <div className="auth-gate-actions">
+              <button type="button" className="auth-gate-secondary" onClick={() => setModal(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="auth-gate-submit"
+                disabled={!shareEmail.trim() || shareBusy}
+                onClick={() => void submitShare()}
+              >
+                {shareBusy ? "Sharing…" : "Share route"}
+              </button>
+            </div>
           </div>
         </CookieRouteModal>
       ) : null}
@@ -1679,11 +1685,11 @@ export function CookieAutoSyncTable({
           subtitle="Update route metadata. Advanced diagnostics are available in route detail when needed."
           onClose={() => setModal(null)}
         >
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div>
-              <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Note</label>
+          <div className="auth-gate-form">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-medium text-[var(--muted)]">Note</span>
               <select
-                className="field mt-1 w-full text-[12px]"
+                className="field auth-gate-field w-full"
                 value={draftNoteId}
                 onChange={(e) => setDraftNoteId(e.target.value)}
               >
@@ -1694,32 +1700,27 @@ export function CookieAutoSyncTable({
                 ))}
               </select>
             </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Domain</label>
-              <input
-                className="field mt-1 font-mono text-[12px]"
-                value={draftDomain}
-                onChange={(e) => setDraftDomain(e.target.value)}
-              />
+            <input
+              className="field auth-gate-field w-full font-mono"
+              value={draftDomain}
+              placeholder="Domain"
+              onChange={(e) => setDraftDomain(e.target.value)}
+            />
+            <input
+              type="password"
+              className="field auth-gate-field w-full"
+              placeholder={editing.requiresPass ? "Sync pass (required)" : "Sync pass (optional)"}
+              value={draftPass}
+              onChange={(e) => setDraftPass(e.target.value)}
+            />
+            <div className="auth-gate-actions">
+              <button type="button" className="auth-gate-secondary" onClick={() => setModal(null)}>
+                Cancel
+              </button>
+              <button type="button" className="auth-gate-submit" onClick={submitEdit}>
+                Save cloud route
+              </button>
             </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Sync pass</label>
-              <input
-                type="password"
-                className="field mt-1 text-[12px]"
-                placeholder={editing.requiresPass ? "Required" : "Optional"}
-                value={draftPass}
-                onChange={(e) => setDraftPass(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
-            <button type="button" className="btn text-[11px]" onClick={submitEdit}>
-              Save cloud route
-            </button>
-            <button type="button" className="btn-ghost btn text-[11px]" onClick={() => setModal(null)}>
-              Close
-            </button>
           </div>
         </CookieRouteModal>
       ) : null}
@@ -1734,25 +1735,27 @@ export function CookieAutoSyncTable({
           subtitle="This disables the cloud route so linked browsers remove it on the next realtime refresh. Existing vault data is not deleted."
           onClose={() => setModal(null)}
         >
-          <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
-            Remove{" "}
-            {deleting.length === 1 ? (
-              <>
-                <span className="font-mono">{deleting[0].domain}</span> for{" "}
-                <strong>{deleting[0].noteTitle ?? deleting[0].noteId}</strong>?
-              </>
-            ) : (
-              <strong>{deleting.length} selected routes</strong>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
-            <button type="button" className="btn-ghost btn text-[11px]" onClick={() => setModal(null)}>
-              Cancel
-            </button>
-            <button type="button" className="btn-ghost btn text-[11px] text-rose-300" onClick={submitDelete}>
-              <Trash2 size={13} />
-              Delete route
-            </button>
+          <div className="auth-gate-form">
+            <p className="auth-gate-hint text-center">
+              Remove{" "}
+              {deleting.length === 1 ? (
+                <>
+                  <span className="auth-gate-mono">{deleting[0].domain}</span> for{" "}
+                  <strong className="text-[var(--text)]">{deleting[0].noteTitle ?? deleting[0].noteId}</strong>?
+                </>
+              ) : (
+                <strong className="text-[var(--text)]">{deleting.length} selected routes</strong>
+              )}
+            </p>
+            <div className="auth-gate-actions">
+              <button type="button" className="auth-gate-secondary" onClick={() => setModal(null)}>
+                Cancel
+              </button>
+              <button type="button" className="twofa-confirm-danger" onClick={submitDelete}>
+                <Trash2 size={14} aria-hidden />
+                Delete route
+              </button>
+            </div>
           </div>
         </CookieRouteModal>
       ) : null}

@@ -293,7 +293,7 @@ export function CookieExtensionGuideButton({
         title="Install & usage guide"
         aria-label="Open Cookie Auto Extension install and usage guide"
       >
-        <FabIcon size={17} strokeWidth={2.25} aria-hidden />
+        <FabIcon size={14} strokeWidth={2.4} aria-hidden />
       </button>
     ) : (
       <button

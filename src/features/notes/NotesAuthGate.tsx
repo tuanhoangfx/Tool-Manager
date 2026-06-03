@@ -49,7 +49,7 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
     setBusy(true);
     setMessage("");
     try {
-      const { identitySession, dataSession, dataError } = await signInWorkspaceDual(
+      const { identitySession, dataSession, dataError, twofaError } = await signInWorkspaceDual(
         email,
         password,
         mode === "signup" ? "signup" : "signin",
@@ -59,6 +59,9 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
           dataError ??
             "Tool Hub sign-in succeeded but Data Box session failed. Check Data Box Supabase status or try again.",
         );
+      }
+      if (twofaError) {
+        console.warn("[P0020] 2FA vault session:", twofaError);
       }
       adoptSession(dataSession);
       relaySessionsToExtension(identitySession, dataSession);

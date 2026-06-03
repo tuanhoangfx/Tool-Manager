@@ -631,7 +631,7 @@ function CookieSyncMain({
 
   return (
     <>
-      {shellMode ? <CookieExtensionFab /> : null}
+      {shellMode ? <CookieExtensionFab active={tabActive} /> : null}
       {tabActive && cookieBootLoading ? <WorkspaceLoadingView screen="cookie" variant="overlay" /> : null}
       <div className={shellMode ? "" : "p-6"}>
       {offline ? (

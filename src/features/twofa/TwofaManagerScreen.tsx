@@ -32,7 +32,8 @@ export function TwofaManagerScreen({
   shellMode?: boolean;
   query?: string;
 } = {}) {
-  const { accounts, tick, add, addMany, update, remove, touchLastUsed } = useTwofaAccounts();
+  const { accounts, tick, add, addMany, update, remove, touchLastUsed, cloudState, cloudError } =
+    useTwofaAccounts();
   const {
     query: wsQuery,
     setQuery: setWsQuery,
@@ -80,6 +81,13 @@ export function TwofaManagerScreen({
     [accounts, filterValues, hubPrefs.range, query],
   );
 
+  const tableRows = useMemo(
+    () => displayedAccounts.slice(0, hubPrefs.limit),
+    [displayedAccounts, hubPrefs.limit],
+  );
+
+  const tableTruncated = displayedAccounts.length > tableRows.length;
+
   const parsedSearch = useMemo(() => parseTwofaSearchQuery(query), [query]);
   const showInlineAdd = Boolean(query.trim()) && displayedAccounts.length === 0;
 
@@ -97,7 +105,7 @@ export function TwofaManagerScreen({
     [displayedAccounts, selectedIds],
   );
   const allVisibleSelected =
-    displayedAccounts.length > 0 && displayedAccounts.every((row) => selectedIds.has(row.id));
+    tableRows.length > 0 && tableRows.every((row) => selectedIds.has(row.id));
   const hasSelection = selectedIds.size > 0;
 
   const closeModal = useCallback(() => {
@@ -126,16 +134,16 @@ export function TwofaManagerScreen({
 
   const toggleSelectAll = useCallback(() => {
     setSelectedIds((prev) => {
-      if (displayedAccounts.every((row) => prev.has(row.id))) {
+      if (tableRows.every((row) => prev.has(row.id))) {
         const next = new Set(prev);
-        displayedAccounts.forEach((row) => next.delete(row.id));
+        tableRows.forEach((row) => next.delete(row.id));
         return next;
       }
       const next = new Set(prev);
-      displayedAccounts.forEach((row) => next.add(row.id));
+      tableRows.forEach((row) => next.add(row.id));
       return next;
     });
-  }, [displayedAccounts]);
+  }, [tableRows]);
 
   const requestBulkDelete = useCallback(() => {
     if (selectedRows.length === 0) return;
@@ -218,7 +226,9 @@ export function TwofaManagerScreen({
     setToolbar(
       <TwofaFilterToolbar
         range={hubPrefs.range}
-        shown={displayedAccounts.length}
+        limit={hubPrefs.limit}
+        tableShown={tableRows.length}
+        filteredTotal={displayedAccounts.length}
         total={accounts.length}
       />,
     );
@@ -247,7 +257,7 @@ export function TwofaManagerScreen({
               key: "twofa-in-range",
               icon: KeyRound,
               label: "shown",
-              value: displayedAccounts.length,
+              value: tableRows.length,
               toneClass: "text-cyan-300",
             }
           : null,
@@ -263,6 +273,7 @@ export function TwofaManagerScreen({
     displayedAccounts.length,
     handleBulkEdit,
     hasSelection,
+    hubPrefs.limit,
     hubPrefs.range,
     openAddModal,
     requestBulkDelete,
@@ -271,6 +282,7 @@ export function TwofaManagerScreen({
     setCenterStats,
     setFilterToolbar,
     setToolbar,
+    tableRows.length,
     visHeaderStats,
   ]);
 
@@ -285,7 +297,20 @@ export function TwofaManagerScreen({
 
       {!shellMode ? (
         <p className="mb-3 text-[11px] text-[var(--muted)]">
-          Data stays on this device only. Sign in to Notes/Cookie is optional for 2FA.
+          Local-first TOTP. Sign in (Tool Hub) to sync with the dedicated 2FA vault when configured.
+        </p>
+      ) : null}
+
+      {shellMode && cloudState !== "off" ? (
+        <p className="mb-2 text-[11px] text-[var(--muted)]">
+          Cloud vault:{" "}
+          {cloudState === "syncing"
+            ? "Syncing…"
+            : cloudState === "error"
+              ? `Error — ${cloudError ?? "sync failed"}`
+              : cloudState === "ok"
+                ? "Synced (delta)"
+                : "Sign in to enable sync"}
         </p>
       ) : null}
 
@@ -325,17 +350,25 @@ export function TwofaManagerScreen({
             : "No accounts match search or filters."}
         </div>
       ) : (
-        <TwofaAccountsTable
-          rows={displayedAccounts}
-          tick={tick}
-          visibleColumns={visibleColumns}
-          editingId={editingId}
-          selectedIds={selectedIds}
-          onToggleSelect={toggleSelect}
-          onToggleSelectAll={toggleSelectAll}
-          allVisibleSelected={allVisibleSelected}
-          onUsed={touchLastUsed}
-        />
+        <>
+          <TwofaAccountsTable
+            rows={tableRows}
+            tick={tick}
+            visibleColumns={visibleColumns}
+            editingId={editingId}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
+            allVisibleSelected={allVisibleSelected}
+            onUsed={touchLastUsed}
+          />
+          {tableTruncated ? (
+            <p className="mt-2 text-center text-[11px] text-[var(--muted)]">
+              Showing {tableRows.length} of {displayedAccounts.length} matching — increase row limit in toolbar
+              (25–500).
+            </p>
+          ) : null}
+        </>
       )}
 
       <TwofaAddModal

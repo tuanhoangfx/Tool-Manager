@@ -3,12 +3,15 @@ import { createClient } from "@supabase/supabase-js";
 import { HUB_SUPABASE_ANON_KEY, HUB_SUPABASE_URL, isHubSupabaseConfigured } from "./hub-supabase-env";
 import { cacheDataBoxSession } from "./data-box-session";
 import { cacheHubIdentity } from "./hub-identity-session";
+import { authenticateTwofaVault } from "./authenticate-twofa-vault";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
 export type WorkspaceDualSignInResult = {
   identitySession: Session | null;
   dataSession: Session | null;
   dataError: string | null;
+  twofaSession: Session | null;
+  twofaError: string | null;
 };
 
 function hubClient() {
@@ -99,7 +102,11 @@ export async function signInWorkspaceDual(
     supabase_anon_key: HUB_SUPABASE_ANON_KEY,
   });
 
-  const { session: dataSession, error: dataError } = await authenticateDataBox(email, password, mode);
+  const [{ session: dataSession, error: dataError }, { session: twofaSession, error: twofaError }] =
+    await Promise.all([
+      authenticateDataBox(email, password, mode),
+      authenticateTwofaVault(email, password, mode),
+    ]);
 
-  return { identitySession, dataSession, dataError };
+  return { identitySession, dataSession, dataError, twofaSession, twofaError };
 }

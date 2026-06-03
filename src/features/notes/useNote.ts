@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useNotesCookieRealtime } from "../cookie/useNotesCookieRealtime";
-import { NOTES_REALTIME_UI_REFRESH } from "./notes-egress";
+import { useNotesRealtimeUiRefresh } from "./notes-realtime-pref";
 import { fetchNoteById, isMissingSyncIdColumn, updateNoteRow, updateNoteSyncId } from "./notesRepository";
 import { setNoteSyncPass } from "./noteSyncPass";
 import { generateSyncId, noteEditorContentEqual, slugifyTitle } from "./noteUtils";
@@ -72,6 +72,7 @@ function staleNoteForId(noteId: string | null): NoteRow | null {
 
 export function useNote(session: Session | null, noteId: string | null) {
   const userId = session?.user?.id ?? null;
+  const realtimePref = useNotesRealtimeUiRefresh();
   const [note, setNote] = useState<NoteRow | null>(() => staleNoteForId(noteId));
   const [loading, setLoading] = useState(() => Boolean(noteId && !staleNoteForId(noteId)));
   const [error, setError] = useState("");
@@ -166,7 +167,7 @@ export function useNote(session: Session | null, noteId: string | null) {
   const refreshFromRealtime = useCallback(() => {
     void refresh({ silent: true });
   }, [refresh]);
-  useNotesCookieRealtime(session, refreshFromRealtime, NOTES_REALTIME_UI_REFRESH);
+  useNotesCookieRealtime(session, refreshFromRealtime, realtimePref);
 
   const save = useCallback(
     async (draft: NoteDraft) => {

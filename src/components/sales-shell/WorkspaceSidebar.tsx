@@ -19,6 +19,8 @@ import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
 import { ToolAvatar } from "../ToolAvatar";
 import { toolIconName, toolSvgIcon } from "../../lib/visual";
 import { clearDataBoxSession } from "../../lib/data-box-session";
+import { clearTwofaSession } from "../../lib/twofa-session";
+import { getTwofaSupabase } from "../../lib/twofa-supabase";
 import { clearHubIdentity } from "../../lib/hub-identity-session";
 import { useNotesAuth } from "../../features/notes/useNotesAuth";
 import { getIdentitySupabase } from "../../lib/supabase-identity";
@@ -169,10 +171,13 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
                       setSigningOut(true);
                       clearHubIdentity();
                       clearDataBoxSession();
+                      clearTwofaSession();
                       const identity = getIdentitySupabase();
+                      const twofa = getTwofaSupabase();
                       const outs = await Promise.all([
                         identity ? identity.auth.signOut() : Promise.resolve({ error: null }),
                         supabase.auth.signOut(),
+                        twofa ? twofa.auth.signOut() : Promise.resolve({ error: null }),
                       ]);
                       setSigningOut(false);
                       const error = outs.find((r) => r.error)?.error;

@@ -4,7 +4,7 @@ import { useNotesCookieRealtime } from "../cookie/useNotesCookieRealtime";
 import { writeNoteDetailCache } from "../../lib/note-detail-cache";
 import { readNotesListStaleCache, writeNotesListClientCache } from "../../lib/notes-list-cache";
 import { createNoteRow, deleteNoteRow, fetchNotesList } from "./notesRepository";
-import { NOTES_REALTIME_UI_REFRESH } from "./notes-egress";
+import { useNotesRealtimeUiRefresh } from "./notes-realtime-pref";
 import { generateSyncId, mergeNoteRowForList, sortNoteRows, toListItem } from "./noteUtils";
 import type { NoteRow } from "./types";
 import { getOfflineMode } from "../../lib/offlineMode";
@@ -14,8 +14,9 @@ export type NotesRefreshOpts = { /** Skip loading UI — use for realtime / back
 
 export function useNotes(session: Session | null, opts?: { realtime?: boolean }) {
   const userId = session?.user?.id ?? null;
-  const [rows, setRows] = useState<NoteRow[]>(() => readNotesListStaleCache() ?? []);
-  const [loading, setLoading] = useState(() => readNotesListStaleCache() == null);
+  const realtimePref = useNotesRealtimeUiRefresh();
+  const [rows, setRows] = useState<NoteRow[]>(() => readNotesListStaleCache(userId) ?? []);
+  const [loading, setLoading] = useState(() => readNotesListStaleCache(userId) == null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const refreshInFlight = useRef(false);
@@ -37,7 +38,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
       try {
         const offlineRows = await listOfflineNotes();
         setRows(offlineRows);
-        writeNotesListClientCache(offlineRows);
+        writeNotesListClientCache(userId, offlineRows);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Offline notes load failed");
         setRows([]);
@@ -48,7 +49,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
       return;
     }
 
-    const cached = readNotesListStaleCache();
+    const cached = readNotesListStaleCache(userId);
     const hasStale = (cached?.length ?? 0) > 0;
     if (!silent) {
       if (hasStale) {
@@ -66,7 +67,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
       } else {
         const next = sortNoteRows((data ?? []) as NoteRow[]);
         setRows(next);
-        writeNotesListClientCache(next);
+        writeNotesListClientCache(userId, next);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load notes");
@@ -85,11 +86,12 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
       setRefreshing(false);
       return;
     }
-    const stale = readNotesListStaleCache();
+    const stale = readNotesListStaleCache(userId);
+    setRows(stale ?? []);
     void refresh({ silent: stale != null && stale.length > 0 });
   }, [userId, refresh]);
 
-  const realtimeEnabled = opts?.realtime ?? NOTES_REALTIME_UI_REFRESH;
+  const realtimeEnabled = opts?.realtime ?? realtimePref;
   const refreshFromRealtime = useCallback(() => {
     void refresh({ silent: true });
   }, [refresh]);
@@ -97,25 +99,33 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
 
   const notes = useMemo(() => rows.map(toListItem), [rows]);
 
-  const upsertListRow = useCallback((row: NoteRow) => {
-    setRows((prev) => {
-      const next = sortNoteRows([row, ...prev.filter((r) => r.id !== row.id)]);
-      writeNotesListClientCache(next);
-      return next;
-    });
-  }, []);
+  const upsertListRow = useCallback(
+    (row: NoteRow) => {
+      if (!userId) return;
+      setRows((prev) => {
+        const next = sortNoteRows([row, ...prev.filter((r) => r.id !== row.id)]);
+        writeNotesListClientCache(userId, next);
+        return next;
+      });
+    },
+    [userId],
+  );
 
-  const mergeNoteInList = useCallback((saved: NoteRow) => {
-    setRows((prev) => {
-      const idx = prev.findIndex((r) => r.id === saved.id);
-      if (idx < 0) return prev;
-      const next = [...prev];
-      next[idx] = mergeNoteRowForList(prev[idx], saved);
-      const sorted = sortNoteRows(next);
-      writeNotesListClientCache(sorted);
-      return sorted;
-    });
-  }, []);
+  const mergeNoteInList = useCallback(
+    (saved: NoteRow) => {
+      if (!userId) return;
+      setRows((prev) => {
+        const idx = prev.findIndex((r) => r.id === saved.id);
+        if (idx < 0) return prev;
+        const next = [...prev];
+        next[idx] = mergeNoteRowForList(prev[idx], saved);
+        const sorted = sortNoteRows(next);
+        writeNotesListClientCache(userId, sorted);
+        return sorted;
+      });
+    },
+    [userId],
+  );
 
   const createNote = useCallback(async () => {
     if (!session?.user?.id) throw new Error("Not signed in");

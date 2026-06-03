@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import {
   CalendarClock,
   Fingerprint,
@@ -137,14 +138,19 @@ function TwofaAccountCell({ account }: { account: TwofaAccount }) {
   );
 }
 
-function TwofaCodeCell({
+const TwofaCodeCell = memo(function TwofaCodeCell({
   account,
+  tick,
   onUsed,
 }: {
   account: TwofaAccount;
+  tick: number;
   onUsed: (id: string) => void;
 }) {
-  const code = generateCode(account.service, account.account, account.secret);
+  const code = useMemo(
+    () => generateCode(account.service, account.account, account.secret),
+    [account.service, account.account, account.secret, tick],
+  );
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -162,7 +168,19 @@ function TwofaCodeCell({
       />
     </div>
   );
-}
+});
+
+const TwofaPeriodCell = memo(function TwofaPeriodCell({ tick }: { tick: number }) {
+  void tick;
+  const left = secondsRemaining();
+  const tone = periodTone(left);
+  return (
+    <span className="hub-twofa-period-inline" title={`${left}s remaining`}>
+      <span className={`hub-twofa-period-dot hub-twofa-period-dot--${tone}`} aria-hidden />
+      <span className="hub-twofa-period-label tabular-nums">{left}s</span>
+    </span>
+  );
+});
 
 function TwofaPasswordCell({ account }: { account: TwofaAccount }) {
   const value = account.password?.trim();
@@ -200,19 +218,6 @@ function TwofaSecretCell({ account }: { account: TwofaAccount }) {
         labelClassName="whitespace-normal break-all text-left"
       />
     </div>
-  );
-}
-
-function TwofaPeriodCell({ tick }: { tick: number }) {
-  void tick;
-  const left = secondsRemaining();
-  const tone = periodTone(left);
-
-  return (
-    <span className="hub-twofa-period-inline" title={`${left}s remaining`}>
-      <span className={`hub-twofa-period-dot hub-twofa-period-dot--${tone}`} aria-hidden />
-      <span className="hub-twofa-period-label tabular-nums">{left}s</span>
-    </span>
   );
 }
 
@@ -254,7 +259,7 @@ function renderBodyCell(
     case "code":
       return (
         <td key={key} className="hub-users-col--twofa-code">
-          <TwofaCodeCell account={row} onUsed={ctx.onUsed} />
+          <TwofaCodeCell account={row} tick={ctx.tick} onUsed={ctx.onUsed} />
         </td>
       );
     case "period":
@@ -292,6 +297,44 @@ type Props = {
   onUsed: (id: string) => void;
 };
 
+const TwofaTableRow = memo(function TwofaTableRow({
+  row,
+  visibleDefs,
+  tick,
+  editingId,
+  selected,
+  onToggleSelect,
+  onUsed,
+}: {
+  row: TwofaAccount;
+  visibleDefs: ColumnDef[];
+  tick: number;
+  editingId: string | null;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
+  onUsed: (id: string) => void;
+}) {
+  const ctx = { tick, onUsed };
+  return (
+    <tr
+      className={`hub-users-row hub-users-row--static${selected ? " is-selected" : ""}${editingId === row.id ? " is-editing" : ""}`}
+    >
+      <td className="hub-users-col--select" onClick={(e) => e.stopPropagation()}>
+        <label className="hub-users-select-row">
+          <input
+            type="checkbox"
+            className="hub-checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(row.id)}
+            aria-label={`Select ${row.service}`}
+          />
+        </label>
+      </td>
+      {visibleDefs.map((col) => renderBodyCell(col.key, row, ctx))}
+    </tr>
+  );
+});
+
 export function TwofaAccountsTable({
   rows,
   tick,
@@ -303,8 +346,10 @@ export function TwofaAccountsTable({
   allVisibleSelected,
   onUsed,
 }: Props) {
-  const visibleDefs = COLUMNS.filter((col) => visibleColumns.has(col.key));
-  const ctx = { tick, onUsed };
+  const visibleDefs = useMemo(
+    () => COLUMNS.filter((col) => visibleColumns.has(col.key)),
+    [visibleColumns],
+  );
 
   return (
     <div className="hub-users-table-wrap overflow-hidden rounded-2xl border border-white/5">
@@ -344,28 +389,18 @@ export function TwofaAccountsTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => {
-            const selected = selectedIds.has(row.id);
-            return (
-              <tr
-                key={row.id}
-                className={`hub-users-row hub-users-row--static${selected ? " is-selected" : ""}${editingId === row.id ? " is-editing" : ""}`}
-              >
-                <td className="hub-users-col--select" onClick={(e) => e.stopPropagation()}>
-                  <label className="hub-users-select-row">
-                    <input
-                      type="checkbox"
-                      className="hub-checkbox"
-                      checked={selected}
-                      onChange={() => onToggleSelect(row.id)}
-                      aria-label={`Select ${row.service}`}
-                    />
-                  </label>
-                </td>
-                {visibleDefs.map((col) => renderBodyCell(col.key, row, ctx))}
-              </tr>
-            );
-          })}
+          {rows.map((row) => (
+            <TwofaTableRow
+              key={row.id}
+              row={row}
+              visibleDefs={visibleDefs}
+              tick={tick}
+              editingId={editingId}
+              selected={selectedIds.has(row.id)}
+              onToggleSelect={onToggleSelect}
+              onUsed={onUsed}
+            />
+          ))}
         </tbody>
       </table>
       {rows.length === 0 ? (
