@@ -11,7 +11,8 @@
 - Product: P0020
 - Prompt: Release P0020 — shared cookie routes visible; Hub default time range All
 - Commit: `21fe0ce`
-- Status: Committed
+- Status: Verified
+- Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v1.1.1
 
 ### Changes
 

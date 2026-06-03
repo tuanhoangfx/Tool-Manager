@@ -46,7 +46,12 @@
       "lazy-hub-screens",
       "twofa-local",
       "cookie-bridge"
-    ]
+    ],
+    "latestPublished": {
+      "tag": "v1.1.1",
+      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v1.1.1",
+      "publishedAt": "2026-06-03T09:14:34.010Z"
+    }
   },
   "urls": {
     "local": "http://127.0.0.1:5177",
@@ -100,5 +105,5 @@
     "status": "Beta",
     "note": "Notes Supabase CRUD; https://tool-manager-zeta.vercel.app"
   },
-  "manifestUpdatedAt": "2026-05-27T09:11:00.000+07:00"
+  "manifestUpdatedAt": "2026-06-03T09:14:34.011Z"
 }
