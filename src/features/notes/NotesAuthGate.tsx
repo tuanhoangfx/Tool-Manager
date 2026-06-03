@@ -4,8 +4,14 @@ import { X } from "lucide-react";
 import { ToolAvatar } from "../../components/ToolAvatar";
 import { relaySessionsToExtension } from "../../lib/relay-extension-sessions";
 import { toolIconName, toolSvgIcon } from "../../lib/visual";
-import { supabase } from "../../lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+import { canUseEmailPasswordRecovery, resolveHubLogin } from "@tool-workspace/hub-identity";
 import { setOfflineMode } from "../../lib/offlineMode";
+import {
+  HUB_SUPABASE_ANON_KEY,
+  HUB_SUPABASE_URL,
+  isHubSupabaseConfigured,
+} from "../../lib/hub-supabase-env";
 import { signInWorkspaceDual } from "../../lib/workspace-dual-auth";
 import { useNotesAuth } from "./useNotesAuth";
 
@@ -22,7 +28,7 @@ type ModalProps = {
 
 function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
   const { adoptSession } = useNotesAuth();
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [busy, setBusy] = useState(false);
@@ -33,7 +39,7 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
     const lower = msg.toLowerCase();
     if (lower.includes("rate limit")) return "Temporary sign-in issue. Please try again in a moment.";
     if (lower.includes("invalid login credentials")) {
-      return "Incorrect email or password. Use the same credentials as Tool Hub (P0004).";
+      return "Incorrect user ID/email or password. Use the same credentials as Tool Hub (P0004).";
     }
     if (lower.includes("exceed_egress_quota") || lower.includes("egress_quota")) {
       return "Data Box Supabase is paused (egress quota exceeded). Restore the project in Supabase Dashboard → Billing, or use Offline mode for local-only work.";
@@ -50,7 +56,7 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
     setMessage("");
     try {
       const { identitySession, dataSession, dataError, twofaError } = await signInWorkspaceDual(
-        email,
+        login,
         password,
         mode === "signup" ? "signup" : "signin",
       );
@@ -74,19 +80,31 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
   };
 
   const onForgotPassword = async () => {
-    const trimmed = email.trim();
-    if (!trimmed) {
-      setMessage("Enter your email address first.");
-      return;
-    }
     setBusy(true);
     setMessage("");
-    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
-      redirectTo: `${window.location.origin}/`,
-    });
-    setBusy(false);
-    if (error) setMessage(error.message);
-    else setMessage("Check your inbox for a reset link.");
+    try {
+      const resolved = resolveHubLogin(login);
+      if (!resolved.isEmailLogin || !canUseEmailPasswordRecovery(resolved.authEmail)) {
+        setMessage("Link email on Tool Hub (Account), or ask an admin to reset your password.");
+        setBusy(false);
+        return;
+      }
+      if (!isHubSupabaseConfigured) {
+        setMessage("Tool Hub Supabase is not configured.");
+        setBusy(false);
+        return;
+      }
+      const hub = createClient(HUB_SUPABASE_URL, HUB_SUPABASE_ANON_KEY);
+      const { error } = await hub.auth.resetPasswordForEmail(resolved.authEmail, {
+        redirectTo: `${window.location.origin}/`,
+      });
+      setBusy(false);
+      if (error) setMessage(error.message);
+      else setMessage("Check your inbox for a Hub password reset link.");
+    } catch (err) {
+      setBusy(false);
+      setMessage(err instanceof Error ? err.message : "Enter your linked email or user ID.");
+    }
   };
 
   return createPortal(
@@ -119,7 +137,7 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
                 ? "Sign in to manage 2FA codes in this workspace."
                 : variant === "system"
                   ? "Sign in to access system tools."
-                  : "Same email and password as Tool Hub (P0004). User roles are managed on Tool Hub only."}
+                  : "User ID or email + password (Tool Hub x1z10 P01). Roles managed on Tool Hub only."}
         </p>
 
         <div className="auth-gate-tabs" role="tablist">
@@ -152,13 +170,18 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
         <form className="auth-gate-form" onSubmit={(e) => void submit(e)}>
           <input
             className="field auth-gate-field w-full"
-            type="email"
-            placeholder="Email address"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="User ID or email"
+            autoComplete="username"
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
             required
           />
+          <p className="auth-gate-hint">
+            {mode === "signup"
+              ? "User ID: 3–32 chars (a–z, 0–9, . _ -). Link a real email later on Tool Hub."
+              : "Same account as Tool Hub — User ID or linked email."}
+          </p>
           <div className="auth-gate-password-wrap">
             <input
               className="field auth-gate-field w-full"

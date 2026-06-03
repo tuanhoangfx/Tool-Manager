@@ -1,5 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
+import { resolveHubLogin } from "@tool-workspace/hub-identity";
 import { HUB_SUPABASE_ANON_KEY, HUB_SUPABASE_URL, isHubSupabaseConfigured } from "./hub-supabase-env";
 import { cacheDataBoxSession } from "./data-box-session";
 import { cacheHubIdentity } from "./hub-identity-session";
@@ -26,7 +27,7 @@ const INVALID_LOGIN = /invalid login credentials/i;
  * After Hub validates the password, mirror the account here if missing (no extra sign-up UI).
  */
 async function authenticateDataBox(
-  email: string,
+  authEmail: string,
   password: string,
   mode: "signin" | "signup",
 ): Promise<{ session: Session | null; error: string | null }> {
@@ -34,7 +35,7 @@ async function authenticateDataBox(
     return { session: null, error: "Data Box Supabase is not configured." };
   }
 
-  const trimmed = email.trim();
+  const trimmed = authEmail.trim();
   const signIn = () => supabase.auth.signInWithPassword({ email: trimmed, password });
   const signUp = () => supabase.auth.signUp({ email: trimmed, password });
 
@@ -69,9 +70,9 @@ async function authenticateDataBox(
   return { session: null, error: first.error?.message ?? "Data Box sign-in failed." };
 }
 
-/** Sign in / sign up on Tool Hub (identity), then Data Box for app + cookie APIs. */
+/** Sign in / sign up on Tool Hub (identity), then Data Box + 2FA vault with the same auth email. */
 export async function signInWorkspaceDual(
-  email: string,
+  loginInput: string,
   password: string,
   mode: "signin" | "signup",
 ): Promise<WorkspaceDualSignInResult> {
@@ -80,32 +81,57 @@ export async function signInWorkspaceDual(
     throw new Error("Tool Hub Supabase is not configured (VITE_HUB_SUPABASE_ANON_KEY).");
   }
 
+  const resolved = resolveHubLogin(loginInput);
+
   const identityAction =
     mode === "signup"
-      ? hub.auth.signUp({ email: email.trim(), password })
-      : hub.auth.signInWithPassword({ email: email.trim(), password });
+      ? hub.auth.signUp({
+          email: resolved.authEmail,
+          password,
+          options: {
+            data: {
+              full_name: resolved.loginId ?? resolved.authEmail.split("@")[0],
+              login_id: resolved.loginId ?? undefined,
+            },
+          },
+        })
+      : hub.auth.signInWithPassword({ email: resolved.authEmail, password });
 
   const { data: identityData, error: identityError } = await identityAction;
   if (identityError) throw identityError;
   const identitySession = identityData.session;
   if (!identitySession) {
-    throw new Error(mode === "signup" ? "Check your email to confirm sign-up on Tool Hub." : "No Hub session returned.");
+    throw new Error(
+      mode === "signup" ? "Check your email to confirm sign-up on Tool Hub." : "No Hub session returned.",
+    );
   }
+
+  if (mode === "signup" && resolved.loginId && identitySession.user?.id) {
+    await hub
+      .from("profiles")
+      .update({
+        login_id: resolved.loginId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", identitySession.user.id);
+  }
+
+  const mirrorEmail = identitySession.user?.email ?? resolved.authEmail;
 
   cacheHubIdentity({
     access_token: identitySession.access_token,
     refresh_token: identitySession.refresh_token,
     expires_at: identitySession.expires_at ?? null,
     user_id: identitySession.user?.id ?? null,
-    user_email: identitySession.user?.email ?? email.trim(),
+    user_email: mirrorEmail,
     supabase_url: HUB_SUPABASE_URL,
     supabase_anon_key: HUB_SUPABASE_ANON_KEY,
   });
 
   const [{ session: dataSession, error: dataError }, { session: twofaSession, error: twofaError }] =
     await Promise.all([
-      authenticateDataBox(email, password, mode),
-      authenticateTwofaVault(email, password, mode),
+      authenticateDataBox(mirrorEmail, password, mode),
+      authenticateTwofaVault(mirrorEmail, password, mode),
     ]);
 
   return { identitySession, dataSession, dataError, twofaSession, twofaError };

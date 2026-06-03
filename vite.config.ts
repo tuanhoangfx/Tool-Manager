@@ -34,6 +34,7 @@ export default defineConfig({
       "@p0020/bridge": path.resolve(rootDir, "packages/p0020-bridge/src"),
       "@dev/hub-load": path.resolve(rootDir, "vendor/hub-load/src"),
       "@tool-workspace/hub-ui": path.resolve(rootDir, "vendor/hub-ui/src"),
+      "@tool-workspace/hub-identity": path.resolve(rootDir, "vendor/hub-identity/src"),
     },
   },
 });

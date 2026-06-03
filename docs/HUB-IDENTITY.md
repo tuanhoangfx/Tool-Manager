@@ -4,8 +4,8 @@
 
 | Rule | Meaning |
 |------|---------|
-| **Sign in UI** | Same modal as before (email/password). |
-| **Sign in backend (P0020)** | **Tool Hub first** (`signInWorkspaceDual`), then Data Box JWT for notes/cookie RLS. Missing Data Box `auth.users` row is mirrored automatically after Hub validates the password. |
+| **Sign in UI** | **User ID or email** + password (shared with P0004 Hub). |
+| **Sign in backend (P0020)** | **Tool Hub first** (`signInWorkspaceDual` + `@tool-workspace/hub-identity`), then Data Box JWT for notes/cookie RLS using the **same Hub auth email** (including `id@id.hub.x1z10.local` for User ID accounts). |
 | **Sign in backend (P0004)** | **Tool Hub only** for Users, roles, tool access. Relay to P0020 does **not** unlock vault data until P0020 completes sign-in. |
 | **Sign in (P0004)** | `HubAuthGate` on x1z10 P01 for Hub-only sessions. |
 | **Quản lý qua P0004** | Workspace user directory, roles, tool access, and identity DB are **owned and edited only** on Tool Hub. |
