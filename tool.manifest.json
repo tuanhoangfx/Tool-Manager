@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-"version": "2.2.2",
+    "version": "2.2.2",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -49,9 +49,9 @@
       "cookie-bridge"
     ],
     "latestPublished": {
-      "tag": "v2.1.1",
-      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v2.1.1",
-      "publishedAt": "2026-06-03T15:09:24.792Z"
+      "tag": "v2.2.2",
+      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v2.2.2",
+      "publishedAt": "2026-06-03T19:13:18.400Z"
     }
   },
   "urls": {
@@ -102,7 +102,10 @@
       "applySql": "supabase-twofa/migrations/20260603100000_twofa_accounts.sql",
       "migrateDoc": "docs/TWOFA-SUPABASE.md",
       "apply": "pnpm twofa:db:apply",
-      "env": ["VITE_TWOFA_SUPABASE_URL", "VITE_TWOFA_SUPABASE_ANON_KEY"]
+      "env": [
+        "VITE_TWOFA_SUPABASE_URL",
+        "VITE_TWOFA_SUPABASE_ANON_KEY"
+      ]
     }
   },
   "relatedProjects": {
@@ -128,5 +131,5 @@
       "golden": "P0020/auth"
     }
   ],
-  "manifestUpdatedAt": "2026-06-03T15:09:24.793Z"
+  "manifestUpdatedAt": "2026-06-03T19:13:18.401Z"
 }

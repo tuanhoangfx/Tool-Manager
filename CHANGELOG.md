@@ -10,7 +10,8 @@
 - Type: Patch
 - Product: P0020
 - Prompt: Bỏ nhãn subtitle và hint Sign In trong modal đăng nhập (không cần thiết)
-- Status: Committed
+- Status: Verified
+- Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v2.2.2
 
 ### Changes
 
