@@ -4,14 +4,14 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
-## 2026-06-03 - Release: 2FA Hub directory + workspace chrome
+## 2026-06-03 - Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v2.1.1
 
 - Version: `2.1.1`
 - Type: Major
 - Product: P0020
 - Prompt: Release P0020 — ship 2FA Users-style table, Add/bulk flows, Cookie-parity icons, hub tab chrome
 - Commit: `e9acd17`
-- Status: Committed
+- Status: Verified
 
 ### Changes
 

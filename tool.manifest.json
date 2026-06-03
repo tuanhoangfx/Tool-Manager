@@ -48,9 +48,9 @@
       "cookie-bridge"
     ],
     "latestPublished": {
-      "tag": "v1.1.1",
-      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v1.1.1",
-      "publishedAt": "2026-06-03T09:14:34.010Z"
+      "tag": "v2.1.1",
+      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v2.1.1",
+      "publishedAt": "2026-06-03T15:09:24.792Z"
     }
   },
   "urls": {
@@ -106,8 +106,16 @@
     "note": "Notes Supabase CRUD; https://tool-manager-zeta.vercel.app"
   },
   "uiScreens": [
-    { "screen": "notes", "template": "workspace-composer", "golden": "P0020/notes" },
-    { "screen": "auth", "template": "auth-gate", "golden": "P0020/auth" }
+    {
+      "screen": "notes",
+      "template": "workspace-composer",
+      "golden": "P0020/notes"
+    },
+    {
+      "screen": "auth",
+      "template": "auth-gate",
+      "golden": "P0020/auth"
+    }
   ],
-  "manifestUpdatedAt": "2026-06-03T13:22:09.398Z"
+  "manifestUpdatedAt": "2026-06-03T15:09:24.793Z"
 }
