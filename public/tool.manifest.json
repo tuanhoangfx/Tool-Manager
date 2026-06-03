@@ -50,17 +50,17 @@
   },
   "urls": {
     "local": "http://127.0.0.1:5177",
-    "app": "https://databox.infix1.io.vn",
-    "preview": "https://databox.infix1.io.vn",
-    "cookie": "https://databox.infix1.io.vn/cookie",
+    "app": "https://databox.infi.io.vn",
+    "preview": "https://databox.infi.io.vn",
+    "cookie": "https://databox.infi.io.vn/cookie",
     "legacyApp": "https://tool-manager-zeta.vercel.app"
   },
   "vercel": {
     "project": "tool-manager",
     "projectId": "linked-via-cli",
-    "productionUrl": "https://databox.infix1.io.vn",
+    "productionUrl": "https://databox.infi.io.vn",
     "customDomains": [
-      "databox.infix1.io.vn"
+      "databox.infi.io.vn"
     ],
     "productionBranch": "main",
     "team": "tuanhoangfxs-projects",

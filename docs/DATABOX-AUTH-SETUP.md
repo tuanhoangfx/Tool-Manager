@@ -32,14 +32,14 @@ Dashboard: https://supabase.com/dashboard/project/bklxcjrkhrevdcqjscku/auth/url-
 2. **Site URL** (primary redirect):
 
    ```
-   https://databox.infix1.io.vn
+   https://databox.infi.io.vn
    ```
 
 3. **Redirect URLs** — add each line (one per row):
 
    ```
-   https://databox.infix1.io.vn/**
-   https://databox.infix1.io.vn
+   https://databox.infi.io.vn/**
+   https://databox.infi.io.vn
    http://127.0.0.1:5177/**
    http://127.0.0.1:5177
    http://localhost:5177/**
@@ -58,7 +58,7 @@ If you use **Forgot password** on P0020:
 
 ### 4. Verify
 
-1. Open https://databox.infix1.io.vn → Sign in
+1. Open https://databox.infi.io.vn → Sign in
 2. DevTools → **Network** → filter `token` or `signup`
 3. Requests should go to `https://bklxcjrkhrevdcqjscku.supabase.co/auth/v1/...` with **200** or **400** (bad password), not **Failed to fetch**
 
@@ -72,8 +72,8 @@ Same steps; use Tool Hub URLs:
 
 | Field | Value |
 |-------|--------|
-| Site URL | `https://infix1.io.vn` |
-| Redirect URLs | `https://infix1.io.vn/**`, `http://127.0.0.1:5176/**` |
+| Site URL | `https://infi.io.vn` |
+| Redirect URLs | `https://infi.io.vn/**`, `http://127.0.0.1:5176/**` |
 
 P0020 calls Hub auth **first**; if Hub URLs are wrong, you still see sign-in errors even when Data Box is configured.
 

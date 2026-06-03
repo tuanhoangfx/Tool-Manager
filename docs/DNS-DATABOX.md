@@ -1,7 +1,7 @@
-# DNS — databox.infix1.io.vn → Vercel (P0020-Data-Box)
+# DNS — databox.infi.io.vn → Vercel (P0020-Data-Box)
 
-Production app: **https://databox.infix1.io.vn**  
-Cookie Auto tab: **https://databox.infix1.io.vn/cookie**
+Production app: **https://databox.infi.io.vn**  
+Cookie Auto tab: **https://databox.infi.io.vn/cookie**
 
 Vercel project: `tool-manager` (same deployment as P0020-Data-Box).
 
@@ -9,7 +9,7 @@ Vercel project: `tool-manager` (same deployment as P0020-Data-Box).
 
 ```powershell
 cd E:\Dev\Tool\P0020-Data-Box
-vercel domains add databox.infix1.io.vn --scope tuanhoangfxs-projects
+vercel domains add databox.infi.io.vn --scope tuanhoangfxs-projects
 ```
 
 Dashboard: https://vercel.com/tuanhoangfxs-projects/tool-manager/settings/domains
@@ -25,10 +25,10 @@ Dashboard: https://vercel.com/tuanhoangfxs-projects/tool-manager/settings/domain
 ## Kiểm tra
 
 ```powershell
-Resolve-DnsName databox.infix1.io.vn -Type CNAME
-Resolve-DnsName databox.infix1.io.vn -Type A
+Resolve-DnsName databox.infi.io.vn -Type CNAME
+Resolve-DnsName databox.infi.io.vn -Type A
 
-(Invoke-WebRequest -Uri "https://databox.infix1.io.vn/cookie" -UseBasicParsing).StatusCode
+(Invoke-WebRequest -Uri "https://databox.infi.io.vn/cookie" -UseBasicParsing).StatusCode
 # 200
 ```
 

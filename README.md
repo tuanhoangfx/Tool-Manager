@@ -17,7 +17,7 @@ corepack pnpm install
 corepack pnpm dev
 ```
 
-→ http://127.0.0.1:5177/ · Production: https://databox.infix1.io.vn · Cookie: https://databox.infix1.io.vn/cookie
+→ http://127.0.0.1:5177/ · Production: https://databox.infi.io.vn · Cookie: https://databox.infi.io.vn/cookie
 
 Chi tiết: [docs/DEV.md](docs/DEV.md) · [docs/SUPABASE-NOTES.md](docs/SUPABASE-NOTES.md) · [docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md)
 

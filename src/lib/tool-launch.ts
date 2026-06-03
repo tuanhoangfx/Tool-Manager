@@ -6,7 +6,7 @@ export const LAUNCHER_SETUP_HINT =
   "Chạy launch.bat hoặc dev.bat trong thư mục GitHub-Tool-Manager (E:\\Dev\\Tool\\GitHub-Tool-Manager), giữ cửa sổ mở, rồi thử lại.";
 
 export const LAUNCHER_HTTPS_HINT =
-  "Từ infix1.io.vn, trình duyệt không gọi được localhost. Bấm Chạy tool → tab mở http://127.0.0.1:5190 — nếu trang trắng/lỗi, chạy launch.bat trước.";
+  "Từ infi.io.vn, trình duyệt không gọi được localhost. Bấm Chạy tool → tab mở http://127.0.0.1:5190 — nếu trang trắng/lỗi, chạy launch.bat trước.";
 
 export type LauncherRunning = { id: string; pid: number; devUrl?: string | null };
 
@@ -72,7 +72,7 @@ export function toolDevUrlFromHealth(toolId: string, running: LauncherRunning[] 
   return running?.find((item) => item.id === toolId)?.devUrl ?? null;
 }
 
-/** Launch tool via local launcher (works from https://infix1.io.vn by opening a tab). */
+/** Launch tool via local launcher (works from https://infi.io.vn by opening a tab). */
 export async function launchTool(toolId: string) {
   if (isHttpsPage()) {
     window.open(launcherLaunchPageUrl(toolId), "_blank", "noopener,noreferrer");

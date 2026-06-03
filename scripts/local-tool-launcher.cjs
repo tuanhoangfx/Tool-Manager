@@ -173,5 +173,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`\n  GTM Local Tool Launcher\n  → http://${HOST}:${PORT}\n  → Mở từ https://infix1.io.vn: dùng nút Chạy tool (mở tab này)\n`);
+  console.log(`\n  GTM Local Tool Launcher\n  → http://${HOST}:${PORT}\n  → Mở từ https://infi.io.vn: dùng nút Chạy tool (mở tab này)\n`);
 });

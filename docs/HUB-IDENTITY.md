@@ -26,7 +26,7 @@ Same person may have accounts on both projects; keep emails aligned after [IDENT
 
 | Environment | Tool Hub Users URL |
 |-------------|-------------------|
-| Production | https://infix1.io.vn/users |
+| Production | https://infi.io.vn/users |
 | Dev | http://127.0.0.1:5176/users |
 
 Override hub origin: `VITE_TOOL_HUB_URL` in `.env.local`.

@@ -1,4 +1,4 @@
-﻿# Changelog - P0020-Data-Box
+# Changelog - P0020-Data-Box
 
 > **Ship keywords:** `Git P0020` | `Push P0020` | `Release P0020`  
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
@@ -72,7 +72,7 @@ git revert <sha>
 ### Changes
 
 - Rebrand to P0020-Data-Box; Azure Data Box icon (favicon, sidebar, PWA).
-- Production domain `databox.infix1.io.vn`; Cookie Auto at `/cookie`; extension ZIP download in header.
+- Production domain `databox.infi.io.vn`; Cookie Auto at `/cookie`; extension ZIP download in header.
 - Cookie cloud-first: routes write to `cookie_bridge_routes`; removed manual Pull/Push cloud UI.
 - Extension relay global; popup loads routes via Supabase RPC with user JWT.
 - Route owner in detail/access; realtime vault sync; Notes workspace shows cookie snapshot above editor.

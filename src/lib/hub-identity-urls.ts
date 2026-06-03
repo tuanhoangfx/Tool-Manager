@@ -1,7 +1,7 @@
 /** Tool Hub (P0004) — workspace identity & user directory. */
 
 export const HUB_DEV_ORIGIN = "http://127.0.0.1:5176";
-export const HUB_PRODUCTION_ORIGIN = "https://infix1.io.vn";
+export const HUB_PRODUCTION_ORIGIN = "https://infi.io.vn";
 
 export function resolveToolHubOrigin(): string {
   const fromEnv = import.meta.env.VITE_TOOL_HUB_URL as string | undefined;
@@ -9,7 +9,7 @@ export function resolveToolHubOrigin(): string {
 
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
-    if (host === "databox.infix1.io.vn" || host.endsWith(".databox.infix1.io.vn")) {
+    if (host === "databox.infi.io.vn" || host.endsWith(".databox.infi.io.vn")) {
       return HUB_PRODUCTION_ORIGIN;
     }
   }
@@ -33,7 +33,7 @@ export function isToolHubOrigin(origin: string): boolean {
   if (origin === HUB_DEV_ORIGIN || origin === HUB_PRODUCTION_ORIGIN) return true;
   try {
     const host = new URL(origin).hostname;
-    return host === "infix1.io.vn" || host.endsWith(".infix1.io.vn") || host.endsWith(".vercel.app");
+    return host === "infi.io.vn" || host.endsWith(".infi.io.vn") || host.endsWith(".vercel.app");
   } catch {
     return false;
   }

@@ -29,6 +29,37 @@
                  },
     "deployTarget":  "vercel",
     "docs":  {
+             {
+    "schemaVersion":  1,
+    "code":  "P0020",
+    "id":  "p0020-data-box",
+    "aliases":  [
+                    "P0020",
+                    "P0020-Data-Box",
+                    "Data Box",
+                    "Azure Data Box"
+                ],
+    "name":  "P0020-Data-Box",
+    "type":  "Web",
+    "owner":  "Tool",
+    "status":  "Beta",
+    "icon":  "icons/azure-data-box.svg",
+    "summary":  "Unified data workspace for notes, 2FA, secure cookie vault, and browser agents. Skin P0008.",
+    "stack":  [
+                  "React",
+                  "TypeScript",
+                  "Vite",
+                  "Supabase",
+                  "Inter",
+                  "Chrome extension E0001-cookie-bridge"
+              ],
+    "commands":  {
+                     "dev":  "corepack pnpm dev",
+                     "build":  "corepack pnpm build",
+                     "preview":  "corepack pnpm preview"
+                 },
+    "deployTarget":  "vercel",
+    "docs":  {
                  "readme":  "README.md",
                  "changelog":  "CHANGELOG.md"
              },
@@ -50,17 +81,17 @@
                 },
     "urls":  {
                  "local":  "http://127.0.0.1:5177",
-                 "app":  "https://databox.infix1.io.vn",
-                 "preview":  "https://databox.infix1.io.vn",
-                 "cookie":  "https://databox.infix1.io.vn/cookie",
+                 "app":  "https://databox.infi.io.vn",
+                 "preview":  "https://databox.infi.io.vn",
+                 "cookie":  "https://databox.infi.io.vn/cookie",
                  "legacyApp":  "https://tool-manager-zeta.vercel.app"
              },
     "vercel":  {
                    "project":  "tool-manager",
                    "projectId":  "linked-via-cli",
-                   "productionUrl":  "https://databox.infix1.io.vn",
+                   "productionUrl":  "https://databox.infi.io.vn",
                    "customDomains":  [
-                                         "databox.infix1.io.vn"
+                                         "databox.infi.io.vn"
                                      ],
                    "productionBranch":  "main",
                    "team":  "tuanhoangfxs-projects",

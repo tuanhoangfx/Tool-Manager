@@ -98,15 +98,15 @@
       "Vite",
       "Vercel"
     ],
-    "appUrl": "https://infix1.io.vn",
+    "appUrl": "https://infi.io.vn",
     "localUrl": "http://127.0.0.1:5176",
     "deployTarget": "vercel",
     "usage": [
       "Dev: corepack pnpm dev",
       "Build: corepack pnpm build",
-      "App: https://infix1.io.vn (Vercel — git push main)"
+      "App: https://infi.io.vn (Vercel — git push main)"
     ],
-    "downloadHint": "Use https://infix1.io.vn or clone the repository.",
+    "downloadHint": "Use https://infi.io.vn or clone the repository.",
     "manifestPath": "tool.manifest.json",
     "trackedFiles": [
       "tool.manifest.json",
@@ -139,14 +139,14 @@
       "9Router",
       "Admin UI"
     ],
-    "appUrl": "https://zaloai.infix1.io.vn/p0005",
+    "appUrl": "https://zaloai.infi.io.vn/p0005",
     "localUrl": "http://127.0.0.1:3920",
     "deployTarget": "vps",
     "usage": [
       "Local: pnpm run admin (admin dashboard at http://127.0.0.1:3920)",
       "Login: pnpm run login (Zalo QR)",
       "Bot: pnpm run bot",
-      "Production: https://zaloai.infix1.io.vn/p0005"
+      "Production: https://zaloai.infi.io.vn/p0005"
     ],
     "downloadHint": "Clone the repo — runtime data stays local, not in the repo.",
     "manifestPath": "tool.manifest.json",
@@ -183,12 +183,12 @@
       "docker",
       "Node.js"
     ],
-    "appUrl": "https://9router.infix1.io.vn/dashboard",
+    "appUrl": "https://9router.infi.io.vn/dashboard",
     "deployTarget": "vps",
     "usage": [
       "Deploy: deploy.bat",
       "SSL: deploy-ssl.bat",
-      "Dashboard: https://9router.infix1.io.vn/dashboard"
+      "Dashboard: https://9router.infi.io.vn/dashboard"
     ],
     "downloadHint": "Clone the repo — secrets and config stay local.",
     "manifestPath": "tool.manifest.json",

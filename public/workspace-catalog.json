@@ -139,13 +139,13 @@
         "Vite",
         "GitHub public raw API"
       ],
-      "appUrl": "https://infix1.io.vn",
+      "appUrl": "https://infi.io.vn",
       "localUrl": "http://127.0.0.1:5176",
       "deployTarget": "vercel",
       "usage": [
         "Dev: corepack pnpm dev",
         "Build: corepack pnpm build",
-        "App: https://infix1.io.vn"
+        "App: https://infi.io.vn"
       ],
       "downloadHint": "Use GitHub release asset when available, otherwise clone the repository.",
       "manifestPath": "tool.manifest.json",
@@ -186,13 +186,13 @@
         "9Router",
         "Admin UI"
       ],
-      "appUrl": "https://zaloai.infix1.io.vn/p0005",
+      "appUrl": "https://zaloai.infi.io.vn/p0005",
       "localUrl": "http://127.0.0.1:3920",
       "deployTarget": "vps",
       "usage": [
         "Dev: pnpm run admin",
         "Run the configured build command from package.json.",
-        "App: https://zaloai.infix1.io.vn/p0005"
+        "App: https://zaloai.infi.io.vn/p0005"
       ],
       "downloadHint": "Use GitHub release asset when available, otherwise clone the repository.",
       "manifestPath": "tool.manifest.json",
@@ -235,12 +235,12 @@
         "Node.js",
         "ssh2"
       ],
-      "appUrl": "https://9router.infix1.io.vn/dashboard",
+      "appUrl": "https://9router.infi.io.vn/dashboard",
       "deployTarget": "vps",
       "usage": [
         "Run the configured dev command from package.json.",
         "Run the configured build command from package.json.",
-        "App: https://9router.infix1.io.vn/dashboard"
+        "App: https://9router.infi.io.vn/dashboard"
       ],
       "downloadHint": "Use GitHub release asset when available, otherwise clone the repository.",
       "manifestPath": "tool.manifest.json",
