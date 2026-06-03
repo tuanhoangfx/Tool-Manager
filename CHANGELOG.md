@@ -6,19 +6,39 @@
 
 ## 2026-06-04 - 2FA tab sign-in gate + User ID hints
 
-- Version: `2.1.10`
-- Type: Patch
+- Version: `2.2.0`
+- Type: Minor
 - Product: P0020
 - Prompt: Login CS00786 at databox/twofa still email validation; no User ID hints
-- Status: Draft
+- Status: Committed
 
 ### Changes
 
 - `TwofaManagerScreen`: require workspace sign-in in shell mode (same pattern as Cookie/Notes), with offline mode on gate.
 - `NotesAuthGate`: cookie/2FA/system subtitles and inline copy mention User ID or linked email.
 - Sign-in field remains `type="text"` (User ID or email); deploy fixes production HTML5 `@` error.
+- `pnpm-lock.yaml` synced for `@tool-workspace/hub-identity` (Vercel frozen-lockfile).
 
-Version: `2.1.9` → `2.1.10`
+Version: `2.1.9` → `2.2.0`
+
+---
+
+## 2026-06-04 - Remove Guide modal; extension download uses Hub User modal shell
+
+- Version: `2.1.9`
+- Type: Minor
+- Product: P0020
+- Prompt: Delete Guide modal (requested earlier); clone P0004 User route-detail modal style 100%
+- Status: Draft
+
+### Changes
+
+- Delete `CookieExtensionGuideButton.tsx` and header Guide entry.
+- `CookieExtensionDownloadConfirm`: `modal-backdrop--tool-detail` + `modal-shell--tool-detail` + `user-access-modal__header` (same as P0004 `UserAccessModal`).
+- Remove custom `cookie-extension-modal.css`; install steps use Hub `DetailSection` pattern.
+- Sync `user-access-modal__header-*` rules in `modal.css`.
+
+Version: `2.1.9` → `2.2.0`
 
 ---
 
