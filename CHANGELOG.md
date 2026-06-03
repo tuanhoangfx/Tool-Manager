@@ -4,14 +4,14 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
-## 2026-06-03 - Release: Notes sync, 2FA cloud vault, Cookie FAB chrome
+## 2026-06-03 - Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v3.1.1
 
 - Version: `3.1.1`
 - Type: Major
 - Product: P0020
 - Prompt: Release Vercel — Notes đồng bộ cùng tài khoản Supabase + batch 2.1.x
 - Commit: `f9ab6d1`
-- Status: Committed
+- Status: Verified
 
 ### Changes
 
