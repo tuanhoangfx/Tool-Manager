@@ -4,91 +4,112 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
-## 2026-06-03 - Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v3.1.1
+## 2026-06-04 - 2FA tab sign-in gate + User ID hints
 
-- Version: `3.1.1`
-- Type: Major
-- Product: P0020
-- Prompt: Release Vercel — Notes đồng bộ cùng tài khoản Supabase + batch 2.1.x
-- Commit: `f9ab6d1`
-- Status: Verified
-
-### Changes
-
-- Notes: list cache scoped by `user_id`; focus/visibility pull from Supabase; Realtime UI toggle wired to Cookie settings; realtime INSERT/UPDATE/DELETE on `notes`.
-- 2FA: dedicated Supabase vault project, cloud delta sync, `twofa_accounts` migrations.
-- Cookie: extension FAB dock/inset, Hub auth-gate modals on route dialogs, default 25-row limit, row-limit control in chrome.
-- Workspace: dual sign-in mirrors Hub → Data Box → 2FA vault.
-
-### Verification
-
-- `corepack pnpm run build` — pending (Release pipeline)
-- Production smoke — pending
-
-Version: `2.1.8` → `3.1.1`
-
----
-
-## 2026-06-03 - Cookie FAB inset fix (+0.5rem)
-
-- Version: `2.1.8`
+- Version: `2.1.10`
 - Type: Patch
 - Product: P0020
-- Prompt: FAB vẫn sát lề — căn trái/lên thêm 0.5rem
+- Prompt: Login CS00786 at databox/twofa still email validation; no User ID hints
 - Status: Draft
 
 ### Changes
 
-- `cookie-extension-fab.css`: `.workspace-fab-stack` was overriding `--cookie` (0.65rem won); use `.workspace-fab-stack.workspace-fab-stack--cookie` at `right`/`bottom` **10.5rem**.
+- `TwofaManagerScreen`: require workspace sign-in in shell mode (same pattern as Cookie/Notes), with offline mode on gate.
+- `NotesAuthGate`: cookie/2FA/system subtitles and inline copy mention User ID or linked email.
+- Sign-in field remains `type="text"` (User ID or email); deploy fixes production HTML5 `@` error.
+
+Version: `2.1.9` → `2.1.10`
+
+---
+
+## 2026-06-04 - Cookie extension download modal (E0001 branding)
+
+- Version: `2.1.9`
+- Type: Patch
+- Product: P0020
+- Prompt: Cookie Auto Extension modal prettier, extension colors, icon install steps
+- Status: Draft
+
+### Changes
+
+- Redesign `CookieExtensionDownloadConfirm`: E0001 icon, indigo accent (`#6366f1`), cookie/cyan accents.
+- `CookieExtensionInstallSteps`: 6 steps with Lucide icons, numbers, symbols (`chrome://extensions`, `ON`).
+- `cookie-extension-modal.css`; `public/icons/e0001-cookie-bridge.svg`.
+- FAB gradient aligned to extension accent.
+
+Version: `2.1.8` → `2.1.9`
+
+---
+
+## 2026-06-04 - Cookie FAB inset 3rem
+
+- Version: `2.1.8`
+- Type: Patch
+- Product: P0020
+- Prompt: FAB too far — set bottom 3, right 3
+- Status: Draft
+
+### Changes
+
+- `--cookie-fab-inset-bottom/right`: `3rem` (was 6rem / 4rem).
 
 Version: `2.1.7` → `2.1.8`
 
 ---
 
-## 2026-06-03 - Cookie FAB 10rem inset + Hub auth-gate modals
+## 2026-06-04 - Cookie FAB: dedupe CSS layer + larger inset
 
 - Version: `2.1.7`
 - Type: Patch
 - Product: P0020
-- Prompt: FAB lệch trái/lên 10rem; Add/Share/Edit/Delete modals theo theme User tab (P0004)
+- Prompt: FAB still too close to corner; check duplicate layers; increase inset more
 - Status: Draft
 
 ### Changes
 
-- `cookie-extension-fab.css`: FAB `right` / `bottom` → `10rem`.
-- `CookieAutoSyncTable.tsx`: `CookieRouteModal` → `auth-gate-root` / `auth-gate-modal` (Add, Share, Edit, Delete).
+- Remove dual class `workspace-fab-stack` + `--cookie` (generic stack was redundant).
+- Single `--cookie` layer: `bottom` 6rem, `right` 4rem (CSS vars `--cookie-fab-inset-*`).
+- Guide FAB styles separated (`.workspace-fab--guide` only, not fixed dock).
+
+### Verification
+
+- `corepack pnpm run build` — pass
 
 Version: `2.1.6` → `2.1.7`
 
 ---
 
-## 2026-06-03 - Cookie FAB inset (away from edges)
+## 2026-06-04 - Cookie FAB inset from viewport corner
 
 - Version: `2.1.6`
 - Type: Patch
 - Product: P0020
-- Prompt: Move download FAB further into content (less flush to right/bottom edges)
+- Prompt: FAB too tight on corner — nudge outward (more margin from edges)
 - Status: Draft
 
 ### Changes
 
-- `cookie-extension-fab.css`: FAB inset `right` 2.5rem, `bottom` 2.25rem.
+- `cookie-extension-fab.css`: `bottom` 3.5rem, `right` 2.25rem for Cookie download FAB.
+
+### Verification
+
+- `corepack pnpm run build` — pass
 
 Version: `2.1.5` → `2.1.6`
 
 ---
 
-## 2026-06-03 - Cookie FAB size and content-zone position
+## 2026-06-03 - Cookie FAB size and inset position
 
 - Version: `2.1.5`
 - Type: Patch
 - Product: P0020
-- Prompt: FAB slightly larger; dock in bottom-right content area (not screen edge)
+- Prompt: FAB slightly larger; move up-left into lower-right content band (red zone)
 - Status: Draft
 
 ### Changes
 
-- Cookie download FAB: 36px, icon 16px; `right/bottom` inset 1.5rem / 1.25rem (hub-main padding zone).
+- `cookie-extension-fab.css`: Cookie FAB 2.25rem, `bottom`/`right` inset ~2.75rem / 1.5rem from viewport corner.
 
 ### Verification
 

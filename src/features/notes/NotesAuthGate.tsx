@@ -131,13 +131,9 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
           Sign in to P0020 Data Box
         </h2>
         <p className="auth-gate-subtitle">
-          {variant === "cookie-auto"
-            ? "Sign in with your Data Box account"
-            : variant === "twofa"
-                ? "Sign in to manage 2FA codes in this workspace."
-                : variant === "system"
-                  ? "Sign in to access system tools."
-                  : "User ID or email + password (Tool Hub x1z10 P01). Roles managed on Tool Hub only."}
+          {variant === "cookie-auto" || variant === "twofa" || variant === "system"
+            ? "User ID or email + password (Tool Hub x1z10 P01). Same account as Tool Hub."
+            : "User ID or email + password (Tool Hub x1z10 P01). Roles managed on Tool Hub only."}
         </p>
 
         <div className="auth-gate-tabs" role="tablist">
@@ -224,11 +220,11 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
     },
     "cookie-auto": {
       title: "Sign in to enable cloud-first cookie sync.",
-      sub: "Sign in with your Data Box account",
+      sub: "User ID or linked email + password (Tool Hub account).",
     },
     twofa: {
       title: "Sign in to manage 2FA codes.",
-      sub: "Store and generate time-based codes securely in your workspace.",
+      sub: "User ID or linked email + password. Offline mode keeps local TOTP only.",
     },
     system: {
       title: "Sign in to access system tools.",

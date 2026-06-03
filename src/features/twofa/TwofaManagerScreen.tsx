@@ -19,6 +19,8 @@ import { TwofaAddForm } from "./TwofaAddForm";
 import { TwofaAddModal } from "./TwofaAddModal";
 import { TwofaConfirmDialog } from "./TwofaConfirmDialog";
 import { readTwofaTableColumns } from "./twofa-table-prefs";
+import { useNotesAuth } from "../notes/useNotesAuth";
+import { NotesAuthGate } from "../notes/NotesAuthGate";
 
 type AddModalState =
   | { mode: "add"; draft?: Partial<TwofaDraft> }
@@ -26,6 +28,33 @@ type AddModalState =
   | null;
 
 export function TwofaManagerScreen({
+  shellMode,
+  query: queryProp = "",
+}: {
+  shellMode?: boolean;
+  query?: string;
+} = {}) {
+  const { session, loading: authLoading } = useNotesAuth();
+
+  if (shellMode) {
+    if (!session && authLoading) {
+      return (
+        <div className="flex flex-1 items-center justify-center p-6 text-[12px] text-[var(--muted)]">
+          Signing in…
+        </div>
+      );
+    }
+    if (!session) {
+      return <NotesAuthGate variant="twofa" />;
+    }
+  }
+
+  return (
+    <TwofaManagerScreenBody shellMode={shellMode} query={queryProp} />
+  );
+}
+
+function TwofaManagerScreenBody({
   shellMode,
   query: queryProp = "",
 }: {
