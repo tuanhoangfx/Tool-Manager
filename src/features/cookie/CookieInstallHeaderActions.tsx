@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
-import { CookieExtensionGuideButton } from "./CookieExtensionGuideButton";
 import { CookieExtensionHeaderLink } from "./CookieExtensionHeaderLink";
 
-/** Header actions for Cookie Auto: download CTA, guide, optional settings gear. */
+/** Header actions for Cookie Auto: release link + optional trailing controls. */
 export function CookieInstallHeaderActions({ trailing }: { trailing?: ReactNode }) {
   return (
     <>
       <CookieExtensionHeaderLink />
-      <CookieExtensionGuideButton />
       {trailing}
     </>
   );

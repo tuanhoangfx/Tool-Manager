@@ -23,10 +23,9 @@ type Props = {
 type ModalProps = {
   onAuthed?: () => void;
   onClose: () => void;
-  variant: NonNullable<Props["variant"]>;
 };
 
-function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
+function AuthGateModal({ onAuthed, onClose }: ModalProps) {
   const { adoptSession } = useNotesAuth();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -130,11 +129,6 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
         <h2 id="auth-gate-title" className="auth-gate-title">
           Sign in to P0020 Data Box
         </h2>
-        <p className="auth-gate-subtitle">
-          {variant === "cookie-auto" || variant === "twofa" || variant === "system"
-            ? "User ID or email + password (Tool Hub x1z10 P01). Same account as Tool Hub."
-            : "User ID or email + password (Tool Hub x1z10 P01). Roles managed on Tool Hub only."}
-        </p>
 
         <div className="auth-gate-tabs" role="tablist">
           <button
@@ -173,11 +167,11 @@ function AuthGateModal({ onAuthed, onClose, variant }: ModalProps) {
             onChange={(e) => setLogin(e.target.value)}
             required
           />
-          <p className="auth-gate-hint">
-            {mode === "signup"
-              ? "User ID: 3–32 chars (a–z, 0–9, . _ -). Link a real email later on Tool Hub."
-              : "Same account as Tool Hub — User ID or linked email."}
-          </p>
+          {mode === "signup" ? (
+            <p className="auth-gate-hint">
+              User ID: 3–32 chars (a–z, 0–9, . _ -). Link a real email later on Tool Hub.
+            </p>
+          ) : null}
           <div className="auth-gate-password-wrap">
             <input
               className="field auth-gate-field w-full"
@@ -264,7 +258,6 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
             onAuthed?.();
           }}
           onClose={() => setShowModal(false)}
-          variant={variant}
         />
       ) : null}
     </>

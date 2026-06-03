@@ -26,3 +26,28 @@ export const EXTENSION_HEADER_LABEL = "Cookie Auto Extension";
 
 export const EXTENSION_INSTALL_HINT =
   "Download latest ZIP → extract → chrome://extensions → Developer mode → Load unpacked → Link extension on Cookie Auto";
+
+export type ExtensionInstallStepId =
+  | "download"
+  | "extract"
+  | "chrome"
+  | "devmode"
+  | "unpacked"
+  | "link";
+
+export type ExtensionInstallStep = {
+  id: ExtensionInstallStepId;
+  title: string;
+  hint: string;
+  /** Short symbol shown beside the step (address, toggle, etc.). */
+  symbol?: string;
+};
+
+export const EXTENSION_INSTALL_STEPS: ExtensionInstallStep[] = [
+  { id: "download", title: "Download ZIP", hint: "Latest release from GitHub" },
+  { id: "extract", title: "Extract folder", hint: "Unzip to a permanent path (e.g. C:\\Tools\\E0001-cookie-bridge)" },
+  { id: "chrome", title: "Open extensions", hint: "Paste in Chrome address bar", symbol: "chrome://extensions" },
+  { id: "devmode", title: "Developer mode", hint: "Toggle ON at the top-right", symbol: "ON" },
+  { id: "unpacked", title: "Load unpacked", hint: "Select the extracted extension folder" },
+  { id: "link", title: "Link on Cookie Auto", hint: "Data Box → Cookie Auto → sign in & connect extension" },
+];

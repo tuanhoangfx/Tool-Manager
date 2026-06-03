@@ -1,45 +1,28 @@
-/* Viewport-fixed FAB (portaled to body) — inset like hub-main padding (bottom-right content zone) */
+/* Cookie extension download FAB — single layer (portaled to document.body) */
 
-.workspace-fab-stack {
+.workspace-fab-stack--cookie {
+  --cookie-fab-inset-bottom: 3rem;
+  --cookie-fab-inset-right: 3rem;
+  --cookie-fab-size: 2.25rem;
+
   position: fixed;
-  right: max(0.65rem, env(safe-area-inset-right, 0px));
-  bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+  right: max(var(--cookie-fab-inset-right), calc(env(safe-area-inset-right, 0px) + 2rem));
+  bottom: max(var(--cookie-fab-inset-bottom), calc(env(safe-area-inset-bottom, 0px) + 2.5rem));
   z-index: 44;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
+  align-items: flex-end;
   pointer-events: none;
 }
 
-.workspace-fab-stack > * {
+.workspace-fab-stack--cookie > * {
   pointer-events: auto;
-}
-
-/* Higher specificity than .workspace-fab-stack alone (both classes on Cookie FAB) */
-.workspace-fab-stack.workspace-fab-stack--cookie {
-  right: max(10.5rem, calc(10.5rem + env(safe-area-inset-right, 0px)));
-  bottom: max(10.5rem, calc(10.5rem + env(safe-area-inset-bottom, 0px)));
-  align-items: flex-end;
-}
-
-.workspace-fab-stack.workspace-fab-stack--cookie > * {
-  pointer-events: auto;
-}
-
-.workspace-fab-stack--single {
-  gap: 0;
 }
 
 .workspace-fab-stack--cookie .workspace-fab {
-  height: 2.25rem;
-  width: 2.25rem;
-}
-
-.workspace-fab {
   display: inline-flex;
-  height: 2.25rem;
-  width: 2.25rem;
+  height: var(--cookie-fab-size);
+  width: var(--cookie-fab-size);
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
@@ -53,36 +36,30 @@
     filter 0.18s ease;
 }
 
-.workspace-fab:hover {
+.workspace-fab-stack--cookie .workspace-fab:hover {
   transform: translateY(-2px) scale(1.04);
   filter: brightness(1.1);
 }
 
-.workspace-fab:active {
+.workspace-fab-stack--cookie .workspace-fab:active {
   transform: translateY(0) scale(0.96);
 }
 
-.workspace-fab:disabled {
-  cursor: wait;
-  opacity: 0.7;
-  transform: none;
-}
-
-.workspace-fab--download {
-  background: linear-gradient(155deg, rgb(109 40 217), rgb(79 70 229));
-  color: rgb(245 243 255);
+.workspace-fab-stack--cookie .workspace-fab--download {
+  background: linear-gradient(155deg, #6366f1, #4f46e5);
+  color: #eef2ff;
   box-shadow:
-    0 3px 14px rgb(109 40 217 / 0.45),
+    0 3px 14px rgb(99 102 241 / 0.45),
     0 0 0 1px rgb(255 255 255 / 0.1) inset;
 }
 
-.workspace-fab--download:hover {
+.workspace-fab-stack--cookie .workspace-fab--download:hover {
   box-shadow:
-    0 6px 20px rgb(109 40 217 / 0.55),
+    0 6px 20px rgb(99 102 241 / 0.55),
     0 0 0 1px rgb(255 255 255 / 0.14) inset;
 }
 
-.workspace-fab--pulse {
+.workspace-fab-stack--cookie .workspace-fab--pulse {
   animation: workspace-fab-glow 2.8s ease-in-out infinite;
 }
 
@@ -90,30 +67,24 @@
   0%,
   100% {
     box-shadow:
-      0 3px 14px rgb(109 40 217 / 0.4),
-      0 0 0 0 rgb(167 139 250 / 0);
+      0 3px 14px rgb(99 102 241 / 0.4),
+      0 0 0 0 rgb(129 140 248 / 0);
   }
   50% {
     box-shadow:
-      0 4px 18px rgb(109 40 217 / 0.55),
-      0 0 0 4px rgb(167 139 250 / 0.12);
+      0 4px 18px rgb(99 102 241 / 0.55),
+      0 0 0 4px rgb(129 140 248 / 0.12);
   }
-}
-
-.workspace-fab--guide {
-  background: rgb(255 255 255 / 0.97);
-  color: rgb(79 70 229);
-  border-color: rgb(99 102 241 / 0.22);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .workspace-fab {
+  .workspace-fab-stack--cookie .workspace-fab {
     transition: none;
   }
-  .workspace-fab:hover {
+  .workspace-fab-stack--cookie .workspace-fab:hover {
     transform: none;
   }
-  .workspace-fab--pulse {
+  .workspace-fab-stack--cookie .workspace-fab--pulse {
     animation: none;
   }
 }

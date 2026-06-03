@@ -4,6 +4,22 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-04 - Trim auth modal copy
+
+- Version: `2.2.2`
+- Type: Patch
+- Product: P0020
+- Prompt: Bỏ nhãn subtitle và hint Sign In trong modal đăng nhập (không cần thiết)
+- Status: Committed
+
+### Changes
+
+- `NotesAuthGate` modal: remove subtitle under title; remove Sign In hint under User ID field (Sign Up hint kept).
+
+Version: `2.2.1` → `2.2.2`
+
+---
+
 ## 2026-06-04 - 2FA tab sign-in gate + User ID hints
 
 - Version: `2.2.0`
@@ -20,6 +36,25 @@
 - `pnpm-lock.yaml` synced for `@tool-workspace/hub-identity` (Vercel frozen-lockfile).
 
 Version: `2.1.9` → `2.2.0`
+
+---
+
+## 2026-06-04 - Extension download modal: P0004 User TOC + table parity
+
+- Version: `2.2.1`
+- Type: Patch
+- Product: P0020
+- Prompt: Match User modal 100% — TOC hover, icons in data/column headers, fewer redundant labels
+- Status: Draft
+
+### Changes
+
+- TOC sidebar (`TocSectionNav` + pointer highlight) like `UserAccessModal`.
+- Release: kv table with row icons + hover; install: Hub table with icon column headers + row hover.
+- Remove compact modal width; section titles emoji-only via TOC helper (no duplicate sub-labels).
+- Drop header version badge; add `overview-toc.css` + overview TOC utilities.
+
+Version: `2.2.0` → `2.2.1`
 
 ---
 

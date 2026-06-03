@@ -1,22 +1,77 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Cookie, Download, ExternalLink, X } from "lucide-react";
+import {
+  Archive,
+  Download,
+  ExternalLink,
+  FolderOpen,
+  Package,
+  Tag,
+  X,
+} from "lucide-react";
+import { compactIconSize } from "../../lib/ui-scale";
+import { TocSectionNav } from "../overview/TocSectionNav";
+import { TocHighlightContent, TocSectionHighlightProvider } from "../overview/toc-section-highlight-context";
 import { EXTENSION_BUILD } from "./extensionBuildInfo";
-import { EXTENSION_HEADER_LABEL, EXTENSION_INSTALL_HINT, EXTENSION_INSTALL_LABEL } from "./extensionInstall";
+import { E0001_ICON_URL } from "./extensionBrand";
+import { EXTENSION_HEADER_LABEL, EXTENSION_INSTALL_LABEL } from "./extensionInstall";
+import { CookieExtensionInstallSteps } from "./CookieExtensionInstallSteps";
+import { EXTENSION_DOWNLOAD_TOC, extensionDownloadSectionTitle } from "./extension-download-toc";
 import { fetchLatestExtensionRelease, type ExtensionReleaseInfo } from "./extensionReleaseApi";
 import { triggerExtensionZipDownload } from "./extensionDownload";
 import { useExtensionRelease } from "./useExtensionRelease";
+
+const ID_PREFIX = "ext-dl-";
+const SCROLL_ROOT = ".modal-shell__scroll--user-access";
 
 type Props = {
   open: boolean;
   onClose: () => void;
 };
 
+function DetailSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section id={id} className="scroll-mt-4 space-y-3 rounded-xl border border-white/5 bg-white/[.02] p-3">
+      <h3 className="border-b border-white/5 pb-2 text-[15px] font-semibold leading-snug text-[var(--text)]">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function FieldRow({
+  icon: Icon,
+  iconClass,
+  label,
+  children,
+}: {
+  icon: typeof Tag;
+  iconClass: string;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <tr className="border-t border-white/5 first:border-0 transition-colors hover:bg-white/[.02]">
+      <th className="w-32 py-2 pr-3 font-medium text-[var(--muted)]">
+        <span className="inline-flex items-center gap-1.5">
+          <Icon size={compactIconSize(11)} className={iconClass} aria-hidden />
+          {label}
+        </span>
+      </th>
+      <td className="py-2 text-[var(--text)]">{children}</td>
+    </tr>
+  );
+}
+
 export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
   const bundled = useExtensionRelease();
   const [preview, setPreview] = useState<ExtensionReleaseInfo>(bundled);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const tocSectionIds = useMemo(
+    () => EXTENSION_DOWNLOAD_TOC.map(({ id }) => `${ID_PREFIX}${id}`),
+    [],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -45,7 +100,11 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
   useEffect(() => {
     if (!open) return;
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.body.classList.add("hub-modal-open");
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.classList.remove("hub-modal-open");
+    };
   }, [onKey, open]);
 
   const onConfirm = () => {
@@ -67,86 +126,109 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[1200] grid place-items-center bg-black/55 px-4 py-6 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Confirm extension download"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[var(--panel)] shadow-2xl shadow-black/50">
-        <header className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/20 text-violet-200">
-              <Cookie size={22} aria-hidden />
+    <div className="modal-backdrop modal-backdrop--tool-detail" role="presentation" onClick={onClose}>
+      <div
+        className="modal-shell modal-shell--tool-detail"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cookie-extension-download-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="user-access-modal__header">
+          <div className="user-access-modal__header-main min-w-0 flex-1">
+            <img
+              src={E0001_ICON_URL}
+              alt=""
+              width={32}
+              height={32}
+              className="user-access-modal__avatar h-8 w-8 shrink-0 rounded-lg object-cover"
+            />
+            <h2
+              id="cookie-extension-download-title"
+              className="user-access-modal__header-name min-w-0 truncate text-sm font-semibold text-[var(--text)]"
+            >
+              {EXTENSION_HEADER_LABEL}
+            </h2>
+            <span className="shrink-0 rounded-md border border-slate-400/25 bg-slate-500/10 px-2 py-0.5 font-mono text-[11px] text-slate-200">
+              E0001
             </span>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold text-[var(--text)]">{EXTENSION_HEADER_LABEL}</h2>
-              <p className="mt-0.5 text-[12px] text-[var(--muted)]">E0001 Cookie Bridge · Chrome extension</p>
-            </div>
           </div>
-          <button
-            type="button"
-            className="rounded-lg p-1.5 text-[var(--muted)] hover:bg-white/5 hover:text-[var(--text)]"
-            aria-label="Close"
-            onClick={onClose}
-          >
-            <X size={18} />
-          </button>
+          <div className="user-access-modal__header-actions">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onConfirm}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-400 disabled:opacity-60"
+            >
+              <Download size={12} aria-hidden />
+              {busy ? "Downloading…" : "Confirm download"}
+            </button>
+            <button
+              type="button"
+              className="modal-close modal-close--tool-detail-inline"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <X size={compactIconSize(16)} />
+            </button>
+          </div>
         </header>
 
-        <div className="space-y-3 px-5 py-4 text-[13px]">
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 rounded-xl border border-white/8 bg-white/[.03] p-3">
-            <dt className="text-[var(--muted)]">Version</dt>
-            <dd className="font-semibold tabular-nums text-violet-200">v{preview.version}</dd>
-            <dt className="text-[var(--muted)]">Bundled</dt>
-            <dd className="tabular-nums text-[var(--text)]/90">
-              v{EXTENSION_BUILD.version} ({EXTENSION_BUILD.updated})
-            </dd>
-            <dt className="text-[var(--muted)]">Package</dt>
-            <dd className="truncate font-mono text-[11px] text-[var(--text)]/85">{preview.zipName}</dd>
-            <dt className="text-[var(--muted)]">Install</dt>
-            <dd className="text-[var(--text)]/90">{EXTENSION_INSTALL_LABEL}</dd>
-          </dl>
+        <div className="modal-shell__scroll modal-shell__scroll--user-access">
+          <TocSectionHighlightProvider sectionIds={tocSectionIds}>
+            <div className="grid gap-4 lg:grid-cols-[var(--overview-toc-w)_minmax(0,1fr)]">
+              <aside className="lg:sticky lg:top-0 lg:self-start">
+                <TocSectionNav
+                  items={EXTENSION_DOWNLOAD_TOC}
+                  idPrefix={ID_PREFIX}
+                  scrollRootSelector={SCROLL_ROOT}
+                />
+              </aside>
 
-          <p className="leading-relaxed text-[var(--muted)]">{EXTENSION_INSTALL_HINT}</p>
+              <TocHighlightContent className="min-w-0 space-y-4 p-1 sm:p-2">
+                <DetailSection id={`${ID_PREFIX}release`} title={extensionDownloadSectionTitle("release")}>
+                  <table className="w-full text-left text-xs">
+                    <tbody>
+                      <FieldRow icon={Tag} iconClass="text-indigo-300" label="Latest">
+                        <span className="font-semibold tabular-nums text-indigo-200">v{preview.version}</span>
+                      </FieldRow>
+                      <FieldRow icon={Archive} iconClass="text-slate-400" label="Bundled">
+                        <span className="tabular-nums">
+                          v{EXTENSION_BUILD.version} · {EXTENSION_BUILD.updated}
+                        </span>
+                      </FieldRow>
+                      <FieldRow icon={Package} iconClass="text-amber-300" label="Package">
+                        <span className="font-mono text-[11px] break-all">{preview.zipName}</span>
+                      </FieldRow>
+                      <FieldRow icon={FolderOpen} iconClass="text-emerald-300" label="Install">
+                        {EXTENSION_INSTALL_LABEL}
+                      </FieldRow>
+                    </tbody>
+                  </table>
+                  <a
+                    href={preview.releasePage}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="release-asset-row"
+                  >
+                    <ExternalLink size={14} className="shrink-0 text-[var(--muted)]" aria-hidden />
+                    <span className="release-asset-name">GitHub releases</span>
+                  </a>
+                </DetailSection>
 
-          {error ? (
-            <p className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
-              {error}
-            </p>
-          ) : null}
+                <DetailSection id={`${ID_PREFIX}install`} title={extensionDownloadSectionTitle("install")}>
+                  <CookieExtensionInstallSteps />
+                </DetailSection>
+
+                {error ? (
+                  <p className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                    {error}
+                  </p>
+                ) : null}
+              </TocHighlightContent>
+            </div>
+          </TocSectionHighlightProvider>
         </div>
-
-        <footer className="flex flex-wrap items-center gap-2 border-t border-white/10 px-5 py-3">
-          <a
-            href={preview.releasePage}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-[var(--muted)] hover:text-[var(--text)]"
-          >
-            <ExternalLink size={14} />
-            Releases
-          </a>
-          <button
-            type="button"
-            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-[var(--muted)] hover:bg-white/5 hover:text-[var(--text)]"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onConfirm}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-violet-400/40 bg-violet-500/25 px-4 py-2 text-xs font-semibold text-violet-100 hover:bg-violet-500/35 disabled:opacity-60"
-          >
-            <Download size={14} />
-            {busy ? "Downloading…" : "Confirm download"}
-          </button>
-        </footer>
       </div>
     </div>,
     document.body,

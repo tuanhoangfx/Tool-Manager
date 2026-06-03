@@ -20,7 +20,7 @@ export function CookieExtensionFab({ active = true }: Props) {
 
   return createPortal(
     <>
-      <div className="workspace-fab-stack workspace-fab-stack--cookie" aria-label="Cookie extension download">
+      <div className="workspace-fab-stack--cookie" aria-label="Cookie extension download">
         <button
           type="button"
           className="workspace-fab workspace-fab--download workspace-fab--pulse"
