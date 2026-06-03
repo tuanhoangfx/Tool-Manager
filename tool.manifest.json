@@ -1,135 +1,104 @@
-﻿{
-    "schemaVersion":  1,
-    "code":  "P0020",
-    "id":  "p0020-data-box",
-    "aliases":  [
-                    "P0020",
-                    "P0020-Data-Box",
-                    "Data Box",
-                    "Azure Data Box"
-                ],
-    "name":  "P0020-Data-Box",
-    "type":  "Web",
-    "owner":  "Tool",
-    "status":  "Beta",
-    "icon":  "icons/azure-data-box.svg",
-    "summary":  "Unified data workspace for notes, 2FA, secure cookie vault, and browser agents. Skin P0008.",
-    "stack":  [
-                  "React",
-                  "TypeScript",
-                  "Vite",
-                  "Supabase",
-                  "Inter",
-                  "Chrome extension E0001-cookie-bridge"
-              ],
-    "commands":  {
-                     "dev":  "corepack pnpm dev",
-                     "build":  "corepack pnpm build",
-                     "preview":  "corepack pnpm preview"
-                 },
-    "deployTarget":  "vercel",
-    "docs":  {
-             {
-    "schemaVersion":  1,
-    "code":  "P0020",
-    "id":  "p0020-data-box",
-    "aliases":  [
-                    "P0020",
-                    "P0020-Data-Box",
-                    "Data Box",
-                    "Azure Data Box"
-                ],
-    "name":  "P0020-Data-Box",
-    "type":  "Web",
-    "owner":  "Tool",
-    "status":  "Beta",
-    "icon":  "icons/azure-data-box.svg",
-    "summary":  "Unified data workspace for notes, 2FA, secure cookie vault, and browser agents. Skin P0008.",
-    "stack":  [
-                  "React",
-                  "TypeScript",
-                  "Vite",
-                  "Supabase",
-                  "Inter",
-                  "Chrome extension E0001-cookie-bridge"
-              ],
-    "commands":  {
-                     "dev":  "corepack pnpm dev",
-                     "build":  "corepack pnpm build",
-                     "preview":  "corepack pnpm preview"
-                 },
-    "deployTarget":  "vercel",
-    "docs":  {
-                 "readme":  "README.md",
-                 "changelog":  "CHANGELOG.md"
-             },
-    "github":  {
-                   "repo":  "tuanhoangfx/Tool-Manager",
-                   "branch":  "main",
-                   "manifestPath":  "tool.manifest.json"
-               },
-    "release":  {
-                    "version":  "0.2.1",
-                    "readiness":  [
-                                      "unified-sidebar-shell",
-                                      "notes-workspace",
-                                      "notes-sync-id-pass",
-                                      "lazy-hub-screens",
-                                      "twofa-local",
-                                      "cookie-bridge"
-                                  ]
-                },
-    "urls":  {
-                 "local":  "http://127.0.0.1:5177",
-                 "app":  "https://databox.infi.io.vn",
-                 "preview":  "https://databox.infi.io.vn",
-                 "cookie":  "https://databox.infi.io.vn/cookie",
-                 "legacyApp":  "https://tool-manager-zeta.vercel.app"
-             },
-    "vercel":  {
-                   "project":  "tool-manager",
-                   "projectId":  "linked-via-cli",
-                   "productionUrl":  "https://databox.infi.io.vn",
-                   "customDomains":  [
-                                         "databox.infi.io.vn"
-                                     ],
-                   "productionBranch":  "main",
-                   "team":  "tuanhoangfxs-projects",
-                   "notes":  "Vite SPA. Set VITE_SUPABASE_* in Vercel env."
-               },
-    "parentProject":  {
-                          "code":  "P0004",
-                          "note":  "Cloned from Tool Hub (P0004); fork embeds catalog in unified shell."
-                      },
-    "supabase":  {
-                     "projectRef":  "bklxcjrkhrevdcqjscku",
-                     "url":  "https://bklxcjrkhrevdcqjscku.supabase.co",
-                     "dashboard":  "https://supabase.com/dashboard/project/bklxcjrkhrevdcqjscku",
-                     "sqlEditor":  "https://supabase.com/dashboard/project/bklxcjrkhrevdcqjscku/sql/new",
-                     "hubProjectRef":  "fmnrafpzctuhxjaaomzt",
-                     "hubUrl":  "https://fmnrafpzctuhxjaaomzt.supabase.co",
-                     "localEnv":  {
-                                      "SUPABASE_DB_URL":  "postgresql://postgres.bklxcjrkhrevdcqjscku:[DB_PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres",
-                                      "note":  "Replace [DB_PASSWORD] in .env.local. Run `pnpm db:migrate` then `pnpm verify:cookie`."
-                                  },
-                     "cookieBridge":  {
-                                          "migrationsDir":  "supabase/migrations",
-                                          "applySql":  "supabase/APPLY_ALL_P0020_COOKIE_BRIDGE.sql",
-                                          "migrateDoc":  "docs/DATABOX-MIGRATION.md",
-                                          "generateApply":  "pnpm generate:apply-all",
-                                          "verify":  "pnpm verify:cookie"
-                                      }
-                 },
-    "relatedProjects":  {
-                            "catalog":  {
-                                            "code":  "P0004",
-                                            "name":  "Tool Hub",
-                                            "note":  "Workspace tool catalog lives in P0004-Tool-Hub (port 5176)."
-                                        }
-                        },
-    "health":  {
-                   "status":  "Beta",
-                   "note":  "Notes Supabase CRUD; https://tool-manager-zeta.vercel.app"
-               },
-    "manifestUpdatedAt":  "2026-05-27T09:11:00.000+07:00"
+{
+  "schemaVersion": 1,
+  "code": "P0020",
+  "id": "p0020-data-box",
+  "aliases": [
+    "P0020",
+    "P0020-Data-Box",
+    "Data Box",
+    "Azure Data Box"
+  ],
+  "name": "P0020-Data-Box",
+  "type": "Web",
+  "owner": "Tool",
+  "status": "Beta",
+  "icon": "icons/azure-data-box.svg",
+  "summary": "Unified data workspace for notes, 2FA, secure cookie vault, and browser agents. Skin P0008.",
+  "stack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Supabase",
+    "Inter",
+    "Chrome extension E0001-cookie-bridge"
+  ],
+  "commands": {
+    "dev": "corepack pnpm dev",
+    "build": "corepack pnpm build",
+    "preview": "corepack pnpm preview"
+  },
+  "deployTarget": "vercel",
+  "docs": {
+    "readme": "README.md",
+    "changelog": "CHANGELOG.md"
+  },
+  "github": {
+    "repo": "tuanhoangfx/Tool-Manager",
+    "branch": "main",
+    "manifestPath": "tool.manifest.json"
+  },
+  "release": {
+    "version": "0.2.1",
+    "readiness": [
+      "unified-sidebar-shell",
+      "notes-workspace",
+      "notes-sync-id-pass",
+      "lazy-hub-screens",
+      "twofa-local",
+      "cookie-bridge"
+    ]
+  },
+  "urls": {
+    "local": "http://127.0.0.1:5177",
+    "app": "https://databox.infi.io.vn",
+    "preview": "https://databox.infi.io.vn",
+    "cookie": "https://databox.infi.io.vn/cookie",
+    "legacyApp": "https://tool-manager-zeta.vercel.app"
+  },
+  "vercel": {
+    "project": "tool-manager",
+    "projectId": "linked-via-cli",
+    "productionUrl": "https://databox.infi.io.vn",
+    "customDomains": [
+      "databox.infi.io.vn"
+    ],
+    "productionBranch": "main",
+    "team": "tuanhoangfxs-projects",
+    "notes": "Vite SPA. Set VITE_SUPABASE_* in Vercel env."
+  },
+  "parentProject": {
+    "code": "P0004",
+    "note": "Cloned from Tool Hub (P0004); fork embeds catalog in unified shell."
+  },
+  "supabase": {
+    "projectRef": "bklxcjrkhrevdcqjscku",
+    "url": "https://bklxcjrkhrevdcqjscku.supabase.co",
+    "dashboard": "https://supabase.com/dashboard/project/bklxcjrkhrevdcqjscku",
+    "sqlEditor": "https://supabase.com/dashboard/project/bklxcjrkhrevdcqjscku/sql/new",
+    "hubProjectRef": "fmnrafpzctuhxjaaomzt",
+    "hubUrl": "https://fmnrafpzctuhxjaaomzt.supabase.co",
+    "localEnv": {
+      "SUPABASE_DB_URL": "postgresql://postgres.bklxcjrkhrevdcqjscku:[DB_PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres",
+      "note": "Replace [DB_PASSWORD] in .env.local. Run `pnpm db:migrate` then `pnpm verify:cookie`."
+    },
+    "cookieBridge": {
+      "migrationsDir": "supabase/migrations",
+      "applySql": "supabase/APPLY_ALL_P0020_COOKIE_BRIDGE.sql",
+      "migrateDoc": "docs/DATABOX-MIGRATION.md",
+      "generateApply": "pnpm generate:apply-all",
+      "verify": "pnpm verify:cookie"
+    }
+  },
+  "relatedProjects": {
+    "catalog": {
+      "code": "P0004",
+      "name": "Tool Hub",
+      "note": "Workspace tool catalog lives in P0004-Tool-Hub (port 5176)."
+    }
+  },
+  "health": {
+    "status": "Beta",
+    "note": "Notes Supabase CRUD; https://tool-manager-zeta.vercel.app"
+  },
+  "manifestUpdatedAt": "2026-05-27T09:11:00.000+07:00"
 }
