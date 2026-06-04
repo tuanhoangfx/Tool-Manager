@@ -31,6 +31,7 @@ function note(overrides: Partial<NoteListItem> = {}): NoteListItem {
     cookie_snapshot: [],
     pinned: false,
     share_enabled: false,
+    share_can_edit: false,
     share_token: null,
     share_password_hash: null,
     share_expires_at: null,
