@@ -11,7 +11,8 @@
 - Product: P0020
 - Prompt: Release P0004, P0020, E0001 — cookie route modals, member activity, public share
 - Commit: `12d7317`
-- Status: Committed
+- Status: Verified
+- Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v3.1.1
 
 ### Changes
 
