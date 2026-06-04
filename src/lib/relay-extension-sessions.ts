@@ -3,6 +3,8 @@ import {
   broadcastExtensionAuth,
   broadcastExtensionIdentityAuth,
 } from "../features/cookie/extensionBridgeMessages";
+import { getHubIdentitySession } from "./supabase-identity";
+import { supabase } from "./supabase";
 
 export function relaySessionsToExtension(identity: Session | null, data: Session | null) {
   if (identity) {
@@ -21,4 +23,13 @@ export function relaySessionsToExtension(identity: Session | null, data: Session
       user: data.user,
     });
   }
+}
+
+/** Push Hub + Data Box JWT to E0001 when Tool tab is open and user is already signed in. */
+export async function relayActiveSessionsToExtension(): Promise<void> {
+  const [hubSession, dataResult] = await Promise.all([
+    getHubIdentitySession(),
+    supabase.auth.getSession(),
+  ]);
+  relaySessionsToExtension(hubSession, dataResult.data.session ?? null);
 }

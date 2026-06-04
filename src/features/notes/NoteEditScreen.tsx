@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Cookie, Eye, Link2, Save, Trash2, X } from "lucide-react";
+import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
+import { useAppToast } from "../../components/toast";
 import { WorkspaceLoadingView } from "../../components/sales-shell";
 import { Glass, StatusBadge } from "../../theme/p0008";
 import { readNoteIdFromUrl } from "../design-preview/design-nav";
@@ -19,6 +21,7 @@ export function NoteEditScreen({
   shellMode?: boolean;
 }) {
   const noteId = readNoteIdFromUrl();
+  const { pushToast } = useAppToast();
   const { session, loading: authLoading, isSupabaseConfigured, offline } = useNotesAuth();
   const { note, loading, error, saving, save } = useNote(session, noteId);
   const { notes, deleteNote } = useNotes(session);
@@ -30,8 +33,7 @@ export function NoteEditScreen({
   const [pinned, setPinned] = useState(false);
   const [shareEnabled, setShareEnabled] = useState(false);
   const [sharePassword, setSharePassword] = useState("");
-  const [savedHint, setSavedHint] = useState("");
-  const [actionError, setActionError] = useState("");
+  const [pendingDelete, setPendingDelete] = useState(false);
 
   useEffect(() => {
     if (!note) return;
@@ -44,7 +46,6 @@ export function NoteEditScreen({
   }, [note]);
 
   const onSave = async () => {
-    setActionError("");
     try {
       await save({
         title,
@@ -56,21 +57,21 @@ export function NoteEditScreen({
         share_password: sharePassword || undefined,
       });
       setSharePassword("");
-      setSavedHint("Saved");
-      setTimeout(() => setSavedHint(""), 2500);
+      pushToast("Note saved", "success");
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Save failed");
+      pushToast(err instanceof Error ? err.message : "Save failed", "error");
     }
   };
 
-  const onDelete = async () => {
-    if (!noteId || !confirm("Delete this note?")) return;
-    setActionError("");
+  const confirmDelete = async () => {
+    if (!noteId) return;
+    setPendingDelete(false);
     try {
       await deleteNote(noteId);
+      pushToast("Note deleted", "success");
       onClose?.();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Delete failed");
+      pushToast(err instanceof Error ? err.message : "Delete failed", "error");
     }
   };
 
@@ -114,6 +115,7 @@ export function NoteEditScreen({
 
   const lines = cookieLines(note.cookie_snapshot);
   const shareUrl = note.share_token && note.share_enabled ? buildShareUrl(note.share_token) : "";
+  const deleteTitle = title.trim() || note.title.trim() || "this note";
 
   return (
     <div className="anim-fade">
@@ -127,7 +129,11 @@ export function NoteEditScreen({
                 <X size={14} />
                 Close
               </button>
-              <button type="button" className="btn-ghost btn text-[12px] text-rose-300" onClick={() => void onDelete()}>
+              <button
+                type="button"
+                className="btn-ghost btn text-[12px] text-rose-300"
+                onClick={() => setPendingDelete(true)}
+              >
                 <Trash2 size={14} />
               </button>
               <button type="button" className="btn text-[12px]" onClick={() => void onSave()} disabled={saving}>
@@ -139,7 +145,11 @@ export function NoteEditScreen({
         />
       ) : (
         <div className="mb-4 flex flex-wrap justify-end gap-2">
-          <button type="button" className="btn-ghost btn text-[12px] text-rose-300" onClick={() => void onDelete()}>
+          <button
+            type="button"
+            className="btn-ghost btn text-[12px] text-rose-300"
+            onClick={() => setPendingDelete(true)}
+          >
             <Trash2 size={14} />
             Delete
           </button>
@@ -149,17 +159,6 @@ export function NoteEditScreen({
           </button>
         </div>
       )}
-
-      {savedHint ? (
-        <p className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[12px] text-emerald-200">
-          {savedHint}
-        </p>
-      ) : null}
-      {actionError ? (
-        <p className="mb-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[12px] text-rose-200">
-          {actionError}
-        </p>
-      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
         <button
@@ -248,7 +247,7 @@ export function NoteEditScreen({
                     onClick={() => {
                       if (!shareUrl) return;
                       void navigator.clipboard.writeText(shareUrl);
-                      setSavedHint("Share link copied");
+                      pushToast("Share link copied", "success");
                     }}
                   >
                     Copy
@@ -274,6 +273,19 @@ export function NoteEditScreen({
           </Glass>
         </div>
       </div>
+
+      <ToolConfirmDialog
+        open={pendingDelete}
+        title="Delete note?"
+        message={
+          <>
+            Remove <strong>{deleteTitle}</strong> from your notes? This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete note"
+        onConfirm={() => void confirmDelete()}
+        onClose={() => setPendingDelete(false)}
+      />
     </div>
   );
 }

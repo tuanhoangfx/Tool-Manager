@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FilterValues } from "../../components/sales-shell";
+import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
 import { useAppToast } from "../../components/toast";
 import { readNoteIdFromUrl } from "../design-preview/design-nav";
 import { useNoteCookieRouteLock } from "../cookie/useNoteCookieRouteLock";
@@ -10,7 +11,7 @@ import { NotesHubChrome } from "./NotesHubChrome";
 import { NotesWorkspaceToolbar } from "./NotesWorkspaceToolbar";
 import { NotesListRail } from "./NotesListRail";
 import { NotesAuthGate } from "./NotesAuthGate";
-import { noteMatchesFolderFilter, useNoteFolders } from "./noteFolders";
+import { noteMatchesFolderFilter, useNoteFolders, mergeDisplayFolders, getEffectiveNoteFolderIds, getUserFolderIds } from "./noteFolders";
 import { NotesFoldersSettingsPanel } from "./NotesFoldersSettingsPanel";
 import { filterNotes } from "./notes-filters";
 import { readNotesListPrefs, type NotesListDensity } from "./notes-list-prefs";
@@ -67,7 +68,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   const [shareEnabled, setShareEnabled] = useState(false);
   const [sharePassword, setSharePassword] = useState("");
   const [savedHint, setSavedHint] = useState("");
-  const [actionError, setActionError] = useState("");
+  const [pendingDeleteNote, setPendingDeleteNote] = useState(false);
   const folders = useNoteFolders(session);
   const [dirty, setDirty] = useState(false);
   const [routeDetailDomain, setRouteDetailDomain] = useState<string | null>(null);
@@ -128,10 +129,19 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
       setPinned(row.pinned);
       setShareEnabled(row.share_enabled);
       setSharePassword("");
-      setActionError("");
     },
     [],
   );
+
+  useEffect(() => {
+    if (!listError) return;
+    pushToast(listError, "error", 8000);
+  }, [listError, pushToast]);
+
+  useEffect(() => {
+    if (!noteError || !selectedId) return;
+    pushToast(noteError, "error", 8000);
+  }, [noteError, pushToast, selectedId]);
 
   useEffect(() => {
     if (!note || !selectedId || note.id !== selectedId) return;
@@ -166,10 +176,67 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
     setBody("");
   }, [routeLocked, selectedId, dirty]);
 
+  useEffect(() => {
+    setFilterValues((prev) => {
+      const stored = folders.filterIds;
+      const current = prev.folder ?? [];
+      if (stored.length === current.length && stored.every((id, i) => id === current[i])) return prev;
+      return { ...prev, folder: stored.length ? [...stored] : [] };
+    });
+  }, [folders.filterIds]);
+
+  const handleFilterValuesChange = useCallback(
+    (next: FilterValues) => {
+      setFilterValues(next);
+      if (Array.isArray(next.folder)) {
+        folders.setFilterIds(next.folder);
+      }
+    },
+    [folders],
+  );
+
+  const [folderTick, setFolderTick] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setFolderTick((t) => t + 1), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const cookieRouteNoteIds = useMemo(() => new Set(routeByNoteId.keys()), [routeByNoteId]);
+  const displayFolders = useMemo(() => mergeDisplayFolders(folders.folders), [folders.folders]);
+
+  const selectedNoteMeta = useMemo(() => {
+    if (!selectedId) return null;
+    const listItem = notes.find((n) => n.id === selectedId);
+    return {
+      id: selectedId,
+      created_at: listItem?.created_at ?? note?.created_at ?? null,
+    };
+  }, [note?.created_at, notes, selectedId]);
+
+  const selectedNoteFolderIds = useMemo(
+    () =>
+      selectedNoteMeta
+        ? getEffectiveNoteFolderIds(
+            selectedNoteMeta.id,
+            folders.noteFolders,
+            cookieRouteNoteIds,
+            selectedNoteMeta.created_at,
+          )
+        : [],
+    [cookieRouteNoteIds, folderTick, folders.noteFolders, selectedNoteMeta],
+  );
+
+  const selectedUserFolderIds = useMemo(
+    () => (selectedId ? getUserFolderIds(selectedId, folders.noteFolders) : []),
+    [folders.noteFolders, selectedId],
+  );
+
   const filtered = useMemo(() => {
+    const folderIds = filterValues.folder ?? [];
     const base = filterNotes(notes, query, filterValues, prefs.range);
-    return base.filter((n) => noteMatchesFolderFilter(folders.noteFolders, n.id, folders.filterIds));
-  }, [filterValues, folders.filterIds, folders.noteFolders, notes, prefs.range, query]);
+    return base.filter((n) => noteMatchesFolderFilter(n, folders.noteFolders, folderIds, cookieRouteNoteIds));
+  }, [cookieRouteNoteIds, filterValues, folderTick, folders.noteFolders, notes, prefs.range, query]);
 
   const pickNote = useCallback(
     (id: string, seed?: NoteRow | null) => {
@@ -218,13 +285,11 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
 
   const onNew = async () => {
     setCreating(true);
-    setActionError("");
     try {
       const row = await createNote();
       pickNote(row.id, row);
     } catch (err) {
       const msg = errorMessage(err, "Could not create note");
-      setActionError(msg);
       pushToast(`New note failed: ${msg}`, "error", 8000);
     } finally {
       setCreating(false);
@@ -253,7 +318,6 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
     shareEnabled?: boolean;
   }) => {
     if (!selectedId) throw new Error("No note selected");
-    setActionError("");
     const nextPinned = routeLocked ? (note?.pinned ?? false) : (overrides?.pinned ?? pinned);
     const nextShareEnabled = routeLocked ? (note?.share_enabled ?? false) : (overrides?.shareEnabled ?? shareEnabled);
     const saved = await save({
@@ -281,9 +345,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
       setDirty(false);
       pushToast("Note saved", "success");
     } catch (err) {
-      const msg = errorMessage(err, "Save failed");
-      setActionError(msg);
-      pushToast(msg, "error");
+      pushToast(errorMessage(err, "Save failed"), "error");
     }
   };
 
@@ -302,9 +364,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           window.setTimeout(() => setSavedHint(""), 2500);
         })
         .catch((err) => {
-          const msg = errorMessage(err, "Autosave failed");
-          setActionError(msg);
-          pushToast(msg, "error");
+          pushToast(errorMessage(err, "Autosave failed"), "error");
         });
     }, NOTES_AUTOSAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
@@ -322,9 +382,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
       pushToast(next ? "Pinned note" : "Unpinned note", "success");
     } catch (err) {
       setPinned(!next);
-      const msg = errorMessage(err, "Pin update failed");
-      setActionError(msg);
-      pushToast(msg, "error");
+      pushToast(errorMessage(err, "Pin update failed"), "error");
     }
   };
 
@@ -340,26 +398,39 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
       pushToast(saved.share_enabled ? "Share link enabled" : "Share disabled", "success");
     } catch (err) {
       setShareEnabled(!next);
-      const msg = errorMessage(err, "Share update failed");
-      setActionError(msg);
-      pushToast(msg, "error");
+      pushToast(errorMessage(err, "Share update failed"), "error");
     }
   };
 
-  const onDelete = async () => {
+  const requestDeleteNote = () => {
     if (!selectedId) return;
-    const msg = routeLocked
-      ? "This note is linked to Cookie Auto route(s). Deleting it breaks sync. Delete anyway?"
-      : "Delete this note?";
-    if (!confirm(msg)) return;
+    setPendingDeleteNote(true);
+  };
+
+  const confirmDeleteNote = async () => {
+    if (!selectedId) return;
+    setPendingDeleteNote(false);
     try {
       await deleteNote(selectedId);
+      pushToast("Note deleted", "success");
       setSelectedId(null);
       navigate({ replace: true });
     } catch (err) {
-      setActionError(errorMessage(err, "Delete failed"));
+      pushToast(errorMessage(err, "Delete failed"), "error");
     }
   };
+
+  const deleteNoteTitle = title.trim() || note?.title?.trim() || "this note";
+  const deleteNoteMessage = routeLocked ? (
+    <>
+      This note is linked to Cookie Auto route(s). Deleting <strong>{deleteNoteTitle}</strong> breaks sync. This cannot
+      be undone.
+    </>
+  ) : (
+    <>
+      Remove <strong>{deleteNoteTitle}</strong> from your notes? This cannot be undone.
+    </>
+  );
 
 
   if (!isSupabaseConfigured) {
@@ -377,8 +448,9 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           query={query}
           onQueryChange={setQuery}
           filterValues={filterValues}
-          onFilterValuesChange={setFilterValues}
+          onFilterValuesChange={handleFilterValuesChange}
           notes={[]}
+          noteFolders={displayFolders}
           shown={0}
           density={density}
           onDensityChange={setDensity}
@@ -391,12 +463,14 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
 
   const folderSettingsPanel = session ? (
     <NotesFoldersSettingsPanel
-      folders={folders.folders}
+      folders={displayFolders}
+      noteFolders={folders.noteFolders}
+      cookieRouteNoteIds={cookieRouteNoteIds}
+      notes={notes}
       selectedNoteId={selectedId}
-      selectedNoteFolderIds={selectedId ? (folders.noteFolders[selectedId] ?? []) : []}
-      routeLocked={routeLocked}
-      onCreateFolder={async (name) => {
-        const folder = await folders.createFolder(name);
+      selectedNoteFolderIds={selectedNoteFolderIds}
+      onCreateFolder={async (name, color) => {
+        const folder = await folders.createFolder(name, color);
         if (folder) pushToast(`Folder created: ${folder.name}`, "success");
       }}
       onToggleNoteFolder={async (folderId, enabled) => {
@@ -428,18 +502,12 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
       creating={creating}
       savedHint={savedHint}
       routeLocked={routeLocked}
-      folders={folders.folders}
-      folderFilterIds={folders.filterIds}
       onNew={() => void onNew()}
       onSave={() => void onSave()}
-      onDelete={() => void onDelete()}
+      onDelete={requestDeleteNote}
       onPinnedToggle={() => void onPinnedToggle()}
       onShareToggle={() => void onShareToggle()}
       onSharePasswordChange={updateSharePassword}
-      onToggleFolderFilter={(folderId) => {
-        folders.toggleFilterId(folderId);
-      }}
-      onClearFolderFilter={() => folders.clearFilterIds()}
     />
   ) : null;
 
@@ -450,7 +518,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           query={query}
           onQueryChange={setQuery}
           filterValues={filterValues}
-          onFilterValuesChange={setFilterValues}
+          onFilterValuesChange={handleFilterValuesChange}
           notes={[]}
           shown={0}
           density={density}
@@ -470,20 +538,15 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
         query={query}
         onQueryChange={setQuery}
         filterValues={filterValues}
-        onFilterValuesChange={setFilterValues}
+        onFilterValuesChange={handleFilterValuesChange}
         notes={notes}
+        noteFolders={displayFolders}
         shown={filtered.length}
         density={density}
         onDensityChange={setDensity}
         filterToolbar={workspaceToolbar}
         folderSettingsPanel={folderSettingsPanel}
       />
-
-      {listError ? (
-        <p className="mx-0 mb-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[12px] text-rose-200">
-          {listError}
-        </p>
-      ) : null}
 
       <div className="notes-workspace__body flex min-h-0 flex-1 overflow-hidden">
         <NotesListRail
@@ -493,6 +556,9 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           loading={listLoading}
           refreshing={listRefreshing}
           cookieRouteByNoteId={routeByNoteId}
+          cookieRouteNoteIds={cookieRouteNoteIds}
+          displayFolders={displayFolders}
+          noteFolders={folders.noteFolders}
           onSelect={pickNote}
         />
         {noteError && selectedId ? (
@@ -511,9 +577,15 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
             )}
             title={title}
             body={body}
-            actionError={actionError}
             routeLocked={routeLocked}
             routeInfos={routeInfos}
+            folders={displayFolders}
+            effectiveFolderIds={selectedNoteFolderIds}
+            userFolderIds={selectedUserFolderIds}
+            onUserFoldersChange={(ids) => {
+              if (!selectedId) return;
+              void folders.setUserNoteFolders(selectedId, ids);
+            }}
             onOpenRouteDetail={(domain) => setRouteDetailDomain(domain)}
             onTitleChange={updateTitle}
             onBodyChange={updateBody}
@@ -530,6 +602,15 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           />
         ) : null}
       </div>
+
+      <ToolConfirmDialog
+        open={pendingDeleteNote}
+        title="Delete note?"
+        message={deleteNoteMessage}
+        confirmLabel="Delete note"
+        onConfirm={() => void confirmDeleteNote()}
+        onClose={() => setPendingDeleteNote(false)}
+      />
     </div>
   );
 }

@@ -4,6 +4,6 @@
  * Download button uses GitHub releases/latest at runtime.
  */
 export const EXTENSION_BUILD = {
-  version: "0.5.71",
-  updated: "2026-05-29",
+  version: "0.5.82",
+  updated: "2026-06-04",
 };

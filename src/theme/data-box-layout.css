@@ -216,4 +216,41 @@ body,
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+/* Notes — folder directory table (Hub Users skin) */
+table.hub-users-table--folders {
+  table-layout: fixed;
+}
+
+table.hub-users-table--folders col.hub-users-col--select {
+  width: 2.25rem;
+}
+
+table.hub-users-table--folders col.hub-users-col--folder-name {
+  width: auto;
+}
+
+table.hub-users-table--folders col.hub-users-col--folder-notes {
+  width: 4.5rem;
+}
+
+table.hub-users-table--folders th.hub-users-col--folder-notes,
+table.hub-users-table--folders td.hub-users-col--folder-notes {
+  text-align: center;
+}
+
+table.hub-users-table--folders th.hub-users-col--folder-name,
+table.hub-users-table--folders td.hub-users-col--folder-name {
+  text-align: left;
+}
+
+table.hub-users-table--folders .hub-users-name-title {
+  font-size: 11px;
+}
+
+table.hub-users-table--folders .notes-folder-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+
 /* Hub boot + tab loader: /hub-boot.css (index.html) + main.tsx import */

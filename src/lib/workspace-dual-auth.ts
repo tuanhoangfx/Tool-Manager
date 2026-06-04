@@ -5,6 +5,7 @@ import { HUB_SUPABASE_ANON_KEY, HUB_SUPABASE_URL, isHubSupabaseConfigured } from
 import { cacheDataBoxSession } from "./data-box-session";
 import { cacheHubIdentity } from "./hub-identity-session";
 import { authenticateTwofaVault } from "./authenticate-twofa-vault";
+import { isTwofaSupabaseConfigured } from "./twofa-supabase-env";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
 export type WorkspaceDualSignInResult = {
@@ -70,7 +71,20 @@ async function authenticateDataBox(
   return { session: null, error: first.error?.message ?? "Data Box sign-in failed." };
 }
 
-/** Sign in / sign up on Tool Hub (identity), then Data Box + 2FA vault with the same auth email. */
+/** Mirror 2FA vault after login — non-blocking to avoid auth rate limits on sign-in click. */
+function mirrorTwofaVaultInBackground(
+  authEmail: string,
+  password: string,
+  mode: "signin" | "signup",
+): void {
+  if (!isTwofaSupabaseConfigured) return;
+  void authenticateTwofaVault(authEmail, password, mode).then(({ session, error }) => {
+    if (error) console.warn("[P0020] 2FA vault mirror (background):", error);
+    else if (!session) console.warn("[P0020] 2FA vault mirror (background): no session");
+  });
+}
+
+/** Sign in / sign up on Tool Hub (identity), then Data Box; 2FA vault mirrors in background. */
 export async function signInWorkspaceDual(
   loginInput: string,
   password: string,
@@ -128,11 +142,19 @@ export async function signInWorkspaceDual(
     supabase_anon_key: HUB_SUPABASE_ANON_KEY,
   });
 
-  const [{ session: dataSession, error: dataError }, { session: twofaSession, error: twofaError }] =
-    await Promise.all([
-      authenticateDataBox(mirrorEmail, password, mode),
-      authenticateTwofaVault(mirrorEmail, password, mode),
-    ]);
+  const { session: dataSession, error: dataError } = await authenticateDataBox(
+    mirrorEmail,
+    password,
+    mode,
+  );
 
-  return { identitySession, dataSession, dataError, twofaSession, twofaError };
+  mirrorTwofaVaultInBackground(mirrorEmail, password, mode);
+
+  return {
+    identitySession,
+    dataSession,
+    dataError,
+    twofaSession: null,
+    twofaError: null,
+  };
 }

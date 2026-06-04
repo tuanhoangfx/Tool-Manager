@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   Cookie,
@@ -41,13 +40,6 @@ function HubLoaderOrb({ Icon }: { Icon: LucideIcon }) {
 }
 
 function HubTabLoaderFill({ Icon, ariaLabel, dim = false }: { Icon: LucideIcon; ariaLabel: string; dim?: boolean }) {
-  useEffect(() => {
-    return () => {
-      const root = document.getElementById(HUB_TAB_LOADER_ROOT_ID);
-      if (root) root.replaceChildren();
-    };
-  }, []);
-
   const node = (
     <div
       className={`hub-tab-loader-fill${dim ? " hub-tab-loader-fill--dim" : ""}`}

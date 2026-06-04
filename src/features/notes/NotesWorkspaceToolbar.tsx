@@ -1,16 +1,7 @@
-import {
-  CheckCircle2,
-  Filter,
-  Lock,
-  Pin,
-  Plus,
-  Save,
-  Share2,
-  Trash2,
-} from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { Lock, Pin, Plus, Save, Share2, Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
+import { useState } from "react";
 import { useAppToast } from "../../components/toast";
-import type { NoteFolder } from "./noteFolders";
 import { buildShareUrl } from "./shareUtils";
 import type { NoteRow } from "./types";
 
@@ -23,16 +14,12 @@ type Props = {
   creating?: boolean;
   savedHint?: string;
   routeLocked?: boolean;
-  folders: NoteFolder[];
-  folderFilterIds: string[];
   onNew: () => void;
   onSave: () => void;
   onDelete: () => void;
   onPinnedToggle: () => void;
   onShareToggle: () => void;
   onSharePasswordChange: (v: string) => void;
-  onToggleFolderFilter: (folderId: string) => void;
-  onClearFolderFilter: () => void;
 };
 
 export function NotesWorkspaceToolbar({
@@ -44,51 +31,21 @@ export function NotesWorkspaceToolbar({
   creating,
   savedHint,
   routeLocked = false,
-  folders,
-  folderFilterIds,
   onNew,
   onSave,
   onDelete,
   onPinnedToggle,
   onShareToggle,
   onSharePasswordChange,
-  onToggleFolderFilter,
-  onClearFolderFilter,
 }: Props) {
-  const [filterOpen, setFilterOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const shareUrl = note?.share_token && shareEnabled ? buildShareUrl(note.share_token) : "";
   const hasNote = Boolean(note?.id);
-  const filterLabel =
-    folderFilterIds.length === 0
-      ? "Filter"
-      : folderFilterIds.length === 1
-        ? (folders.find((f) => f.id === folderFilterIds[0])?.name ?? "Filter")
-        : `Filter (${folderFilterIds.length})`;
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
       {savedHint ? <span className="hidden text-[10px] text-emerald-300 sm:inline">{savedHint}</span> : null}
       <ToolbarButton icon={<Plus size={12} />} label={creating ? "Creating…" : "New"} tone="indigo" disabled={creating} onClick={onNew} />
-      <div className="relative">
-        <ToolbarButton
-          icon={<Filter size={12} />}
-          label={filterLabel}
-          tone="amber"
-          active={folderFilterIds.length > 0}
-          title="Filter notes by folder"
-          onClick={() => setFilterOpen((v) => !v)}
-        />
-        {filterOpen ? (
-          <FolderFilterMenu
-            folders={folders}
-            filterIds={folderFilterIds}
-            onToggle={onToggleFolderFilter}
-            onClear={onClearFolderFilter}
-            onClose={() => setFilterOpen(false)}
-          />
-        ) : null}
-      </div>
       <ToolbarButton
         icon={<Pin size={12} />}
         label={pinned ? "Pinned" : "Pin"}
@@ -128,7 +85,7 @@ export function NotesWorkspaceToolbar({
   );
 }
 
-type ToolbarTone = "amber" | "cyan" | "emerald" | "indigo" | "rose" | "violet";
+type ToolbarTone = "cyan" | "emerald" | "indigo" | "rose" | "violet";
 
 function ToolbarButton({
   icon,
@@ -148,7 +105,6 @@ function ToolbarButton({
   onClick: () => void;
 }) {
   const toneClass = {
-    amber: "border-amber-400/30 bg-amber-400/10 text-amber-100 hover:bg-amber-400/16",
     cyan: "border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/16",
     emerald: "border-emerald-400/30 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/16",
     indigo: "border-indigo-400/30 bg-indigo-400/12 text-indigo-100 hover:bg-indigo-400/18",
@@ -169,59 +125,6 @@ function ToolbarButton({
       {icon}
       <span className="hidden sm:inline">{label}</span>
     </button>
-  );
-}
-
-function FolderFilterMenu({
-  folders,
-  filterIds,
-  onToggle,
-  onClear,
-  onClose,
-}: {
-  folders: NoteFolder[];
-  filterIds: string[];
-  onToggle: (folderId: string) => void;
-  onClear: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <div className="anim-pop absolute right-0 top-full z-50 mt-1.5 w-64 rounded-xl border border-white/10 bg-[var(--panel)] p-3 shadow-2xl shadow-black/45">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold text-[var(--text)]">Folder filter</span>
-        {filterIds.length > 0 ? (
-          <button type="button" className="text-[10px] text-indigo-200 hover:underline" onClick={onClear}>
-            Clear
-          </button>
-        ) : null}
-      </div>
-      <div className="space-y-1">
-        {folders.length === 0 ? (
-          <p className="px-1 py-2 text-[10px] text-[var(--muted)]">No folders — create in Tab Settings → Folders.</p>
-        ) : (
-          folders.map((folder) => {
-            const active = filterIds.includes(folder.id);
-            return (
-              <button
-                key={folder.id}
-                type="button"
-                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12px] transition-colors ${
-                  active ? "bg-white/[.08] text-[var(--text)]" : "text-[var(--muted)] hover:bg-white/[.05] hover:text-[var(--text)]"
-                }`}
-                onClick={() => onToggle(folder.id)}
-              >
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: folder.color }} />
-                <span className="min-w-0 flex-1 truncate">{folder.name}</span>
-                {active ? <CheckCircle2 size={12} className="text-emerald-300" /> : null}
-              </button>
-            );
-          })
-        )}
-      </div>
-      <button type="button" className="mt-2 w-full rounded-lg border border-white/8 py-1 text-[10px] text-[var(--muted)] hover:bg-white/[.03]" onClick={onClose}>
-        Close
-      </button>
-    </div>
   );
 }
 

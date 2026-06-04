@@ -14,9 +14,17 @@ import {
   Pin,
   RefreshCw,
   Share2,
+  FolderOpen,
 } from "lucide-react";
 import type { FilterIconMeta } from "../../lib/badge-registry";
 import { resolveFilterAllIcon, resolveFilterOptionIcon } from "../../lib/badge-registry";
+import { NotesFolderGlyph } from "../../features/notes/NotesFolderGlyph";
+import {
+  FILTER_DROPDOWN_PANEL_CLASS,
+  FILTER_DROPDOWN_ROW_CLASS,
+  FilterDropdownCircle,
+  filterDropdownTriggerClass,
+} from "./filter-dropdown-ui";
 
 export type FilterOption = { value: string; label: string; color?: string };
 export type FilterDef = {
@@ -37,6 +45,7 @@ const FILTER_ICONS: Record<string, React.ElementType> = {
   links: Link2,
   tool: Layers,
   entity: Layers,
+  folder: FolderOpen,
   pinned: Pin,
   sync: RefreshCw,
   share: Share2,
@@ -242,6 +251,9 @@ function FilterIconGlyph({ meta, size = 14 }: { meta: FilterIconMeta; size?: num
 }
 
 function FilterOptionGlyph({ filterKey, option }: { filterKey: string; option: FilterOption }) {
+  if (filterKey === "folder" && option.color) {
+    return <NotesFolderGlyph color={option.color} size={12} variant="badge" />;
+  }
   const meta = resolveFilterOptionIcon(filterKey, option);
   if (!meta) {
     return option.color ? (
@@ -299,31 +311,30 @@ function MultiFilterDropdown({
   const Icon = FILTER_ICONS[filter.key];
   const allIcon = resolveFilterAllIcon(filter.key);
   const soleOpt = selected.length === 1 ? filter.options.find((o) => o.value === selected[0]) : undefined;
-  const soleIcon = soleOpt ? resolveFilterOptionIcon(filter.key, soleOpt) : null;
+  const soleIcon =
+    filter.key === "folder" && soleOpt?.color ? null : soleOpt ? resolveFilterOptionIcon(filter.key, soleOpt) : null;
+  const soleFolderGlyph =
+    filter.key === "folder" && soleOpt?.color ? <NotesFolderGlyph color={soleOpt.color} size={12} variant="badge" /> : null;
 
   return (
     <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex h-[34px] items-center gap-1.5 rounded-lg border px-3 text-xs transition-colors ${
-          selected.length > 0
-            ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-200"
-            : "border-white/10 bg-[var(--panel-2)] text-[var(--text)] hover:bg-white/5"
-        }`}
+        className={filterDropdownTriggerClass(selected.length > 0)}
       >
-        {soleIcon ? <FilterIconGlyph meta={soleIcon} size={12} /> : Icon ? <Icon size={12} className="shrink-0 opacity-75" /> : null}
+        {soleFolderGlyph ?? (soleIcon ? <FilterIconGlyph meta={soleIcon} size={12} /> : Icon ? <Icon size={12} className="shrink-0 opacity-75" /> : null)}
         <span>{buttonLabel}</span>
         {selected.length > 1 ? (
           <span className="grid h-4 min-w-[16px] place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white">
             {selected.length}
           </span>
         ) : null}
-        <ChevronDown size={12} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={12} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open ? (
-        <div className="anim-pop absolute left-0 top-full z-30 mt-1 w-72 rounded-xl border border-white/10 bg-[var(--panel)] shadow-xl shadow-black/40">
+        <div className={`${FILTER_DROPDOWN_PANEL_CLASS} left-0`}>
           <div className="border-b border-white/5 p-2">
             <div className="relative">
               <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 z-10 -translate-y-1/2 text-[var(--muted)]" />
@@ -341,9 +352,9 @@ function MultiFilterDropdown({
             <button
               type="button"
               onClick={toggleAll}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors hover:bg-white/5"
+              className={`${FILTER_DROPDOWN_ROW_CLASS} font-medium`}
             >
-              <Circle checked={allSelected} indeterminate={someSelected} />
+              <FilterDropdownCircle checked={allSelected} indeterminate={someSelected} />
               {allIcon ? <FilterIconGlyph meta={allIcon} /> : null}
               <span>All {filter.label}</span>
               <span className="ml-auto text-[10px] text-[var(--muted)]">{filter.options.length}</span>
@@ -354,9 +365,9 @@ function MultiFilterDropdown({
                 key={o.value}
                 type="button"
                 onClick={() => toggle(o.value)}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-white/5"
+                className={FILTER_DROPDOWN_ROW_CLASS}
               >
-                <Circle checked={selected.includes(o.value)} />
+                <FilterDropdownCircle checked={selected.includes(o.value)} />
                 <FilterOptionGlyph filterKey={filter.key} option={o} />
                 <span className="flex-1 truncate text-left" title={o.label}>
                   {o.label}
@@ -366,28 +377,6 @@ function MultiFilterDropdown({
             {filtered.length === 0 ? <div className="py-4 text-center text-xs text-[var(--muted)]">No matches</div> : null}
           </div>
         </div>
-      ) : null}
-    </div>
-  );
-}
-
-function Circle({ checked, indeterminate }: { checked: boolean; indeterminate?: boolean }) {
-  return (
-    <div
-      className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border transition-all ${
-        checked
-          ? "border-indigo-400 bg-indigo-500"
-          : indeterminate
-            ? "border-indigo-400 bg-indigo-500/30"
-            : "border-white/25"
-      }`}
-    >
-      {checked || indeterminate ? (
-        indeterminate ? (
-          <div className="h-1 w-2 rounded-full bg-white" />
-        ) : (
-          <Check size={9} className="text-white" />
-        )
       ) : null}
     </div>
   );

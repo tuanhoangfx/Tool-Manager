@@ -49,18 +49,19 @@ export function TwofaConfirmDialog({
           <X size={16} />
         </button>
 
-        <div className="twofa-confirm-icon" aria-hidden>
-          <AlertTriangle size={22} />
+        <div className="twofa-confirm-body">
+          <div className="twofa-confirm-icon" aria-hidden>
+            <AlertTriangle size={22} />
+          </div>
+          <h2 id="twofa-confirm-title" className="auth-gate-title twofa-confirm-title">
+            {title}
+          </h2>
+          <div id="twofa-confirm-desc" className="twofa-confirm-message">
+            {message}
+          </div>
         </div>
 
-        <h2 id="twofa-confirm-title" className="auth-gate-title !text-left">
-          {title}
-        </h2>
-        <div id="twofa-confirm-desc" className="twofa-confirm-message">
-          {message}
-        </div>
-
-        <div className="auth-gate-actions">
+        <div className="auth-gate-actions twofa-confirm-actions">
           <button type="button" className="auth-gate-secondary" onClick={onClose}>
             Cancel
           </button>

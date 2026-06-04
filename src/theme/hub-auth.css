@@ -1,4 +1,4 @@
-/* Tool Hub identity UI — canonical copy from P0004-Tool-Hub (keep in sync) */
+/* Tool Hub identity UI — synced from P0020 NotesAuthGate */
 
 .auth-gate-root {
   position: fixed;
@@ -178,6 +178,7 @@
   cursor: not-allowed;
 }
 
+/* Compact form modal — wider body (2FA bulk paste, etc.) */
 .auth-gate-modal--wide {
   max-width: 440px;
 }
@@ -188,9 +189,9 @@
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 12px;
-  border: 1px solid rgba(99, 102, 241, 0.28);
-  background: rgba(99, 102, 241, 0.12);
-  color: #a5b4fc;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
 }
 
 .auth-gate-hint {
@@ -211,6 +212,25 @@
   color: #86efac;
 }
 
+.auth-gate-file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.75rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.auth-gate-file-btn:hover {
+  color: var(--text);
+  border-color: rgba(129, 140, 248, 0.35);
+}
+
 .auth-gate-actions {
   display: flex;
   gap: 0.5rem;
@@ -218,21 +238,27 @@
 }
 
 .auth-gate-secondary {
-  flex: 1;
+  flex: 0 0 auto;
   padding: 0.7rem 1rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
-  font-size: 0.875rem;
+  background: transparent;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.04);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
-.auth-gate-secondary:hover {
+.auth-gate-secondary:hover:not(:disabled) {
   color: var(--text);
   border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.auth-gate-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .auth-gate-actions .auth-gate-submit {
@@ -298,53 +324,4 @@
 .btn-danger:hover:not(:disabled) {
   background: #dc2626;
   box-shadow: 0 4px 14px rgb(239 68 68 / 0.35);
-}
-
-/* P0020-only — 2FA add modal, offline gate */
-.auth-gate-file-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  font-size: 0.75rem;
-  color: var(--muted);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.auth-gate-file-btn:hover {
-  color: var(--text);
-  border-color: rgba(129, 140, 248, 0.35);
-}
-
-.twofa-add-panel .auth-gate-icon {
-  border-color: rgba(245, 158, 11, 0.28);
-  background: rgba(245, 158, 11, 0.12);
-  color: #fcd34d;
-}
-
-.auth-gate-actions .auth-gate-secondary {
-  flex: 0 0 auto;
-}
-
-.auth-gate-secondary:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.auth-inline-btn--ghost {
-  background: transparent;
-  color: var(--muted);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: none;
-}
-
-.auth-inline-btn--ghost:hover {
-  color: var(--text);
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: none;
 }

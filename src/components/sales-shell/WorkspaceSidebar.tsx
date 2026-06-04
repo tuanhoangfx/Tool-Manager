@@ -29,6 +29,7 @@ import {
   requestWorkspaceDataRefresh,
   WORKSPACE_LIST_REFRESHING,
 } from "../../lib/workspace-refresh-bus";
+import { useAppToast } from "../toast";
 
 const items: { screen: WorkspaceNavScreen; label: string; icon: typeof FileText }[] = [
   { screen: "notes", label: "Notes", icon: FileText },
@@ -82,6 +83,7 @@ function userDisplay(email: string | null | undefined) {
 
 export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
   const { session } = useNotesAuth();
+  const { pushToast } = useAppToast();
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [listRefreshing, setListRefreshing] = useState(false);
@@ -182,7 +184,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
                       setSigningOut(false);
                       const error = outs.find((r) => r.error)?.error;
                       if (error) {
-                        window.alert(error.message);
+                        pushToast(error.message, "error", 8000);
                         return;
                       }
                       window.dispatchEvent(new CustomEvent("p0020:hub-identity"));

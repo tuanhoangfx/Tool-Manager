@@ -162,7 +162,7 @@ export function WorkspaceTabDisplayPrefs({
               ]
             : undefined
         }
-        panelWidth={360}
+        panelWidth={440}
         maxPanelHeight="min(78vh, 36rem)"
         headerStatLabel={() => "Notes header"}
         scope="tab"

@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pin, Plus } from "lucide-react";
+import { useAppToast } from "../../components/toast";
 import { WorkspaceLoadingView } from "../../components/sales-shell";
 import { StatusBadge } from "../../theme/p0008";
 import { readNoteIdFromUrl } from "../design-preview/design-nav";
@@ -16,12 +17,22 @@ type Props = {
 };
 
 export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery }: Props) {
+  const { pushToast } = useAppToast();
   const { session, loading: authLoading, isSupabaseConfigured, offline } = useNotesAuth();
   const { notes, loading, error, createNote } = useNotes(session);
   const [localQuery, setLocalQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const selectedId = readNoteIdFromUrl();
   const query = shellMode ? (externalQuery ?? "") : localQuery;
+
+  useEffect(() => {
+    if (!error) return;
+    const msg =
+      error.includes("relation") || error.includes("notes")
+        ? `${error} — run migration supabase/migrations/20260523120000_tool_manager_notes.sql`
+        : error;
+    pushToast(msg, "error", 8000);
+  }, [error, pushToast]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -40,7 +51,7 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
       const row = await createNote();
       onOpenNote?.(row.id);
     } catch (err) {
-      console.error(err);
+      pushToast(err instanceof Error ? err.message : "Could not create note", "error", 8000);
     } finally {
       setCreating(false);
     }
@@ -75,14 +86,6 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
             </button>
           }
         />
-      ) : null}
-
-      {error ? (
-        <p className="mb-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[12px] text-rose-200">
-          {error.includes("relation") || error.includes("notes")
-            ? `${error} — run migration supabase/migrations/20260523120000_tool_manager_notes.sql`
-            : error}
-        </p>
       ) : null}
 
       {!shellMode ? (

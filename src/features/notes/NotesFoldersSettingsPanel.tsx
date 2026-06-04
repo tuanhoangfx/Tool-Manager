@@ -1,15 +1,32 @@
-import { FolderOpen, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { FolderOpen, StickyNote } from "lucide-react";
+import { Section, SectionIcon } from "@tool-workspace/hub-ui";
+import { TwofaBulkActionBar } from "../twofa/TwofaBulkActionBar";
+import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
 import type { NoteFolder } from "./noteFolders";
-
-const FOLDER_COLORS = ["#818cf8", "#22d3ee", "#f59e0b", "#a78bfa", "#34d399", "#fb7185"];
+import {
+  countFolderNotes,
+  getUserFolderIds,
+  isCookieAutoFolder,
+  isNewFolder,
+  isSystemFolder,
+  isUnorganizedFolder,
+} from "./noteFolderLifecycle";
+import { NotesFolderFormModal } from "./NotesFolderFormModal";
+import {
+  NotesFoldersDirectoryTable,
+  sortFolderRows,
+  type FolderTableSortKey,
+} from "./NotesFoldersDirectoryTable";
 
 type Props = {
   folders: NoteFolder[];
+  noteFolders: Record<string, string[]>;
+  cookieRouteNoteIds: ReadonlySet<string>;
+  notes: { id: string; created_at?: string | null }[];
   selectedNoteId: string | null;
   selectedNoteFolderIds: string[];
-  routeLocked?: boolean;
-  onCreateFolder: (name: string) => Promise<void>;
+  onCreateFolder: (name: string, color?: string) => Promise<void>;
   onToggleNoteFolder: (folderId: string, enabled: boolean) => Promise<void>;
   onRenameFolder: (folderId: string, name: string) => Promise<void>;
   onSetFolderColor: (folderId: string, color: string) => Promise<void>;
@@ -18,135 +35,215 @@ type Props = {
 
 export function NotesFoldersSettingsPanel({
   folders,
+  noteFolders,
+  cookieRouteNoteIds,
+  notes,
   selectedNoteId,
   selectedNoteFolderIds,
-  routeLocked = false,
   onCreateFolder,
   onToggleNoteFolder,
   onRenameFolder,
   onSetFolderColor,
   onDeleteFolder,
 }: Props) {
-  const [newFolderName, setNewFolderName] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [sortKey, setSortKey] = useState<FolderTableSortKey>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"add" | "edit">("add");
+  const [editingFolder, setEditingFolder] = useState<NoteFolder | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<NoteFolder[] | null>(null);
+
+  const tableRows = useMemo(
+    () =>
+      sortFolderRows(
+        folders.map((folder) => ({
+          ...folder,
+          noteCount: countFolderNotes(folder.id, noteFolders, cookieRouteNoteIds, notes),
+        })),
+        sortKey,
+        sortDir,
+      ),
+    [cookieRouteNoteIds, folders, noteFolders, notes, sortDir, sortKey],
+  );
+
+  const noteHasCookieRoute = Boolean(selectedNoteId && cookieRouteNoteIds.has(selectedNoteId));
+  const userFolderSelection = [...selectedIds].filter((id) => !isSystemFolder(id));
+  const allVisibleSelected = tableRows.length > 0 && tableRows.every((row) => selectedIds.has(row.id));
+
+  const toggleSelect = useCallback((folderId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(folderId)) next.delete(folderId);
+      else next.add(folderId);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (tableRows.length === 0) return prev;
+      if (tableRows.every((row) => prev.has(row.id))) return new Set();
+      return new Set(tableRows.map((row) => row.id));
+    });
+  }, [tableRows]);
+
+  const onSort = useCallback(
+    (key: FolderTableSortKey) => {
+      if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      else {
+        setSortKey(key);
+        setSortDir("asc");
+      }
+    },
+    [sortKey],
+  );
+
+  const openAdd = () => {
+    setFormMode("add");
+    setEditingFolder(null);
+    setFormOpen(true);
+  };
+
+  const openEdit = () => {
+    const id = userFolderSelection[0];
+    const folder = folders.find((f) => f.id === id);
+    if (!folder || isSystemFolder(folder.id)) return;
+    setFormMode("edit");
+    setEditingFolder(folder);
+    setFormOpen(true);
+  };
+
+  const requestDelete = () => {
+    const targets = folders.filter((f) => selectedIds.has(f.id) && !isSystemFolder(f.id));
+    if (!targets.length) return;
+    setPendingDelete(targets);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete?.length) return;
+    for (const folder of pendingDelete) {
+      await onDeleteFolder(folder.id);
+    }
+    setSelectedIds(new Set());
+    setPendingDelete(null);
+  };
+
+  const deleteMessage =
+    pendingDelete && pendingDelete.length > 0 ? (
+      <>
+        Delete{" "}
+        {pendingDelete.length === 1 ? (
+          <strong>{pendingDelete[0].name}</strong>
+        ) : (
+          <>
+            <strong>{pendingDelete.length} folders</strong>
+            {pendingDelete.length <= 4 ? <> ({pendingDelete.map((f) => f.name).join(", ")})</> : null}
+          </>
+        )}
+        ? Notes keep their content; only folder tags are removed.
+      </>
+    ) : null;
 
   return (
-    <div className="space-y-4 text-xs">
-      {selectedNoteId ? (
-        <section className="space-y-2 rounded-lg border border-white/8 bg-white/[.02] p-3">
-          <h4 className="text-[11px] font-semibold text-[var(--text)]">Folders for this note</h4>
-          <p className="text-[10px] text-[var(--muted)]">A note can belong to multiple folders.</p>
-          {routeLocked ? (
-            <p className="text-[10px] text-amber-100/90">Folder tags are read-only while a Cookie route is active.</p>
-          ) : null}
-          <div className="space-y-1">
-            {folders.length === 0 ? (
-              <p className="text-[10px] text-[var(--muted)]">No folders yet — create one below.</p>
-            ) : (
-              folders.map((folder) => {
-                const checked = selectedNoteFolderIds.includes(folder.id);
-                return (
-                  <label
-                    key={`note-${folder.id}`}
-                    className={`flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/[.04] ${
-                      checked ? "bg-indigo-500/10" : ""
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      className="hub-checkbox"
-                      checked={checked}
-                      disabled={routeLocked}
-                      onChange={(e) => void onToggleNoteFolder(folder.id, e.target.checked)}
-                    />
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: folder.color }} />
-                    <span className="min-w-0 flex-1 truncate text-[var(--text)]">{folder.name}</span>
-                  </label>
-                );
-              })
-            )}
-          </div>
-        </section>
-      ) : (
-        <p className="rounded-lg border border-white/8 bg-white/[.02] px-3 py-2 text-[10px] text-[var(--muted)]">
-          Select a note to tag it with folders.
-        </p>
-      )}
-
-      <section className="space-y-2">
-        <h4 className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text)]">
-          <FolderOpen size={12} className="text-amber-300" />
-          Manage folders
-        </h4>
-        <div className="flex gap-2">
-          <input
-            className="field h-8 min-w-0 flex-1 text-[11px]"
-            value={newFolderName}
-            placeholder="New folder"
-            onChange={(e) => setNewFolderName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && newFolderName.trim()) {
-                void onCreateFolder(newFolderName.trim());
-                setNewFolderName("");
-              }
-            }}
-          />
-          <button
-            type="button"
-            className="btn inline-flex items-center gap-1 text-[11px] !px-2"
-            onClick={() => {
-              if (!newFolderName.trim()) return;
-              void onCreateFolder(newFolderName.trim());
-              setNewFolderName("");
-            }}
-          >
-            <Plus size={12} />
-            Add
-          </button>
-        </div>
-
-        <div className="space-y-1">
-          {folders.map((folder) => (
-            <div key={folder.id} className="rounded-lg border border-white/5 bg-white/[.02] p-2">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: folder.color }} />
-                <span className="min-w-0 flex-1 truncate font-medium text-[var(--text)]">{folder.name}</span>
+    <div className="space-y-3 text-xs">
+      <Section icon={<SectionIcon icon={StickyNote} className="text-indigo-300" />} label="Tag this note">
+        {!selectedNoteId ? (
+          <p className="rounded-lg border border-dashed border-white/10 bg-white/[.02] px-3 py-2.5 text-[11px] leading-relaxed text-[var(--muted)]">
+            Select a note, then tap a folder chip to tag it.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {folders.map((folder) => {
+              const active = selectedNoteFolderIds.includes(folder.id);
+              const autoLocked =
+                (isCookieAutoFolder(folder.id) && noteHasCookieRoute) ||
+                isNewFolder(folder.id) ||
+                isUnorganizedFolder(folder.id);
+              const chipDisabled = !selectedNoteId || autoLocked;
+              return (
                 <button
+                  key={`tag-${folder.id}`}
                   type="button"
-                  className="rounded px-1.5 py-0.5 text-[10px] text-indigo-200 hover:bg-white/[.06]"
+                  disabled={chipDisabled}
+                  title={
+                    autoLocked
+                      ? isNewFolder(folder.id)
+                        ? "Auto — new notes stay here for 24h"
+                        : isUnorganizedFolder(folder.id)
+                          ? "Auto — notes without a custom folder after New"
+                          : "Auto — note has a Cookie Auto route"
+                      : undefined
+                  }
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                    active
+                      ? "border-indigo-400/35 bg-indigo-500/14 text-indigo-100"
+                      : "border-white/10 bg-white/[.03] text-[var(--muted)] hover:border-white/18 hover:bg-white/[.05] hover:text-[var(--text)]"
+                  } disabled:cursor-default disabled:opacity-85`}
                   onClick={() => {
-                    const next = window.prompt("Rename folder", folder.name);
-                    if (next?.trim()) void onRenameFolder(folder.id, next);
+                    if (chipDisabled || !selectedNoteId) return;
+                    void onToggleNoteFolder(folder.id, !active);
                   }}
                 >
-                  Rename
-                </button>
-                <button
-                  type="button"
-                  className="rounded p-1 text-rose-200 hover:bg-rose-500/10"
-                  aria-label={`Delete ${folder.name}`}
-                  onClick={() => {
-                    if (window.confirm(`Delete folder "${folder.name}"?`)) void onDeleteFolder(folder.id);
-                  }}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {FOLDER_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className={`h-4 w-4 rounded-full border ${folder.color === color ? "border-white" : "border-white/10"}`}
-                    style={{ background: color }}
-                    title="Set color"
-                    onClick={() => void onSetFolderColor(folder.id, color)}
+                  <FolderOpen
+                    size={12}
+                    className="shrink-0"
+                    style={{ color: folder.color }}
+                    aria-hidden
                   />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+                  {folder.name}
+                  {autoLocked ? (
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-amber-200/90">Auto</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </Section>
+
+      <TwofaBulkActionBar
+        hasSelection={userFolderSelection.length > 0}
+        selectedCount={userFolderSelection.length}
+        onAdd={openAdd}
+        onEdit={openEdit}
+        onDelete={requestDelete}
+      />
+
+      <NotesFoldersDirectoryTable
+        rows={tableRows}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onSort={onSort}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
+        onToggleSelectAll={toggleSelectAll}
+        allVisibleSelected={allVisibleSelected}
+        editingId={formOpen && formMode === "edit" ? editingFolder?.id ?? null : null}
+      />
+
+      <NotesFolderFormModal
+        open={formOpen}
+        mode={formMode}
+        initial={editingFolder}
+        onClose={() => setFormOpen(false)}
+        onSave={async (draft) => {
+          if (formMode === "add") {
+            await onCreateFolder(draft.name, draft.color);
+          } else if (editingFolder) {
+            if (draft.name !== editingFolder.name) await onRenameFolder(editingFolder.id, draft.name);
+            if (draft.color !== editingFolder.color) await onSetFolderColor(editingFolder.id, draft.color);
+          }
+        }}
+      />
+
+      <ToolConfirmDialog
+        open={Boolean(pendingDelete?.length)}
+        title={pendingDelete && pendingDelete.length > 1 ? "Delete folders" : "Delete folder"}
+        message={deleteMessage}
+        onConfirm={() => void confirmDelete()}
+        onClose={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

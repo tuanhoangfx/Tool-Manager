@@ -4,20 +4,174 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
-## 2026-06-04 - Auth gate aligned with P0004 Tool Hub
+## 2026-06-04 - Notes folders, Tool dialogs, folder tag persistence
 
-- Version: `2.2.3`
-- Type: Patch
+- Version: `2.3.1`
+- Type: Minor
 - Product: P0020
-- Prompt: Chuẩn hóa Sign In/Sign Up giống 100% P0004 Tool Hub
+- Prompt: Notes folders (filter, tag, settings); Tool-style confirms/toasts; folder persist + filter UI parity
 - Status: Committed
 
 ### Changes
 
-- `NotesAuthGate`: same modal structure/copy/hints as `HubAuthGate` (Welcome title, subtitle, tabs, fields).
-- `hub-auth.css`: canonical styles from P0004; P0020-only extensions (2FA modal, offline Login).
-- `vendor/hub-ui`: sync missing `hub-fields.css` (+ shell CSS); `predev`/`prebuild` run `sync-hub-ui-vendor.cjs`.
-- `packages/hub-ui`: export `WorkspaceTabHeader` + `buildVersionMetaItems` so vendor sync keeps TS build green.
+- Notes folders: multi-tag, system folders (New, Unorganized, Cookie Auto), FilterBar filter, editor picker, Settings CRUD table.
+- `ToolConfirmDialog` + toasts replace browser `confirm`/`alert`; centered confirm layout.
+- Folder tags persist across F5 (local-first merge + Supabase flush); shared `filter-dropdown-ui` for header Filter and note picker.
+- List rail dots match folder colors; `NotesFolderGlyph` shared across Filter, picker, and settings table.
+
+Version: `2.2.11` → `2.3.1`
+
+---
+
+## 2026-06-04 - Notes folder tags persist + unified filter dropdown UI
+
+- Version: `2.2.11`
+- Type: Patch
+- Product: P0020
+- Prompt: Folder không lưu sau F5; đồng nhất style Filter và bộ chọn Folder
+- Status: Draft
+
+### Changes
+
+- Folder tags: merge localStorage with Supabase on load (local wins); flush pending mappings after remote ready.
+- Remap local-only folder ids to cloud UUIDs on sync; commit before remote on toggle.
+- Shared `filter-dropdown-ui` — FilterBar header folder filter and note folder picker use same trigger, circle, panel.
+
+Version: `2.2.10` → `2.2.11`
+
+---
+
+## 2026-06-04 - Confirm dialog layout alignment
+
+- Version: `2.2.10`
+- Type: Patch
+- Product: P0020
+- Prompt: Các nhãn trong modal xác nhận bị lệch — căn giữa, nút đều nhau
+- Status: Draft
+
+### Changes
+
+- `ToolConfirmDialog` / `TwofaConfirmDialog`: centered icon, title, message; equal-width Cancel / Delete row.
+
+Version: `2.2.9` → `2.2.10`
+
+---
+
+## 2026-06-04 - Tool-style confirms and toasts app-wide
+
+- Version: `2.2.9`
+- Type: Patch
+- Product: P0020
+- Prompt: Chuyển toàn bộ thông báo sang Tool style như tab 2FA
+- Status: Draft
+
+### Changes
+
+- `ToolConfirmDialog` (auth-gate skin) replaces `window.confirm` for note delete and re-exports 2FA confirm.
+- Sign-out errors use toast instead of `window.alert`.
+- Notes list/load errors and editor actions use toast; removed duplicate rose banners in editor.
+
+Version: `2.2.8` → `2.2.9`
+
+---
+
+## 2026-06-04 - Notes folders: aligned Filter UI + fix tag + list dots
+
+- Version: `2.2.8`
+- Type: Patch
+- Product: P0020
+- Prompt: Folder cùng dòng tiêu đề bên phải; sửa chọn folder khi ở New; đồng bộ icon/màu Filter + list
+- Status: Draft
+
+### Changes
+
+- Folder picker on same row as title (right), FilterBar height/style.
+- Fix tagging: batch `setUserNoteFolders`; custom vs automatic rows (New no longer blocks clicks).
+- Shared `NotesFolderGlyph` for header Filter, note picker, Settings table.
+- List rail dot uses primary folder color.
+
+Version: `2.2.6` → `2.2.8`
+
+---
+
+## 2026-06-04 - Notes folders: tag on editor + Cookie Auto system folder
+
+- Version: `2.2.6`
+- Type: Patch
+- Product: P0020
+- Prompt: Thêm Folder cho Note; folder cố định Cookie Auto cho note có route
+- Status: Draft
+
+### Changes
+
+- Toolbar **Folders** picker — tag/untag note without opening Settings.
+- System folder **Cookie Auto** (fixed) — notes with Cookie Auto routes auto-tagged; filter + table count include routes.
+- Settings Folders: Cookie Auto row marked **System**; cannot rename/delete; user folders still editable.
+
+Version: `2.2.5` → `2.2.6`
+
+---
+
+## 2026-06-04 - Auto relay Tool sessions to E0001 extension
+
+- Version: `2.2.5`
+- Type: Patch
+- Product: P0020
+- Prompt: Kiểm tra sync user từ web (đã login) lên Extension
+- Status: Draft
+
+### Changes
+
+- `relayActiveSessionsToExtension`: push Hub identity + Data Box JWT to E0001.
+- `useExtensionSessionRelay` on workspace shell (mount + 30m + hub-identity event).
+- `onLinkExtension` uses full dual relay (was Data Box only).
+
+Version: `2.2.4` → `2.2.5`
+
+---
+
+## 2026-06-04 - Fewer auth requests on sign-in (rate limit)
+
+- Version: `2.2.4`
+- Type: Patch
+- Product: P0020
+- Prompt: Giảm rate limit — gộp bớt request auth mỗi lần bấm Sign In
+- Status: Draft
+
+### Changes
+
+- `signInWorkspaceDual`: Hub then Data Box sequentially; 2FA vault mirror runs in background (not parallel with login).
+
+Version: `2.2.3` → `2.2.4`
+
+---
+
+## 2026-06-04 - Fix blank screen (hub-ui export)
+
+- Version: `2.2.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Blank page at http://127.0.0.1:5177/
+- Status: Draft
+
+### Changes
+
+- Export `WorkspaceTabHeader` + `buildVersionMetaItems` from `vendor/hub-ui/src/index.ts` (missing export crashed app on load).
+
+---
+
+## 2026-06-04 - Auth modal aligned with Tool Hub shell
+
+- Version: `2.2.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Chuẩn hóa modal Sign In/Sign Up giống P0004 — Welcome + một dòng subtitle, không hint
+- Status: Draft
+
+### Changes
+
+- `NotesAuthGate` modal: title `Welcome to Data Box`, single subtitle (notes/2FA/cookies/tool access), no field hints.
+- Inline auth gate: title only (no extra guidance lines).
 
 Version: `2.2.2` → `2.2.3`
 
@@ -56,25 +210,6 @@ Version: `2.2.1` → `2.2.2`
 - `pnpm-lock.yaml` synced for `@tool-workspace/hub-identity` (Vercel frozen-lockfile).
 
 Version: `2.1.9` → `2.2.0`
-
----
-
-## 2026-06-04 - Notes: multi-folder filter + editor scroll/padding
-
-- Version: `2.2.3`
-- Type: Patch
-- Product: P0020
-- Prompt: Folder→Filter; multi-folder; folder CRUD in Tab Settings; fix scroll; unify padding
-- Status: Draft
-
-### Changes
-
-- **Filter** button (multi-folder list filter); folder tag CRUD + note checkboxes in **Settings → Folders**.
-- **Multi-folder** per note (`noteFolders` arrays + migration `20260604120000_note_folder_multi.sql`).
-- Editor scroll: remove workspace `max-height` cap; textarea auto-grow so body scroll reaches bottom.
-- Unified content padding (`0.75rem 0.875rem`); `fm-cookie-panel` styles aligned with editor body.
-
-Version: `2.2.2` → `2.2.3`
 
 ---
 

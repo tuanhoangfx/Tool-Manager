@@ -17,6 +17,7 @@ import { useHubIdentityRelay } from "../hub/useHubIdentityRelay";
 import { useHubNavigation } from "../hub/useHubNavigation";
 import { AuthSessionProvider } from "../notes/AuthSessionProvider";
 import { useNotesAuth } from "../notes/useNotesAuth";
+import { useExtensionSessionRelay } from "../notes/useExtensionSessionRelay";
 import { NotesWorkspaceScreen } from "../notes/NotesWorkspaceScreen";
 import { TwofaManagerScreen } from "../twofa/TwofaManagerScreen";
 import { CookieSyncScreen } from "../cookie/CookieSyncScreen";
@@ -72,9 +73,11 @@ function navScreen(screen: WorkspaceScreen): WorkspaceNavScreen {
 const NOTES_SCREENS = new Set<WorkspaceScreen>(["notes", "edit"]);
 
 function WorkspaceAppInner() {
+  const { session } = useNotesAuth();
   const { screen, navigate } = useHubNavigation();
   useHubIdentityRelay();
   useExtensionBindingsRelay(true);
+  useExtensionSessionRelay(session);
   const shareToken = readShareTokenFromUrl();
   const activeNav = navScreen(screen);
   const isNotesLayout = NOTES_SCREENS.has(screen);

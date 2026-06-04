@@ -1,11 +1,21 @@
 import type { TimeRange } from "../../lib/url-prefs";
+import type { NoteFolder } from "./noteFolders";
 import type { NoteListItem } from "./types";
 
 export const NOTES_FILTER_DEFS = [
+  { key: "folder", label: "Folder" },
   { key: "pinned", label: "Pinned" },
   { key: "sync", label: "Sync" },
   { key: "share", label: "Share" },
 ] as const;
+
+export function buildNotesFolderFilterOptions(folders: NoteFolder[]) {
+  return folders.map((f) => ({
+    value: f.id,
+    label: f.name,
+    color: f.color,
+  }));
+}
 
 function dayBounds(offsetDays = 0) {
   const start = new Date();
@@ -37,9 +47,10 @@ export function matchesTimeRange(updatedAt: string | undefined, range: TimeRange
   return true;
 }
 
-export function notesFilterOptions(_notes: NoteListItem[]) {
+export function notesFilterOptions(_notes: NoteListItem[], folders: NoteFolder[] = []) {
   void _notes;
   return {
+    folder: buildNotesFolderFilterOptions(folders),
     pinned: [
       { value: "pinned", label: "Pinned", color: "#818cf8" },
       { value: "unpinned", label: "Not pinned", color: "#6b7394" },

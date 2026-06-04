@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Cookie, Pin } from "lucide-react";
 import { resolveCookieSiteIcon } from "../cookie/cookieSiteIcon";
 import type { NotesCookieRouteIndex } from "../cookie/useNotesCookieRouteIndex";
+import { NotesFolderListDot } from "./NotesFolderGlyph";
+import { getPrimaryFolderForListNote } from "./noteFolders";
+import type { NoteFolder } from "./noteFolders";
 import type { NoteListItem } from "./types";
 import type { NotesListDensity } from "./notes-list-prefs";
 
@@ -12,6 +15,9 @@ type Props = {
   loading?: boolean;
   refreshing?: boolean;
   cookieRouteByNoteId?: NotesCookieRouteIndex;
+  cookieRouteNoteIds: ReadonlySet<string>;
+  displayFolders: NoteFolder[];
+  noteFolders: Record<string, string[]>;
   onSelect: (id: string) => void;
 };
 
@@ -23,6 +29,9 @@ export function NotesListRail({
   loading,
   refreshing,
   cookieRouteByNoteId,
+  cookieRouteNoteIds,
+  displayFolders,
+  noteFolders,
   onSelect,
 }: Props) {
   const compact = density === "compact";
@@ -42,6 +51,13 @@ export function NotesListRail({
           {notes.map((n) => {
             const active = n.id === selectedId;
             const routeDomain = cookieRouteByNoteId?.get(n.id) ?? null;
+            const primaryFolder = getPrimaryFolderForListNote(
+              n.id,
+              n.created_at,
+              noteFolders,
+              cookieRouteNoteIds,
+              displayFolders,
+            );
             return (
               <li key={n.id}>
                 <button
@@ -55,17 +71,21 @@ export function NotesListRail({
                       : "border-transparent bg-white/[.02] hover:border-white/10 hover:bg-white/[.05]"
                   }`}
                 >
-                  <span
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                      n.syncTone === "emerald"
-                        ? "bg-emerald-400"
-                        : n.syncTone === "rose"
-                          ? "bg-rose-400"
-                          : "bg-amber-400"
-                    }`}
-                    title={n.syncLabel}
-                    aria-hidden
-                  />
+                  {primaryFolder ? (
+                    <NotesFolderListDot color={primaryFolder.color} title={primaryFolder.name} />
+                  ) : (
+                    <span
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                        n.syncTone === "emerald"
+                          ? "bg-emerald-400"
+                          : n.syncTone === "rose"
+                            ? "bg-rose-400"
+                            : "bg-amber-400"
+                      }`}
+                      title={n.syncLabel}
+                      aria-hidden
+                    />
+                  )}
                   <span
                     className={`min-w-0 flex-1 truncate font-medium text-[var(--text)] ${
                       compact ? "text-[11px]" : "text-[12px]"

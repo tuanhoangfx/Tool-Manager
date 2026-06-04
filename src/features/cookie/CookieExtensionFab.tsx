@@ -16,23 +16,27 @@ export function CookieExtensionFab({ active = true }: Props) {
   const release = useExtensionRelease();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  if (!active || typeof document === "undefined") return null;
+  if (typeof document === "undefined") return null;
 
-  return createPortal(
+  return (
     <>
-      <div className="workspace-fab-stack--cookie" aria-label="Cookie extension download">
-        <button
-          type="button"
-          className="workspace-fab workspace-fab--download workspace-fab--pulse"
-          title={`${EXTENSION_HEADER_LABEL} v${release.version} — review before download`}
-          aria-label={`Download ${EXTENSION_HEADER_LABEL} v${release.version}`}
-          onClick={() => setConfirmOpen(true)}
-        >
-          <Download size={16} strokeWidth={2.35} aria-hidden />
-        </button>
-      </div>
+      {active
+        ? createPortal(
+            <div className="workspace-fab-stack--cookie" aria-label="Cookie extension download">
+              <button
+                type="button"
+                className="workspace-fab workspace-fab--download workspace-fab--pulse"
+                title={`${EXTENSION_HEADER_LABEL} v${release.version} — review before download`}
+                aria-label={`Download ${EXTENSION_HEADER_LABEL} v${release.version}`}
+                onClick={() => setConfirmOpen(true)}
+              >
+                <Download size={16} strokeWidth={2.35} aria-hidden />
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
       <CookieExtensionDownloadConfirm open={confirmOpen} onClose={() => setConfirmOpen(false)} />
-    </>,
-    document.body,
+    </>
   );
 }

@@ -5,7 +5,6 @@ import { useNotesAuth } from "../../notes/useNotesAuth";
 import { useNotes } from "../../notes/useNotes";
 import {
   broadcastCookieSyncNow,
-  broadcastExtensionAuth,
   broadcastCookieBridgePrefs,
   broadcastSelectedBinding,
 } from "../../cookie/extensionBridgeMessages";
@@ -16,7 +15,7 @@ import {
   saveSelectedBindingId,
   type CookieBinding,
 } from "../../cookie/cookieBridge";
-import { useExtensionAuthHeartbeat } from "../../notes/useExtensionAuthHeartbeat";
+import { relayActiveSessionsToExtension } from "../../../lib/relay-extension-sessions";
 import { useCookieRouteDetailRenderers } from "../../cookie/useCookieRouteDetailRenderers";
 import { shouldShowExtensionLinkToast } from "../../../lib/extension-link-toast";
 import { supabase } from "../../../lib/supabase";
@@ -246,9 +245,6 @@ function CookieSyncMain({
     broadcastCookieBridgePrefs(prefs);
   }, []);
 
-  useExtensionAuthHeartbeat(session);
-
-
   const onLinkExtension = useCallback(async (opts?: { silent?: boolean }) => {
     const showToast = opts?.silent !== true;
     if (offline) {
@@ -271,12 +267,7 @@ function CookieSyncMain({
       pushToast(cloud.error, "warn", 8000);
     }
 
-    broadcastExtensionAuth({
-      access_token: s.access_token,
-      refresh_token: s.refresh_token,
-      expires_at: s.expires_at,
-      user: s.user,
-    });
+    await relayActiveSessionsToExtension();
     if (nextBindings.length > 0) {
       pushToExtension(nextBindings);
       if (showToast && shouldShowExtensionLinkToast()) {

@@ -10,6 +10,8 @@ import {
   readNotesListPrefs,
   type NotesListDensity,
 } from "./notes-list-prefs";
+import type { NoteFolder } from "./noteFolders";
+import { mergeDisplayFolders } from "./noteFolders";
 import { NOTES_FILTER_DEFS, notesFilterOptions } from "./notes-filters";
 import type { NoteListItem } from "./types";
 import { workspaceVersionLine } from "../workspace/workspace-tab-header-meta";
@@ -21,6 +23,7 @@ type Props = {
   filterValues: FilterValues;
   onFilterValuesChange: (v: FilterValues) => void;
   notes: NoteListItem[];
+  noteFolders?: NoteFolder[];
   shown: number;
   density: NotesListDensity;
   onDensityChange: (d: NotesListDensity) => void;
@@ -34,6 +37,7 @@ export function NotesHubChrome({
   filterValues,
   onFilterValuesChange,
   notes,
+  noteFolders = [],
   shown,
   density,
   onDensityChange,
@@ -54,7 +58,7 @@ export function NotesHubChrome({
 
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_NOTES_HEADER_STAT_KEYS;
   const visFilterKeys = prefs.noteFilters ?? DEFAULT_NOTES_FILTER_KEYS;
-  const opts = useMemo(() => notesFilterOptions(notes), [notes]);
+  const opts = useMemo(() => notesFilterOptions(notes, mergeDisplayFolders(noteFolders)), [noteFolders, notes]);
   const pinnedCount = useMemo(() => notes.filter((n) => n.pinned).length, [notes]);
   const syncedCount = useMemo(() => notes.filter((n) => n.sync_status === "synced").length, [notes]);
   const version = useMemo(() => workspaceVersionLine(), []);

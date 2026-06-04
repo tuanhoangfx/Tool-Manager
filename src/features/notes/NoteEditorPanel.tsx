@@ -3,6 +3,8 @@ import type { NoteRouteLockInfo } from "../cookie/noteRouteLockInfo";
 import { NoteCookieSnapshotBlock } from "./NoteCookieSnapshotBlock";
 import { NoteEditorMetaStrip } from "./NoteEditorMetaStrip";
 import { NoteEditorRouteOpenButtons } from "./NoteEditorRouteTitleActions";
+import { NotesNoteFolderFilter } from "./NotesNoteFolderFilter";
+import type { NoteFolder } from "./noteFolders";
 import { cookieLines } from "./noteUtils";
 import type { NoteRow } from "./types";
 
@@ -11,9 +13,12 @@ type Props = {
   loading?: boolean;
   title: string;
   body: string;
-  actionError?: string;
   routeLocked?: boolean;
   routeInfos?: NoteRouteLockInfo[];
+  folders: NoteFolder[];
+  effectiveFolderIds: string[];
+  userFolderIds: string[];
+  onUserFoldersChange: (folderIds: string[]) => void;
   onOpenRouteDetail?: (domain: string) => void;
   onTitleChange: (v: string) => void;
   onBodyChange: (v: string) => void;
@@ -31,9 +36,12 @@ export function NoteEditorPanel({
   loading,
   title,
   body,
-  actionError,
   routeLocked = false,
   routeInfos = [],
+  folders,
+  effectiveFolderIds,
+  userFolderIds,
+  onUserFoldersChange,
   onOpenRouteDetail,
   onTitleChange,
   onBodyChange,
@@ -66,14 +74,16 @@ export function NoteEditorPanel({
             onBlur={() => onSlugFromTitle()}
           />
         </div>
+        {note?.id ? (
+          <NotesNoteFolderFilter
+            folders={folders}
+            effectiveFolderIds={effectiveFolderIds}
+            userFolderIds={userFolderIds}
+            onUserFoldersChange={onUserFoldersChange}
+          />
+        ) : null}
         <NoteEditorMetaStrip note={note} loading={loading} hideDomain={routeLocked} routeLocked={routeLocked} />
       </div>
-
-      {actionError ? (
-        <p className="shrink-0 border-b border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-[11px] text-rose-200">
-          {actionError}
-        </p>
-      ) : null}
 
       <div className="notes-editor__body min-h-0 flex-1 overflow-y-auto">
         {showCookieSnapshot ? (

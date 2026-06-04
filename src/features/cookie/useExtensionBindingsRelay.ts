@@ -12,8 +12,8 @@ import {
 } from "./extensionBridgeMessages";
 
 /**
- * When the extension popup asks for routes, re-push only the Tool session.
- * The extension must read route data from Supabase RPC, not from Web local cache.
+ * When the extension asks for session (User modal → Refresh), re-push Tool sessions only.
+ * Extension pulls route list from Supabase; relay must not trigger vault apply or bulk cookie sync.
  */
 export function useExtensionBindingsRelay(active: boolean) {
   useEffect(() => {
