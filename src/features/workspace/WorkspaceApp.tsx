@@ -7,8 +7,6 @@ import { ToastContainer, ToastProvider } from "../../components/toast";
 import type { WorkspaceNavScreen, WorkspaceScreen } from "../../lib/workspace-screen";
 import { NAV_SCREENS } from "../../lib/workspace-screen";
 import { readNoteIdFromUrl } from "../design-preview/design-nav";
-import { readShareTokenFromUrl } from "../notes/shareUtils";
-import { PublicShareScreen } from "../notes/PublicShareScreen";
 import { DEFAULT_NOTES_FILTER_KEYS } from "../notes/notes-list-prefs";
 import { NOTES_FILTER_DEFS } from "../notes/notes-filters";
 import { COOKIE_ROUTE_FILTER_DEFS, DEFAULT_COOKIE_ROUTE_FILTER_KEYS } from "../cookie/cookie-route-filters";
@@ -78,7 +76,6 @@ function WorkspaceAppInner() {
   useHubIdentityRelay();
   useExtensionBindingsRelay(true);
   useExtensionSessionRelay(session);
-  const shareToken = readShareTokenFromUrl();
   const activeNav = navScreen(screen);
   const isNotesLayout = NOTES_SCREENS.has(screen);
   const [visited, setVisited] = useState<Set<WorkspaceNavScreen>>(() => new Set([activeNav]));
@@ -122,10 +119,6 @@ function WorkspaceAppInner() {
     },
     [navigate],
   );
-
-  if (screen === "share" && shareToken) {
-    return <PublicShareScreen />;
-  }
 
   const mainClass = isNotesLayout ? "hub-main hub-main--notes" : "hub-main hub-main--tab";
 

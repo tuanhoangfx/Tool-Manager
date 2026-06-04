@@ -13,6 +13,7 @@ function note(overrides: Partial<NoteListItem>): NoteListItem {
     cookie_snapshot: null,
     pinned: false,
     share_enabled: false,
+    share_can_edit: false,
     share_token: null,
     share_password_hash: null,
     share_expires_at: null,
@@ -33,7 +34,7 @@ function note(overrides: Partial<NoteListItem>): NoteListItem {
 describe("notes filters", () => {
   it("uses the same option values that the matcher expects", () => {
     expect(notesFilterOptions([]).pinned.map((option) => option.value)).toEqual(["pinned", "unpinned"]);
-    expect(notesFilterOptions([]).share.map((option) => option.value)).toEqual(["shared", "private"]);
+    expect(notesFilterOptions([]).share.map((option) => option.value)).toEqual(["edit", "view", "private"]);
   });
 
   it("filters by pinned, sync, share, query and time range", () => {
@@ -49,7 +50,7 @@ describe("notes filters", () => {
         {
           pinned: ["pinned"],
           sync: ["synced"],
-          share: ["shared"],
+          share: ["view"],
         },
         "all",
       ).map((item) => item.id),

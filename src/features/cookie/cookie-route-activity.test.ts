@@ -38,11 +38,14 @@ const oldNote: NoteListItem = {
 };
 
 describe("routeActivityAt", () => {
-  it("prefers cloud route updated_at over stale note updated_at", () => {
-    expect(routeActivityAt(binding, oldNote)).toBe("2026-06-01T12:00:00Z");
+  it("uses note synced_at when present", () => {
+    const synced = { ...oldNote, synced_at: "2026-06-02T08:00:00Z" };
+    expect(routeActivityAt(binding, synced)).toBe("2026-06-02T08:00:00Z");
   });
 
-  it("falls back to note timestamps when route has no cloud date", () => {
+  it("falls back to note updated_at, then cloud route date", () => {
+    expect(routeActivityAt(binding, oldNote)).toBe("2024-01-01T00:00:00Z");
+    expect(routeActivityAt(binding, undefined)).toBe("2026-06-01T12:00:00Z");
     const localOnly = { ...binding, routeUpdatedAt: undefined };
     expect(routeActivityAt(localOnly, oldNote)).toBe("2024-01-01T00:00:00Z");
   });

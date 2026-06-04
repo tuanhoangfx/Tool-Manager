@@ -63,11 +63,6 @@ export function broadcastExtensionAuth(session: {
   document.dispatchEvent(new CustomEvent("e0001-bridge-auth", { detail }));
 }
 
-export function broadcastCookieSyncNow(noteId?: string) {
-  const detail = { type: "E0001_COOKIE_BRIDGE_SYNC", noteId: noteId?.trim() || undefined };
-  window.postMessage(detail, window.location.origin);
-}
-
 export function broadcastSelectedBinding(noteId: string | null) {
   const detail = { type: "E0001_COOKIE_BRIDGE_SELECT", noteId: noteId?.trim() || null };
   window.postMessage(detail, window.location.origin);
@@ -79,9 +74,7 @@ export function broadcastCookieBindings(bindings: ExtensionCookieBinding[]) {
 }
 
 export function broadcastCookieBridgePrefs(prefs: {
-  syncIntervalMinutes: number;
   realtimeSync: boolean;
-  vaultSync?: boolean;
   realtimeVaultApply?: boolean;
   bridgeRole?: "writer" | "reader";
 }) {

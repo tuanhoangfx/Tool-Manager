@@ -32,13 +32,13 @@ export function usePublicShare(token: string | null) {
 
   const verifyPassword = useCallback(
     async (password: string) => {
-      if (!row || !token) return false;
-      if (!row.requires_password) {
+      if (!token) return false;
+      if (row && !row.requires_password) {
         setUnlocked(true);
         return true;
       }
       const res = await fetchPublicShareNote(token, password);
-      if (res.ok) {
+      if (res.ok && res.note) {
         setRow(res.note);
         setUnlocked(true);
         return true;
@@ -48,5 +48,23 @@ export function usePublicShare(token: string | null) {
     [row, token],
   );
 
-  return { row, loading, error, unlocked, verifyPassword, refresh };
+  const refreshWithPassword = useCallback(
+    async (password?: string) => {
+      if (!token) return;
+      setLoading(true);
+      setError("");
+      const res = await fetchPublicShareNote(token, password);
+      if (!res.ok && !res.note) {
+        setError(res.error);
+        setRow(null);
+      } else if (res.note) {
+        setRow(res.note);
+        setUnlocked(!res.locked);
+      }
+      setLoading(false);
+    },
+    [token],
+  );
+
+  return { row, loading, error, unlocked, verifyPassword, refresh: refreshWithPassword };
 }

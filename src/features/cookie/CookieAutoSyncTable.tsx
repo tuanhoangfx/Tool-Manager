@@ -10,8 +10,13 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
+  CookieRouteFieldLabel,
+  CookieRouteFormModal,
+  CookieRouteModalActions,
+} from "./CookieRouteFormModal";
+import { COOKIE_ACCESS_SELECT_OPTIONS } from "./cookieAccessSelectOptions";
+import {
   Activity,
-  Bot,
   Boxes,
   Check,
   Cookie,
@@ -20,17 +25,22 @@ import {
   FileText,
   Info,
   LayoutGrid,
+  Globe2,
   Link2,
   LockKeyhole,
+  Mail,
   Pencil,
   Plus,
   RefreshCw,
+  Save,
+  Share2,
   Shield,
   Trash2,
   UserPlus,
   X,
 } from "lucide-react";
 import {
+  HubFilterSingleSelect,
   HubResultCount,
   HubTimeRangeSelect,
   KpiStrip,
@@ -56,41 +66,22 @@ import { buildAppUrl } from "../../lib/workspace-path";
 import { readHubListPrefs } from "../../lib/url-prefs";
 import { COOKIE_ROUTE_FILTER_DEFS } from "./cookie-route-filters";
 import { DEFAULT_COOKIE_CHART_KEYS, DEFAULT_COOKIE_KPI_KEYS } from "./cookie-display-prefs";
+import {
+  RouteLockChip,
+  RouteShareChip,
+  RouteStatChip,
+  RouteSyncChip,
+  RouteVaultChip,
+} from "./cookieRouteStatChips";
 
 function visibleSet(set: Set<string> | null, defaults: Set<string>) {
   return set ?? defaults;
 }
 import { listNoteCookieMembers, upsertNoteCookieMember } from "./noteCookieMembersRepository";
 import type { CookieVaultRow } from "./useCookieVaultMap";
-import { vaultKey } from "./useCookieVaultMap";
-
-function formatRouteSyncTime(iso: string | null | undefined) {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "";
-  }
-}
-
-function formatVaultTime(iso: string | undefined) {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return iso.slice(0, 16);
-  }
-}
+import { lookupVaultRow } from "./useCookieVaultMap";
+import { formatTimestampCompact, formatTimestampCompactOrDash } from "../../lib/format-timestamp";
+import { resolveRouteSyncedDisplayIso } from "./route-sync-display";
 
 export type CookieAutoRow = {
   binding: CookieBinding;
@@ -118,15 +109,16 @@ type Props = {
   onJoinByNoteId?: (noteId: string, domain: string) => Promise<boolean> | boolean;
   onUpdate?: (id: string, patch: Partial<CookieBinding>) => void;
   onRemove?: (id: string) => void;
-  onSyncRoute?: (binding: CookieBinding) => void;
   onRefresh?: () => void;
   vaultByKey?: Record<string, CookieVaultRow>;
   vaultError?: string | null;
   toolbarActions?: ReactNode;
   toolbarActionsKey?: string;
   renderDetail?: (binding: CookieBinding) => ReactNode;
-  renderAccessDetail?: (binding: CookieBinding) => ReactNode;
-  renderAgentDetail?: (binding: CookieBinding) => ReactNode;
+  renderAccessDetail?: (
+    binding: CookieBinding,
+    ctx?: { vault?: CookieVaultRow; noteSyncedAt?: string | null },
+  ) => ReactNode;
 };
 
 type RouteModalState =
@@ -138,7 +130,7 @@ type RouteModalState =
   | null;
 
 type AddRouteMode = "create" | "join";
-type ShareRole = "load" | "sync" | "manager";
+type ShareRole = "load" | "sync";
 
 function statusTone(status: string | undefined): MetricBadgeTone {
   if (!status || status === "pending") return "warn";
@@ -154,6 +146,63 @@ function ownerLabel(binding: CookieBinding) {
   return binding.ownerUserEmail?.trim() || (binding.ownerUserId ? shortId(binding.ownerUserId) : "Current user");
 }
 
+function RouteDetailSectionHead({
+  icon: Icon,
+  title,
+  desc,
+  tone,
+}: {
+  icon: ElementType;
+  title: string;
+  desc?: string;
+  tone: "indigo" | "amber" | "emerald" | "cyan" | "rose";
+}) {
+  return (
+    <div className="rdp-section-head rdp-section-head--with-icon">
+      <span className={`rdp-section-icon rdp-${tone}`}>
+        <Icon size={14} />
+      </span>
+      <div className="min-w-0">
+        <h4>{title}</h4>
+        {desc ? <p className="rdp-section-desc">{desc}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function CompactField({
+  label,
+  value,
+  mono,
+  copyField,
+  copyValue,
+  onCopy,
+  copied,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  copyField?: string;
+  copyValue?: string | null;
+  onCopy?: (field: string, value: string) => void;
+  copied?: boolean;
+}) {
+  return (
+    <div className="rdp-compact-item">
+      <span className="rdp-compact-label">{label}</span>
+      <span className={mono ? "rdp-compact-value mono" : "rdp-compact-value"} title={value}>
+        {value}
+      </span>
+      {copyField && copyValue && onCopy ? (
+        <button type="button" className="rdp-copy rdp-copy--inline" onClick={() => onCopy(copyField, copyValue)} title={`Copy ${label}`}>
+          <Copy size={10} />
+          {copied ? "Copied" : "Copy"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function routeType(domain: string) {
   return domain.includes("facebook") ? "facebook" : "custom";
 }
@@ -166,21 +215,11 @@ function siteIcon(domain: string) {
   return resolveCookieSiteIcon(domain);
 }
 
-function shareStateLabel(binding: CookieBinding, shareCount: number | undefined) {
-  if (binding.accessRole === "member") return "Shared to me";
-  return shareCount && shareCount > 0 ? `Shared ${shareCount}` : "Private";
-}
-
-function shareStateTone(binding: CookieBinding, shareCount: number | undefined): MetricBadgeTone {
-  if (binding.accessRole === "member") return "neutral";
-  return shareCount && shareCount > 0 ? "ok" : "neutral";
-}
-
 function sharePermissions(role: ShareRole) {
   return {
     canApply: true,
-    canPublish: role === "sync" || role === "manager",
-    canManage: role === "manager",
+    canPublish: role === "sync",
+    canManage: false,
   };
 }
 
@@ -250,10 +289,10 @@ function CookieRouteCard({
 }) {
   const { binding, note, lines } = row;
   const status = note?.sync_status ?? "pending";
+  const syncedIso = resolveRouteSyncedDisplayIso({ noteSyncedAt: note?.synced_at });
   const sourceLocked = Boolean(binding.sourceBrowserId);
   const dot = sourceLocked ? "#22c55e" : status === "pending" ? "#f59e0b" : "#818cf8";
   const icon = siteIcon(binding.domain);
-  const shareLabel = shareStateLabel(binding, shareCount);
 
   return (
     <button
@@ -339,15 +378,23 @@ function CookieRouteCard({
           <span className="font-medium text-[var(--text)]">
             {vault ? `Cloud vault · ${vault.cookie_count} cookies` : "No cloud vault"}
           </span>
-          {vault?.updated_at ? <span className="ml-1 text-[10px]">· {formatVaultTime(vault.updated_at)}</span> : null}
+        </RouteMetaRow>
+        <RouteMetaRow icon={RefreshCw} tint="#818cf8">
+          {formatTimestampCompact(syncedIso) ? (
+            <span className="font-medium text-indigo-200/90" title={syncedIso ?? undefined}>
+              {formatTimestampCompact(syncedIso)}
+            </span>
+          ) : (
+            <span className="text-[var(--muted)]">—</span>
+          )}
         </RouteMetaRow>
       </div>
 
       <div className="mt-auto shrink-0 pt-3">
         <div className="flex min-h-[22px] flex-wrap items-center gap-1.5">
-          <MetricBadge label={status} tone={statusTone(status)} />
-          <MetricBadge label={vault ? `${vault.cookie_count} cookies` : "No vault"} tone={vault ? "neutral" : "warn"} />
-          <MetricBadge label={shareLabel} tone={shareStateTone(binding, shareCount)} />
+          <RouteSyncChip status={status} />
+          <RouteVaultChip cookieCount={vault?.cookie_count} />
+          <RouteShareChip binding={binding} shareCount={shareCount} />
         </div>
         <div className="mt-2 flex items-center justify-between text-[10px] text-[var(--muted)]">
           <span>Open access detail</span>
@@ -355,58 +402,6 @@ function CookieRouteCard({
         </div>
       </div>
     </button>
-  );
-}
-
-function CookieRouteModal({
-  title,
-  subtitle,
-  children,
-  onClose,
-}: {
-  title: string;
-  subtitle?: string;
-  children: ReactNode;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    document.body.classList.add("hub-modal-open");
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.classList.remove("hub-modal-open");
-    };
-  }, [onClose]);
-
-  return createPortal(
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <div
-        className="modal-shell modal-shell--form"
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
-          <X size={16} />
-        </button>
-        <div className="flex items-start gap-3 pr-10">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-indigo-400/20 bg-indigo-500/15 text-indigo-200 shadow-[0_0_20px_rgba(99,102,241,0.12)]">
-            <Cookie size={16} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-300">Cookie route</p>
-            <h2 className="mt-1 text-lg font-semibold text-[var(--text)]">{title}</h2>
-            {subtitle ? <p className="mt-1 max-w-3xl text-xs leading-relaxed text-[var(--muted)]">{subtitle}</p> : null}
-          </div>
-        </div>
-        {children}
-      </div>
-    </div>,
-    document.body,
   );
 }
 
@@ -513,22 +508,21 @@ export function CookieRouteDetailModal({
   vault,
   renderDetail,
   renderAccessDetail,
-  renderAgentDetail,
   onClose,
 }: {
   row: CookieAutoRow;
   vault?: CookieVaultRow;
   renderDetail?: (binding: CookieBinding) => ReactNode;
-  renderAccessDetail?: (binding: CookieBinding) => ReactNode;
-  renderAgentDetail?: (binding: CookieBinding) => ReactNode;
+  renderAccessDetail?: (
+    binding: CookieBinding,
+    ctx?: { vault?: CookieVaultRow; noteSyncedAt?: string | null },
+  ) => ReactNode;
   onClose: () => void;
 }) {
   const { binding, note, lines } = row;
   const status = note?.sync_status ?? "pending";
   const idPrefix = `cookie-route-${binding.id}-`;
   const [snapshotLines, setSnapshotLines] = useState(lines);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
-
   useEffect(() => {
     setSnapshotLines(lines);
   }, [lines]);
@@ -548,16 +542,15 @@ export function CookieRouteDetailModal({
   const sectionItems = useMemo(
     () => [
       { id: `${idPrefix}about`, label: "About", icon: Info, tone: "indigo" },
-      { id: `${idPrefix}vault`, label: "Vault", icon: Database, tone: "amber" },
       { id: `${idPrefix}access`, label: "Access", icon: Shield, tone: "emerald" },
-      ...(showDiagnostics ? [{ id: `${idPrefix}agents`, label: "Agents", icon: Bot, tone: "cyan" }] : []),
-      { id: `${idPrefix}health`, label: "Health", icon: Activity, tone: "rose" },
     ],
-    [idPrefix, showDiagnostics],
+    [idPrefix],
   );
   const [activeSection, setActiveSection] = useState(sectionItems[0].id);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const routeTitle = binding.noteTitle ?? note?.title ?? "Cookie route";
+  const routeSite = siteIcon(binding.domain);
 
   const copyValue = useCallback(async (field: string, value: string | null | undefined) => {
     const text = value?.trim();
@@ -623,8 +616,53 @@ export function CookieRouteDetailModal({
         </button>
         <div className="modal-shell__scroll" ref={scrollRef}>
           <div className="route-detail-preview route-detail-preview--classic">
-            <aside className="rdp-toc" aria-label="Route detail sections">
-              <div className="rdp-toc-title">Route detail</div>
+            <header className="rdp-modal-header">
+              <div className="rdp-modal-header__identity">
+                <div className="rdp-modal-header__avatar" aria-hidden>
+                  {routeSite ? (
+                    <img src={routeSite.src} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                  ) : (
+                    <Globe2 size={20} className="text-indigo-200" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="rdp-modal-header__eyebrow">Cookie route</p>
+                  <h2 className="rdp-modal-header__title">{routeTitle}</h2>
+                  <p className="rdp-modal-header__meta">
+                    <span>{binding.domain}</span>
+                    <span className="rdp-meta-sep">·</span>
+                    <span className="mono" title={binding.syncId || binding.noteId || undefined}>
+                      {binding.syncId ? `Sync ${binding.syncId}` : binding.noteId ? `Note ${shortId(binding.noteId)}` : "No ID"}
+                    </span>
+                    {binding.syncId ? (
+                      <button
+                        type="button"
+                        className="rdp-copy rdp-copy--inline"
+                        onClick={() => void copyValue("header-sync", binding.syncId)}
+                        title="Copy Sync ID"
+                      >
+                        <Copy size={10} />
+                      </button>
+                    ) : null}
+                    {binding.noteId ? (
+                      <button
+                        type="button"
+                        className="rdp-copy rdp-copy--inline"
+                        onClick={() => void copyValue("header-note", binding.noteId)}
+                        title="Copy Note ID"
+                      >
+                        <Copy size={10} />
+                      </button>
+                    ) : null}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    <RouteSyncChip status={status} />
+                    <RouteVaultChip cookieCount={vault?.cookie_count} />
+                  </div>
+                </div>
+              </div>
+            </header>
+            <aside className="rdp-toc" aria-label="Route sections">
               {sectionItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -643,172 +681,70 @@ export function CookieRouteDetailModal({
               })}
             </aside>
             <main className="rdp-content">
-              <div className="rdp-hero">
-                <div>
-                  <p className="rdp-kicker">Route detail</p>
-                  <h3>{binding.noteTitle ?? note?.title ?? "Cookie route"}</h3>
-                  <p>Cookie vault, access, and browser status for this route.</p>
-                </div>
-                <div className="rdp-route-card">
-                  <span>{binding.domain}</span>
-                  <strong>{binding.syncId || shortId(binding.noteId)}</strong>
-                </div>
-              </div>
-
-              <div className="rdp-context-grid">
-                <section
-                  id={`${idPrefix}about`}
-                  className="rdp-section"
-                  onMouseEnter={() => setActiveSection(`${idPrefix}about`)}
-                >
-                  <div className="rdp-section-head">
-                    <div>
-                      <h4>About</h4>
-                      <span>Route identity, operating mode, and permission context</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-lg font-semibold">{binding.noteTitle ?? note?.title ?? "Cookie route"}</span>
-                    <MetricBadge label={status} tone={statusTone(status)} />
-                  </div>
-                  <div className="rdp-info-grid">
-                    <div>
-                      <span>Domain</span>
-                      <strong>{binding.domain}</strong>
-                    </div>
-                    <div>
-                      <span>Sync ID</span>
-                      <div className="rdp-info-value">
-                        <strong>{binding.syncId || (binding.useNoteIdRpc ? "by UUID" : "Missing")}</strong>
-                        {binding.syncId ? (
-                          <button type="button" className="rdp-copy" onClick={() => void copyValue("sync", binding.syncId)} title="Copy Sync ID">
-                            <Copy size={11} />
-                            {copiedField === "sync" ? "Copied" : "Copy"}
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div>
-                      <span>Note ID</span>
-                      <div className="rdp-info-value">
-                        <strong>{binding.noteId || "Missing"}</strong>
-                        {binding.noteId ? (
-                          <button type="button" className="rdp-copy" onClick={() => void copyValue("note", binding.noteId)} title="Copy Note ID">
-                            <Copy size={11} />
-                            {copiedField === "note" ? "Copied" : "Copy"}
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div>
-                      <span>Access role</span>
-                      <strong>{binding.accessRole ?? "owner"}</strong>
-                    </div>
-                    <div>
-                      <span>Owner user</span>
-                      <strong title={binding.ownerUserId ?? undefined}>{ownerLabel(binding)}</strong>
-                    </div>
-                  </div>
-                </section>
-
-                <section
-                  id={`${idPrefix}vault`}
-                  className="rdp-section"
-                  onMouseEnter={() => setActiveSection(`${idPrefix}vault`)}
-                >
-                  <div className="rdp-section-head">
-                    <div>
-                      <h4>Cloud vault</h4>
-                      <span>Cookie data used by Load cookies, plus the Note snapshot for reference</span>
-                    </div>
-                  </div>
-                  <div className="rdp-info-grid">
-                    <div>
-                      <span>Cloud vault</span>
-                      <strong>{vault ? `${vault.cookie_count} cookies` : "No vault"}</strong>
-                    </div>
-                    <div>
-                      <span>Updated</span>
-                      <strong>{vault?.updated_at ? formatVaultTime(vault.updated_at) : "Missing"}</strong>
-                    </div>
-                    <div>
-                      <span>Note snapshot</span>
-                      <strong>{snapshotLines.length ? `${snapshotLines.length} line(s)` : "Missing"}</strong>
-                    </div>
-                    <div>
-                      <span>Publish browser</span>
-                      <div className="rdp-info-value">
-                        <strong>{binding.sourceBrowserId ? shortId(binding.sourceBrowserId) : "Owner"}</strong>
-                        {binding.sourceBrowserId ? (
-                          <button type="button" className="rdp-copy" onClick={() => void copyValue("source", binding.sourceBrowserId)} title="Copy Source ID">
-                            <Copy size={11} />
-                            {copiedField === "source" ? "Copied" : "Copy"}
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div>
-                      <span>Source label</span>
-                      <strong>{binding.sourceLabel || "Not set"}</strong>
-                    </div>
-                    <div>
-                      <span>Last user</span>
-                      <strong>{vault?.updated_by || "Unknown"}</strong>
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              <div id={`${idPrefix}access`} onMouseEnter={() => setActiveSection(`${idPrefix}access`)}>
-                {renderAccessDetail ? renderAccessDetail(binding) : renderDetail ? renderDetail(binding) : <p className="text-[12px] text-[var(--muted)]">No access detail.</p>}
-              </div>
-
-              <div className="rounded-2xl border border-white/5 bg-white/[.018] p-3">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-[var(--panel-2)] px-3 py-2 text-xs text-[var(--text)] hover:bg-white/5"
-                  onClick={() => {
-                    const next = !showDiagnostics;
-                    setShowDiagnostics(next);
-                    if (next) window.setTimeout(() => setActiveSection(`${idPrefix}agents`), 0);
-                  }}
-                >
-                  <Bot size={13} className="text-cyan-300" />
-                  {showDiagnostics ? "Hide advanced diagnostics" : "Advanced diagnostics"}
-                </button>
-                <p className="mt-2 text-[11px] text-[var(--muted)]">
-                  Browser agents are only needed when debugging multi-profile sync, realtime, or command delivery.
-                </p>
-              </div>
-
-              {showDiagnostics ? (
-                <div id={`${idPrefix}agents`} onMouseEnter={() => setActiveSection(`${idPrefix}agents`)}>
-                  {renderAgentDetail ? renderAgentDetail(binding) : <p className="text-[12px] text-[var(--muted)]">No browser agent detail.</p>}
-                </div>
-              ) : null}
-
               <section
-                id={`${idPrefix}health`}
-                className="rdp-health-grid"
-                onMouseEnter={() => setActiveSection(`${idPrefix}health`)}
+                id={`${idPrefix}about`}
+                className="rdp-section"
+                onMouseEnter={() => setActiveSection(`${idPrefix}about`)}
               >
-                <div>
-                  <span>Route published</span>
-                  <strong>{status === "synced" ? "OK" : status}</strong>
+                <RouteDetailSectionHead icon={Info} tone="indigo" title="About" />
+                <div className="rdp-stat-strip">
+                  <RouteSyncChip status={status} />
+                  <RouteVaultChip cookieCount={vault?.cookie_count} />
+                  <RouteLockChip locked={Boolean(binding.sourceBrowserId)} />
+                  <RouteStatChip
+                    icon={Activity}
+                    label={binding.canApply === false ? "Apply blocked" : "Apply ready"}
+                    tone={binding.canApply === false ? "warn" : "ok"}
+                  />
                 </div>
-                <div>
-                  <span>Vault fetch v3</span>
-                  <strong>{vault ? "OK" : "Missing"}</strong>
-                </div>
-                <div>
-                  <span>Publish browser</span>
-                  <strong>{binding.sourceBrowserId ? shortId(binding.sourceBrowserId) : "Owner"}</strong>
-                </div>
-                <div>
-                  <span>Employee apply</span>
-                  <strong>{binding.canApply === false ? "Blocked" : "Ready"}</strong>
+                <div className="rdp-compact-grid rdp-compact-grid--3">
+                  <CompactField label="Domain" value={binding.domain} />
+                  <CompactField
+                    label="Sync ID"
+                    value={binding.syncId || (binding.useNoteIdRpc ? "UUID" : "—")}
+                    mono
+                    copyField="sync"
+                    copyValue={binding.syncId}
+                    onCopy={copyValue}
+                    copied={copiedField === "sync"}
+                  />
+                  <CompactField
+                    label="Note ID"
+                    value={binding.noteId ? shortId(binding.noteId) : "—"}
+                    mono
+                    copyField="note"
+                    copyValue={binding.noteId}
+                    onCopy={copyValue}
+                    copied={copiedField === "note"}
+                  />
+                  <CompactField label="Role" value={binding.accessRole ?? "owner"} />
+                  <CompactField label="Owner" value={ownerLabel(binding)} />
+                  <CompactField
+                    label="Vault updated"
+                    value={formatTimestampCompactOrDash(vault?.updated_at)}
+                  />
+                  <CompactField label="Snapshot" value={snapshotLines.length ? `${snapshotLines.length} lines` : "—"} />
+                  <CompactField
+                    label="Publisher"
+                    value={binding.sourceLabel || (binding.sourceBrowserId ? shortId(binding.sourceBrowserId) : "Owner")}
+                    mono={Boolean(binding.sourceBrowserId)}
+                    copyField="source"
+                    copyValue={binding.sourceBrowserId}
+                    onCopy={copyValue}
+                    copied={copiedField === "source"}
+                  />
+                  <CompactField label="Last user" value={vault?.updated_by || "—"} />
                 </div>
               </section>
+
+              <div id={`${idPrefix}access`} onMouseEnter={() => setActiveSection(`${idPrefix}access`)}>
+                {renderAccessDetail
+                  ? renderAccessDetail(binding, { vault, noteSyncedAt: note?.synced_at ?? null })
+                  : renderDetail
+                    ? renderDetail(binding)
+                    : <p className="text-[12px] text-[var(--muted)]">No access detail.</p>}
+              </div>
+
             </main>
           </div>
         </div>
@@ -835,9 +771,17 @@ export function CookieAutoSyncTable({
   toolbarActionsKey = "",
   renderDetail,
   renderAccessDetail,
-  renderAgentDetail,
 }: Props) {
   const notesById = useMemo(() => new Map(notes.map((note) => [note.id, note])), [notes]);
+  const noteSelectOptions = useMemo(
+    () =>
+      notes.map((n) => ({
+        value: n.id,
+        label: n.title?.trim() || "Untitled",
+        leading: <FileText size={12} className="shrink-0 opacity-75" aria-hidden />,
+      })),
+    [notes],
+  );
   const rows = useMemo(() => buildRows(bindings, notesById), [bindings, notesById]);
   const { query: routeQuery, filterValues, setFilters, setToolbar, setFilterToolbar } = useWorkspaceSearch();
   const [prefs, setPrefs] = useState(readHubListPrefs);
@@ -926,7 +870,7 @@ export function CookieAutoSyncTable({
   );
   const routeKpis = useMemo<KpiTileData[]>(() => {
     const vaultRows = rows
-      .map((row) => vaultByKey[vaultKey(row.binding.noteId, row.binding.domain)])
+      .map((row) => lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain))
       .filter((vault): vault is CookieVaultRow => Boolean(vault));
     const cookieCount = vaultRows.reduce((sum, vault) => sum + (vault.cookie_count ?? 0), 0);
     const all: KpiTileData[] = [
@@ -967,7 +911,7 @@ export function CookieAutoSyncTable({
     const typeCounts = countBy(rows.map((row) => routeType(row.binding.domain)));
     const sourceCounts = countBy(rows.map((row) => routeSource(row.binding)));
     const vaultCounts = countBy(
-      rows.map((row) => (vaultByKey[vaultKey(row.binding.noteId, row.binding.domain)] ? "has vault" : "no vault")),
+      rows.map((row) => (lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain) ? "has vault" : "no vault")),
     );
     const statusItems: BarItem[] = Object.entries(statusCounts).map(([label, value], index) => ({
       label,
@@ -1278,171 +1222,168 @@ export function CookieAutoSyncTable({
       {vaultError ? <p className="mb-2 text-[10px] text-amber-300/90">{vaultError}</p> : null}
 
       {modal?.type === "add" && (onAdd || onJoinByNoteId) ? (
-        <CookieRouteModal
+        <CookieRouteFormModal
+          wide
           title="Add route"
           subtitle="Create a cloud route or join a route shared by Note ID."
           onClose={() => setModal(null)}
+          footer={
+            <CookieRouteModalActions
+              primaryLabel={addMode === "join" ? "Join shared route" : "Create cloud route"}
+              primaryIcon={addMode === "join" ? Link2 : Plus}
+              primaryBusy={joinBusy}
+              primaryDisabled={!draftNoteId.trim()}
+              onPrimary={() => {
+                if (addMode === "join") void submitJoin();
+                else submitAdd();
+              }}
+              onSecondary={() => setModal(null)}
+            />
+          }
         >
-          <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/[.03] p-1">
+          <div className="auth-gate-tabs" role="tablist">
             <button
               type="button"
-              className={`rounded-lg px-3 py-2 text-xs font-medium transition ${addMode === "create" ? "bg-indigo-500/25 text-indigo-100" : "text-[var(--muted)] hover:bg-white/5"}`}
+              role="tab"
+              aria-selected={addMode === "create"}
+              className={`auth-gate-tab${addMode === "create" ? " auth-gate-tab--active" : ""}`}
               onClick={() => setAddMode("create")}
             >
               Create route
             </button>
             <button
               type="button"
-              className={`rounded-lg px-3 py-2 text-xs font-medium transition ${addMode === "join" ? "bg-sky-500/25 text-sky-100" : "text-[var(--muted)] hover:bg-white/5"}`}
+              role="tab"
+              aria-selected={addMode === "join"}
+              className={`auth-gate-tab${addMode === "join" ? " auth-gate-tab--active" : ""}`}
               onClick={() => setAddMode("join")}
             >
               Add by Note ID
             </button>
           </div>
           {addMode === "create" ? (
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div>
-                <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Target note</label>
-                <select
-                  className="field mt-1 w-full text-[12px]"
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={FileText}>Target note</CookieRouteFieldLabel>
+                <HubFilterSingleSelect
                   value={draftNoteId}
-                  onChange={(e) => setDraftNoteId(e.target.value)}
-                >
-                  {notes.map((n) => (
-                    <option key={n.id} value={n.id}>
-                      {n.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Auto domain</label>
+                  options={noteSelectOptions}
+                  onChange={setDraftNoteId}
+                  filterLabel="note"
+                  TriggerIcon={FileText}
+                />
+              </label>
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={Globe2}>Auto domain</CookieRouteFieldLabel>
                 <input
-                  className="field mt-1 font-mono text-[12px]"
+                  className="field auth-gate-field font-mono w-full"
                   value={draftDomain}
                   onChange={(e) => setDraftDomain(e.target.value)}
                 />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Sync pass (optional)</label>
+              </label>
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={LockKeyhole}>Sync pass (optional)</CookieRouteFieldLabel>
                 <input
                   type="password"
-                  className="field mt-1 text-[12px]"
+                  className="field auth-gate-field w-full"
                   value={draftPass}
                   onChange={(e) => setDraftPass(e.target.value)}
                 />
-              </div>
+              </label>
             </div>
           ) : (
             <>
-              <div className="rounded-xl border border-sky-400/15 bg-sky-500/[.06] px-3 py-2 text-[12px] leading-relaxed text-sky-100/90">
-                Paste the Note ID shared by owner. Supabase checks <code className="font-mono">note_cookie_members</code> before returning routes.
-              </div>
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_180px]">
-                <div>
-                  <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Shared Note ID</label>
+              <p className="cookie-route-modal__note">
+                Paste the Note ID shared by owner. Supabase checks{" "}
+                <code>note_cookie_members</code> before returning routes.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+                <label className="block min-w-0">
+                  <CookieRouteFieldLabel icon={Link2}>Shared Note ID</CookieRouteFieldLabel>
                   <input
-                    className="field mt-1 font-mono text-[12px]"
+                    className="field auth-gate-field font-mono w-full"
                     value={draftNoteId}
                     placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                     onChange={(e) => setDraftNoteId(e.target.value)}
                   />
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Domain</label>
+                </label>
+                <label className="block min-w-0">
+                  <CookieRouteFieldLabel icon={Globe2}>Domain</CookieRouteFieldLabel>
                   <input
-                    className="field mt-1 font-mono text-[12px]"
+                    className="field auth-gate-field font-mono w-full"
                     value={draftDomain}
                     onChange={(e) => setDraftDomain(e.target.value)}
                   />
-                </div>
+                </label>
               </div>
             </>
           )}
-          <div className="flex flex-wrap gap-1">
+          <div className="cookie-route-modal__presets">
             {DOMAIN_PRESETS.map((p) => (
               <button
                 key={p.domain}
                 type="button"
-                className="rounded-full border border-white/10 px-2 py-0.5 text-[9px] text-[var(--muted)] hover:border-emerald-400/40"
+                className="cookie-route-modal__preset-btn"
                 onClick={() => setDraftDomain(p.domain)}
               >
                 + {p.label}
               </button>
             ))}
           </div>
-          <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
-            <button
-              type="button"
-              className="btn text-[11px]"
-              disabled={addMode === "join" ? !draftNoteId.trim() || joinBusy : !draftNoteId.trim()}
-              onClick={() => {
-                if (addMode === "join") void submitJoin();
-                else submitAdd();
-              }}
-            >
-              {addMode === "join" ? (joinBusy ? "Joining..." : "Join shared route") : "Create cloud route"}
-            </button>
-            <button type="button" className="btn-ghost btn text-[11px]" onClick={() => setModal(null)}>
-              Cancel
-            </button>
-          </div>
-        </CookieRouteModal>
+        </CookieRouteFormModal>
       ) : null}
 
       {modal?.type === "share" && shareBinding ? (
-        <CookieRouteModal
+        <CookieRouteFormModal
           title="Share user"
-          subtitle="Grant another user access to this route by email. The recipient can add it by Note ID or refresh accessible routes."
+          subtitle="Grant Load or Sync access by email. Manage stays with route owner only."
           onClose={() => setModal(null)}
+          footer={
+            <CookieRouteModalActions
+              primaryLabel="Share route"
+              primaryIcon={UserPlus}
+              primaryBusy={shareBusy}
+              primaryDisabled={!shareEmail.trim()}
+              onPrimary={() => void submitShare()}
+              onSecondary={() => setModal(null)}
+            />
+          }
         >
-          <div className="rounded-2xl border border-emerald-400/15 bg-emerald-500/[.06] p-3">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-xs font-semibold text-emerald-100">{shareBinding.noteTitle ?? "Cookie route"}</p>
-                <p className="font-mono text-[10px] text-emerald-100/65">{shareBinding.noteId}</p>
-              </div>
-              <button
-                type="button"
-                className="rounded-full border border-emerald-300/25 px-2 py-1 text-[10px] text-emerald-100 hover:bg-emerald-500/10"
-                onClick={() => void navigator.clipboard?.writeText(shareBinding.noteId)}
-              >
-                Copy Note ID
-              </button>
+          <div className="cookie-route-modal__route-card">
+            <div className="min-w-0">
+              <p className="cookie-route-modal__route-card-title">{shareBinding.noteTitle ?? "Cookie route"}</p>
+              <p className="cookie-route-modal__route-card-meta">{shareBinding.noteId}</p>
             </div>
-            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px]">
-              <div>
-                <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">User email</label>
-                <input
-                  className="field mt-1 text-[12px]"
-                  value={shareEmail}
-                  placeholder="user@example.com"
-                  onChange={(event) => setShareEmail(event.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Permission</label>
-                <select
-                  className="field mt-1 text-[12px]"
-                  value={shareRole}
-                  onChange={(event) => setShareRole(event.target.value as ShareRole)}
-                >
-                  <option value="load">Load only</option>
-                  <option value="sync">Can sync</option>
-                  <option value="manager">Manager</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
-            <button type="button" className="btn text-[11px]" disabled={!shareEmail.trim() || shareBusy} onClick={() => void submitShare()}>
-              {shareBusy ? "Sharing..." : "Share route"}
-            </button>
-            <button type="button" className="btn-ghost btn text-[11px]" onClick={() => setModal(null)}>
-              Cancel
+            <button
+              type="button"
+              className="cookie-route-modal__copy-btn"
+              onClick={() => void navigator.clipboard?.writeText(shareBinding.noteId)}
+            >
+              Copy Note ID
             </button>
           </div>
-        </CookieRouteModal>
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <label className="block min-w-0">
+              <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
+              <input
+                className="field auth-gate-field w-full"
+                value={shareEmail}
+                placeholder="user@example.com"
+                onChange={(event) => setShareEmail(event.target.value)}
+              />
+            </label>
+            <label className="block min-w-0">
+              <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
+              <HubFilterSingleSelect
+                value={shareRole}
+                options={COOKIE_ACCESS_SELECT_OPTIONS}
+                onChange={(v) => setShareRole(v as ShareRole)}
+                filterLabel="access"
+                TriggerIcon={Shield}
+              />
+            </label>
+          </div>
+        </CookieRouteFormModal>
       ) : null}
 
       {routeKpis.length > 0 ||
@@ -1483,7 +1424,7 @@ export function CookieAutoSyncTable({
           ) : (
             <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredRows.map((row) => {
-                const vault = row.binding.noteId ? vaultByKey[vaultKey(row.binding.noteId, row.binding.domain)] : undefined;
+                const vault = row.binding.noteId ? lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain) : undefined;
                 const selected = selectedBindingId === row.binding.id;
                 const checked = selectedIds.includes(row.binding.id);
                 return (
@@ -1521,7 +1462,12 @@ export function CookieAutoSyncTable({
               </th>
               <th className="w-24 px-2 py-2 font-medium">Status</th>
               <th className="w-20 px-2 py-2 font-medium">Type</th>
-              <th className="w-28 px-2 py-2 font-medium">Group</th>
+              <th className="w-28 px-2 py-2 font-medium">
+                <span className="inline-flex items-center gap-1" title="Route sharing">
+                  <Share2 size={10} />
+                  Share
+                </span>
+              </th>
               <th className="px-3 py-2 font-medium">Route</th>
               <th className="px-3 py-2 font-medium">URL / ID</th>
               <th className="w-28 px-2 py-2 font-medium">
@@ -1542,7 +1488,7 @@ export function CookieAutoSyncTable({
             {filteredRows.map(({ binding, note, lines }) => {
               const status = note?.sync_status ?? "pending";
               const vault: CookieVaultRow | undefined = binding.noteId
-                ? vaultByKey[vaultKey(binding.noteId, binding.domain)]
+                ? lookupVaultRow(vaultByKey, binding.noteId, binding.domain)
                 : undefined;
               const selected = selectedBindingId === binding.id;
               const checked = selectedIds.includes(binding.id);
@@ -1564,13 +1510,13 @@ export function CookieAutoSyncTable({
                     />
                   </td>
                   <td className="px-2 py-2 align-top">
-                    <MetricBadge label={status} tone={statusTone(status)} />
+                    <RouteSyncChip status={status} />
                   </td>
                   <td className="px-2 py-2 align-top">
                     <MetricBadge label={icon?.label ?? "Cookie"} tone="neutral" />
                   </td>
                   <td className="px-2 py-2 align-top">
-                    <MetricBadge label={binding.sourceBrowserId ? "Locked" : "Owner"} tone="ok" />
+                    <RouteShareChip binding={binding} shareCount={shareCounts[binding.noteId]} />
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 align-top">
                     <div className="flex items-center gap-2 font-medium text-[var(--text)]">
@@ -1602,17 +1548,22 @@ export function CookieAutoSyncTable({
                     <div className="mt-1 text-[10px] text-[var(--muted)]">
                       {lines.length ? `${lines.length} cookie line(s)` : "Awaiting snapshot"} · {note?.syncLabel ?? "not synced"}
                     </div>
-                    {note?.synced_at ? (
-                      <div className="mt-0.5 text-[9px] text-indigo-300/70" title={note.synced_at}>
-                        {formatRouteSyncTime(note.synced_at)}
-                      </div>
-                        ) : null}
+                    {(() => {
+                      const syncedIso = resolveRouteSyncedDisplayIso({ noteSyncedAt: note?.synced_at });
+                      return syncedIso ? (
+                        <div className="mt-0.5 text-[9px] text-indigo-300/70" title={syncedIso}>
+                          {formatTimestampCompact(syncedIso)}
+                        </div>
+                      ) : null;
+                    })()}
                   </td>
                   <td className="px-2 py-2 align-top text-[11px]">
                     {vault ? (
                       <div>
-                        <MetricBadge label={`${vault.cookie_count} cookies`} tone="neutral" mono />
-                        <div className="mt-1 text-[10px] text-[var(--muted)]">{formatVaultTime(vault.updated_at)}</div>
+                        <RouteVaultChip cookieCount={vault.cookie_count} />
+                        <div className="mt-1 text-[10px] text-[var(--muted)]">
+                          {formatTimestampCompactOrDash(vault.updated_at)}
+                        </div>
                         {vault.updated_by ? (
                           <div className="mt-0.5 max-w-[120px] truncate text-[9px] text-amber-200/80" title={vault.updated_by}>
                             {vault.updated_by}
@@ -1665,63 +1616,60 @@ export function CookieAutoSyncTable({
       {detailRow ? (
         <CookieRouteDetailModal
           row={detailRow}
-          vault={vaultByKey[vaultKey(detailRow.binding.noteId, detailRow.binding.domain)]}
+          vault={lookupVaultRow(vaultByKey, detailRow.binding.noteId, detailRow.binding.domain)}
           renderDetail={renderDetail}
           renderAccessDetail={renderAccessDetail}
-          renderAgentDetail={renderAgentDetail}
           onClose={() => setModal(null)}
         />
       ) : null}
 
       {editing && onUpdate ? (
-        <CookieRouteModal
+        <CookieRouteFormModal
+          wide
           title="Edit route"
           subtitle="Update route metadata. Advanced diagnostics are available in route detail when needed."
           onClose={() => setModal(null)}
+          footer={
+            <CookieRouteModalActions
+              primaryLabel="Save cloud route"
+              primaryIcon={Save}
+              onPrimary={submitEdit}
+              secondaryLabel="Close"
+              onSecondary={() => setModal(null)}
+            />
+          }
         >
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div>
-              <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Note</label>
-              <select
-                className="field mt-1 w-full text-[12px]"
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="block min-w-0">
+              <CookieRouteFieldLabel icon={FileText}>Note</CookieRouteFieldLabel>
+              <HubFilterSingleSelect
                 value={draftNoteId}
-                onChange={(e) => setDraftNoteId(e.target.value)}
-              >
-                {notes.map((n) => (
-                  <option key={n.id} value={n.id}>
-                    {n.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Domain</label>
+                options={noteSelectOptions}
+                onChange={setDraftNoteId}
+                filterLabel="note"
+                TriggerIcon={FileText}
+              />
+            </label>
+            <label className="block min-w-0">
+              <CookieRouteFieldLabel icon={Globe2}>Domain</CookieRouteFieldLabel>
               <input
-                className="field mt-1 font-mono text-[12px]"
+                className="field auth-gate-field font-mono w-full"
                 value={draftDomain}
                 onChange={(e) => setDraftDomain(e.target.value)}
               />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase tracking-wide text-[var(--muted)]">Sync pass</label>
+            </label>
+            <label className="block min-w-0">
+              <CookieRouteFieldLabel icon={LockKeyhole}>Sync pass</CookieRouteFieldLabel>
               <input
                 type="password"
-                className="field mt-1 text-[12px]"
+                className="field auth-gate-field w-full"
                 placeholder={editing.requiresPass ? "Required" : "Optional"}
                 value={draftPass}
                 onChange={(e) => setDraftPass(e.target.value)}
               />
-            </div>
+            </label>
           </div>
-          <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
-            <button type="button" className="btn text-[11px]" onClick={submitEdit}>
-              Save cloud route
-            </button>
-            <button type="button" className="btn-ghost btn text-[11px]" onClick={() => setModal(null)}>
-              Close
-            </button>
-          </div>
-        </CookieRouteModal>
+        </CookieRouteFormModal>
       ) : null}
 
       {loading && notes.length === 0 ? (
@@ -1729,12 +1677,21 @@ export function CookieAutoSyncTable({
       ) : null}
 
       {deleting.length > 0 && onRemove ? (
-        <CookieRouteModal
+        <CookieRouteFormModal
           title={deleting.length > 1 ? `Delete ${deleting.length} routes` : "Delete route"}
           subtitle="This disables the cloud route so linked browsers remove it on the next realtime refresh. Existing vault data is not deleted."
           onClose={() => setModal(null)}
+          footer={
+            <CookieRouteModalActions
+              primaryLabel="Delete route"
+              primaryIcon={Trash2}
+              danger
+              onPrimary={submitDelete}
+              onSecondary={() => setModal(null)}
+            />
+          }
         >
-          <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100">
+          <p className="cookie-route-modal__warn">
             Remove{" "}
             {deleting.length === 1 ? (
               <>
@@ -1744,17 +1701,8 @@ export function CookieAutoSyncTable({
             ) : (
               <strong>{deleting.length} selected routes</strong>
             )}
-          </div>
-          <div className="flex justify-end gap-2 border-t border-white/10 pt-3">
-            <button type="button" className="btn-ghost btn text-[11px]" onClick={() => setModal(null)}>
-              Cancel
-            </button>
-            <button type="button" className="btn-ghost btn text-[11px] text-rose-300" onClick={submitDelete}>
-              <Trash2 size={13} />
-              Delete route
-            </button>
-          </div>
-        </CookieRouteModal>
+          </p>
+        </CookieRouteFormModal>
       ) : null}
       </div>
     </div>

@@ -1,4 +1,5 @@
 import type { WorkspaceNavScreen, WorkspaceScreen } from "./workspace-screen";
+import { PUBLIC_SHARE_PATH } from "../features/notes/shareUtils";
 
 /** Path-first routes for P0020-Data-Box (e.g. /cookie). */
 export const NAV_SCREEN_PATH: Record<WorkspaceNavScreen, string> = {
@@ -46,14 +47,14 @@ export function searchWithoutNavScreen(search = ""): string {
 }
 
 export function buildAppUrl(screen: WorkspaceScreen, search = ""): string {
-  const base =
-    screen === "share" || screen === "edit"
-      ? `/?screen=${encodeURIComponent(screen)}`
-      : navScreenToPath(screen as WorkspaceNavScreen);
+  if (screen === "share") {
+    const p = parseSearch(search);
+    const token = p.get("token")?.trim();
+    if (token) return `${PUBLIC_SHARE_PATH}?token=${encodeURIComponent(token)}`;
+    return PUBLIC_SHARE_PATH;
+  }
+  const base = screen === "edit" ? `/?screen=${encodeURIComponent(screen)}` : navScreenToPath(screen as WorkspaceNavScreen);
   if (!search) return base;
-  const q =
-    screen === "share" || screen === "edit"
-      ? parseSearch(search).toString()
-      : searchWithoutNavScreen(search);
+  const q = screen === "edit" ? parseSearch(search).toString() : searchWithoutNavScreen(search);
   return q ? `${base}?${q}` : base;
 }

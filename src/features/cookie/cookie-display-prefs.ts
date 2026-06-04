@@ -22,7 +22,6 @@ export const COOKIE_FILTER_DEFS: PrefItem[] = COOKIE_ROUTE_FILTER_DEFS.map(({ ke
 
 export const COOKIE_HEADER_STAT_DEFS: PrefItem[] = [
   { key: "cookie-routes", label: "Routes" },
-  { key: "cookie-agents", label: "Agents online" },
   { key: "cookie-vault", label: "Vault cookies" },
 ];
 

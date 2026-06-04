@@ -49,13 +49,20 @@ export async function probeCookieSchemaHealth(): Promise<CookieSchemaHealth> {
     p_iv: "dGVzdA==",
     p_cookie_count: 0,
     p_source_browser: "schema-health",
-    p_updated_by: "schema-health",
   });
-  const missingPassCol = /sync_pass_hash/i.test(vaultProbe.body);
+  const staleVNote = /record\s+"v_note"\s+has\s+no\s+field/i.test(vaultProbe.body);
+  const missingPassCol =
+    /sync_pass_hash/i.test(vaultProbe.body) && !/note not found/i.test(vaultProbe.body);
+  const vaultRpcOk =
+    !staleVNote && !missingPassCol && !rpcMissing(vaultProbe.body);
   checks.push({
     name: "sync_pass_hash / note_verify_sync_pass",
-    ok: !missingPassCol && !rpcMissing(vaultProbe.body),
-    detail: missingPassCol ? vaultProbe.body.slice(0, 120) : vaultProbe.body.slice(0, 60) || "ok",
+    ok: vaultRpcOk,
+    detail: staleVNote
+      ? "OLD DB functions — run supabase/APPLY_FIX_V_NOTE_DROP.sql"
+      : missingPassCol
+        ? vaultProbe.body.slice(0, 120)
+        : vaultProbe.body.slice(0, 60) || "ok",
   });
 
   const syncByNote = await rpcProbe("note_sync_cookies_by_note_id", {

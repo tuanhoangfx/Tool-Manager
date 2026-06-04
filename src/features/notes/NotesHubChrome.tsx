@@ -9,6 +9,7 @@ import {
   DEFAULT_NOTES_FILTER_KEYS,
   readNotesListPrefs,
   type NotesListDensity,
+  type NotesListSort,
 } from "./notes-list-prefs";
 import type { NoteFolder } from "./noteFolders";
 import { mergeDisplayFolders } from "./noteFolders";
@@ -27,6 +28,8 @@ type Props = {
   shown: number;
   density: NotesListDensity;
   onDensityChange: (d: NotesListDensity) => void;
+  sort: NotesListSort;
+  onSortChange: (sort: NotesListSort) => void;
   filterToolbar?: React.ReactNode;
   folderSettingsPanel?: React.ReactNode;
 };
@@ -41,6 +44,8 @@ export function NotesHubChrome({
   shown,
   density,
   onDensityChange,
+  sort,
+  onSortChange,
   filterToolbar,
   folderSettingsPanel,
 }: Props) {
@@ -93,6 +98,7 @@ export function NotesHubChrome({
           total={notes.length}
           density={density}
           onDensityChange={onDensityChange}
+          sort={sort}
         />
       }
       filterToolbar={filterToolbar}
@@ -143,6 +149,8 @@ export function NotesHubChrome({
               screen="notes"
               notesDensity={density}
               onNotesDensityChange={onDensityChange}
+              notesSort={sort}
+              onNotesSortChange={onSortChange}
               notesFolderSettings={folderSettingsPanel}
             />
           }

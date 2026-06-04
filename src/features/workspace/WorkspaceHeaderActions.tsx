@@ -4,13 +4,15 @@ import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import { WorkspaceTabDisplayPrefs } from "./WorkspaceTabDisplayPrefs";
 import { useWorkspaceLogs } from "./WorkspaceLogProvider";
 import type { FilterDef } from "../../components/sales-shell/FilterBar";
-import type { NotesListDensity } from "../notes/notes-list-prefs";
+import type { NotesListDensity, NotesListSort } from "../notes/notes-list-prefs";
 
 type Props = {
   screen: WorkspaceScreen;
   screenFilters?: FilterDef[];
   notesDensity?: NotesListDensity;
   onNotesDensityChange?: (d: NotesListDensity) => void;
+  notesSort?: NotesListSort;
+  onNotesSortChange?: (sort: NotesListSort) => void;
   notesFolderSettings?: ReactNode;
   /** Rare tab-specific actions before Log (avoid download CTAs — use FAB). */
   trailing?: ReactNode;
@@ -22,6 +24,8 @@ export function WorkspaceHeaderActions({
   screenFilters = [],
   notesDensity,
   onNotesDensityChange,
+  notesSort,
+  onNotesSortChange,
   notesFolderSettings,
   trailing,
 }: Props) {
@@ -36,6 +40,8 @@ export function WorkspaceHeaderActions({
         screenFilters={screenFilters}
         notesDensity={notesDensity}
         onNotesDensityChange={onNotesDensityChange}
+        notesSort={notesSort}
+        onNotesSortChange={onNotesSortChange}
         notesFolderSettings={notesFolderSettings}
       />
     </div>

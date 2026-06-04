@@ -12,7 +12,7 @@ async function requireDataBoxSession() {
 
 /** List/grid — omit cookie_snapshot + body_md to cut egress on refresh. */
 export const NOTES_LIST_SELECT =
-  "id,user_id,title,slug,domain,pinned,share_enabled,share_token,share_password_hash,share_expires_at,share_view_count,sync_status,synced_at,sync_id,sync_pass_hash,created_at,updated_at";
+  "id,user_id,title,slug,domain,pinned,share_enabled,share_can_edit,share_token,share_password_hash,share_expires_at,share_view_count,sync_status,synced_at,sync_id,sync_pass_hash,created_at,updated_at";
 
 export const NOTES_COOKIE_SELECT = "cookie_snapshot,sync_status,synced_at";
 
@@ -56,14 +56,12 @@ export async function fetchNotesList() {
   const res = await supabase
     .from("notes")
     .select(NOTES_LIST_SELECT)
-    .order("pinned", { ascending: false })
     .order("updated_at", { ascending: false });
 
   if (res.error && isMissingSyncIdColumn(res.error.message)) {
     const legacy = await supabase
       .from("notes")
       .select(NOTES_LEGACY_LIST_SELECT)
-      .order("pinned", { ascending: false })
       .order("updated_at", { ascending: false });
     if (!legacy.error && legacy.data) {
       return {

@@ -24,7 +24,7 @@ function scheduleNotify() {
   notifyTimer = window.setTimeout(() => {
     notifyTimer = 0;
     notifyListeners();
-  }, 800);
+  }, 400);
 }
 
 function ensureChannel(userId: string) {
@@ -111,6 +111,18 @@ function ensureChannel(userId: string) {
         event: "*",
         schema: "public",
         table: "note_cookie_vault",
+        filter: `user_id=eq.${userId}`,
+      },
+      () => {
+        scheduleNotify();
+      },
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "cookie_route_user_activity",
         filter: `user_id=eq.${userId}`,
       },
       () => {

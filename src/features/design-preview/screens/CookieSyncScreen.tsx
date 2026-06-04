@@ -4,7 +4,6 @@ import type { Session } from "@supabase/supabase-js";
 import { useNotesAuth } from "../../notes/useNotesAuth";
 import { useNotes } from "../../notes/useNotes";
 import {
-  broadcastCookieSyncNow,
   broadcastCookieBridgePrefs,
   broadcastSelectedBinding,
 } from "../../cookie/extensionBridgeMessages";
@@ -19,8 +18,7 @@ import { relayActiveSessionsToExtension } from "../../../lib/relay-extension-ses
 import { useCookieRouteDetailRenderers } from "../../cookie/useCookieRouteDetailRenderers";
 import { shouldShowExtensionLinkToast } from "../../../lib/extension-link-toast";
 import { supabase } from "../../../lib/supabase";
-import { Activity, Boxes, Link2, RefreshCw, Shield } from "lucide-react";
-import { EXTENSION_RELEASE_PAGE } from "../../cookie/extensionInstall";
+import { Boxes, Shield } from "lucide-react";
 import { CookieExtensionFab } from "../../cookie/CookieExtensionFab";
 import { DEFAULT_COOKIE_HEADER_STAT_KEYS } from "../../cookie/cookie-display-prefs";
 import { readHubListPrefs } from "../../../lib/url-prefs";
@@ -33,10 +31,8 @@ import {
   disableCookieRouteInCloud,
   mergeCookieRoutes,
   pullCookieRoutesFromCloud,
-  setCookieRouteSource,
   upsertCookieRouteToCloud,
 } from "../../cookie/cookieRoutesRepository";
-import { useCookieAgents } from "../../cookie/cookieAgents";
 import { joinCookieRouteByNoteId } from "../../cookie/noteCookieMembersRepository";
 import { NotesAuthGate } from "../../notes/NotesAuthGate";
 import { SupabaseMigrateBanner } from "../../cookie/SupabaseMigrateBanner";
@@ -53,31 +49,7 @@ type BridgeStatusBadge = {
   title: string;
 };
 
-type BridgeActionsMenuProps = {
-  status: BridgeStatusBadge;
-  onLinkExtension: (opts?: { silent?: boolean }) => void | Promise<void>;
-};
-
-function BridgeActionsMenu({
-  status,
-  onLinkExtension,
-}: BridgeActionsMenuProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [open]);
-
-  const pick = (action: () => void) => {
-    action();
-    setOpen(false);
-  };
+function BridgeStatusIndicator({ status }: { status: BridgeStatusBadge }) {
   const dotClass =
     status.tone === "ready"
       ? "bg-emerald-400"
@@ -86,51 +58,30 @@ function BridgeActionsMenu({
         : status.tone === "error"
           ? "bg-rose-400"
           : "bg-slate-300";
+  const ringClass =
+    status.tone === "ready"
+      ? "border-emerald-400/35 text-emerald-200"
+      : status.tone === "busy"
+        ? "border-amber-400/35 text-amber-100"
+        : status.tone === "error"
+          ? "border-rose-400/35 text-rose-200"
+          : "border-white/10 text-[var(--muted)]";
 
   return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        className="relative inline-grid h-[34px] w-[34px] place-items-center rounded-lg border border-white/10 bg-[var(--panel-2)] text-[var(--text)] hover:bg-white/5"
-        onClick={() => setOpen((next) => !next)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`Route bridge: ${status.label}`}
-        title={`Route bridge · ${status.label} · ${status.title}`}
-      >
-        <Link2 size={14} />
-        <span className={`absolute right-1 top-1 h-1.5 w-1.5 rounded-full ${dotClass}`} aria-hidden />
-      </button>
-      {open ? (
-        <div
-          role="menu"
-          className="anim-pop absolute right-0 top-full z-40 mt-1 w-52 overflow-hidden rounded-xl border border-white/10 bg-[var(--panel)] p-1 shadow-xl shadow-black/40"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-[var(--text)] hover:bg-white/[.06]"
-            onClick={() => pick(() => void onLinkExtension())}
-          >
-            <Link2 size={14} className="text-indigo-300" />
-            Link extension runtime
-          </button>
-        </div>
-      ) : null}
-    </div>
+    <span
+      className={`inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-lg border bg-[var(--panel-2)] px-2.5 text-[11px] font-medium ${ringClass}`}
+      title={`Extension bridge · ${status.title}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} aria-hidden />
+      {status.label}
+    </span>
   );
 }
 
 function bridgeStatusFromState({
-  agents,
-  agentsError,
-  agentsLoading,
   schemaHealth,
   schemaLoading,
 }: {
-  agents: ReturnType<typeof useCookieAgents>["agents"];
-  agentsError: string | null;
-  agentsLoading: boolean;
   schemaHealth: ReturnType<typeof useCookieSchemaHealth>["health"];
   schemaLoading: boolean;
 }): BridgeStatusBadge {
@@ -142,39 +93,17 @@ function bridgeStatusFromState({
       title: `Cloud schema needs attention: ${failed}`,
     };
   }
-  if (agentsError) {
-    return {
-      label: "Agent",
-      tone: "error",
-      title: `Extension agent error: ${agentsError}`,
-    };
-  }
-  if (schemaLoading || (agentsLoading && agents.length === 0)) {
+  if (schemaLoading && !schemaHealth) {
     return {
       label: "Check",
       tone: "busy",
-      title: "Checking extension and cloud readiness",
-    };
-  }
-  if (agents.length === 0) {
-    return {
-      label: "No agent",
-      tone: "warn",
-      title: "No browser agent found. Click Link extension from this menu.",
-    };
-  }
-  const onlineAgents = agents.filter((agent) => Date.now() - new Date(agent.last_seen_at).getTime() < 45_000);
-  if (onlineAgents.length === 0) {
-    return {
-      label: "Stale",
-      tone: "warn",
-      title: "Extension agent exists but has not checked in recently.",
+      title: "Checking cloud schema readiness",
     };
   }
   return {
     label: "Ready",
     tone: "ready",
-    title: `${onlineAgents.length}/${agents.length} extension agent(s) online. Cloud schema is ready.`,
+    title: "Cloud schema is ready. Sync and load run in the extension.",
   };
 }
 
@@ -205,14 +134,6 @@ function CookieSyncMain({
   const { bindings, setBindings, addBinding, connectAndCache, updateBinding, removeBinding, pushToExtension } =
     useCookieBindings(notes);
   const { vaultByKey, vaultError, refreshVault } = useCookieVaultMap(cloudSession, bindings);
-  const {
-    agents,
-    commands: agentCommands,
-    loading: agentsLoading,
-    error: agentsError,
-    refresh: refreshAgents,
-    sendCommand: sendAgentCommand,
-  } = useCookieAgents(session);
   const { health: schemaHealth, loading: schemaLoading, refresh: refreshSchemaHealth } = useCookieSchemaHealth(true);
   const { pushToast } = useAppToast();
   const [deepLinkDone, setDeepLinkDone] = useState(false);
@@ -244,42 +165,6 @@ function CookieSyncMain({
     const prefs = loadCookieBridgePrefs();
     broadcastCookieBridgePrefs(prefs);
   }, []);
-
-  const onLinkExtension = useCallback(async (opts?: { silent?: boolean }) => {
-    const showToast = opts?.silent !== true;
-    if (offline) {
-      if (showToast) pushToast("Offline mode: linking extension runtime requires Supabase.", "warn");
-      return;
-    }
-    const {
-      data: { session: s },
-    } = await supabase.auth.getSession();
-    if (!s) {
-      if (showToast) pushToast("Not signed in.", "warn");
-      return;
-    }
-    let nextBindings = bindings;
-    const cloud = await pullCookieRoutesFromCloud(s, nextBindings, notes);
-    if (cloud.ok) {
-      nextBindings = cloud.bindings;
-      setBindings(cloud.bindings);
-    } else if (showToast) {
-      pushToast(cloud.error, "warn", 8000);
-    }
-
-    await relayActiveSessionsToExtension();
-    if (nextBindings.length > 0) {
-      pushToExtension(nextBindings);
-      if (showToast && shouldShowExtensionLinkToast()) {
-        pushToast("Extension runtime linked. Cloud routes will arrive via realtime.", "success");
-      }
-    } else {
-      pushToExtension([]);
-      if (showToast && shouldShowExtensionLinkToast()) {
-        pushToast("Session sent to extension. Create a new route to publish directly to cloud.", "info");
-      }
-    }
-  }, [bindings, notes, pushToExtension, pushToast, setBindings]);
 
   const publishRouteToCloud = useCallback(
     async (route: CookieBinding, opts: { silent?: boolean } = {}) => {
@@ -323,13 +208,43 @@ function CookieSyncMain({
     }
   }, [bindingsSignature, offline, pushToExtension, pushToast, session, setBindings]);
 
+  /** Session relay + cloud route pull → extension (merged former Link extension + Refresh routes). */
+  const refreshCookieBridge = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      const showToast = opts?.silent !== true;
+      if (offline) {
+        if (showToast) pushToast("Offline mode: extension bridge requires Supabase.", "warn");
+        return;
+      }
+      const {
+        data: { session: s },
+      } = await supabase.auth.getSession();
+      if (!s) {
+        if (showToast) pushToast("Not signed in.", "warn");
+        return;
+      }
+      await relayActiveSessionsToExtension();
+      const res = await pullCookieRoutesFromCloud(session, bindingsRef.current, notesRef.current);
+      if (!res.ok) {
+        if (showToast) pushToast(res.error, "error", 8000);
+        return;
+      }
+      setBindings(res.bindings);
+      pushToExtension(res.bindings);
+      if (showToast && shouldShowExtensionLinkToast()) {
+        pushToast("Extension bridge refreshed (session + routes from cloud).", "success");
+      }
+    },
+    [notes, offline, pushToExtension, pushToast, session, setBindings],
+  );
+
   const onRealtimeRefresh = useCallback(() => {
     void refresh({ silent: true });
     void refreshVault();
-    void refreshCloudRoutes({ silent: true });
-  }, [refreshCloudRoutes, refresh, refreshVault]);
+    void refreshCookieBridge({ silent: true });
+  }, [refresh, refreshCookieBridge, refreshVault]);
 
-  useNotesCookieRealtime(session, onRealtimeRefresh, false);
+  useNotesCookieRealtime(session, onRealtimeRefresh, tabActive && !offline);
 
   useEffect(() => {
     if (autoRoutesLoaded || loading || !session) return;
@@ -357,12 +272,12 @@ function CookieSyncMain({
         if (!note) continue;
         await publishRouteToCloud({ ...row, noteTitle: note.title }, { silent: true });
       }
-      if (!cancelled) void refreshCloudRoutes({ silent: true });
+      if (!cancelled) void refreshCookieBridge({ silent: true });
     })();
     return () => {
       cancelled = true;
     };
-  }, [notesKey, session, offline, loading, publishRouteToCloud, refreshCloudRoutes]);
+  }, [notesKey, session, offline, loading, publishRouteToCloud, refreshCookieBridge]);
 
   const onJoinByNoteId = useCallback(
     async (noteId: string, domain: string) => {
@@ -376,7 +291,7 @@ function CookieSyncMain({
       const joined = next.find((binding) => binding.noteId === res.route.note_id && binding.domain === res.route.domain);
       if (joined) setSelectedBindingId(joined.id);
       pushToExtension(next);
-      pushToast("Shared route joined. You can Load cookies, but Sync Now is disabled.", "success");
+      pushToast("Shared route joined. Use extension Load on this browser; publish via owner browser only.", "success");
       return true;
     },
     [bindings, notes, pushToExtension, pushToast, setBindings],
@@ -406,27 +321,12 @@ function CookieSyncMain({
         void publishRouteToCloud(res.row, { silent: true }).then((ok) => {
           if (ok) pushToast("Route created from URL and published to cloud.", "success");
         });
-        void onLinkExtension({ silent: true });
+        void refreshCookieBridge({ silent: true });
       } else {
         pushToast(res.error, "error");
       }
     });
-  }, [notes, loading, deepLinkDone, connectAndCache, onLinkExtension, publishRouteToCloud, pushToast]);
-
-  const onSyncNow = useCallback((noteId?: string) => {
-    const row = bindings.find((b) => b.id === selectedBindingId);
-    const targetNoteId = noteId ?? row?.noteId;
-    broadcastCookieSyncNow(targetNoteId);
-    if (targetNoteId) {
-      pushToast(
-        `Sync requested in extension — ${row?.noteTitle ?? "selected route"}. Open extension popup → Sync now / Load cookies.`,
-        "info",
-      );
-    } else {
-      pushToast("Select a route in the table before Sync.", "warn");
-    }
-    setTimeout(() => void refresh({ silent: true }), 2500);
-  }, [bindings, pushToast, refresh, selectedBindingId]);
+  }, [notes, loading, deepLinkDone, connectAndCache, refreshCookieBridge, publishRouteToCloud, pushToast]);
 
   useEffect(() => {
     if (autoRan || loading) return;
@@ -442,104 +342,25 @@ function CookieSyncMain({
     setAutoRan(true);
     if (typeof sessionStorage !== "undefined") sessionStorage.setItem(autoKey, "1");
 
-    void (async () => {
-      if (actions.has("link")) await onLinkExtension({ silent: true });
-      if (actions.has("sync")) window.setTimeout(() => onSyncNow(), 1200);
-    })();
-  }, [autoRan, loading, onLinkExtension, onSyncNow]);
+    if (actions.has("link")) void refreshCookieBridge({ silent: true });
+  }, [autoRan, loading, refreshCookieBridge]);
 
   const selectedBinding = bindings.find((b) => b.id === selectedBindingId);
 
-  const onAgentCommand = async (
-    targetBrowserId: string,
-    command: string,
-    payload: Record<string, unknown> = {},
-  ) => {
-    const noteId =
-      typeof payload.noteId === "string" && payload.noteId.trim()
-        ? payload.noteId.trim()
-        : command === "sync-now" || command === "apply-vault"
-          ? selectedBinding?.noteId
-          : undefined;
-    const domain =
-      typeof payload.domain === "string" && payload.domain.trim()
-        ? payload.domain.trim()
-        : selectedBinding?.domain || ".facebook.com";
-    const res = await sendAgentCommand({
-      targetBrowserId,
-      command,
-      noteId,
-      domain,
-      payload,
-    });
-    if (res.ok) {
-      pushToast(`Queued ${command} for browser ${targetBrowserId.slice(0, 8)}.`, "success");
-      window.setTimeout(() => void refreshAgents(), 1400);
-    } else {
-      pushToast(res.error, "error", 8000);
-    }
-    return res;
-  };
-
-  const onSetSourceAgent = async (agent: (typeof agents)[number]) => {
-    if (!selectedBinding) {
-      pushToast("Select a route before setting source.", "warn");
-      return;
-    }
-    if (!agent.facebook_has_login) {
-      pushToast("This browser has no Facebook login cookies, so it cannot be the source.", "warn");
-      return;
-    }
-    const res = await setCookieRouteSource(session, selectedBinding, agent.browser_id, agent.label);
-    if (!res.ok) {
-      pushToast(res.error, "error", 8000);
-      return;
-    }
-    setBindings((prev) =>
-      prev.map((b) =>
-        b.id === selectedBinding.id
-          ? { ...b, sourceBrowserId: res.sourceBrowserId, sourceLabel: res.sourceLabel }
-          : b,
-      ),
-    );
-    pushToExtension(
-      bindings.map((b) =>
-        b.id === selectedBinding.id
-          ? { ...b, sourceBrowserId: res.sourceBrowserId, sourceLabel: res.sourceLabel }
-          : b,
-      ),
-    );
-    pushToast(`Locked source: ${agent.label || agent.browser_id.slice(0, 8)}. Targets are read-only.`, "success");
-  };
-
-  const { renderAccessDetail, renderAgentDetail } = useCookieRouteDetailRenderers(session, {
+  const { renderAccessDetail } = useCookieRouteDetailRenderers(session, {
     onShared: () => void refreshCloudRoutes({ silent: true }),
-    onSetSource: onSetSourceAgent,
-    onCommand: onAgentCommand,
   });
 
   const enabledRoutes = useMemo(() => bindings.filter((b) => b.enabled).length, [bindings]);
-  const onlineAgentCount = useMemo(
-    () => agents.filter((a) => Date.now() - new Date(a.last_seen_at).getTime() < 25_000).length,
-    [agents],
-  );
   const vaultCookieCount = useMemo(() => Object.keys(vaultByKey).length, [vaultByKey]);
 
   const bridgeStatus = useMemo(
-    () =>
-      bridgeStatusFromState({
-        agents,
-        agentsError,
-        agentsLoading,
-        schemaHealth,
-        schemaLoading,
-      }),
-    [agents, agentsError, agentsLoading, schemaHealth, schemaLoading],
+    () => bridgeStatusFromState({ schemaHealth, schemaLoading }),
+    [schemaHealth, schemaLoading],
   );
-  const routeActionsKey = `${bridgeStatus.tone}:${bridgeStatus.label}:${agents.length}:${schemaHealth?.ok ?? "unknown"}`;
+  const toolbarBridgeKey = `${bridgeStatus.tone}:${bridgeStatus.label}:${schemaHealth?.ok ?? "unknown"}`;
 
-  const cookieBootLoading =
-    tabActive && ((schemaLoading && !schemaHealth) || (agentsLoading && agents.length === 0));
+  const cookieBootLoading = tabActive && schemaLoading && !schemaHealth;
 
   useEffect(() => {
     if (!shellMode) {
@@ -558,15 +379,6 @@ function CookieSyncMain({
               toneClass: "text-violet-300",
             }
           : null,
-        vis.has("cookie-agents")
-          ? {
-              key: "cookie-agents",
-              icon: Activity,
-              label: "agents online",
-              value: onlineAgentCount,
-              toneClass: "text-emerald-300",
-            }
-          : null,
         vis.has("cookie-vault")
           ? {
               key: "cookie-vault",
@@ -582,43 +394,21 @@ function CookieSyncMain({
   }, [
     enabledRoutes,
     hubPrefs.headerStats,
-    onlineAgentCount,
     setCenterStats,
     shellMode,
     vaultCookieCount,
   ]);
 
-  const routeActions = useMemo(() => (
-    <>
-      <a
-        href={EXTENSION_RELEASE_PAGE}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="hidden h-[34px] items-center rounded-lg border border-white/10 bg-[var(--panel-2)] px-2.5 text-[11px] text-[var(--muted)] hover:text-[var(--text)] xl:inline-flex"
-        title="All extension releases"
-      >
-        Releases
-      </a>
-      <BridgeActionsMenu
-        status={bridgeStatus}
-        onLinkExtension={() => void onLinkExtension()}
-      />
-      <button
-        type="button"
-        className="inline-flex h-[34px] items-center gap-1.5 rounded-lg border border-indigo-400/30 bg-indigo-500/20 px-3 text-xs font-medium text-indigo-100 hover:bg-indigo-500/30"
-        onClick={() => onSyncNow()}
-      >
-        <RefreshCw size={14} />
-        Sync now
-      </button>
-    </>
-  ), [
-    bridgeStatus,
-    onLinkExtension,
-    onSyncNow,
-  ]);
+  const bridgeStatusChip = useMemo(() => <BridgeStatusIndicator status={bridgeStatus} />, [bridgeStatus]);
 
-  const pageHeaderActions = useMemo(() => <>{routeActions}</>, [routeActions]);
+  const pageHeaderActions = useMemo(() => <>{bridgeStatusChip}</>, [bridgeStatusChip]);
+
+  const onRefreshAll = useCallback(() => {
+    void refresh();
+    if (offline) return;
+    void refreshVault();
+    void refreshCookieBridge({ silent: false });
+  }, [offline, refresh, refreshCookieBridge, refreshVault]);
 
   return (
     <>
@@ -627,7 +417,7 @@ function CookieSyncMain({
       <div className={shellMode ? "" : "p-6"}>
       {offline ? (
         <p className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
-          Offline mode is enabled. Cloud routes, sharing, sync now, and vault status are disabled.
+          Offline mode is enabled. Cloud routes, sharing, and vault status are disabled.
         </p>
       ) : null}
       {!shellMode ? (
@@ -673,8 +463,8 @@ function CookieSyncMain({
                 return;
               }
               pushToExtension(nextBindings);
-              pushToast("Route saved to cloud. Linked browsers receive it via realtime.", "success");
-              void refreshCloudRoutes({ silent: true });
+              pushToast("Route saved to cloud.", "success");
+              void refreshCookieBridge({ silent: true });
             });
           }}
           onJoinByNoteId={onJoinByNoteId}
@@ -691,8 +481,8 @@ function CookieSyncMain({
             void publishRouteToCloud(nextRoute, { silent: true }).then((ok) => {
               if (!ok) return;
               pushToExtension(bindings.map((binding) => (binding.id === id ? nextRoute : binding)));
-              pushToast("Route updated in cloud. Linked browsers receive it via realtime.", "success");
-              void refreshCloudRoutes({ silent: true });
+              pushToast("Route updated in cloud.", "success");
+              void refreshCookieBridge({ silent: true });
             });
           }}
           onRemove={(id) => {
@@ -717,20 +507,12 @@ function CookieSyncMain({
               void refreshCloudRoutes({ silent: true });
             });
           }}
-          onSyncRoute={(b) => onSyncNow(b.noteId)}
           vaultByKey={vaultByKey}
           vaultError={vaultError}
-          toolbarActions={shellMode ? routeActions : null}
-          toolbarActionsKey={shellMode ? routeActionsKey : ""}
+          toolbarActions={null}
+          toolbarActionsKey=""
           renderAccessDetail={renderAccessDetail}
-          renderAgentDetail={renderAgentDetail}
-          onRefresh={() => {
-            void refresh();
-            if (!offline) {
-              void refreshVault();
-              void refreshCloudRoutes({ silent: true });
-            }
-          }}
+          onRefresh={onRefreshAll}
         />
       </div>
 

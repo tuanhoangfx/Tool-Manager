@@ -5,6 +5,7 @@ import { writeNoteDetailCache } from "../../lib/note-detail-cache";
 import { readNotesListStaleCache, writeNotesListClientCache } from "../../lib/notes-list-cache";
 import { createNoteRow, deleteNoteRow, fetchNotesList } from "./notesRepository";
 import { useNotesRealtimeUiRefresh } from "./notes-realtime-pref";
+import { readNotesListPrefs } from "./notes-list-prefs";
 import { generateSyncId, mergeNoteRowForList, sortNoteRows, toListItem } from "./noteUtils";
 import type { NoteRow } from "./types";
 import { getOfflineMode } from "../../lib/offlineMode";
@@ -65,7 +66,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
         setError(err.message);
         if (!hasStale) setRows([]);
       } else {
-        const next = sortNoteRows((data ?? []) as NoteRow[]);
+        const next = sortNoteRows((data ?? []) as NoteRow[], readNotesListPrefs().sort);
         setRows(next);
         writeNotesListClientCache(userId, next);
       }
@@ -103,7 +104,10 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
     (row: NoteRow) => {
       if (!userId) return;
       setRows((prev) => {
-        const next = sortNoteRows([row, ...prev.filter((r) => r.id !== row.id)]);
+        const next = sortNoteRows(
+          [row, ...prev.filter((r) => r.id !== row.id)],
+          readNotesListPrefs().sort,
+        );
         writeNotesListClientCache(userId, next);
         return next;
       });
@@ -119,7 +123,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
         if (idx < 0) return prev;
         const next = [...prev];
         next[idx] = mergeNoteRowForList(prev[idx], saved);
-        const sorted = sortNoteRows(next);
+        const sorted = sortNoteRows(next, readNotesListPrefs().sort);
         writeNotesListClientCache(userId, sorted);
         return sorted;
       });
@@ -142,6 +146,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
         cookie_snapshot: null,
         pinned: false,
         share_enabled: false,
+        share_can_edit: false,
         share_token: null,
         share_password_hash: null,
         share_expires_at: null,

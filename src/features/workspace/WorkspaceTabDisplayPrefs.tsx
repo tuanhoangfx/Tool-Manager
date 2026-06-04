@@ -1,11 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Cookie, FolderOpen, Shield, ShieldAlert } from "lucide-react";
+import { FolderOpen } from "lucide-react";
 import { DisplayPrefs } from "../../components/sales-shell";
 import type { FilterDef } from "../../components/sales-shell/FilterBar";
 import { compactIconSize } from "../../lib/ui-scale";
-import { CookieBridgeAdvancedSection } from "../cookie/CookieBridgeAdvancedSection";
-import { CookieBridgeExtensionSection } from "../cookie/CookieBridgeExtensionSection";
-import { CookieVaultSection } from "../cookie/CookieVaultSection";
 import {
   COOKIE_CHART_DEFS,
   COOKIE_FILTER_DEFS,
@@ -16,14 +13,14 @@ import {
   DEFAULT_COOKIE_KPI_KEYS,
 } from "../cookie/cookie-display-prefs";
 import { DEFAULT_COOKIE_ROUTE_FILTER_KEYS } from "../cookie/cookie-route-filters";
-import { NotesDensityExtras } from "../notes/NotesDensityExtras";
+import { NotesSortExtras } from "../notes/NotesSortExtras";
 import {
   DEFAULT_NOTES_HEADER_STAT_KEYS,
   NOTES_FILTER_PREF_DEFS,
   NOTES_HEADER_STAT_DEFS,
 } from "../notes/notes-display-prefs";
 import { DEFAULT_NOTES_FILTER_KEYS } from "../notes/notes-list-prefs";
-import type { NotesListDensity } from "../notes/notes-list-prefs";
+import type { NotesListDensity, NotesListSort } from "../notes/notes-list-prefs";
 import {
   DEFAULT_TWOFA_HEADER_STAT_KEYS,
   TWOFA_HEADER_STAT_DEFS,
@@ -73,6 +70,8 @@ type Props = {
   screenFilters?: FilterDef[];
   notesDensity?: NotesListDensity;
   onNotesDensityChange?: (d: NotesListDensity) => void;
+  notesSort?: NotesListSort;
+  onNotesSortChange?: (sort: NotesListSort) => void;
   notesFolderSettings?: ReactNode;
 };
 
@@ -82,6 +81,8 @@ export function WorkspaceTabDisplayPrefs({
   screenFilters = [],
   notesDensity = "comfort",
   onNotesDensityChange,
+  notesSort = "updated",
+  onNotesSortChange,
   notesFolderSettings,
 }: Props) {
   if (screen === "cookie") {
@@ -109,26 +110,6 @@ export function WorkspaceTabDisplayPrefs({
         showHeaderPin
         panelWidth={420}
         maxPanelHeight="min(80vh, 42rem)"
-        extraTabs={[
-          {
-            id: "bridge",
-            label: "Bridge",
-            icon: <Cookie size={compactIconSize(12)} className="text-amber-300" />,
-            content: <CookieBridgeExtensionSection />,
-          },
-          {
-            id: "vault",
-            label: "Vault",
-            icon: <Shield size={compactIconSize(12)} className="text-violet-300" />,
-            content: <CookieVaultSection />,
-          },
-          {
-            id: "advanced",
-            label: "Advanced",
-            icon: <ShieldAlert size={compactIconSize(12)} className="text-sky-300" />,
-            content: <CookieBridgeAdvancedSection />,
-          },
-        ]}
         headerStatLabel={() => "Cookie header"}
         scope="tab"
       />
@@ -147,9 +128,7 @@ export function WorkspaceTabDisplayPrefs({
         showRange={false}
         showLimit={false}
         showHeaderPin
-        generalExtras={
-          <NotesDensityExtras density={notesDensity} onDensityChange={onNotesDensityChange} />
-        }
+        generalExtras={<NotesSortExtras sort={notesSort} onSortChange={onNotesSortChange} />}
         extraTabs={
           notesFolderSettings
             ? [

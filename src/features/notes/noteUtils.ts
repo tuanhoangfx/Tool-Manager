@@ -1,4 +1,8 @@
 import type { NoteRow, NoteListItem, NoteSyncStatus } from "./types";
+import {
+  DEFAULT_NOTES_LIST_SORT,
+  type NotesListSort,
+} from "./notes-list-prefs";
 
 /** TM-xxxxxxxx — matches Supabase backfill / extension binding */
 export function generateSyncId(): string {
@@ -17,6 +21,7 @@ export function noteEditorContentEqual(a: NoteRow, b: NoteRow): boolean {
     a.domain === b.domain &&
     a.pinned === b.pinned &&
     a.share_enabled === b.share_enabled &&
+    (a.share_can_edit ?? false) === (b.share_can_edit ?? false) &&
     a.sync_status === b.sync_status
   );
 }
@@ -30,7 +35,7 @@ export function slugifyTitle(title: string, fallback = "note"): string {
   return base || fallback;
 }
 
-function formatRelativeEn(iso: string | null): string {
+export function formatRelativeEn(iso: string | null): string {
   if (!iso) return "-";
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diffMs / 60_000);
@@ -42,13 +47,18 @@ function formatRelativeEn(iso: string | null): string {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-function formatDateEn(iso: string): string {
+/** Compact timestamp for meta chips (created / updated). */
+export function formatNoteTimestamp(iso: string): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso));
+}
+
+function formatDateEn(iso: string): string {
+  return formatNoteTimestamp(iso);
 }
 
 export function syncMeta(status: NoteSyncStatus, syncedAt: string | null): Pick<NoteListItem, "syncLabel" | "syncTone"> {
@@ -64,12 +74,64 @@ export function syncMeta(status: NoteSyncStatus, syncedAt: string | null): Pick<
   }
 }
 
-/** Matches `fetchNotesList` ordering — pinned first, then `updated_at` desc. */
-export function sortNoteRows(rows: NoteRow[]): NoteRow[] {
+type NoteSortable = Pick<NoteRow, "id" | "updated_at" | "created_at" | "synced_at" | "pinned" | "title">;
+
+/** Cookie-route notes sort by `synced_at` (extension sync), not vault load / note `updated_at`. */
+export function noteListSortAt(
+  row: Pick<NoteRow, "id" | "updated_at" | "synced_at">,
+  cookieRouteNoteIds?: ReadonlySet<string>,
+): string {
+  if (cookieRouteNoteIds?.has(row.id)) {
+    return row.synced_at?.trim() || row.updated_at;
+  }
+  return row.updated_at;
+}
+
+function pinFirst<T extends Pick<NoteRow, "pinned">>(cmp: number, a: T, b: T): number {
+  if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+  return cmp;
+}
+
+/** Pinned first; then by sort mode (default = recently edited). */
+export function sortNoteRows<T extends NoteSortable>(
+  rows: T[],
+  sort: NotesListSort = DEFAULT_NOTES_LIST_SORT,
+  cookieRouteNoteIds?: ReadonlySet<string>,
+): T[] {
   return [...rows].sort((a, b) => {
-    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    switch (sort) {
+      case "created":
+        return pinFirst(
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+          a,
+          b,
+        );
+      case "title": {
+        const byTitle = a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+        return pinFirst(byTitle, a, b);
+      }
+      case "updated":
+      default:
+        return pinFirst(
+          new Date(noteListSortAt(b, cookieRouteNoteIds)).getTime() -
+            new Date(noteListSortAt(a, cookieRouteNoteIds)).getTime(),
+          a,
+          b,
+        );
+    }
   });
+}
+
+export function noteEditorTocLabel(
+  note: Pick<NoteRow, "updated_at" | "synced_at">,
+  isCookieRoute: boolean,
+): string {
+  if (isCookieRoute) {
+    const at = note.synced_at?.trim();
+    return at ? `Synced ${formatRelativeEn(at)}` : "Not synced yet";
+  }
+  const at = note.updated_at?.trim();
+  return at ? `Edited ${formatRelativeEn(at)}` : "";
 }
 
 /** Patch list cache from a detail save without storing heavy columns from the save response. */
@@ -81,6 +143,7 @@ export function mergeNoteRowForList(existing: NoteRow, saved: NoteRow): NoteRow 
     domain: saved.domain,
     pinned: saved.pinned,
     share_enabled: saved.share_enabled,
+    share_can_edit: saved.share_can_edit ?? false,
     share_token: saved.share_token,
     share_password_hash: saved.share_password_hash,
     share_expires_at: saved.share_expires_at,

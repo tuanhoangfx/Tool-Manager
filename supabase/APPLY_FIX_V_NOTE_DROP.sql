@@ -10,6 +10,7 @@ alter table public.notes
 drop function if exists public.note_vault_poll(uuid[], timestamptz);
 drop function if exists public.note_vault_fetch(uuid, text, text);
 drop function if exists public.note_vault_upsert(uuid, text, text, text, text, int, text);
+drop function if exists public.note_vault_upsert(uuid, text, text, text, text, int, text, text);
 drop function if exists public.note_sync_cookies_by_note_id(uuid, text, jsonb, text);
 drop function if exists public.note_set_sync_pass(uuid, text);
 drop function if exists public.note_verify_sync_pass(uuid, text);

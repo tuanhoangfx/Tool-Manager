@@ -3,13 +3,13 @@ import type { NoteListItem } from "../notes/types";
 import { matchesTimeRange } from "../notes/notes-filters";
 import type { CookieBinding } from "./cookieBridge";
 
-/** Best timestamp for Hub time-range on a cookie route (cloud route beats stale note edit). */
+/** Hub time-range on a cookie route — note activity uses extension sync (`synced_at`), not vault load. */
 export function routeActivityAt(binding: CookieBinding, note?: NoteListItem): string | undefined {
-  const routeAt = binding.routeUpdatedAt?.trim();
-  if (routeAt) return routeAt;
+  const synced = note?.synced_at?.trim();
+  if (synced) return synced;
   const noteUpdated = note?.updated_at?.trim();
   if (noteUpdated) return noteUpdated;
-  return note?.synced_at?.trim() || undefined;
+  return binding.routeUpdatedAt?.trim() || undefined;
 }
 
 export function routeMatchesTimeRange(

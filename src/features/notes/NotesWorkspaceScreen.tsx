@@ -15,7 +15,8 @@ import { noteMatchesFolderFilter, useNoteFolders, mergeDisplayFolders, getEffect
 import { NotesFoldersSettingsPanel } from "./NotesFoldersSettingsPanel";
 import { filterNotes } from "./notes-filters";
 import { readNotesListPrefs, type NotesListDensity } from "./notes-list-prefs";
-import { slugifyTitle } from "./noteUtils";
+import { shareAccessFromRow, shareFlagsFromAccess, type NoteShareAccess } from "./shareAccess";
+import { cookieLines, slugifyTitle, sortNoteRows } from "./noteUtils";
 import { NOTES_AUTOSAVE_DEBOUNCE_MS } from "./notes-egress";
 import type { NoteRow } from "./types";
 import type { NoteSaveResult } from "./useNote";
@@ -65,8 +66,10 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   const [domain, setDomain] = useState("");
   const [body, setBody] = useState("");
   const [pinned, setPinned] = useState(false);
-  const [shareEnabled, setShareEnabled] = useState(false);
+  const [shareAccess, setShareAccess] = useState<NoteShareAccess>("private");
   const [sharePassword, setSharePassword] = useState("");
+  const [shareDraftAccess, setShareDraftAccess] = useState<NoteShareAccess>("private");
+  const [shareDraftPassword, setShareDraftPassword] = useState("");
   const [savedHint, setSavedHint] = useState("");
   const [pendingDeleteNote, setPendingDeleteNote] = useState(false);
   const folders = useNoteFolders(session);
@@ -118,16 +121,19 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
         body_md: string;
         pinned: boolean;
         share_enabled: boolean;
+        share_can_edit?: boolean;
+        cookie_snapshot?: NoteRow["cookie_snapshot"];
       },
       opts?: { routeLocked?: boolean },
     ) => {
       const locked = opts?.routeLocked ?? false;
+      const snapshotText = cookieLines(row.cookie_snapshot ?? null).join("\n");
       setTitle(row.title.trim() === "Note mới" ? "New note" : row.title);
       setSlug(row.slug);
       setDomain(row.domain);
-      setBody(locked ? "" : row.body_md);
+      setBody(locked ? snapshotText : row.body_md);
       setPinned(row.pinned);
-      setShareEnabled(row.share_enabled);
+      setShareAccess(shareAccessFromRow(row));
       setSharePassword("");
     },
     [],
@@ -153,6 +159,11 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   }, [applyNoteToEditor, note, routeLocked, selectedId]);
 
   useEffect(() => {
+    if (!routeLocked || !note || note.id !== selectedId) return;
+    setBody(cookieLines(note.cookie_snapshot).join("\n"));
+  }, [note, routeLocked, selectedId]);
+
+  useEffect(() => {
     if (!session) return;
     const pullFromCloud = () => {
       void refreshNotesList({ silent: true });
@@ -170,11 +181,6 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [session, selectedId, routeLocked, refreshNotesList, refreshNote, refreshRouteLock]);
-
-  useEffect(() => {
-    if (!routeLocked || dirty) return;
-    setBody("");
-  }, [routeLocked, selectedId, dirty]);
 
   useEffect(() => {
     setFilterValues((prev) => {
@@ -234,9 +240,14 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
 
   const filtered = useMemo(() => {
     const folderIds = filterValues.folder ?? [];
-    const base = filterNotes(notes, query, filterValues, prefs.range);
+    const base = filterNotes(notes, query, filterValues, prefs.range, cookieRouteNoteIds);
     return base.filter((n) => noteMatchesFolderFilter(n, folders.noteFolders, folderIds, cookieRouteNoteIds));
   }, [cookieRouteNoteIds, filterValues, folderTick, folders.noteFolders, notes, prefs.range, query]);
+
+  const sortedFiltered = useMemo(
+    () => sortNoteRows(filtered, prefs.sort, cookieRouteNoteIds),
+    [cookieRouteNoteIds, filtered, prefs.sort],
+  );
 
   const pickNote = useCallback(
     (id: string, seed?: NoteRow | null) => {
@@ -258,9 +269,10 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
               title: listItem.title,
               slug: listItem.slug,
               domain: listItem.domain,
-              body_md: "",
+              body_md: listItem.body_md ?? "",
               pinned: listItem.pinned,
               share_enabled: listItem.share_enabled,
+              cookie_snapshot: listItem.cookie_snapshot,
             },
             { routeLocked: hasRoute },
           );
@@ -276,12 +288,12 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   useEffect(() => {
     if (listLoading || creating) return;
     if (!selectedId) {
-      if (filtered.length > 0) pickNote(filtered[0].id);
+      if (sortedFiltered.length > 0) pickNote(sortedFiltered[0].id);
       return;
     }
     const stillExists = notes.some((n) => n.id === selectedId);
-    if (!stillExists && filtered.length > 0) pickNote(filtered[0].id);
-  }, [creating, listLoading, filtered, notes, selectedId, pickNote]);
+    if (!stillExists && sortedFiltered.length > 0) pickNote(sortedFiltered[0].id);
+  }, [creating, listLoading, sortedFiltered, notes, selectedId, pickNote]);
 
   const onNew = async () => {
     setCreating(true);
@@ -307,36 +319,73 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
     setDirty(true);
   };
 
-  const updateSharePassword = (next: string) => {
-    if (routeLocked) return;
-    setSharePassword(next);
-    setDirty(true);
+
+  const buildEditorDraft = (overrides?: {
+    pinned?: boolean;
+    shareAccess?: NoteShareAccess;
+    sharePassword?: string;
+    contentOnly?: boolean;
+  }) => {
+    const nextPinned = routeLocked ? (note?.pinned ?? false) : (overrides?.pinned ?? pinned);
+    const share =
+      overrides?.contentOnly && note
+        ? shareFlagsFromAccess(shareAccessFromRow(note))
+        : shareFlagsFromAccess(overrides?.shareAccess ?? shareAccess);
+    const pwd =
+      overrides?.contentOnly || routeLocked
+        ? undefined
+        : overrides?.sharePassword !== undefined
+          ? overrides.sharePassword || undefined
+          : sharePassword || undefined;
+    return {
+      title,
+      slug: slug.trim() || slugifyTitle(title, note?.slug || (selectedId ?? "note")),
+      domain: routeLocked ? (note?.domain ?? domain) : domain,
+      body_md: routeLocked ? (note?.body_md ?? body) : body,
+      pinned: nextPinned,
+      share_enabled: share.share_enabled,
+      share_can_edit: share.share_can_edit,
+      share_password: pwd,
+    };
   };
 
   const persistCurrentNote = async (overrides?: {
     pinned?: boolean;
-    shareEnabled?: boolean;
+    shareAccess?: NoteShareAccess;
+    contentOnly?: boolean;
   }) => {
     if (!selectedId) throw new Error("No note selected");
-    const nextPinned = routeLocked ? (note?.pinned ?? false) : (overrides?.pinned ?? pinned);
-    const nextShareEnabled = routeLocked ? (note?.share_enabled ?? false) : (overrides?.shareEnabled ?? shareEnabled);
-    const saved = await save({
-      title,
-      slug: slug.trim() || slugifyTitle(title, note?.slug || selectedId),
-      domain: routeLocked ? (note?.domain ?? domain) : domain,
-      body_md: routeLocked ? (note?.body_md ?? body) : body,
-      pinned: nextPinned,
-      share_enabled: nextShareEnabled,
-      share_password: routeLocked ? undefined : sharePassword || undefined,
-    });
+    const saved = await save(buildEditorDraft(overrides));
     setPinned(saved.pinned);
-    setShareEnabled(saved.share_enabled);
+    setShareAccess(shareAccessFromRow(saved));
     setSlug(saved.slug);
-    setSharePassword("");
+    if (!overrides?.contentOnly) setSharePassword("");
     mergeNoteInList(stripSaveResult(saved));
     setSavedHint("Saved");
     setTimeout(() => setSavedHint(""), 2500);
     return saved;
+  };
+
+  const resetShareDraft = useCallback(() => {
+    setShareDraftAccess(shareAccess);
+    setShareDraftPassword("");
+  }, [shareAccess]);
+
+  const onShareSave = async () => {
+    if (!selectedId || routeLocked) return;
+    try {
+      const saved = await save(
+        buildEditorDraft({ shareAccess: shareDraftAccess, sharePassword: shareDraftPassword }),
+      );
+      setShareAccess(shareAccessFromRow(saved));
+      setSharePassword("");
+      setShareDraftAccess(shareAccessFromRow(saved));
+      setShareDraftPassword("");
+      mergeNoteInList(stripSaveResult(saved));
+      pushToast("Share settings saved", "success");
+    } catch (err) {
+      pushToast(errorMessage(err, "Share update failed"), "error");
+    }
   };
 
   const onSave = async () => {
@@ -353,11 +402,11 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
     if (!dirty || !selectedId || saving || creating) return;
     const key = routeLocked
       ? `${selectedId}:${title}:${slug}`
-      : `${selectedId}:${title}:${slug}:${domain}:${body}:${pinned}:${shareEnabled}:${sharePassword}`;
+      : `${selectedId}:${title}:${slug}:${domain}:${body}:${pinned}`;
     if (key === lastAutosaveKey.current) return;
     const timer = window.setTimeout(() => {
       lastAutosaveKey.current = key;
-      void persistCurrentNote()
+      void persistCurrentNote({ contentOnly: true })
         .then(() => {
           setDirty(false);
           setSavedHint("Saved");
@@ -368,7 +417,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
         });
     }, NOTES_AUTOSAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [body, creating, dirty, domain, pinned, pushToast, routeLocked, saving, selectedId, shareEnabled, sharePassword, slug, title]);
+  }, [body, creating, dirty, domain, pinned, pushToast, routeLocked, saving, selectedId, slug, title]);
 
   const onPinnedToggle = async () => {
     if (routeLocked) {
@@ -383,22 +432,6 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
     } catch (err) {
       setPinned(!next);
       pushToast(errorMessage(err, "Pin update failed"), "error");
-    }
-  };
-
-  const onShareToggle = async () => {
-    if (routeLocked) {
-      pushToast("Share is disabled while a Cookie Auto route is active.", "info");
-      return;
-    }
-    const next = !shareEnabled;
-    setShareEnabled(next);
-    try {
-      const saved = await persistCurrentNote({ shareEnabled: next });
-      pushToast(saved.share_enabled ? "Share link enabled" : "Share disabled", "success");
-    } catch (err) {
-      setShareEnabled(!next);
-      pushToast(errorMessage(err, "Share update failed"), "error");
     }
   };
 
@@ -454,6 +487,8 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           shown={0}
           density={density}
           onDensityChange={setDensity}
+          sort={prefs.sort}
+          onSortChange={(next) => setPrefs((p) => ({ ...p, sort: next }))}
           filterToolbar={null}
         />
         <p className="px-4 py-8 text-center text-[12px] text-[var(--muted)]">Signing in…</p>
@@ -496,8 +531,9 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
     <NotesWorkspaceToolbar
       note={note}
       pinned={pinned}
-      shareEnabled={shareEnabled}
-      sharePassword={sharePassword}
+      shareAccess={shareAccess}
+      shareDraftAccess={shareDraftAccess}
+      shareDraftPassword={shareDraftPassword}
       saving={saving}
       creating={creating}
       savedHint={savedHint}
@@ -506,8 +542,11 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
       onSave={() => void onSave()}
       onDelete={requestDeleteNote}
       onPinnedToggle={() => void onPinnedToggle()}
-      onShareToggle={() => void onShareToggle()}
-      onSharePasswordChange={updateSharePassword}
+      onShareMenuOpen={resetShareDraft}
+      onShareDraftAccessChange={setShareDraftAccess}
+      onShareDraftPasswordChange={setShareDraftPassword}
+      onShareSave={() => void onShareSave()}
+      onShareCancel={resetShareDraft}
     />
   ) : null;
 
@@ -523,6 +562,8 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           shown={0}
           density={density}
           onDensityChange={setDensity}
+          sort={prefs.sort}
+          onSortChange={(next) => setPrefs((p) => ({ ...p, sort: next }))}
           filterToolbar={null}
         />
         <div className="pt-5">
@@ -544,13 +585,15 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
         shown={filtered.length}
         density={density}
         onDensityChange={setDensity}
+        sort={prefs.sort}
+        onSortChange={(next) => setPrefs((p) => ({ ...p, sort: next }))}
         filterToolbar={workspaceToolbar}
         folderSettingsPanel={folderSettingsPanel}
       />
 
       <div className="notes-workspace__body flex min-h-0 flex-1 overflow-hidden">
         <NotesListRail
-          notes={filtered}
+          notes={sortedFiltered}
           selectedId={selectedId}
           density={density}
           loading={listLoading}

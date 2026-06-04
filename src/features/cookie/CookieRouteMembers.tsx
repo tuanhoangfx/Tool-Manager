@@ -1,16 +1,30 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { FilterBar, type FilterDef, type FilterValues } from "../../components/sales-shell";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+import { Mail, Save, Shield, UserPlus, Users } from "lucide-react";
+import { FilterBar, HubFilterSingleSelect, type FilterDef, type FilterValues } from "../../components/sales-shell";
+import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
+import type { CookieVaultRow } from "./useCookieVaultMap";
 import { useNotesAuth } from "../notes/useNotesAuth";
 import type { CookieBinding } from "./cookieBridge";
 import { getCookieRoutePublishStatus } from "./cookieRoutesRepository";
 import {
   listNoteCookieMembers,
+  revokeNoteCookieMember,
   upsertNoteCookieMember,
   type NoteCookieMemberRow,
 } from "./noteCookieMembersRepository";
+import { supabase } from "../../lib/supabase";
+import { listCookieRouteActivity } from "./cookieRouteActivityRepository";
+import { cookieRouteDomainKey } from "./cookieRouteDomain";
+import { CookieRouteAccessBulkActionBar } from "./CookieRouteAccessBulkActionBar";
+import { CookieRouteAccessTable, type RouteAccessRow } from "./CookieRouteAccessTable";
+import { CookieRouteFieldLabel, CookieRouteModalActions } from "./CookieRouteFormModal";
+import { COOKIE_ACCESS_SELECT_OPTIONS } from "./cookieAccessSelectOptions";
 
 type Props = {
   binding: CookieBinding;
+  vault?: CookieVaultRow;
+  noteSyncedAt?: string | null;
   onToast?: (message: string, tone?: "success" | "error" | "warn") => void;
   onShared?: () => void;
 };
@@ -23,14 +37,12 @@ type PublishedState = {
 const ACCESS_FILTER_DEFS: FilterDef[] = [
   {
     key: "role",
-    label: "Role",
+    label: "Access",
     showAllLabel: true,
     options: [
       { value: "owner", label: "Owner", color: "#a78bfa" },
-      { value: "member", label: "Member", color: "#94a3b8" },
-      { value: "employee", label: "Employee", color: "#38bdf8" },
-      { value: "publisher", label: "Publisher", color: "#f59e0b" },
-      { value: "manager", label: "Manager", color: "#34d399" },
+      { value: "load", label: "Load", color: "#38bdf8" },
+      { value: "sync", label: "Sync", color: "#818cf8" },
     ],
   },
   {
@@ -38,9 +50,8 @@ const ACCESS_FILTER_DEFS: FilterDef[] = [
     label: "Permission",
     showAllLabel: true,
     options: [
-      { value: "apply", label: "Can apply", color: "#34d399" },
-      { value: "publish", label: "Can publish", color: "#818cf8" },
-      { value: "manage", label: "Can manage", color: "#22c55e" },
+      { value: "load", label: "Load", color: "#34d399" },
+      { value: "sync", label: "Sync", color: "#818cf8" },
     ],
   },
   {
@@ -54,50 +65,35 @@ const ACCESS_FILTER_DEFS: FilterDef[] = [
   },
 ];
 
-function formatExpires(value: string | null) {
-  if (!value) return "No expiry";
-  try {
-    return new Date(value).toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return value;
-  }
-}
-
-function Pill({ children, tone = "slate" }: { children: ReactNode; tone?: "emerald" | "indigo" | "amber" | "rose" | "slate" }) {
-  return <span className={`rdp-pill rdp-pill--${tone}`}>{children}</span>;
-}
+type ShareAccess = "load" | "sync";
 
 function memberUser(member: NoteCookieMemberRow) {
   return member.grantee_email ?? member.grantee_user_id ?? "shared-user";
 }
 
-function memberRole(member: NoteCookieMemberRow) {
-  if (member.can_manage) return "Manager";
-  if (member.can_publish) return "Publisher";
-  return "Employee";
+function memberAccessRole(member: NoteCookieMemberRow) {
+  return member.can_publish ? "Sync" : "Load";
+}
+
+function shareAccessFromMember(member: NoteCookieMemberRow): ShareAccess {
+  return member.can_publish ? "sync" : "load";
 }
 
 function normalizedRole(role: string) {
   return role.toLowerCase();
 }
 
-type ShareRole = "load" | "sync" | "manager";
-
-function sharePermissions(role: ShareRole) {
+function sharePermissions(access: ShareAccess) {
   return {
     canApply: true,
-    canPublish: role === "sync" || role === "manager",
-    canManage: role === "manager",
+    canPublish: access === "sync",
+    canManage: false,
   };
 }
 
-export function CookieRouteMembers({ binding, onToast, onShared }: Props) {
+export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }: Props) {
   const { session } = useNotesAuth();
+  const shareEmailRef = useRef<HTMLInputElement>(null);
   const [members, setMembers] = useState<NoteCookieMemberRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [publishedState, setPublishedState] = useState<PublishedState | null>(null);
@@ -105,8 +101,21 @@ export function CookieRouteMembers({ binding, onToast, onShared }: Props) {
   const [query, setQuery] = useState("");
   const [filterValues, setFilterValues] = useState<FilterValues>({});
   const [shareEmail, setShareEmail] = useState("");
-  const [shareRole, setShareRole] = useState<ShareRole>("load");
+  const [shareAccess, setShareAccess] = useState<ShareAccess>("load");
   const [shareBusy, setShareBusy] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [editingMember, setEditingMember] = useState<NoteCookieMemberRow | null>(null);
+  const [editAccess, setEditAccess] = useState<ShareAccess>("load");
+  const [editBusy, setEditBusy] = useState(false);
+  const [pendingRevokeIds, setPendingRevokeIds] = useState<string[] | null>(null);
+  const [revokeBusy, setRevokeBusy] = useState(false);
+  const [loadByUserId, setLoadByUserId] = useState<Record<string, string>>({});
+  const [loadByEmail, setLoadByEmail] = useState<Record<string, string>>({});
+  const [syncByUserId, setSyncByUserId] = useState<Record<string, string>>({});
+  const [syncByEmail, setSyncByEmail] = useState<Record<string, string>>({});
+
+  const routeManualSyncAt = noteSyncedAt?.trim() || null;
+  const canShare = binding.accessRole !== "member" && binding.canManage !== false;
 
   const loadPublishStatus = useCallback(async () => {
     if (binding.accessRole === "member") {
@@ -122,36 +131,161 @@ export function CookieRouteMembers({ binding, onToast, onShared }: Props) {
     setPublishedState({ published: res.published, updatedAt: res.updatedAt });
   }, [binding, session]);
 
+  const loadActivity = useCallback(async () => {
+    if (!binding.noteId?.trim() || !binding.domain?.trim()) {
+      setLoadByUserId({});
+      setLoadByEmail({});
+      setSyncByUserId({});
+      setSyncByEmail({});
+      return;
+    }
+    const res = await listCookieRouteActivity(binding.noteId, cookieRouteDomainKey(binding.domain));
+    if (!res.ok) {
+      setLoadByUserId({});
+      setLoadByEmail({});
+      setSyncByUserId({});
+      setSyncByEmail({});
+      return;
+    }
+    const nextLoadId: Record<string, string> = {};
+    const nextLoadEmail: Record<string, string> = {};
+    const nextSyncId: Record<string, string> = {};
+    const nextSyncEmail: Record<string, string> = {};
+    for (const row of res.activities) {
+      if (row.user_id && row.last_load_at) nextLoadId[row.user_id] = row.last_load_at;
+      if (row.user_email && row.last_load_at) nextLoadEmail[row.user_email] = row.last_load_at;
+      if (row.user_id && row.last_sync_at) nextSyncId[row.user_id] = row.last_sync_at;
+      if (row.user_email && row.last_sync_at) nextSyncEmail[row.user_email] = row.last_sync_at;
+    }
+    setLoadByUserId(nextLoadId);
+    setLoadByEmail(nextLoadEmail);
+    setSyncByUserId(nextSyncId);
+    setSyncByEmail(nextSyncEmail);
+  }, [binding.domain, binding.noteId]);
+
   const load = useCallback(async () => {
     if (!binding.noteId) return;
     setLoading(true);
     setError(null);
-    const [res] = await Promise.all([listNoteCookieMembers(binding.noteId), loadPublishStatus()]);
+    const [membersRes] = await Promise.all([
+      listNoteCookieMembers(binding.noteId),
+      loadPublishStatus(),
+      loadActivity(),
+    ]);
     setLoading(false);
-    if (!res.ok) {
+    if (!membersRes.ok) {
       setMembers([]);
-      setError(res.error);
-      return;
+      if (binding.accessRole !== "member") setError(membersRes.error);
+    } else {
+      setMembers(membersRes.members);
     }
-    setMembers(res.members);
-  }, [binding.noteId, loadPublishStatus]);
+  }, [binding.accessRole, binding.noteId, loadActivity, loadPublishStatus]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const noteId = binding.noteId?.trim();
+    if (!noteId) return;
+
+    const onRefresh = () => {
+      void loadActivity();
+      window.dispatchEvent(
+        new CustomEvent("p0020-cookie-route-activity", { detail: { noteId } }),
+      );
+    };
+    const onVis = () => {
+      if (document.visibilityState === "visible") void loadActivity();
+    };
+    window.addEventListener("p0020-cookie-route-shared", onRefresh);
+    window.addEventListener("focus", onRefresh);
+    document.addEventListener("visibilitychange", onVis);
+    const poll = window.setInterval(onRefresh, 10_000);
+
+    let activityChannel: RealtimeChannel | null = null;
+    const domainKey = cookieRouteDomainKey(binding.domain);
+    activityChannel = supabase
+      .channel(`route-activity:${noteId}:${domainKey}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "cookie_route_user_activity",
+          filter: `note_id=eq.${noteId}`,
+        },
+        onRefresh,
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void loadActivity();
+      });
+
+    return () => {
+      window.removeEventListener("p0020-cookie-route-shared", onRefresh);
+      window.removeEventListener("focus", onRefresh);
+      document.removeEventListener("visibilitychange", onVis);
+      window.clearInterval(poll);
+      if (activityChannel) void supabase.removeChannel(activityChannel);
+    };
+  }, [binding.domain, binding.noteId, loadActivity]);
+
   const routePublished = publishedState?.published === true;
-  const publishedLabel = routePublished ? "published" : "missing";
-  const publishedHint = publishedState?.updatedAt
-    ? new Date(publishedState.updatedAt).toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-    : routePublished
-      ? "Accessible route"
-      : "Needs re-publish";
+  const ownerUserId = binding.ownerUserId ?? null;
+  const ownerEmail = (binding.ownerUserEmail ?? "").trim().toLowerCase();
+  const publishedLabel = routePublished ? "Published" : "Missing";
+
+  const activityForRow = useCallback(
+    (
+      rowId: string,
+      member: NoteCookieMemberRow | null,
+      byUserId: Record<string, string>,
+      byEmail: Record<string, string>,
+    ) => {
+      if (rowId === "owner") {
+        if (ownerUserId && byUserId[ownerUserId]) return byUserId[ownerUserId];
+        if (ownerEmail && byEmail[ownerEmail]) return byEmail[ownerEmail];
+        return null;
+      }
+      const uid = member?.grantee_user_id;
+      if (uid && byUserId[uid]) return byUserId[uid];
+      const email = member?.grantee_email?.trim().toLowerCase();
+      if (email && byEmail[email]) return byEmail[email];
+      if (email) {
+        for (const [actEmail, at] of Object.entries(byEmail)) {
+          if (actEmail === email || actEmail.endsWith(`@${email}`) || actEmail.includes(email)) {
+            return at;
+          }
+        }
+      }
+      return null;
+    },
+    [ownerEmail, ownerUserId],
+  );
+
+  const syncAtForRow = useCallback(
+    (canPublish: boolean, rowId: string, member: NoteCookieMemberRow | null) => {
+      if (!canPublish) return null;
+      const tracked = activityForRow(rowId, member, syncByUserId, syncByEmail);
+      if (tracked) return tracked;
+      if (rowId === "owner" && routeManualSyncAt) return routeManualSyncAt;
+      return null;
+    },
+    [activityForRow, routeManualSyncAt, syncByEmail, syncByUserId],
+  );
+
+  const loadAtForRow = useCallback(
+    (rowId: string, member: NoteCookieMemberRow | null) =>
+      activityForRow(rowId, member, loadByUserId, loadByEmail),
+    [activityForRow, loadByEmail, loadByUserId],
+  );
+
   const ownerLabel =
     binding.accessRole === "member"
       ? binding.ownerUserEmail ?? binding.ownerUserId ?? "Route owner"
       : binding.ownerUserEmail ?? session?.user.email ?? binding.ownerUserId ?? "admin@workspace.local";
-  const accessRows = useMemo(
+
+  const accessRows = useMemo<RouteAccessRow[]>(
     () => [
       {
         id: "owner",
@@ -159,23 +293,24 @@ export function CookieRouteMembers({ binding, onToast, onShared }: Props) {
         role: "Owner",
         canApply: true,
         canPublish: true,
-        canManage: true,
-        expiresAt: null as string | null,
-        member: null as NoteCookieMemberRow | null,
+        expiresAt: null,
+        member: null,
+        selectable: false,
       },
       ...members.map((member) => ({
         id: member.id,
         user: memberUser(member),
-        role: memberRole(member),
+        role: memberAccessRole(member),
         canApply: member.can_apply,
         canPublish: member.can_publish,
-        canManage: member.can_manage,
         expiresAt: member.expires_at,
         member,
+        selectable: true,
       })),
     ],
-    [binding.accessRole, binding.canApply, binding.canManage, binding.canPublish, members, ownerLabel],
+    [members, ownerLabel],
   );
+
   const filteredAccessRows = useMemo(() => {
     const q = query.trim().toLowerCase();
     const roleFilters = filterValues.role ?? [];
@@ -184,22 +319,58 @@ export function CookieRouteMembers({ binding, onToast, onShared }: Props) {
     const routeState = routePublished ? "published" : "missing";
 
     return accessRows.filter((row) => {
-      const haystack = [row.user, row.role, routeState, formatExpires(row.expiresAt)].join(" ").toLowerCase();
+      const haystack = [row.user, row.role, routeState].join(" ").toLowerCase();
       if (q && !haystack.includes(q)) return false;
       if (roleFilters.length && !roleFilters.includes(normalizedRole(row.role))) return false;
       if (routeFilters.length && !routeFilters.includes(routeState)) return false;
       if (permissionFilters.length) {
         const permissions = [
-          row.canApply ? "apply" : null,
-          row.canPublish ? "publish" : null,
-          row.canManage ? "manage" : null,
+          row.canApply ? "load" : null,
+          row.canPublish ? "sync" : null,
         ].filter((value): value is string => Boolean(value));
         if (!permissionFilters.some((value) => permissions.includes(value))) return false;
       }
       return true;
     });
   }, [accessRows, filterValues, query, routePublished]);
-  const canShare = binding.accessRole !== "member" && binding.canManage !== false;
+
+  const selectableFiltered = useMemo(
+    () => filteredAccessRows.filter((r) => r.selectable),
+    [filteredAccessRows],
+  );
+
+  const allVisibleSelected =
+    selectableFiltered.length > 0 && selectableFiltered.every((r) => selectedIds.has(r.id));
+
+  useEffect(() => {
+    const visible = new Set(selectableFiltered.map((r) => r.id));
+    setSelectedIds((prev) => {
+      const next = new Set([...prev].filter((id) => visible.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [selectableFiltered]);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (selectableFiltered.every((r) => prev.has(r.id))) {
+        const next = new Set(prev);
+        selectableFiltered.forEach((r) => next.delete(r.id));
+        return next;
+      }
+      const next = new Set(prev);
+      selectableFiltered.forEach((r) => next.add(r.id));
+      return next;
+    });
+  }, [selectableFiltered]);
 
   const submitShare = useCallback(async () => {
     if (!binding.noteId || !shareEmail.trim() || shareBusy) return;
@@ -207,7 +378,7 @@ export function CookieRouteMembers({ binding, onToast, onShared }: Props) {
     const res = await upsertNoteCookieMember({
       noteId: binding.noteId,
       email: shareEmail,
-      ...sharePermissions(shareRole),
+      ...sharePermissions(shareAccess),
     });
     setShareBusy(false);
     if (!res.ok) {
@@ -216,17 +387,90 @@ export function CookieRouteMembers({ binding, onToast, onShared }: Props) {
       return;
     }
     setShareEmail("");
+    setShareAccess("load");
     onToast?.("Shared route access. Recipient can refresh routes immediately.", "success");
     await load();
     window.dispatchEvent(new CustomEvent("p0020-cookie-route-shared", { detail: { noteId: binding.noteId } }));
     onShared?.();
-  }, [binding.noteId, load, onShared, onToast, shareBusy, shareEmail, shareRole]);
+  }, [binding.noteId, load, onShared, onToast, shareAccess, shareBusy, shareEmail]);
+
+  const saveEdit = useCallback(async () => {
+    if (!binding.noteId || !editingMember?.grantee_email?.trim() || editBusy) return;
+    setEditBusy(true);
+    const res = await upsertNoteCookieMember({
+      noteId: binding.noteId,
+      email: editingMember.grantee_email,
+      ...sharePermissions(editAccess),
+      expiresAt: editingMember.expires_at,
+    });
+    setEditBusy(false);
+    if (!res.ok) {
+      onToast?.(res.error, "error");
+      return;
+    }
+    setEditingMember(null);
+    onToast?.("Access updated.", "success");
+    await load();
+    window.dispatchEvent(new CustomEvent("p0020-cookie-route-shared", { detail: { noteId: binding.noteId } }));
+    onShared?.();
+  }, [binding.noteId, editAccess, editBusy, editingMember, load, onShared, onToast]);
+
+  const confirmRevoke = useCallback(async () => {
+    const ids = pendingRevokeIds;
+    if (!ids?.length) return;
+    setRevokeBusy(true);
+    let ok = 0;
+    let lastError = "";
+    for (const id of ids) {
+      const res = await revokeNoteCookieMember(id);
+      if (res.ok) ok += 1;
+      else lastError = res.error;
+    }
+    setRevokeBusy(false);
+    setPendingRevokeIds(null);
+    setSelectedIds(new Set());
+    if (!ok) {
+      onToast?.(lastError || "Revoke failed.", "error");
+      return;
+    }
+    onToast?.(`Revoked access for ${ok} member(s).`, "success");
+    await load();
+    window.dispatchEvent(new CustomEvent("p0020-cookie-route-shared", { detail: { noteId: binding.noteId } }));
+    onShared?.();
+  }, [binding.noteId, load, onShared, onToast, pendingRevokeIds]);
+
+  const openEditForRow = useCallback((row: RouteAccessRow) => {
+    if (!row.member) return;
+    setEditingMember(row.member);
+    setEditAccess(shareAccessFromMember(row.member));
+    setSelectedIds(new Set([row.id]));
+  }, []);
+
+  const openEditBulk = useCallback(() => {
+    const id = [...selectedIds][0];
+    const row = accessRows.find((r) => r.id === id);
+    if (row?.member) openEditForRow(row);
+  }, [accessRows, openEditForRow, selectedIds]);
+
+  const requestRevoke = useCallback((ids: string[]) => {
+    if (!ids.length) return;
+    setPendingRevokeIds(ids);
+  }, []);
+
+  const focusShare = useCallback(() => {
+    shareEmailRef.current?.focus();
+    shareEmailRef.current?.select();
+  }, []);
 
   return (
     <section className="rdp-section">
-      <div className="rdp-section-head">
-        <h4>Access & browser agents</h4>
-        <span>Note ID is the permission key</span>
+      <div className="rdp-section-head rdp-section-head--with-icon">
+        <span className="rdp-section-icon rdp-emerald">
+          <Users size={14} />
+        </span>
+        <div className="min-w-0">
+          <h4>People & access</h4>
+        </div>
       </div>
 
       {error ? (
@@ -240,92 +484,144 @@ export function CookieRouteMembers({ binding, onToast, onShared }: Props) {
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="text-xs font-semibold text-emerald-100">Share user</p>
-              <p className="text-[10px] text-emerald-100/65">Grant access by email. Note ID remains the invite key.</p>
+              <p className="text-[10px] text-emerald-100/65">
+                Grant <strong>Load</strong> or <strong>Sync</strong> by email. Manage stays with route owner only.
+              </p>
             </div>
             <span className="rounded-full border border-emerald-300/25 px-2 py-0.5 text-[10px] text-emerald-100/80">
               {binding.noteId.slice(0, 8)}
             </span>
           </div>
-          <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px_auto]">
-            <input
-              className="field text-[12px]"
-              value={shareEmail}
-              placeholder="user@example.com"
-              onChange={(event) => setShareEmail(event.target.value)}
-            />
-            <select
-              className="field text-[12px]"
-              value={shareRole}
-              onChange={(event) => setShareRole(event.target.value as ShareRole)}
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+            <label className="block min-w-0">
+              <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
+              <input
+                ref={shareEmailRef}
+                className="field auth-gate-field w-full"
+                value={shareEmail}
+                placeholder="user@example.com"
+                onChange={(event) => setShareEmail(event.target.value)}
+              />
+            </label>
+            <label className="block min-w-0">
+              <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
+              <HubFilterSingleSelect
+                value={shareAccess}
+                options={COOKIE_ACCESS_SELECT_OPTIONS}
+                onChange={(v) => setShareAccess(v as ShareAccess)}
+                filterLabel="access"
+                TriggerIcon={Shield}
+              />
+            </label>
+            <button
+              type="button"
+              className="auth-gate-submit cookie-route-modal__btn mt-5 h-[var(--hub-control-h,34px)] shrink-0 px-4 text-xs"
+              disabled={!shareEmail.trim() || shareBusy}
+              onClick={() => void submitShare()}
             >
-              <option value="load">Load only</option>
-              <option value="sync">Can sync</option>
-              <option value="manager">Manager</option>
-            </select>
-            <button type="button" className="btn text-[11px]" disabled={!shareEmail.trim() || shareBusy} onClick={() => void submitShare()}>
-              {shareBusy ? "Sharing..." : "Share"}
+              <UserPlus size={14} aria-hidden />
+              {shareBusy ? "Sharing…" : "Share"}
             </button>
+          </div>
+        </div>
+      ) : null}
+
+      {editingMember ? (
+        <div className="mb-3 rounded-2xl border border-indigo-400/22 bg-indigo-500/[.08] p-3">
+          <p className="cookie-route-form-modal__eyebrow">Member access</p>
+          <p className="cookie-route-form-modal__title !text-base">Edit access</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <label className="block min-w-0">
+              <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
+              <input
+                className="field auth-gate-field w-full opacity-80"
+                value={editingMember.grantee_email ?? ""}
+                readOnly
+              />
+            </label>
+            <label className="block min-w-0">
+              <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
+              <HubFilterSingleSelect
+                value={editAccess}
+                options={COOKIE_ACCESS_SELECT_OPTIONS}
+                onChange={(v) => setEditAccess(v as ShareAccess)}
+                filterLabel="access"
+                TriggerIcon={Shield}
+              />
+            </label>
+          </div>
+          <div className="mt-3">
+            <CookieRouteModalActions
+              primaryLabel="Save"
+              primaryIcon={Save}
+              primaryBusy={editBusy}
+              onPrimary={() => void saveEdit()}
+              onSecondary={() => setEditingMember(null)}
+            />
           </div>
         </div>
       ) : null}
 
       <div className="mb-3">
         <FilterBar
+          layout="hub"
           placeholder="Search access by user, role, route..."
           filters={ACCESS_FILTER_DEFS}
           query={query}
           onQueryChange={setQuery}
           values={filterValues}
           onValuesChange={setFilterValues}
-          trailing={<span className="hidden text-[10px] text-[var(--muted)] sm:inline">{filteredAccessRows.length}/{accessRows.length}</span>}
+          toolbar={
+            <span className="text-[10px] text-[var(--muted)] tabular-nums">
+              {filteredAccessRows.length}/{accessRows.length}
+            </span>
+          }
+          filterToolbar={
+            canShare ? (
+              <CookieRouteAccessBulkActionBar
+                hasSelection={selectedIds.size > 0}
+                selectedCount={selectedIds.size}
+                canManage={canShare}
+                shareBusy={shareBusy || revokeBusy}
+                onAdd={focusShare}
+                onEdit={openEditBulk}
+                onDelete={() => requestRevoke([...selectedIds])}
+              />
+            ) : null
+          }
         />
       </div>
 
-      <div className="rdp-table-wrap">
-        <table className="rdp-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Role</th>
-              <th>Apply</th>
-              <th>Publish</th>
-              <th>Manage</th>
-              <th>Route</th>
-              <th>Expires</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAccessRows.map((row) => (
-              <tr key={row.id}>
-                <td className="mono">{row.user}</td>
-                <td>{row.role}</td>
-                <td>
-                  <Pill tone={row.canApply ? "emerald" : "slate"}>{row.canApply ? "yes" : "no"}</Pill>
-                </td>
-                <td>
-                  <Pill tone={row.canPublish ? "emerald" : "slate"}>{row.canPublish ? "yes" : "no"}</Pill>
-                </td>
-                <td>
-                  <Pill tone={row.canManage ? "emerald" : "slate"}>{row.canManage ? "yes" : "no"}</Pill>
-                </td>
-                <td>
-                  <Pill tone={routePublished ? "indigo" : "amber"}>{publishedLabel}</Pill>
-                </td>
-                <td>{formatExpires(row.expiresAt)}</td>
-              </tr>
-            ))}
-            {filteredAccessRows.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center text-[var(--muted)]">
-                  No access rows match search or filters.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+      <CookieRouteAccessTable
+        rows={filteredAccessRows}
+        routePublished={routePublished}
+        publishedLabel={publishedLabel}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
+        onToggleSelectAll={toggleSelectAll}
+        allVisibleSelected={allVisibleSelected}
+        syncAtForRow={syncAtForRow}
+        loadAtForRow={loadAtForRow}
+      />
+
       {loading ? <p className="mt-2 text-[11px] text-[var(--muted)]">Loading members...</p> : null}
-      {publishedHint ? <span className="sr-only">{publishedHint}</span> : null}
+
+      <ToolConfirmDialog
+        open={pendingRevokeIds !== null}
+        title="Revoke route access"
+        message={
+          pendingRevokeIds?.length === 1
+            ? "Remove this member from the route? They will lose Load/Sync access immediately."
+            : `Remove ${pendingRevokeIds?.length ?? 0} members from this route?`
+        }
+        confirmLabel={revokeBusy ? "Revoking..." : "Revoke"}
+        onConfirm={() => {
+          if (!revokeBusy) void confirmRevoke();
+        }}
+        onClose={() => {
+          if (!revokeBusy) setPendingRevokeIds(null);
+        }}
+      />
     </section>
   );
 }

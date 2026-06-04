@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import type { CookieBinding } from "./cookieBridge";
-import { fetchCookieVaultRows, mapVaultRows } from "./cookieVaultRepository";
+import { fetchCookieVaultRows, mapVaultRows, vaultRouteKey } from "./cookieVaultRepository";
 
 export type CookieVaultRow = {
   note_id: string;
@@ -55,6 +55,9 @@ export function useCookieVaultMap(session: Session | null, bindings: CookieBindi
   return { vaultByKey, vaultError, vaultLoading: loading, refreshVault: refresh };
 }
 
+/** @deprecated Use {@link vaultRouteKey} from cookieVaultRepository */
 export function vaultKey(noteId: string, domain: string) {
-  return `${noteId}:${domain}`;
+  return vaultRouteKey(noteId, domain);
 }
+
+export { lookupVaultRow, vaultRouteKey } from "./cookieVaultRepository";

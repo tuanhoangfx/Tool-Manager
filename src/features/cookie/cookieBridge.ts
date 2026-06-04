@@ -33,11 +33,8 @@ export type CookieBinding = {
 export type CookieBridgeRole = "writer" | "reader";
 
 export type CookieBridgePrefs = {
-  syncIntervalMinutes: number;
   realtimeSync: boolean;
-  /** Upload AES-GCM encrypted cookie jar to note_cookie_vault (requires sync pass on binding) */
-  vaultSync: boolean;
-  /** Extension applies remote vault via Realtime + poll (opt-in — writes cookies to this browser) */
+  /** Legacy — always false; Load is manual on extension only. */
   realtimeVaultApply: boolean;
   /** Legacy local label. Effective write permission comes from owner/member route access. */
   bridgeRole: CookieBridgeRole;
@@ -122,43 +119,29 @@ export function saveSelectedBindingId(id: string | null) {
 
 export function loadCookieBridgePrefs(): CookieBridgePrefs {
   if (typeof window === "undefined") {
-    return {
-      syncIntervalMinutes: 60,
-      realtimeSync: false,
-      vaultSync: true,
-      realtimeVaultApply: false,
-      bridgeRole: "writer",
-    };
+    return defaultCookieBridgePrefs();
   }
   try {
     purgeLegacyCookieBridgeStorage();
     const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) {
-      return {
-        syncIntervalMinutes: 60,
-        realtimeSync: false,
-        vaultSync: true,
-        realtimeVaultApply: false,
-        bridgeRole: "writer",
-      };
-    }
-    const p = JSON.parse(raw) as Partial<CookieBridgePrefs>;
+    if (!raw) return defaultCookieBridgePrefs();
+    const p = JSON.parse(raw) as Partial<CookieBridgePrefs> & { syncIntervalMinutes?: number };
     return {
-      syncIntervalMinutes: p.syncIntervalMinutes ?? 60,
-      realtimeSync: p.realtimeSync === true,
-      vaultSync: p.vaultSync !== false,
-      realtimeVaultApply: p.realtimeVaultApply === true,
+      realtimeSync: true,
+      realtimeVaultApply: false,
       bridgeRole: p.bridgeRole === "reader" ? "reader" : "writer",
     };
   } catch {
-    return {
-      syncIntervalMinutes: 60,
-      realtimeSync: false,
-      vaultSync: true,
-      realtimeVaultApply: false,
-      bridgeRole: "writer",
-    };
+    return defaultCookieBridgePrefs();
   }
+}
+
+function defaultCookieBridgePrefs(): CookieBridgePrefs {
+  return {
+    realtimeSync: true,
+    realtimeVaultApply: false,
+    bridgeRole: "writer",
+  };
 }
 
 export function saveCookieBridgePrefs(prefs: CookieBridgePrefs) {

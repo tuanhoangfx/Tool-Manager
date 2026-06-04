@@ -21,6 +21,7 @@ export type NoteDraft = {
   body_md: string;
   pinned: boolean;
   share_enabled: boolean;
+  share_can_edit?: boolean;
   share_password?: string;
   /** Plain sync pass — hashed via RPC when non-empty */
   sync_pass?: string;
@@ -56,6 +57,7 @@ async function updateNoteWithFallback(noteId: string, patch: Record<string, unkn
       body_md: patch.body_md,
       pinned: patch.pinned,
       share_enabled: patch.share_enabled,
+      share_can_edit: patch.share_can_edit,
       share_token: patch.share_token,
     };
     res = await run(minimal);
@@ -188,6 +190,7 @@ export function useNote(session: Session | null, noteId: string | null) {
           body_md: draft.body_md,
           pinned: draft.pinned,
           share_enabled: false,
+          share_can_edit: false,
           share_token: null,
           share_password_hash: null,
           sync_status: "manual",
@@ -203,6 +206,8 @@ export function useNote(session: Session | null, noteId: string | null) {
 
       let share_token = note?.share_token ?? null;
       let share_password_hash = note?.share_password_hash ?? null;
+
+      const shareCanEdit = Boolean(draft.share_enabled && draft.share_can_edit);
 
       if (draft.share_enabled) {
         if (!share_token) share_token = generateShareToken();
@@ -220,6 +225,7 @@ export function useNote(session: Session | null, noteId: string | null) {
         body_md: draft.body_md,
         pinned: draft.pinned,
         share_enabled: draft.share_enabled,
+        share_can_edit: shareCanEdit,
         share_token,
         share_password_hash,
       };

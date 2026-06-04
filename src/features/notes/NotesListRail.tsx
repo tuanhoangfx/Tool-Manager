@@ -5,6 +5,7 @@ import type { NotesCookieRouteIndex } from "../cookie/useNotesCookieRouteIndex";
 import { NotesFolderListDot } from "./NotesFolderGlyph";
 import { getPrimaryFolderForListNote } from "./noteFolders";
 import type { NoteFolder } from "./noteFolders";
+import { noteEditorTocLabel } from "./noteUtils";
 import type { NoteListItem } from "./types";
 import type { NotesListDensity } from "./notes-list-prefs";
 
@@ -21,7 +22,7 @@ type Props = {
   onSelect: (id: string) => void;
 };
 
-/** Design V1 — title-only rows, sync dot, cookie route icon, pinned. */
+/** Left TOC rail — title, relative edit/sync time, folder dot, cookie route icon. */
 export function NotesListRail({
   notes,
   selectedId,
@@ -58,12 +59,14 @@ export function NotesListRail({
               cookieRouteNoteIds,
               displayFolders,
             );
+            const isCookieRoute = cookieRouteNoteIds.has(n.id);
+            const timeLabel = noteEditorTocLabel(n, isCookieRoute);
             return (
               <li key={n.id}>
                 <button
                   type="button"
                   onClick={() => onSelect(n.id)}
-                  className={`flex w-full items-center gap-1.5 rounded-lg border text-left transition-all ${
+                  className={`flex w-full items-start gap-1.5 rounded-lg border text-left transition-all ${
                     compact ? "px-1.5 py-1" : "px-2 py-1.5"
                   } ${
                     active
@@ -75,7 +78,7 @@ export function NotesListRail({
                     <NotesFolderListDot color={primaryFolder.color} title={primaryFolder.name} />
                   ) : (
                     <span
-                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                      className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
                         n.syncTone === "emerald"
                           ? "bg-emerald-400"
                           : n.syncTone === "rose"
@@ -86,17 +89,31 @@ export function NotesListRail({
                       aria-hidden
                     />
                   )}
-                  <span
-                    className={`min-w-0 flex-1 truncate font-medium text-[var(--text)] ${
-                      compact ? "text-[11px]" : "text-[12px]"
-                    }`}
-                  >
-                    {displayNoteTitle(n.title)}
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={`block truncate font-medium text-[var(--text)] ${
+                        compact ? "text-[11px]" : "text-[12px]"
+                      }`}
+                    >
+                      {displayNoteTitle(n.title)}
+                    </span>
+                    {timeLabel ? (
+                      <span
+                        className={`notes-rail__time mt-0.5 block truncate font-medium text-violet-300/75 ${
+                          compact ? "text-[9px]" : "text-[10px]"
+                        }`}
+                        title={isCookieRoute ? n.synced_at ?? undefined : n.updated_at}
+                      >
+                        {timeLabel}
+                      </span>
+                    ) : null}
                   </span>
-                  {routeDomain ? (
-                    <CookieRouteMark domain={routeDomain} compact={compact} />
-                  ) : null}
-                  {n.pinned ? <Pin size={11} className="shrink-0 text-violet-300" aria-label="Pinned" /> : null}
+                  <span className="flex shrink-0 items-center gap-1 pt-0.5">
+                    {routeDomain ? (
+                      <CookieRouteMark domain={routeDomain} compact={compact} />
+                    ) : null}
+                    {n.pinned ? <Pin size={11} className="text-violet-300" aria-label="Pinned" /> : null}
+                  </span>
                 </button>
               </li>
             );

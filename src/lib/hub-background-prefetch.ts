@@ -1,6 +1,5 @@
 import { probeCookieSchemaHealth } from "../features/cookie/cookieSchemaHealth";
-import { fetchCookieAgentsAndCommands } from "../features/cookie/cookieAgentsRepository";
-import { cookieAgentsCache, cookieSchemaCache } from "./cookie-boot-cache";
+import { cookieSchemaCache } from "./cookie-boot-cache";
 import { ensureDataBoxAuth } from "./ensure-data-box-auth";
 import { writeNotesListClientCache } from "./notes-list-cache";
 import { fetchNotesList } from "../features/notes/notesRepository";
@@ -39,24 +38,15 @@ export function prefetchNotesListBackground(): void {
   })();
 }
 
-/** Warm Cookie Auto schema + agents while user is on Notes (first open feels instant). */
+/** Warm Cookie Auto schema probe while user is on Notes (first open feels instant). */
 export function prefetchCookieBootBackground() {
   if (cookieBootPrefetchInFlight || !isSupabaseConfigured || getOfflineMode()) return;
-  if (cookieSchemaCache.readStale() && cookieAgentsCache.readStale()) return;
+  if (cookieSchemaCache.readStale()) return;
   cookieBootPrefetchInFlight = true;
   void (async () => {
     try {
-      if (!cookieSchemaCache.readStale()) {
-        const health = await probeCookieSchemaHealth();
-        cookieSchemaCache.write(health);
-      }
-      const agentsStale = cookieAgentsCache.readStale();
-      if (!agentsStale || agentsStale.agents.length === 0) {
-        const res = await fetchCookieAgentsAndCommands();
-        if (res.ok) {
-          cookieAgentsCache.write({ agents: res.agents, commands: res.commands });
-        }
-      }
+      const health = await probeCookieSchemaHealth();
+      cookieSchemaCache.write(health);
     } catch {
       /* auth not ready */
     } finally {

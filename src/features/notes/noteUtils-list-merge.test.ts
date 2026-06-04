@@ -45,12 +45,29 @@ describe("mergeNoteRowForList", () => {
 });
 
 describe("sortNoteRows", () => {
-  it("orders pinned first then updated_at desc", () => {
+  it("pins first then sorts by updated_at desc", () => {
     const sorted = sortNoteRows([
-      row({ id: "a", pinned: false, updated_at: "2026-06-02T00:00:00Z" }),
-      row({ id: "b", pinned: true, updated_at: "2026-01-01T00:00:00Z" }),
-      row({ id: "c", pinned: false, updated_at: "2026-06-03T00:00:00Z" }),
+      row({ id: "a", pinned: true, updated_at: "2026-06-01T00:00:00Z" }),
+      row({ id: "b", pinned: false, updated_at: "2026-06-03T00:00:00Z" }),
+      row({ id: "c", pinned: false, updated_at: "2026-06-02T00:00:00Z" }),
     ]);
-    expect(sorted.map((n) => n.id)).toEqual(["b", "c", "a"]);
+    expect(sorted.map((n) => n.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("uses synced_at for cookie-route notes", () => {
+    const cookieIds = new Set(["cookie"]);
+    const sorted = sortNoteRows(
+      [
+        row({
+          id: "cookie",
+          updated_at: "2026-06-05T00:00:00Z",
+          synced_at: "2026-06-01T00:00:00Z",
+        }),
+        row({ id: "plain", updated_at: "2026-06-02T00:00:00Z", synced_at: null }),
+      ],
+      "updated",
+      cookieIds,
+    );
+    expect(sorted.map((n) => n.id)).toEqual(["plain", "cookie"]);
   });
 });

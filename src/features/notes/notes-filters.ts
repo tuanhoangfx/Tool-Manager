@@ -62,8 +62,9 @@ export function notesFilterOptions(_notes: NoteListItem[], folders: NoteFolder[]
       { value: "error", label: "Error", color: "#ef4444" },
     ],
     share: [
-      { value: "shared", label: "Share on", color: "#06b6d4" },
-      { value: "private", label: "Share off", color: "#6b7394" },
+      { value: "edit", label: "Edit link", color: "#a78bfa" },
+      { value: "view", label: "View link", color: "#06b6d4" },
+      { value: "private", label: "Only me", color: "#6b7394" },
     ],
   };
 }
@@ -88,7 +89,7 @@ function matchesNoteFilters(note: NoteListItem, q: string, filters: Record<strin
   }
   if (filters.sync?.length && !filters.sync.includes(note.sync_status)) return false;
   if (filters.share?.length) {
-    const sh = note.share_enabled ? "shared" : "private";
+    const sh = !note.share_enabled ? "private" : note.share_can_edit ? "edit" : "view";
     if (!filters.share.includes(sh)) return false;
   }
   return true;
@@ -99,8 +100,12 @@ export function filterNotes(
   q: string,
   filters: Record<string, string[]>,
   range: TimeRange,
+  cookieRouteNoteIds?: ReadonlySet<string>,
 ): NoteListItem[] {
-  return notes.filter(
-    (n) => matchesNoteFilters(n, q, filters) && matchesTimeRange(n.updated_at, range),
-  );
+  return notes.filter((n) => {
+    if (!matchesNoteFilters(n, q, filters)) return false;
+    const activityAt =
+      cookieRouteNoteIds?.has(n.id) && n.synced_at?.trim() ? n.synced_at : n.updated_at;
+    return matchesTimeRange(activityAt, range);
+  });
 }

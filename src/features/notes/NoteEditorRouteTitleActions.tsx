@@ -11,18 +11,25 @@ type OpenProps = {
   onOpenRoute: (domain: string) => void;
 };
 
+type OpenPropsWithNote = OpenProps & { noteId?: string | null };
+
 /** Modal opener chips flush beside the title input. */
-export function NoteEditorRouteOpenButtons({ routes, onOpenRoute }: OpenProps) {
+export function NoteEditorRouteOpenButtons({ routes, onOpenRoute, noteId }: OpenPropsWithNote) {
   if (!routes.length) return null;
 
   return (
     <span
+      key={noteId ?? "no-note"}
       className="inline-flex shrink-0 flex-wrap items-center gap-1"
       role="group"
       aria-label="Open Cookie Auto route detail"
     >
       {routes.map((route) => (
-        <RouteDetailOpenButton key={route.domain} route={route} onOpen={() => onOpenRoute(route.domain)} />
+        <RouteDetailOpenButton
+          key={`${noteId ?? ""}:${route.domain}`}
+          route={route}
+          onOpen={() => onOpenRoute(route.domain)}
+        />
       ))}
     </span>
   );
@@ -60,10 +67,11 @@ function RouteDetailOpenButton({ route, onOpen }: { route: NoteRouteLockInfo; on
     >
       {site ? (
         <img
+          key={site.src}
           src={site.src}
           alt=""
           className="h-[11px] w-[11px] shrink-0 object-contain"
-          loading="lazy"
+          decoding="async"
           referrerPolicy="no-referrer"
           onError={(e) => {
             e.currentTarget.style.display = "none";

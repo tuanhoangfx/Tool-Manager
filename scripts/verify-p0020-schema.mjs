@@ -45,14 +45,14 @@ const vaultProbe = await rpc("note_vault_upsert", {
   p_iv: "dGVzdA==",
   p_cookie_count: 0,
   p_source_browser: "schema-check",
-  p_updated_by: "schema-check",
 });
 
 const staleVNote = /record\s+"v_note"\s+has\s+no\s+field/i.test(vaultProbe.body);
-const missingPassCol = /sync_pass_hash/i.test(vaultProbe.body) && !staleVNote;
+const missingPassCol = /sync_pass_hash/i.test(vaultProbe.body) && !/note not found/i.test(vaultProbe.body);
+const rpcMissing = /PGRST202|does not exist/i.test(vaultProbe.body);
 checks.push({
   name: "vault RPC (no stale v_note / sync_pass_hash bug)",
-  ok: !staleVNote && !missingPassCol,
+  ok: !staleVNote && !missingPassCol && !rpcMissing,
   detail: staleVNote
     ? "OLD DB functions — run supabase/APPLY_FIX_V_NOTE_DROP.sql"
     : missingPassCol

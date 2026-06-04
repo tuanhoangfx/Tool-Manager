@@ -143,6 +143,18 @@ table.hub-users-table td.hub-users-col--select {
 .hub-users-col--id { width: 11%; text-align: left; }
 .hub-users-col--email { width: 16%; text-align: left; }
 .hub-users-col--role { width: 10%; text-align: center; }
+
+.hub-users-role-badge--owner {
+  border-color: rgba(129, 140, 248, 0.28);
+  background: rgba(99, 102, 241, 0.13);
+  color: #c7d2fe;
+}
+
+.hub-users-role-badge--publisher {
+  border-color: rgba(245, 158, 11, 0.32);
+  background: rgba(245, 158, 11, 0.12);
+  color: #fde68a;
+}
 .hub-users-col--tools { width: 10%; text-align: center; }
 .hub-users-col--created { width: 11%; text-align: center; }
 .hub-users-col--activity { width: 14%; text-align: center; }
@@ -374,5 +386,69 @@ table.hub-users-table--twofa td.hub-users-col--twofa-secret {
     opacity: 0.65;
     transform: scale(0.88);
   }
+}
+
+/* Route People & access (Cookie Auto detail) — title case like 2FA table */
+table.hub-users-table--route-access {
+  table-layout: auto;
+  width: 100%;
+  min-width: 0;
+}
+
+table.hub-users-table--route-access th,
+table.hub-users-table--route-access .hub-users-th-text {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 12px;
+}
+
+table.hub-users-table--route-access th.hub-route-access-col--user,
+table.hub-users-table--route-access td.hub-route-access-col--user {
+  min-width: 10rem;
+  max-width: 18rem;
+  text-align: left;
+}
+
+table.hub-users-table--route-access th.hub-route-access-col--role,
+table.hub-users-table--route-access td.hub-route-access-col--role {
+  width: 5.5rem;
+  text-align: center;
+}
+
+table.hub-users-table--route-access th.hub-route-access-col--sync-at,
+table.hub-users-table--route-access td.hub-route-access-col--sync-at,
+table.hub-users-table--route-access th.hub-route-access-col--load-at,
+table.hub-users-table--route-access td.hub-route-access-col--load-at {
+  width: 6.5rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+table.hub-users-table--route-access th.hub-route-access-col--perm,
+table.hub-users-table--route-access td.hub-route-access-col--perm {
+  width: 3.25rem;
+  text-align: center;
+}
+
+table.hub-users-table--route-access th.hub-route-access-col--route,
+table.hub-users-table--route-access td.hub-route-access-col--route {
+  width: 5.5rem;
+  text-align: center;
+}
+
+table.hub-users-table--route-access th.hub-route-access-col--expires,
+table.hub-users-table--route-access td.hub-route-access-col--expires {
+  width: 7rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.route-detail-preview .hub-users-table-wrap {
+  overflow-x: visible;
+  max-width: 100%;
+}
+
+.route-detail-preview .rdp-section {
+  min-width: 0;
 }
 

@@ -10,6 +10,7 @@ export type NoteRow = {
   cookie_snapshot: string[] | Record<string, unknown>[] | null;
   pinned: boolean;
   share_enabled: boolean;
+  share_can_edit: boolean;
   share_token: string | null;
   share_password_hash: string | null;
   share_expires_at: string | null;

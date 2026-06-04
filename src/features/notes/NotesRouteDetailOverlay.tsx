@@ -11,7 +11,7 @@ import {
 } from "../cookie/cookieBridge";
 import type { NoteRouteLockInfo } from "../cookie/noteRouteLockInfo";
 import { useCookieRouteDetailRenderers } from "../cookie/useCookieRouteDetailRenderers";
-import { useCookieVaultMap, vaultKey } from "../cookie/useCookieVaultMap";
+import { lookupVaultRow, useCookieVaultMap } from "../cookie/useCookieVaultMap";
 import { cookieLines, toListItem } from "./noteUtils";
 import type { NoteRow } from "./types";
 
@@ -58,7 +58,7 @@ export function NotesRouteDetailOverlay({ session, note, routeDomain, routeInfos
 
   const bindings = useMemo(() => (binding ? [binding] : []), [binding]);
   const { vaultByKey } = useCookieVaultMap(session, bindings);
-  const { renderAccessDetail, renderAgentDetail } = useCookieRouteDetailRenderers(session);
+  const { renderAccessDetail } = useCookieRouteDetailRenderers(session);
 
   const row = useMemo((): CookieAutoRow | null => {
     if (!binding) return null;
@@ -72,14 +72,13 @@ export function NotesRouteDetailOverlay({ session, note, routeDomain, routeInfos
 
   if (!row) return null;
 
-  const vault = vaultByKey[vaultKey(row.binding.noteId, row.binding.domain)];
+  const vault = lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain);
 
   return (
     <CookieRouteDetailModal
       row={row}
       vault={vault}
       renderAccessDetail={renderAccessDetail}
-      renderAgentDetail={renderAgentDetail}
       onClose={onClose}
     />
   );

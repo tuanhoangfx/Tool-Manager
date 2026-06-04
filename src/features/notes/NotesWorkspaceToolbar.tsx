@@ -1,15 +1,17 @@
-import { Lock, Pin, Plus, Save, Share2, Trash2 } from "lucide-react";
+import { Eye, Lock, PenLine, Pin, Plus, Save, Share2, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppToast } from "../../components/toast";
+import { shareAccessLabel, type NoteShareAccess } from "./shareAccess";
 import { buildShareUrl } from "./shareUtils";
 import type { NoteRow } from "./types";
 
 type Props = {
   note: NoteRow | null;
   pinned: boolean;
-  shareEnabled: boolean;
-  sharePassword: string;
+  shareAccess: NoteShareAccess;
+  shareDraftAccess: NoteShareAccess;
+  shareDraftPassword: string;
   saving?: boolean;
   creating?: boolean;
   savedHint?: string;
@@ -18,15 +20,19 @@ type Props = {
   onSave: () => void;
   onDelete: () => void;
   onPinnedToggle: () => void;
-  onShareToggle: () => void;
-  onSharePasswordChange: (v: string) => void;
+  onShareDraftAccessChange: (access: NoteShareAccess) => void;
+  onShareDraftPasswordChange: (v: string) => void;
+  onShareSave: () => void;
+  onShareCancel: () => void;
+  onShareMenuOpen?: () => void;
 };
 
 export function NotesWorkspaceToolbar({
   note,
   pinned,
-  shareEnabled,
-  sharePassword,
+  shareAccess,
+  shareDraftAccess,
+  shareDraftPassword,
   saving,
   creating,
   savedHint,
@@ -35,12 +41,36 @@ export function NotesWorkspaceToolbar({
   onSave,
   onDelete,
   onPinnedToggle,
-  onShareToggle,
-  onSharePasswordChange,
+  onShareDraftAccessChange,
+  onShareDraftPasswordChange,
+  onShareSave,
+  onShareCancel,
+  onShareMenuOpen,
 }: Props) {
   const [shareOpen, setShareOpen] = useState(false);
-  const shareUrl = note?.share_token && shareEnabled ? buildShareUrl(note.share_token) : "";
+  const shareWrapRef = useRef<HTMLDivElement>(null);
+  const linkActive = shareAccess !== "private";
   const hasNote = Boolean(note?.id);
+
+  const openShareMenu = (open: boolean) => {
+    setShareOpen(open);
+    if (open) onShareMenuOpen?.();
+  };
+
+  useEffect(() => {
+    if (!shareOpen) return;
+    const onPointer = (e: MouseEvent) => {
+      if (shareWrapRef.current && !shareWrapRef.current.contains(e.target as Node)) {
+        setShareOpen(false);
+        onShareCancel();
+      }
+    };
+    document.addEventListener("mousedown", onPointer);
+    return () => document.removeEventListener("mousedown", onPointer);
+  }, [onShareCancel, shareOpen]);
+
+  const shareDirty =
+    shareDraftAccess !== shareAccess || shareDraftPassword.trim().length > 0;
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
@@ -54,22 +84,30 @@ export function NotesWorkspaceToolbar({
         disabled={!hasNote || routeLocked}
         onClick={onPinnedToggle}
       />
-      <div className="relative">
+      <div ref={shareWrapRef} className="relative">
         <ToolbarButton
-          icon={shareEnabled ? <Share2 size={12} /> : <Lock size={12} />}
-          label={shareEnabled ? "Shared" : "Private"}
-          tone="cyan"
-          active={shareEnabled}
+          icon={shareAccess === "edit" ? <PenLine size={12} /> : shareAccess === "view" ? <Eye size={12} /> : <Lock size={12} />}
+          label={shareAccessLabel(shareAccess)}
+          tone={shareAccess === "edit" ? "violet" : shareAccess === "view" ? "cyan" : "indigo"}
+          active={linkActive}
           disabled={!hasNote || routeLocked}
-          onClick={() => setShareOpen((v) => !v)}
+          onClick={() => openShareMenu(!shareOpen)}
         />
         {shareOpen && hasNote ? (
           <ShareMenu
-            enabled={shareEnabled}
-            shareUrl={shareUrl}
-            password={sharePassword}
-            onPasswordChange={onSharePasswordChange}
-            onToggle={onShareToggle}
+            draftAccess={shareDraftAccess}
+            committedAccess={shareAccess}
+            shareUrl={note?.share_token && shareDraftAccess !== "private" ? buildShareUrl(note.share_token) : ""}
+            password={shareDraftPassword}
+            saving={saving}
+            dirty={shareDirty}
+            onPasswordChange={onShareDraftPasswordChange}
+            onSelectAccess={onShareDraftAccessChange}
+            onSave={() => void onShareSave()}
+            onCancel={() => {
+              onShareCancel();
+              setShareOpen(false);
+            }}
           />
         ) : null}
       </div>
@@ -93,7 +131,6 @@ function ToolbarButton({
   tone,
   active,
   disabled,
-  title,
   onClick,
 }: {
   icon: ReactNode;
@@ -101,7 +138,6 @@ function ToolbarButton({
   tone: ToolbarTone;
   active?: boolean;
   disabled?: boolean;
-  title?: string;
   onClick: () => void;
 }) {
   const toneClass = {
@@ -119,7 +155,7 @@ function ToolbarButton({
         active ? "ring-1 ring-current/30" : ""
       }`}
       disabled={disabled}
-      title={title}
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
     >
       {icon}
@@ -129,65 +165,184 @@ function ToolbarButton({
 }
 
 function ShareMenu({
-  enabled,
+  draftAccess,
+  committedAccess,
   shareUrl,
   password,
+  saving,
+  dirty,
   onPasswordChange,
-  onToggle,
+  onSelectAccess,
+  onSave,
+  onCancel,
 }: {
-  enabled: boolean;
+  draftAccess: NoteShareAccess;
+  committedAccess: NoteShareAccess;
   shareUrl: string;
   password: string;
+  saving?: boolean;
+  dirty: boolean;
   onPasswordChange: (v: string) => void;
-  onToggle: () => void;
+  onSelectAccess: (access: NoteShareAccess) => void;
+  onSave: () => void;
+  onCancel: () => void;
 }) {
   const { pushToast } = useAppToast();
+  const linkActive = draftAccess !== "private";
+  const linkDisplay = shareUrl || (linkActive && saving ? "…" : linkActive ? "Save to generate link" : "");
+
   return (
-    <div className="anim-pop absolute right-0 top-full z-50 mt-1.5 w-80 rounded-xl border border-white/10 bg-[var(--panel)] p-3 shadow-2xl shadow-black/45">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Share settings</div>
-          <p className="mt-0.5 text-[11px] text-[var(--muted)]">Enable public share to generate a link.</p>
-        </div>
-        <button
-          type="button"
-          className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${
-            enabled
-              ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-100"
-              : "border-white/10 bg-white/[.04] text-[var(--muted)]"
-          }`}
-          onClick={onToggle}
-        >
-          {enabled ? "Public" : "Private"}
-        </button>
+    <div
+      className="anim-pop absolute right-0 top-full z-50 mt-1.5 w-[min(19rem,calc(100vw-1.5rem))] rounded-xl border border-white/10 bg-[var(--panel)] p-2.5 shadow-2xl shadow-black/45"
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text)]">
+        <Share2 size={11} className="text-cyan-300" aria-hidden />
+        Share note
       </div>
-      <label className="mb-1 block text-[10px] uppercase tracking-wider text-[var(--muted)]">Password</label>
-      <input
-        className="field mb-3 h-8 text-[11px]"
-        type="password"
-        value={password}
-        placeholder="Optional share password"
-        onChange={(e) => onPasswordChange(e.target.value)}
-      />
-      <label className="mb-1 block text-[10px] uppercase tracking-wider text-[var(--muted)]">Share link</label>
-      <div className="flex gap-2">
-        <input
-          className="field h-8 min-w-0 flex-1 text-[11px]"
-          readOnly
-          value={enabled ? shareUrl || "Save once to generate link" : "Private note"}
+
+      <div className="mb-2 flex gap-0.5 rounded-md border border-white/10 bg-white/[.03] p-0.5" role="group" aria-label="Share level">
+        <ShareModeButton
+          active={draftAccess === "private"}
+          tone="private"
+          icon={<Lock size={10} />}
+          label="Only me"
+          disabled={saving}
+          onClick={() => onSelectAccess("private")}
         />
+        <ShareModeButton
+          active={draftAccess === "view"}
+          tone="view"
+          icon={<Eye size={10} />}
+          label="View"
+          disabled={saving}
+          onClick={() => onSelectAccess("view")}
+        />
+        <ShareModeButton
+          active={draftAccess === "edit"}
+          tone="edit"
+          icon={<PenLine size={10} />}
+          label="Edit"
+          disabled={saving}
+          onClick={() => onSelectAccess("edit")}
+        />
+      </div>
+
+      <div className="min-h-[4.75rem] space-y-2">
+        <input
+          className={`field h-7 text-[11px] transition-opacity ${linkActive ? "opacity-100" : "pointer-events-none opacity-0"}`}
+          type="password"
+          name="p0020-note-share-password"
+          autoComplete="new-password"
+          data-lpignore="true"
+          data-1p-ignore
+          tabIndex={linkActive ? 0 : -1}
+          aria-hidden={!linkActive}
+          value={password}
+          placeholder="Password (optional)"
+          onChange={(e) => onPasswordChange(e.target.value)}
+        />
+        <div
+          className={`flex gap-1.5 transition-opacity ${linkActive ? "opacity-100" : "pointer-events-none opacity-0"}`}
+          aria-hidden={!linkActive}
+        >
+          <input
+            className="field h-7 min-w-0 flex-1 font-mono text-[9px]"
+            readOnly
+            tabIndex={-1}
+            name="p0020-note-share-url"
+            autoComplete="off"
+            data-form-type="other"
+            value={linkDisplay}
+          />
+          <button
+            type="button"
+            className="btn h-7 shrink-0 px-2 text-[10px]"
+            disabled={!shareUrl || saving}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              if (!shareUrl) return;
+              void navigator.clipboard?.writeText(shareUrl);
+              pushToast("Copied share link", "success");
+            }}
+          >
+            Copy
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-2 flex justify-end gap-1.5 border-t border-white/5 pt-2">
         <button
           type="button"
-          className="btn text-[11px] !px-2"
-          disabled={!shareUrl}
-          onClick={() => {
-            void navigator.clipboard?.writeText(shareUrl);
-            pushToast("Copied share link", "success");
-          }}
+          className="inline-flex h-7 items-center rounded-lg border border-white/10 px-2.5 text-[10px] font-semibold text-[var(--muted)] hover:bg-white/[.04] hover:text-[var(--text)]"
+          disabled={saving}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={onCancel}
         >
-          Copy
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="inline-flex h-7 items-center gap-1 rounded-lg border border-emerald-400/35 bg-emerald-500/15 px-2.5 text-[10px] font-semibold text-emerald-100 hover:bg-emerald-500/22 disabled:opacity-50"
+          disabled={saving || (!dirty && draftAccess === committedAccess)}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={onSave}
+        >
+          <Save size={11} aria-hidden />
+          {saving ? "Saving…" : "Save"}
         </button>
       </div>
     </div>
+  );
+}
+
+function ShareModeButton({
+  active,
+  tone,
+  icon,
+  label,
+  disabled,
+  onClick,
+}: {
+  active: boolean;
+  tone: "private" | "view" | "edit";
+  icon: ReactNode;
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  const styles = {
+    private: {
+      active: "border-slate-400/45 bg-slate-500/22 text-slate-100",
+      idle: "border-transparent text-slate-400 hover:bg-slate-500/10 hover:text-slate-200",
+    },
+    view: {
+      active: "border-cyan-400/45 bg-cyan-500/20 text-cyan-50",
+      idle: "border-transparent text-cyan-400/80 hover:bg-cyan-500/10 hover:text-cyan-100",
+    },
+    edit: {
+      active: "border-violet-400/45 bg-violet-500/20 text-violet-50",
+      idle: "border-transparent text-violet-400/80 hover:bg-violet-500/10 hover:text-violet-100",
+    },
+  }[tone];
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      className={`inline-flex h-6 flex-1 items-center justify-center gap-0.5 rounded px-1 text-[9px] font-semibold transition-colors disabled:opacity-50 ${
+        active ? styles.active : styles.idle
+      }`}
+      aria-pressed={active}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!disabled) onClick();
+      }}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }

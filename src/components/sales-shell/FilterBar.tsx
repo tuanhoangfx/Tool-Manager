@@ -23,6 +23,8 @@ import {
   FILTER_DROPDOWN_PANEL_CLASS,
   FILTER_DROPDOWN_ROW_CLASS,
   FilterDropdownCircle,
+  FilterDropdownTrigger,
+  folderFilterButtonLabel,
   filterDropdownTriggerClass,
 } from "./filter-dropdown-ui";
 
@@ -127,6 +129,11 @@ export function FilterBar({
       <Search size={14} className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-[var(--muted)]" />
       <input
         ref={inputRef}
+        type="search"
+        name="p0020-notes-search"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         placeholder={placeholder}
@@ -299,39 +306,49 @@ function MultiFilterDropdown({
     else onChange(allValues);
   }
 
-  const buttonLabel = (() => {
-    if (selected.length === 0) return filter.showAllLabel ? `All ${filter.label}` : filter.label;
-    if (selected.length === 1) {
-      const opt = filter.options.find((o) => o.value === selected[0]);
-      return `${filter.label}: ${opt?.label ?? selected[0]}`;
-    }
-    return `${filter.label}: ${selected.length} selected`;
-  })();
+  const soleOpt = selected.length === 1 ? filter.options.find((o) => o.value === selected[0]) : undefined;
+  const buttonLabel = folderFilterButtonLabel(
+    filter.label,
+    selected.length,
+    soleOpt?.label,
+    filter.showAllLabel !== false,
+  );
 
   const Icon = FILTER_ICONS[filter.key];
   const allIcon = resolveFilterAllIcon(filter.key);
-  const soleOpt = selected.length === 1 ? filter.options.find((o) => o.value === selected[0]) : undefined;
   const soleIcon =
     filter.key === "folder" && soleOpt?.color ? null : soleOpt ? resolveFilterOptionIcon(filter.key, soleOpt) : null;
-  const soleFolderGlyph =
-    filter.key === "folder" && soleOpt?.color ? <NotesFolderGlyph color={soleOpt.color} size={12} variant="badge" /> : null;
 
-  return (
-    <div ref={ref} className="relative">
+  const trigger =
+    filter.key === "folder" ? (
+      <FilterDropdownTrigger
+        active={selected.length > 0}
+        open={open}
+        label={buttonLabel}
+        count={selected.length}
+        iconColor={soleOpt?.color}
+        onClick={() => setOpen((v) => !v)}
+      />
+    ) : (
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={filterDropdownTriggerClass(selected.length > 0)}
       >
-        {soleFolderGlyph ?? (soleIcon ? <FilterIconGlyph meta={soleIcon} size={12} /> : Icon ? <Icon size={12} className="shrink-0 opacity-75" /> : null)}
-        <span>{buttonLabel}</span>
+        {soleIcon ? <FilterIconGlyph meta={soleIcon} size={12} /> : Icon ? <Icon size={12} className="shrink-0 opacity-75" /> : null}
+        <span className="min-w-0 max-w-[12rem] truncate">{buttonLabel}</span>
         {selected.length > 1 ? (
-          <span className="grid h-4 min-w-[16px] place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white">
+          <span className="grid h-4 min-w-[16px] shrink-0 place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold leading-none text-white">
             {selected.length}
           </span>
         ) : null}
-        <ChevronDown size={12} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={12} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
       </button>
+    );
+
+  return (
+    <div ref={ref} className="relative">
+      {trigger}
 
       {open ? (
         <div className={`${FILTER_DROPDOWN_PANEL_CLASS} left-0`}>
@@ -339,6 +356,11 @@ function MultiFilterDropdown({
             <div className="relative">
               <Search size={12} className="pointer-events-none absolute left-2.5 top-1/2 z-10 -translate-y-1/2 text-[var(--muted)]" />
               <input
+                type="search"
+                name={`p0020-filter-${filter.key}`}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={`Search ${filter.label.toLowerCase()}...`}

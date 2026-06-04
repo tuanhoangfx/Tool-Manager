@@ -1,16 +1,8 @@
-import {
-  AlertCircle,
-  CalendarClock,
-  CheckCircle2,
-  Clock3,
-  Globe2,
-  Hash,
-  Pin,
-} from "lucide-react";
+import { AlertCircle, CalendarPlus, CheckCircle2, Clock3, Globe2, Hash, Pin } from "lucide-react";
 import { CopyMetaChip, MetaChip, type MetaTone } from "../../components/CopyMetaChip";
 import { NoteEditorTitleOnlyBadge } from "./NoteEditorRouteTitleActions";
-import { syncMeta } from "./noteUtils";
-import type { NoteRow } from "./types";
+import { formatNoteTimestamp } from "./noteUtils";
+import type { NoteRow, NoteSyncStatus } from "./types";
 
 type Props = {
   note: NoteRow | null;
@@ -23,10 +15,9 @@ type Props = {
 export function NoteEditorMetaStrip({ note, loading, hideDomain = false, routeLocked = false }: Props) {
   if (!note && !loading && !routeLocked) return null;
 
-  const sync = note ? syncMeta(note.sync_status, note.synced_at) : null;
   const syncTone: MetaTone =
-    sync?.syncTone === "emerald" ? "emerald" : sync?.syncTone === "rose" ? "rose" : "amber";
-  const updatedLabel = note?.updated_at ? formatShortDate(note.updated_at) : "";
+    note?.sync_status === "synced" ? "emerald" : note?.sync_status === "error" ? "rose" : "amber";
+  const syncStatusLabel = note ? syncStatusShort(note.sync_status) : "";
 
   return (
     <div className="ml-auto flex min-h-[1.625rem] min-w-[5.5rem] shrink-0 flex-wrap items-center justify-end gap-1.5">
@@ -35,17 +26,23 @@ export function NoteEditorMetaStrip({ note, loading, hideDomain = false, routeLo
       {note?.domain?.trim() && !hideDomain ? (
         <MetaChip icon={<Globe2 size={11} />} label={note.domain.trim()} tone="cyan" title="Cookie domain" />
       ) : null}
-      {sync ? (
+      {syncStatusLabel ? (
         <MetaChip
           icon={note?.sync_status === "error" ? <AlertCircle size={11} /> : <CheckCircle2 size={11} />}
-          label={sync.syncLabel}
+          label={syncStatusLabel}
           tone={syncTone}
           title="Sync status"
         />
       ) : null}
       {note?.pinned ? <MetaChip icon={<Pin size={11} />} label="Pinned" tone="amber" /> : null}
-      {updatedLabel ? (
-        <MetaChip icon={<CalendarClock size={11} />} label={updatedLabel} tone="emerald" title="Last updated" />
+      {note?.created_at ? (
+        <MetaChip
+          icon={<CalendarPlus size={11} />}
+          label={formatNoteTimestamp(note.created_at)}
+          tone="muted"
+          title={`Created ${formatNoteTimestamp(note.created_at)}`}
+          className="max-w-[9.5rem]"
+        />
       ) : null}
       {note?.id ? (
         <CopyMetaChip
@@ -61,11 +58,15 @@ export function NoteEditorMetaStrip({ note, loading, hideDomain = false, routeLo
   );
 }
 
-function formatShortDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(iso));
+function syncStatusShort(status: NoteSyncStatus): string {
+  switch (status) {
+    case "synced":
+      return "Synced";
+    case "pending":
+      return "Pending";
+    case "error":
+      return "Sync error";
+    default:
+      return "Manual";
+  }
 }

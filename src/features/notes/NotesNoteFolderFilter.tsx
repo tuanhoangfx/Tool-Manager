@@ -1,11 +1,12 @@
-import { ChevronDown, FolderOpen, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FilterDef } from "../../components/sales-shell/FilterBar";
 import {
   FILTER_DROPDOWN_PANEL_CLASS,
   FILTER_DROPDOWN_ROW_CLASS,
   FilterDropdownCircle,
-  filterDropdownTriggerClass,
+  FilterDropdownTrigger,
+  folderFilterButtonLabel,
 } from "../../components/sales-shell/filter-dropdown-ui";
 import type { NoteFolder } from "./noteFolders";
 import { isSystemFolder } from "./noteFolderLifecycle";
@@ -60,17 +61,13 @@ export function NotesNoteFolderFilter({
     (o) => !search || o.label.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const activeCount = effectiveFolderIds.length;
+  const displayCount = effectiveFolderIds.length;
   const someUser = userFolderIds.length > 0;
 
   const soleOpt =
-    effectiveFolderIds.length === 1 ? filterDef.options.find((o) => o.value === effectiveFolderIds[0]) : undefined;
+    displayCount === 1 ? filterDef.options.find((o) => o.value === effectiveFolderIds[0]) : undefined;
 
-  const buttonLabel = (() => {
-    if (activeCount === 0) return "All Folders";
-    if (activeCount === 1) return `Folder: ${soleOpt?.label ?? effectiveFolderIds[0]}`;
-    return `Folder: ${activeCount} selected`;
-  })();
+  const buttonLabel = folderFilterButtonLabel("Folder", displayCount, soleOpt?.label, true);
 
   const toggleUser = (folderId: string) => {
     if (disabled) return;
@@ -88,26 +85,16 @@ export function NotesNoteFolderFilter({
 
   return (
     <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
+      <FilterDropdownTrigger
+        active={displayCount > 0}
+        open={open}
+        label={buttonLabel}
+        count={displayCount}
+        iconColor={soleOpt?.color}
         disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-        className={filterDropdownTriggerClass(activeCount > 0)}
         title="Tag note with folders"
-      >
-        {soleOpt?.color ? (
-          <NotesFolderGlyph color={soleOpt.color} size={12} variant="badge" />
-        ) : (
-          <FolderOpen size={12} className="shrink-0 opacity-75" aria-hidden />
-        )}
-        <span className="max-w-[10rem] truncate">{buttonLabel}</span>
-        {activeCount > 1 ? (
-          <span className="grid h-4 min-w-[16px] shrink-0 place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white">
-            {activeCount}
-          </span>
-        ) : null}
-        <ChevronDown size={12} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
+        onClick={() => setOpen((v) => !v)}
+      />
 
       {open ? (
         <div className={`${FILTER_DROPDOWN_PANEL_CLASS} right-0`}>

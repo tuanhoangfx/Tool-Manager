@@ -460,12 +460,12 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  width: min(1080px, calc(100vw - var(--app-sidebar-width) - 2rem));
+  width: min(1320px, calc(100vw - var(--app-sidebar-width) - 2rem));
   max-width: calc(100vw - var(--app-sidebar-width) - 2rem);
   height: auto;
   flex: 0 1 auto;
   min-height: 0;
-  max-height: min(82vh, 780px);
+  max-height: min(88vh, 860px);
   margin: 0 auto;
   padding: 0;
   overflow: hidden;
@@ -519,7 +519,7 @@
   }
 
   .modal-shell.modal-shell--tool-detail {
-    width: min(96vw, 640px);
+    width: min(96vw, 720px);
     max-width: 96vw;
   }
 }

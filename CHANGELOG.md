@@ -4,6 +4,415 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-05 - Data Box 3.1 — cookie routes, access, public share
+
+- Version: `3.1.1`
+- Type: Major
+- Product: P0020
+- Prompt: Release P0004, P0020, E0001 — cookie route modals, member activity, public share
+- Commit: `12d7317`
+- Status: Committed
+
+### Changes
+
+- Cookie route Add/Share/Edit modals: P0004 auth-gate shell, field icons, `HubFilterSingleSelect` (search + checkbox) for Note and Access.
+- People & access: FilterBar layout, bulk Share/Edit/Delete, Load/Sync columns, realtime activity poll.
+- Extension pairing: route activity RPCs use user JWT; migrations for member `synced_at`, nullable `last_load_at`.
+- Public share: token URLs render editor without login; share popover Save/Cancel only.
+- Notes share 3-level + `share_can_edit`; removed legacy cookie agent/vault UI sections.
+
+### Verification
+
+- `corepack pnpm build`
+- `verify-production-smoke.mjs` on databox.infi.io.vn
+- Cookie tab: Add route filter dropdown; Route details member Load after extension reload
+
+### Rollback
+
+- Revert to `v2.3.24` and prior Supabase migrations if needed
+
+---
+
+## 2026-06-05 - Public share route + editor shell + share modal Save/Cancel
+
+- Version: `2.3.24`
+- Type: Patch
+- Product: P0020
+- Prompt: Share link không cần login; UI xem riêng; modal share Save/Cancel, không autosave
+- Status: Draft
+
+### Changes
+
+- Redirect `/notes?token=…` and legacy URLs → `/?screen=share&token=…`; render `PublicShareScreen` without sidebar/auth gate.
+- Public share uses `notes-editor` shell (title + body) like workspace editor.
+- Share popover: draft Only me/View/Edit + password; **Save** / **Cancel** only (no auto-save on toggle).
+
+### Verification
+
+- Open `https://databox.infi.io.vn/notes?token=…` in incognito → shared note editor, no Sign in.
+- Share menu: change level → Save applies; Cancel reverts.
+
+### Rollback
+
+- Revert commit; share URL helpers in `shareUtils.ts`.
+
+---
+
+## 2026-06-05 - Note share syntax fix + share_can_edit migration applied
+
+- Version: `2.3.23`
+- Type: Patch
+- Product: P0020
+- Prompt: Sửa lỗi Vite `??` với `||`; tự chạy migration share 3 cấp trên Supabase; rule tự apply SQL
+- Status: Draft
+
+### Changes
+
+- Fixed `NotesWorkspaceScreen.tsx` slug expression (parens for `??` + `||`) — dev server compiles again.
+- Applied `20260605120000_note_share_can_edit.sql` on `bklxcjrkhrevdcqjscku` via Management API (`apply-note-share-can-edit-api.mjs`).
+- Workspace rules: agent must run P0020 Supabase migrations when token exists (no Dashboard paste prompt).
+
+### Verification
+
+- `node scripts/apply-note-share-can-edit-api.mjs` → OK
+- Reload `http://127.0.0.1:5177/notes`
+
+### Rollback
+
+- `git checkout` previous tag or revert commit; SQL rollback: drop `share_can_edit`, restore prior `note_public_share_get`.
+
+---
+
+## 2026-06-04 - Route Details Load column (E0001 JWT fix)
+
+- Version: `2.3.21`
+- Type: Patch
+- Product: P0020 + E0001 `0.5.100`
+- Prompt: Member Load OK trên extension nhưng People & access Load vẫn `—`
+- Status: Draft
+
+### Changes
+
+- Root cause: extension gọi `cookie_route_record_load` bằng **anon JWT** → `auth.uid()` null → bảng `cookie_route_user_activity` trống.
+- Hub: fuzzy match email member ↔ activity; SQL `cookie_route_activity_list` domain filter linh hoạt.
+
+---
+
+## 2026-06-04 - Per-user Sync column + SQL applied on Supabase
+
+- Version: `2.3.20`
+- Type: Patch
+- Product: P0020 (+ E0001 `0.5.98`)
+- Prompt: Sync hàng loạt 23:09; User acc không đồng bộ dù Sync cookie OK
+- Status: Draft
+
+### Changes
+
+- Applied `APPLY_NOTE_SYNC_TOUCH_FLAG.sql` on project `bklxcjrkhrevdcqjscku` (Management API).
+- People & access **Sync** column uses `notes.synced_at`, not vault `updated_at`.
+- Realtime refresh on `cookie_route_user_activity` for per-user Sync/Load.
+
+Version: `2.3.19` → `2.3.20`
+
+---
+
+## 2026-06-04 - Stop mass synced_at without manual Sync
+
+- Version: `2.3.19`
+- Type: Patch
+- Product: P0020 (+ E0001 `0.5.97`)
+- Prompt: Vẫn sync hàng loạt dù không thực hiện sync
+- Status: Draft
+
+### Changes
+
+- SQL: `note_sync_cookies*` only sets `synced_at` when `p_touch_synced_at = true` (apply `supabase/APPLY_NOTE_SYNC_TOUCH_FLAG.sql`).
+- E0001 manual Sync passes `p_touch_synced_at` + `bindingKey` per route.
+
+Version: `2.3.18` → `2.3.19`
+
+---
+
+## 2026-06-04 - Sync time realtime aligned with extension
+
+- Version: `2.3.18`
+- Type: Patch
+- Product: P0020 (+ E0001 `0.5.96`)
+- Prompt: Thời gian sync Cookie Auto vs Extension không đồng bộ realtime; giờ sync đổi đồng loạt
+- Status: Draft
+
+### Changes
+
+- Route card/list sync row: `notes.synced_at` only (never vault `updated_at`).
+- Notes cookie realtime debounce 800ms → 400ms for faster hub refresh after extension Sync.
+
+Version: `2.3.17` → `2.3.18`
+
+---
+
+## 2026-06-03 - Sync time manual-only + remove Ready badge
+
+- Version: `2.3.17`
+- Type: Patch
+- Product: P0020 (+ E0001 `0.5.95`)
+- Prompt: Giải thích Options Sync; xóa Ready searchbar; confirm sync chỉ từ extension route
+- Status: Draft
+
+### Changes
+
+- Route card sync row: only `notes.synced_at` (RPC after manual extension Sync).
+- Cookie toolbar: removed **Ready** schema badge from searchbar.
+- E0001 popup Synced column: only `pushedAt`; Options “Sync now” shows per-route hint (no bulk).
+
+Version: `2.3.16` → `2.3.17`
+
+---
+
+## 2026-06-03 - Audit: no auto cookie sync from Tool
+
+- Version: `2.3.16`
+- Type: Patch
+- Product: P0020 (+ E0001 `0.5.94`)
+- Prompt: Kiểm tra sync tự động còn sót — user đã yêu cầu tắt hoàn toàn
+- Status: Draft
+
+### Changes
+
+- Documented: P0020 realtime chỉ refresh list/vault (read DB); không gửi `SYNC_NOW`.
+- E0001: vault metadata no longer overwrites `pushedAt` (fixes false “auto sync” timestamps).
+
+Version: `2.3.15` → `2.3.16`
+
+---
+
+## 2026-06-03 - Fix Kalodata routes sharing one Sync time
+
+- Version: `2.3.15`
+- Type: Patch
+- Product: P0020 (+ E0001 `0.5.93`)
+- Prompt: Tất cả route Kalodata cùng 21:57 dù không thao tác
+- Status: Draft
+
+### Changes
+
+- Vault map/lookup: canonical `noteId:.domain` key (`vaultRouteKey` / `lookupVaultRow`) — fixes wrong or shared vault row when DB domain lacks leading dot.
+- E0001: per-route status key `noteId:domain` (was noteId-only); migrate legacy status on popup refresh.
+
+Version: `2.3.14` → `2.3.15`
+
+---
+
+## 2026-06-03 - Card sync time matches extension (vault-first)
+
+- Version: `2.3.14`
+- Type: Patch
+- Product: P0020
+- Prompt: Card view Synced khác extension — ví dụ p1z11 19:57 vs 20:09
+- Status: Draft
+
+### Changes
+
+- `resolveRouteSyncedDisplayIso`: prefer `note_cookie_vault.updated_at` (E0001 popup cloud leg), fallback `notes.synced_at` when no vault.
+- Route card sync row uses resolver (was wrongly preferring newer `notes.synced_at`).
+
+Version: `2.3.13` → `2.3.14`
+
+---
+
+## 2026-06-03 - Cookie timestamp format (hh:mm dd/mm/yy)
+
+- Version: `2.3.13`
+- Type: Patch
+- Product: P0020
+- Prompt: Xóa nhãn Sync gần nhất; chỉ timestamp; đồng nhất `hh:mm dd/mm/yy`
+- Status: Draft
+
+### Changes
+
+- Shared `formatTimestampCompact` in `src/lib/format-timestamp.ts`.
+- Route card sync row: icon + timestamp only (no label).
+- Cookie Auto table, access Load/Publish times use same format.
+
+Version: `2.3.12` → `2.3.13`
+
+---
+
+## 2026-06-03 - Cookie settings trim + route card sync row
+
+- Version: `2.3.12`
+- Type: Patch
+- Product: P0020
+- Prompt: Xóa tab Bridge/Advanced; Realtime UI luôn bật; Route card — Sync gần nhất có icon, dòng riêng
+- Status: Draft
+
+### Changes
+
+- Removed Cookie Settings **Bridge** and **Advanced** tabs (`CookieBridgeExtensionSection`, `CookieBridgeAdvancedSection`).
+- Realtime UI refresh always on (`notes-realtime-pref`, `cookieBridge` defaults).
+- Route **Card** view: dedicated **Sync gần nhất** row with `RefreshCw` icon (`notes.synced_at`, vault fallback).
+
+Version: `2.3.11` → `2.3.12`
+
+---
+
+## 2026-06-04 - Per-user Load time on route (no agent heartbeat)
+
+- Version: `2.3.10`
+- Type: Patch
+- Product: P0020 (+ E0001 `0.5.90`)
+- Prompt: Vẫn ghi nhận thời gian Load gần nhất cho Route từ mỗi user
+- Status: Draft
+
+### Changes
+
+- New `cookie_route_user_activity` + RPC `cookie_route_record_load` / `cookie_route_activity_list`.
+- Extension records Load on successful vault apply (one upsert per user/route, no 7s poll).
+- People & access: **Load** column per user (owner + shared members).
+- Cookie Settings: removed **Vault** tab (policy fixed — Sync always snapshot + jar on extension).
+
+Version: `2.3.9` → `2.3.10`
+
+---
+
+## 2026-06-04 - Remove Connected browsers / agent cloud tracking
+
+- Version: `2.3.9`
+- Type: Patch
+- Product: P0020 (+ E0001 `0.5.89`)
+- Prompt: Xóa Connected browsers — không cần, giảm tải DB
+- Status: Draft
+
+### Changes
+
+- Removed Connected browsers UI, `useCookieAgents` polling, and remote command queue from Tool.
+- E0001: stopped 7s heartbeat upsert to `cookie_bridge_agents` and command poll loop.
+- Route detail: About + Access only; Load column in access table shows — (apply time stays extension-local).
+
+Version: `2.3.8` → `2.3.9`
+
+---
+
+## 2026-06-04 - Cookie list Share column + connected browsers
+
+- Version: `2.3.8`
+- Type: Patch
+- Product: P0020
+- Prompt: Chip Shared cột list; Connected browsers luôn hiện, icon state/cột; lọc User
+- Status: Draft
+
+### Changes
+
+- List table: **Share** column with `RouteShareChip` (Private / Shared N / Shared to me).
+- Route detail: **Connected browsers** always visible in TOC; state/login chips and icon column headers; **User** filter on agents table.
+- Access table reuses shared `RdpThLabel` helper.
+
+Version: `2.3.7` → `2.3.8`
+
+---
+
+## 2026-06-04 - Route detail + Cookie Auto stat chips
+
+- Version: `2.3.7`
+- Type: Patch
+- Product: P0020
+- Prompt: Tiêu đề lệch; gộp Health/Vault vào About; chip Synced/cookies/Shared; cột TH có icon
+- Status: Draft
+
+### Changes
+
+- Fix section title alignment (`justify-content: flex-start`).
+- Single **About** block (vault + health as stat strip + compact 3-col grid).
+- **Route stat chips** on cards/list/modal header (Synced, N cookies, Shared N).
+- Access table column headers with icons (Hub users style).
+
+Version: `2.3.6` → `2.3.7`
+
+---
+
+## 2026-06-04 - Route detail modal redesign
+
+- Version: `2.3.6`
+- Type: Patch
+- Product: P0020
+- Prompt: Redesign Route Details — header, stack About/Vault, icons, sync/load in access table
+- Status: Draft
+
+### Changes
+
+- Route detail: Hub-style header (name, domain, sync/note ID); removed duplicate TOC title and side ID card.
+- About + Cloud vault stacked vertically with compact half-line fields.
+- People & access: icon permissions, Sync/Load columns; Connected browsers section with clearer purpose copy.
+
+Version: `2.3.5` → `2.3.6`
+
+---
+
+## 2026-06-04 - Cookie schema health probe (false FAIL banner)
+
+- Version: `2.3.5`
+- Type: Patch
+- Product: P0020
+- Prompt: Banner Supabase schema FAIL sync_pass_hash khi DB đã OK
+- Status: Draft
+
+### Changes
+
+- `cookieSchemaHealth`: drop `p_updated_by` from vault probe; treat `note not found` as OK; detect `PGRST202` / stale `v_note`.
+
+Version: `2.3.4` → `2.3.5`
+
+---
+
+## 2026-06-04 - Note editor: click anywhere to focus
+
+- Version: `2.3.4`
+- Type: Patch
+- Product: P0020
+- Prompt: Nhận chuột ở bất cứ đâu trong giao diện note (không chỉ vùng có chữ)
+- Status: Draft
+
+### Changes
+
+- Editor body: full-height textarea + click on empty panel focuses editor; ResizeObserver keeps min height in sync.
+
+Version: `2.3.3` → `2.3.4`
+
+---
+
+## 2026-06-04 - Fix route chip icon flash on note switch
+
+- Version: `2.3.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Nhãn Route Modal nháy icon cũ khi đổi note Kalodata → Netflix
+- Status: Draft
+
+### Changes
+
+- `useNoteCookieRouteLock`: derive routes synchronously from `noteId` (cache/local); async fetch no longer shows previous note's chips.
+- Route opener: remount on `noteId`; site icon `key` on `src` to avoid stale image flash.
+
+Version: `2.3.2` → `2.3.3`
+
+---
+
+## 2026-06-04 - Route note editor matches normal note (read-only)
+
+- Version: `2.3.2`
+- Type: Patch
+- Product: P0020
+- Prompt: Note route không bo góc/đổi font — giao diện giống note thường, chỉ khóa nhập
+- Status: Draft
+
+### Changes
+
+- Cookie route notes: snapshot in same `notes-editor__textarea` (sans, no cookie panel); `readOnly` only.
+- Removed `fm-cookie-panel--locked` full-height monospace list for route notes.
+
+Version: `2.3.1` → `2.3.2`
+
+---
+
 ## 2026-06-04 - Notes folders, Tool dialogs, folder tag persistence
 
 - Version: `2.3.1`

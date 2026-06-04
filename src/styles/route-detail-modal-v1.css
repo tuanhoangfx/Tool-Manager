@@ -1,7 +1,8 @@
 .route-detail-preview {
   display: grid;
-  grid-template-columns: 170px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: 150px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px 16px;
   min-height: 420px;
   border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -23,13 +24,73 @@
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.16);
 }
 
-.rdp-toc-title,
-.rdp-kicker {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgb(129 140 248);
+.rdp-modal-header {
+  grid-column: 1 / -1;
+  border-radius: 18px;
+  border: 1px solid rgba(129, 140, 248, 0.14);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(15, 23, 42, 0.85));
+  padding: 14px 16px;
+}
+
+.rdp-modal-header__identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rdp-modal-header__avatar {
+  display: grid;
+  height: 48px;
+  width: 48px;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(129, 140, 248, 0.22);
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.rdp-modal-header__avatar img {
+  height: 28px;
+  width: 28px;
+  object-fit: contain;
+}
+
+.rdp-modal-header__eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgb(199 210 254 / 0.85);
+}
+
+.rdp-modal-header__title {
+  margin: 2px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rdp-modal-header__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.rdp-meta-sep {
+  opacity: 0.5;
+}
+
+.rdp-modal-header__meta .mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: rgb(186 230 253);
 }
 
 .rdp-toc-item {
@@ -73,27 +134,40 @@
   padding: 4px;
 }
 
-.rdp-hero,
 .rdp-section-head {
   display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.rdp-section-head--with-icon {
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
 }
 
-.rdp-hero h3 {
-  margin: 3px 0 0;
-  font-size: 20px;
+.rdp-section-head--with-icon > div {
+  flex: 1;
+  min-width: 0;
 }
 
-.rdp-hero p,
-.rdp-section-head span {
-  margin: 4px 0 0;
+.rdp-section-icon {
+  display: grid;
+  height: 28px;
+  width: 28px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rdp-section-desc {
+  margin: 2px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
-.rdp-route-card,
 .rdp-section,
 .rdp-health-grid > div {
   border-radius: 16px;
@@ -101,24 +175,10 @@
   background: rgba(15, 23, 42, 0.7);
 }
 
-.rdp-route-card {
-  min-width: 180px;
-  padding: 12px;
-}
-
-.rdp-route-card span,
 .rdp-health-grid span {
   display: block;
   color: var(--muted);
   font-size: 10px;
-}
-
-.rdp-route-card strong {
-  display: block;
-  margin-top: 4px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 13px;
-  color: rgb(199 210 254);
 }
 
 .rdp-section {
@@ -127,18 +187,114 @@
 
 .rdp-context-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px;
   align-items: start;
 }
 
-.rdp-section-head {
-  margin-bottom: 10px;
+.rdp-context-grid--stack {
+  grid-template-columns: 1fr;
 }
 
 .rdp-section-head h4 {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rdp-stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.rdp-compact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 14px;
+}
+
+.rdp-compact-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.rdp-compact-item {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 11px;
+}
+
+.rdp-compact-label {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.rdp-compact-label::after {
+  content: " ·";
+  opacity: 0.45;
+}
+
+.rdp-compact-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.rdp-compact-value.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  color: rgb(186 230 253);
+}
+
+.rdp-copy--inline {
+  height: 20px;
+  padding: 0 6px;
+}
+
+.rdp-advanced-toggle {
+  padding: 2px 0;
+}
+
+.rdp-time-cell {
+  font-size: 11px;
+  color: rgb(186 230 253);
+  white-space: nowrap;
+}
+
+.rdp-th-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.rdp-th-icon {
+  flex-shrink: 0;
+  opacity: 0.92;
+}
+
+.rdp-th-icon--user { color: #60a5fa; }
+.rdp-th-icon--role { color: #a78bfa; }
+.rdp-th-icon--sync { color: #34d399; }
+.rdp-th-icon--load { color: #38bdf8; }
+.rdp-th-icon--apply { color: #4ade80; }
+.rdp-th-icon--publish { color: #818cf8; }
+.rdp-th-icon--manage { color: #fbbf24; }
+.rdp-th-icon--route { color: #c084fc; }
+.rdp-th-icon--expires { color: #94a3b8; }
+
+.rdp-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .rdp-callout {
@@ -247,10 +403,10 @@
 .rdp-table th {
   background: rgba(255, 255, 255, 0.035);
   color: var(--muted);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 .rdp-table .mono {
@@ -295,7 +451,8 @@
     grid-template-columns: 1fr;
   }
 
-  .rdp-context-grid {
+  .rdp-compact-grid,
+  .rdp-compact-grid--3 {
     grid-template-columns: 1fr;
   }
 
@@ -303,13 +460,5 @@
     position: relative;
     display: flex;
     overflow-x: auto;
-  }
-
-  .rdp-toc-title {
-    display: none;
-  }
-
-  .rdp-info-grid {
-    grid-template-columns: 1fr;
   }
 }

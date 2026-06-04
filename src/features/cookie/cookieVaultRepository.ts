@@ -1,4 +1,5 @@
 import { supabase } from "../../lib/supabase";
+import { cookieRouteDomainKey } from "./cookieRouteDomain";
 import type { CookieVaultRow } from "./useCookieVaultMap";
 
 export async function fetchCookieVaultRows(noteIds: string[]) {
@@ -22,10 +23,35 @@ export async function fetchCookieVaultRows(noteIds: string[]) {
   return { data: (data ?? []) as CookieVaultRow[], error };
 }
 
+export function vaultRouteKey(noteId: string, domain: string): string {
+  const id = noteId.trim();
+  const dom = cookieRouteDomainKey(domain);
+  return id && dom ? `${id}:${dom}` : "";
+}
+
+export function lookupVaultRow(
+  map: Record<string, CookieVaultRow>,
+  noteId: string,
+  domain: string,
+): CookieVaultRow | undefined {
+  const key = vaultRouteKey(noteId, domain);
+  if (!key) return undefined;
+  if (map[key]) return map[key];
+  const id = noteId.trim();
+  const raw = domain.trim();
+  if (map[`${id}:${raw}`]) return map[`${id}:${raw}`];
+  const bare = raw.replace(/^\./, "");
+  if (bare !== raw && map[`${id}:${bare}`]) return map[`${id}:${bare}`];
+  if (bare !== raw && map[`${id}:.${bare}`]) return map[`${id}:.${bare}`];
+  return undefined;
+}
+
 export function mapVaultRows(rows: CookieVaultRow[]): Record<string, CookieVaultRow> {
   const map: Record<string, CookieVaultRow> = {};
   for (const row of rows) {
-    map[`${row.note_id}:${row.domain}`] = row;
+    const key = vaultRouteKey(row.note_id, row.domain);
+    if (!key) continue;
+    map[key] = row;
   }
   return map;
 }

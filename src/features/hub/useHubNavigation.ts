@@ -13,6 +13,13 @@ import {
   pathnameToNavScreen,
   searchWithoutNavScreen,
 } from "../../lib/workspace-path";
+import {
+  canonicalPublicSharePath,
+  isPublicShareEntry,
+  migratePublicShareUrl,
+  PUBLIC_SHARE_PATH,
+  readShareTokenFromUrl,
+} from "../notes/shareUtils";
 const RETIRED = new Set([
   "dashboard",
   "library",
@@ -35,6 +42,9 @@ function readScreenFromLocation(): WorkspaceScreen {
   if (typeof window === "undefined") return "notes";
 
   const normalizedPath = window.location.pathname.replace(/\/+$/, "") || "/";
+
+  if (normalizedPath === PUBLIC_SHARE_PATH && readShareTokenFromUrl()) return "share";
+  if (isPublicShareEntry(normalizedPath, window.location.search)) return "share";
   if (normalizedPath === "/todo") return "notes";
 
   if (isUsersLegacyPath(window.location.pathname)) {
@@ -55,6 +65,8 @@ function readScreenFromLocation(): WorkspaceScreen {
 }
 
 function migrateUrl(): WorkspaceScreen {
+  if (migratePublicShareUrl()) return "share";
+
   const p = new URLSearchParams(window.location.search);
   const raw = p.get("screen");
 
@@ -134,7 +146,14 @@ export function useHubNavigation() {
       const p = new URLSearchParams(window.location.search);
       p.delete("tab");
 
-      if (next === "share" || next === "edit") {
+      if (next === "share") {
+        const path = opts?.token ? canonicalPublicSharePath(opts.token) : PUBLIC_SHARE_PATH;
+        if (opts?.replace) window.history.replaceState({ screen: next }, "", path);
+        else window.history.pushState({ screen: next }, "", path);
+        return;
+      }
+
+      if (next === "edit") {
         p.set("screen", next);
         if (opts?.note) p.set("note", opts.note);
         else p.delete("note");
