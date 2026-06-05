@@ -18,7 +18,12 @@ import { listCookieRouteActivity } from "./cookieRouteActivityRepository";
 import { cookieRouteDomainKey } from "./cookieRouteDomain";
 import { CookieRouteAccessBulkActionBar } from "./CookieRouteAccessBulkActionBar";
 import { CookieRouteAccessTable, type RouteAccessRow } from "./CookieRouteAccessTable";
-import { CookieRouteFieldLabel, CookieRouteModalActions } from "./CookieRouteFormModal";
+import { CookieRouteAccessTableSkeleton } from "./CookieRouteAccessTableSkeleton";
+import {
+  CookieRouteFieldLabel,
+  CookieRouteFormModal,
+  CookieRouteModalActions,
+} from "./CookieRouteFormModal";
 import { COOKIE_ACCESS_SELECT_OPTIONS } from "./cookieAccessSelectOptions";
 
 type Props = {
@@ -93,13 +98,14 @@ function sharePermissions(access: ShareAccess) {
 
 export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }: Props) {
   const { session } = useNotesAuth();
-  const shareEmailRef = useRef<HTMLInputElement>(null);
   const [members, setMembers] = useState<NoteCookieMemberRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [accessReady, setAccessReady] = useState(false);
   const [publishedState, setPublishedState] = useState<PublishedState | null>(null);
+  const loadSeqRef = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filterValues, setFilterValues] = useState<FilterValues>({});
+  const [shareOpen, setShareOpen] = useState(false);
   const [shareEmail, setShareEmail] = useState("");
   const [shareAccess, setShareAccess] = useState<ShareAccess>("load");
   const [shareBusy, setShareBusy] = useState(false);
@@ -164,22 +170,36 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
   }, [binding.domain, binding.noteId]);
 
   const load = useCallback(async () => {
-    if (!binding.noteId) return;
-    setLoading(true);
+    if (!binding.noteId) {
+      setAccessReady(true);
+      return;
+    }
+    const seq = ++loadSeqRef.current;
     setError(null);
     const [membersRes] = await Promise.all([
       listNoteCookieMembers(binding.noteId),
       loadPublishStatus(),
       loadActivity(),
     ]);
-    setLoading(false);
+    if (seq !== loadSeqRef.current) return;
     if (!membersRes.ok) {
       setMembers([]);
       if (binding.accessRole !== "member") setError(membersRes.error);
     } else {
       setMembers(membersRes.members);
     }
+    setAccessReady(true);
   }, [binding.accessRole, binding.noteId, loadActivity, loadPublishStatus]);
+
+  useEffect(() => {
+    setAccessReady(false);
+    setMembers([]);
+    setPublishedState(null);
+    setLoadByUserId({});
+    setLoadByEmail({});
+    setSyncByUserId({});
+    setSyncByEmail({});
+  }, [binding.noteId]);
 
   useEffect(() => {
     void load();
@@ -217,9 +237,7 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
         },
         onRefresh,
       )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") void loadActivity();
-      });
+      .subscribe();
 
     return () => {
       window.removeEventListener("p0020-cookie-route-shared", onRefresh);
@@ -230,10 +248,11 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
     };
   }, [binding.domain, binding.noteId, loadActivity]);
 
+  const routeStatusReady = publishedState !== null;
   const routePublished = publishedState?.published === true;
   const ownerUserId = binding.ownerUserId ?? null;
   const ownerEmail = (binding.ownerUserEmail ?? "").trim().toLowerCase();
-  const publishedLabel = routePublished ? "Published" : "Missing";
+  const publishedLabel = !routeStatusReady ? "—" : routePublished ? "Published" : "Missing";
 
   const activityForRow = useCallback(
     (
@@ -388,6 +407,7 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
     }
     setShareEmail("");
     setShareAccess("load");
+    setShareOpen(false);
     onToast?.("Shared route access. Recipient can refresh routes immediately.", "success");
     await load();
     window.dispatchEvent(new CustomEvent("p0020-cookie-route-shared", { detail: { noteId: binding.noteId } }));
@@ -457,9 +477,10 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
     setPendingRevokeIds(ids);
   }, []);
 
-  const focusShare = useCallback(() => {
-    shareEmailRef.current?.focus();
-    shareEmailRef.current?.select();
+  const openShareModal = useCallback(() => {
+    setShareEmail("");
+    setShareAccess("load");
+    setShareOpen(true);
   }, []);
 
   return (
@@ -479,24 +500,39 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
         </p>
       ) : null}
 
-      {canShare ? (
-        <div className="mb-3 rounded-2xl border border-emerald-400/15 bg-emerald-500/[.06] p-3">
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-semibold text-emerald-100">Share user</p>
-              <p className="text-[10px] text-emerald-100/65">
-                Grant <strong>Load</strong> or <strong>Sync</strong> by email. Manage stays with route owner only.
-              </p>
+      {shareOpen && canShare ? (
+        <CookieRouteFormModal
+          title="Share"
+          subtitle="Grant Load or Sync access by email. Manage stays with route owner only."
+          onClose={() => setShareOpen(false)}
+          footer={
+            <CookieRouteModalActions
+              primaryLabel="Share"
+              primaryIcon={UserPlus}
+              primaryBusy={shareBusy}
+              primaryDisabled={!shareEmail.trim()}
+              onPrimary={() => void submitShare()}
+              onSecondary={() => setShareOpen(false)}
+            />
+          }
+        >
+          <div className="cookie-route-modal__route-card">
+            <div className="min-w-0">
+              <p className="cookie-route-modal__route-card-title">{binding.noteTitle ?? "Cookie route"}</p>
+              <p className="cookie-route-modal__route-card-meta">{binding.noteId}</p>
             </div>
-            <span className="rounded-full border border-emerald-300/25 px-2 py-0.5 text-[10px] text-emerald-100/80">
-              {binding.noteId.slice(0, 8)}
-            </span>
+            <button
+              type="button"
+              className="cookie-route-modal__copy-btn"
+              onClick={() => void navigator.clipboard?.writeText(binding.noteId)}
+            >
+              Copy Note ID
+            </button>
           </div>
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <label className="block min-w-0">
               <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
               <input
-                ref={shareEmailRef}
                 className="field auth-gate-field w-full"
                 value={shareEmail}
                 placeholder="user@example.com"
@@ -513,17 +549,8 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
                 TriggerIcon={Shield}
               />
             </label>
-            <button
-              type="button"
-              className="auth-gate-submit cookie-route-modal__btn mt-5 h-[var(--hub-control-h,34px)] shrink-0 px-4 text-xs"
-              disabled={!shareEmail.trim() || shareBusy}
-              onClick={() => void submitShare()}
-            >
-              <UserPlus size={14} aria-hidden />
-              {shareBusy ? "Sharing…" : "Share"}
-            </button>
           </div>
-        </div>
+        </CookieRouteFormModal>
       ) : null}
 
       {editingMember ? (
@@ -573,17 +600,17 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
           onValuesChange={setFilterValues}
           toolbar={
             <span className="text-[10px] text-[var(--muted)] tabular-nums">
-              {filteredAccessRows.length}/{accessRows.length}
+              {accessReady ? `${filteredAccessRows.length}/${accessRows.length}` : "Loading…"}
             </span>
           }
-          filterToolbar={
+          row2Actions={
             canShare ? (
               <CookieRouteAccessBulkActionBar
                 hasSelection={selectedIds.size > 0}
                 selectedCount={selectedIds.size}
                 canManage={canShare}
                 shareBusy={shareBusy || revokeBusy}
-                onAdd={focusShare}
+                onAdd={openShareModal}
                 onEdit={openEditBulk}
                 onDelete={() => requestRevoke([...selectedIds])}
               />
@@ -592,19 +619,22 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
         />
       </div>
 
-      <CookieRouteAccessTable
-        rows={filteredAccessRows}
-        routePublished={routePublished}
-        publishedLabel={publishedLabel}
-        selectedIds={selectedIds}
-        onToggleSelect={toggleSelect}
-        onToggleSelectAll={toggleSelectAll}
-        allVisibleSelected={allVisibleSelected}
-        syncAtForRow={syncAtForRow}
-        loadAtForRow={loadAtForRow}
-      />
-
-      {loading ? <p className="mt-2 text-[11px] text-[var(--muted)]">Loading members...</p> : null}
+      {!accessReady ? (
+        <CookieRouteAccessTableSkeleton rows={Math.max(3, members.length || 3)} />
+      ) : (
+        <CookieRouteAccessTable
+          rows={filteredAccessRows}
+          routePublished={routePublished}
+          publishedLabel={publishedLabel}
+          routeStatusReady={routeStatusReady}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          allVisibleSelected={allVisibleSelected}
+          syncAtForRow={syncAtForRow}
+          loadAtForRow={loadAtForRow}
+        />
+      )}
 
       <ToolConfirmDialog
         open={pendingRevokeIds !== null}

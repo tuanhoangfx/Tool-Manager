@@ -4,6 +4,35 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-05 - Data Box 3.3 — Hub shell sync + Cookie download modal (P0020)
+
+- Version: `3.3.1`
+- Type: Minor
+- Product: P0020
+- Prompt: Push P0020 — hub-ui vendor sync, Cookie Auto download modal polish, shared modal close, Notes/2FA/workspace shell alignment.
+- Commit: `7b6014d`
+- Status: Committed
+- Release: (after Release keyword only — GitHub release URL)
+
+### Changes
+
+- Cookie Auto: extension download modal — release ZIP fallback when latest has no asset; purple GitHub link; edge close button; footer without divider; confirm download CTA centered with icon animation.
+- Hub UI vendor: `HubModalFrame` + `HubModalCloseButton` + `hub-modal.css`; migrate tool-detail modals to shared edge close pattern.
+- Workspace shell: Notes/2FA/Cookie tab prefs, directory screen, header metrics, route access skeleton; remove duplicate local hub-ui stubs in favor of `@tool-workspace/hub-ui`.
+
+### Verification
+
+- `pnpm -C E:\Dev\Tool\P0020-Data-Box build` — passed
+
+### Rollback
+
+```powershell
+cd E:\Dev\Tool\P0020-Data-Box
+git checkout v3.2.4
+```
+
+---
+
 ## 2026-06-05 - Data Box 3.1.9 — Remove Notes Comfort/Compact toggle (P0020)
 
 - Version: `3.1.9`

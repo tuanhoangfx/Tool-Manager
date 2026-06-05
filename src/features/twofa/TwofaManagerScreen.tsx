@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { KeyRound, Plus, Shield } from "lucide-react";
+import { MiniBarChart, MiniDonut } from "../../components/sales-shell";
 import { PageHeader } from "../design-preview/screens/PageHeader";
 import { useTwofaAccounts } from "./useTwofaAccounts";
 import type { TwofaAccount, TwofaDraft } from "./types";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
-import { readHubListPrefs } from "../../lib/url-prefs";
+import { subscribeHubListPrefs } from "../../lib/url-prefs";
+import { readTwofaHubPrefs } from "./twofa-tab-prefs";
 import { TwofaFilterToolbar } from "./TwofaFilterToolbar";
-import { DEFAULT_TWOFA_HEADER_STAT_KEYS } from "./twofa-display-prefs";
+import {
+  DEFAULT_TWOFA_CHART_KEYS,
+  DEFAULT_TWOFA_HEADER_STAT_KEYS,
+  DEFAULT_TWOFA_KPI_KEYS,
+} from "./twofa-display-prefs";
+import { buildTwofaChartItems, buildTwofaKpis } from "./twofa-aggregates";
+import { buildTwofaHeaderStats } from "./twofa-header-metrics";
 import {
   buildTwofaServiceFilterOptions,
   filterTwofaAccounts,
@@ -21,6 +29,10 @@ import { TwofaConfirmDialog } from "./TwofaConfirmDialog";
 import { readTwofaTableColumns } from "./twofa-table-prefs";
 import { useNotesAuth } from "../notes/useNotesAuth";
 import { NotesAuthGate } from "../notes/NotesAuthGate";
+
+function visibleSet(set: Set<string> | null, defaults: Set<string>) {
+  return set ?? defaults;
+}
 
 type AddModalState =
   | { mode: "add"; draft?: Partial<TwofaDraft> }
@@ -61,8 +73,7 @@ function TwofaManagerScreenBody({
   shellMode?: boolean;
   query?: string;
 } = {}) {
-  const { accounts, tick, add, addMany, update, remove, touchLastUsed, cloudState, cloudError } =
-    useTwofaAccounts();
+  const { accounts, tick, add, addMany, update, remove, touchLastUsed } = useTwofaAccounts();
   const {
     query: wsQuery,
     setQuery: setWsQuery,
@@ -71,10 +82,13 @@ function TwofaManagerScreenBody({
     setToolbar,
     setFilterToolbar,
     setCenterStats,
+    setDirectoryKpis,
+    setDirectoryCharts,
+    setSectionRuleLabel,
   } = useWorkspaceSearch();
   const query = shellMode ? wsQuery : queryProp;
 
-  const [hubPrefs, setHubPrefs] = useState(readHubListPrefs);
+  const [hubPrefs, setHubPrefs] = useState(readTwofaHubPrefs);
   const [addModal, setAddModal] = useState<AddModalState>(null);
   const [pendingDelete, setPendingDelete] = useState<TwofaAccount[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -87,11 +101,7 @@ function TwofaManagerScreenBody({
     return () => window.removeEventListener("twofa-table-columns-change", sync);
   }, []);
 
-  useEffect(() => {
-    const sync = () => setHubPrefs(readHubListPrefs());
-    window.addEventListener("popstate", sync);
-    return () => window.removeEventListener("popstate", sync);
-  }, []);
+  useEffect(() => subscribeHubListPrefs(() => setHubPrefs(readTwofaHubPrefs())), []);
 
   const serviceOptions = useMemo(() => buildTwofaServiceFilterOptions(accounts), [accounts]);
 
@@ -213,6 +223,39 @@ function TwofaManagerScreenBody({
   );
 
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_TWOFA_HEADER_STAT_KEYS;
+  const visKpi = visibleSet(hubPrefs.kpi, DEFAULT_TWOFA_KPI_KEYS);
+  const visCharts = visibleSet(hubPrefs.charts, DEFAULT_TWOFA_CHART_KEYS);
+  const twofaKpis = useMemo(
+    () => (shellMode ? buildTwofaKpis(accounts, displayedAccounts, visKpi) : []),
+    [accounts, displayedAccounts, shellMode, visKpi],
+  );
+  const twofaChartData = useMemo(() => buildTwofaChartItems(accounts), [accounts]);
+  const chartsBand = useMemo(() => {
+    if (!shellMode) return undefined;
+    const hasCharts = visCharts.has("service_bar") || visCharts.has("usage_donut");
+    if (!hasCharts) return undefined;
+    return (
+      <>
+        {visCharts.has("service_bar") ? (
+          <MiniBarChart title="By Service" items={twofaChartData.serviceItems} />
+        ) : null}
+        {visCharts.has("usage_donut") ? <MiniDonut title="Usage" items={twofaChartData.usageItems} /> : null}
+      </>
+    );
+  }, [shellMode, twofaChartData, visCharts]);
+
+  useEffect(() => {
+    if (!shellMode) return;
+    setDirectoryKpis(twofaKpis.length > 0 ? twofaKpis : undefined);
+    setDirectoryCharts(chartsBand ?? null);
+    setSectionRuleLabel("Accounts");
+    return () => {
+      setDirectoryKpis(undefined);
+      setDirectoryCharts(null);
+      setSectionRuleLabel(undefined);
+    };
+  }, [chartsBand, shellMode, setDirectoryCharts, setDirectoryKpis, setSectionRuleLabel, twofaKpis]);
+
   const editingId = addModal?.mode === "edit" ? addModal.account.id : null;
 
   const modalInitialDraft =
@@ -271,26 +314,10 @@ function TwofaManagerScreenBody({
       />,
     );
     setCenterStats(
-      [
-        visHeaderStats.has("twofa-total")
-          ? {
-              key: "twofa-total",
-              icon: Shield,
-              label: "accounts",
-              value: accounts.length,
-              toneClass: "text-amber-300",
-            }
-          : null,
-        visHeaderStats.has("twofa-in-range")
-          ? {
-              key: "twofa-in-range",
-              icon: KeyRound,
-              label: "shown",
-              value: tableRows.length,
-              toneClass: "text-cyan-300",
-            }
-          : null,
-      ].filter((stat): stat is NonNullable<typeof stat> => stat !== null),
+      buildTwofaHeaderStats(visHeaderStats, {
+        total: accounts.length,
+        shown: tableRows.length,
+      }),
     );
     return () => {
       setToolbar(null);
@@ -315,42 +342,14 @@ function TwofaManagerScreenBody({
     visHeaderStats,
   ]);
 
-  return (
-    <div className="anim-fade">
-      {!shellMode ? (
-        <PageHeader
-          title="2FA Manager"
-          desc="Local TOTP — stored in this browser (localStorage). No sign-in required."
-        />
-      ) : null}
-
-      {!shellMode ? (
-        <p className="mb-3 text-[11px] text-[var(--muted)]">
-          Local-first TOTP. Sign in (Tool Hub) to sync with the dedicated 2FA vault when configured.
-        </p>
-      ) : null}
-
-      {shellMode && cloudState !== "off" ? (
-        <p className="mb-2 text-[11px] text-[var(--muted)]">
-          Cloud vault:{" "}
-          {cloudState === "syncing"
-            ? "Syncing…"
-            : cloudState === "error"
-              ? `Error — ${cloudError ?? "sync failed"}`
-              : cloudState === "ok"
-                ? "Synced (delta)"
-                : "Sign in to enable sync"}
-        </p>
-      ) : null}
-
-      {error && !addModal ? (
-        <p className="mb-3 text-[12px] text-rose-300">{error}</p>
-      ) : null}
+  const accountsBody = (
+    <>
+      {error && !addModal ? <p className="text-[12px] text-rose-300">{error}</p> : null}
 
       {!shellMode && !showInlineAdd ? (
         <button
           type="button"
-          className="btn mb-3 inline-flex gap-2 text-[12px]"
+          className="btn inline-flex gap-2 text-[12px]"
           onClick={() => openAddModal()}
         >
           <Plus size={14} />
@@ -399,6 +398,25 @@ function TwofaManagerScreenBody({
           ) : null}
         </>
       )}
+    </>
+  );
+
+  return (
+    <div className="anim-fade">
+      {!shellMode ? (
+        <PageHeader
+          title="2FA Manager"
+          desc="Local TOTP — stored in this browser (localStorage). No sign-in required."
+        />
+      ) : null}
+
+      {!shellMode ? (
+        <p className="mb-3 text-[11px] text-[var(--muted)]">
+          Local-first TOTP. Sign in (Tool Hub) to sync with the dedicated 2FA vault when configured.
+        </p>
+      ) : null}
+
+      {shellMode ? accountsBody : <div className="space-y-3">{accountsBody}</div>}
 
       <TwofaAddModal
         open={addModal !== null && !showInlineAdd}

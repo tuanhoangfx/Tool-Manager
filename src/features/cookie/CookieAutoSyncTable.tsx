@@ -37,13 +37,11 @@ import {
   Shield,
   Trash2,
   UserPlus,
-  X,
 } from "lucide-react";
 import {
   HubFilterSingleSelect,
   HubResultCount,
   HubTimeRangeSelect,
-  KpiStrip,
   MetricBadge,
   MiniBarChart,
   MiniDonut,
@@ -54,6 +52,7 @@ import {
   type KpiTileData,
   type MetricBadgeTone,
 } from "../../components/sales-shell";
+import { HubModalFrame, prepareChartItems } from "@tool-workspace/hub-ui";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import type { NoteListItem } from "../notes/types";
 import { routeMatchesTimeRange } from "./cookie-route-activity";
@@ -63,9 +62,15 @@ import { DOMAIN_PRESETS, normalizeCookieDomain, type CookieBinding } from "./coo
 import { readCookieDeepLink } from "./cookieDeepLink";
 import { resolveCookieSiteIcon } from "./cookieSiteIcon";
 import { buildAppUrl } from "../../lib/workspace-path";
-import { readHubListPrefs } from "../../lib/url-prefs";
+import { subscribeHubListPrefs } from "../../lib/url-prefs";
+import { readCookieHubPrefs } from "./cookie-tab-prefs";
 import { COOKIE_ROUTE_FILTER_DEFS } from "./cookie-route-filters";
-import { DEFAULT_COOKIE_CHART_KEYS, DEFAULT_COOKIE_KPI_KEYS } from "./cookie-display-prefs";
+import {
+  DEFAULT_COOKIE_CHART_KEYS,
+  DEFAULT_COOKIE_HEADER_STAT_KEYS,
+  DEFAULT_COOKIE_KPI_KEYS,
+} from "./cookie-display-prefs";
+import { buildCookieHeaderStats } from "./cookie-header-metrics";
 import {
   RouteLockChip,
   RouteShareChip,
@@ -230,24 +235,6 @@ function countBy<T extends string>(items: T[]): Record<T, number> {
       return acc;
     },
     {} as Record<T, number>,
-  );
-}
-
-function CookieDataSectionRule() {
-  return (
-    <div role="separator" className="relative py-5" aria-label="Cookie routes list">
-      <div
-        className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-indigo-400/45 to-transparent shadow-[0_0_10px_rgba(99,102,241,0.2)]"
-        aria-hidden
-      />
-      <div className="relative flex justify-center" aria-hidden>
-        <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/25 bg-[var(--bg)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-300/90 shadow-[0_0_16px_rgba(99,102,241,0.12)]">
-          <span className="h-1 w-1 shrink-0 rounded-full bg-indigo-400" />
-          Routes
-          <span className="h-1 w-1 shrink-0 rounded-full bg-indigo-400" />
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -604,16 +591,13 @@ export function CookieRouteDetailModal({
 
   return createPortal(
     <div className="modal-backdrop modal-backdrop--tool-detail" role="presentation" onClick={onClose}>
-      <div
-        className="modal-shell modal-shell--tool-detail"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${binding.noteTitle ?? "Cookie route"} details`}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button type="button" className="modal-close modal-close--tool-detail" onClick={onClose} aria-label="Close">
-          <X size={16} />
-        </button>
+      <HubModalFrame onClose={onClose}>
+        <div
+          className="modal-shell modal-shell--tool-detail"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${binding.noteTitle ?? "Cookie route"} details`}
+        >
         <div className="modal-shell__scroll" ref={scrollRef}>
           <div className="route-detail-preview route-detail-preview--classic">
             <header className="rdp-modal-header">
@@ -748,7 +732,8 @@ export function CookieRouteDetailModal({
             </main>
           </div>
         </div>
-      </div>
+        </div>
+      </HubModalFrame>
     </div>,
     document.body,
   );
@@ -783,10 +768,21 @@ export function CookieAutoSyncTable({
     [notes],
   );
   const rows = useMemo(() => buildRows(bindings, notesById), [bindings, notesById]);
-  const { query: routeQuery, filterValues, setFilters, setToolbar, setFilterToolbar } = useWorkspaceSearch();
-  const [prefs, setPrefs] = useState(readHubListPrefs);
+  const {
+    query: routeQuery,
+    filterValues,
+    setFilters,
+    setToolbar,
+    setFilterToolbar,
+    setDirectoryKpis,
+    setDirectoryCharts,
+    setSectionRuleLabel,
+    setCenterStats,
+  } = useWorkspaceSearch();
+  const [prefs, setPrefs] = useState(readCookieHubPrefs);
   const visKpi = visibleSet(prefs.kpi, DEFAULT_COOKIE_KPI_KEYS);
   const visCharts = visibleSet(prefs.charts, DEFAULT_COOKIE_CHART_KEYS);
+  const visHeaderStats = prefs.headerStats ?? DEFAULT_COOKIE_HEADER_STAT_KEYS;
   const [modal, setModal] = useState<RouteModalState>(null);
   const [draftNoteId, setDraftNoteId] = useState("");
   const [draftDomain, setDraftDomain] = useState(".facebook.com");
@@ -913,34 +909,80 @@ export function CookieAutoSyncTable({
     const vaultCounts = countBy(
       rows.map((row) => (lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain) ? "has vault" : "no vault")),
     );
-    const statusItems: BarItem[] = Object.entries(statusCounts).map(([label, value], index) => ({
-      label,
-      value,
-      color: ["#22c55e", "#f59e0b", "#f43f5e", "#818cf8"][index % 4],
-    }));
-    const typeItems: BarItem[] = Object.entries(typeCounts).map(([label, value], index) => ({
-      label,
-      value,
-      color: ["#818cf8", "#06b6d4"][index % 2],
-    }));
-    const sourceItems: DonutItem[] = Object.entries(sourceCounts).map(([label, value], index) => ({
-      label: label === "locked" ? "Locked browser" : "Owner route",
-      value,
-      color: ["#22c55e", "#f59e0b"][index % 2],
-    }));
-    const vaultItems: DonutItem[] = Object.entries(vaultCounts).map(([label, value], index) => ({
-      label,
-      value,
-      color: ["#818cf8", "#64748b"][index % 2],
-    }));
+    const statusItems: BarItem[] = prepareChartItems(
+      Object.entries(statusCounts).map(([label, value], index) => ({
+        label,
+        value,
+        color: ["#22c55e", "#f59e0b", "#f43f5e", "#818cf8"][index % 4],
+      })),
+    );
+    const typeItems: BarItem[] = prepareChartItems(
+      Object.entries(typeCounts).map(([label, value], index) => ({
+        label,
+        value,
+        color: ["#818cf8", "#06b6d4"][index % 2],
+      })),
+    );
+    const sourceItems: DonutItem[] = prepareChartItems(
+      Object.entries(sourceCounts).map(([label, value], index) => ({
+        label: label === "locked" ? "Locked browser" : "Owner route",
+        value,
+        color: ["#22c55e", "#f59e0b"][index % 2],
+      })),
+    );
+    const vaultItems: DonutItem[] = prepareChartItems(
+      Object.entries(vaultCounts).map(([label, value], index) => ({
+        label,
+        value,
+        color: ["#818cf8", "#64748b"][index % 2],
+      })),
+    );
     return { statusItems, typeItems, sourceItems, vaultItems };
   }, [rows, vaultByKey]);
 
+  const hasCharts =
+    visCharts.has("status_bar") ||
+    visCharts.has("type_bar") ||
+    visCharts.has("source_donut") ||
+    visCharts.has("vault_donut");
+  const chartsBand = hasCharts ? (
+    <>
+      {visCharts.has("status_bar") ? <MiniBarChart title="By Status" items={charts.statusItems} /> : null}
+      {visCharts.has("type_bar") ? <MiniBarChart title="By Type" items={charts.typeItems} /> : null}
+      {visCharts.has("source_donut") ? <MiniDonut title="Publish Mode" items={charts.sourceItems} /> : null}
+      {visCharts.has("vault_donut") ? <MiniDonut title="Vault Distribution" items={charts.vaultItems} /> : null}
+    </>
+  ) : undefined;
+
+  const cookieHeaderKpi = useMemo(() => {
+    const vaultRows = rows
+      .map((row) => lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain))
+      .filter((vault): vault is CookieVaultRow => Boolean(vault));
+    const vaultCookies = vaultRows.reduce((sum, vault) => sum + (vault.cookie_count ?? 0), 0);
+    return {
+      routesShown: filteredRows.length,
+      routesTotal: rows.length,
+      vaultCookies,
+    };
+  }, [filteredRows.length, rows, vaultByKey]);
+
+  useEffect(() => subscribeHubListPrefs(() => setPrefs(readCookieHubPrefs())), []);
+
   useEffect(() => {
-    const sync = () => setPrefs(readHubListPrefs());
-    window.addEventListener("popstate", sync);
-    return () => window.removeEventListener("popstate", sync);
-  }, []);
+    setDirectoryKpis(routeKpis.length > 0 ? routeKpis : undefined);
+    setDirectoryCharts(chartsBand);
+    setSectionRuleLabel("Routes");
+    setCenterStats(buildCookieHeaderStats(visHeaderStats, cookieHeaderKpi));
+  }, [
+    chartsBand,
+    cookieHeaderKpi,
+    routeKpis,
+    setCenterStats,
+    setDirectoryCharts,
+    setDirectoryKpis,
+    setSectionRuleLabel,
+    visHeaderStats,
+  ]);
 
   useEffect(() => {
     setFilters(COOKIE_ROUTE_FILTER_DEFS);
@@ -950,8 +992,12 @@ export function CookieAutoSyncTable({
       setFilters([]);
       setToolbar(null);
       setFilterToolbar(null);
+      setDirectoryKpis(undefined);
+      setDirectoryCharts(null);
+      setSectionRuleLabel(undefined);
+      setCenterStats([]);
     };
-  }, [setFilterToolbar, setFilters, setToolbar]);
+  }, [setCenterStats, setFilterToolbar, setFilters, setToolbar]);
 
   useEffect(() => {
     setSelectedIds((prev) => prev.filter((id) => bindings.some((binding) => binding.id === id)));
@@ -1143,7 +1189,7 @@ export function CookieAutoSyncTable({
           {onAdd || onJoinByNoteId ? (
             <button
               type="button"
-            className="inline-flex h-[34px] items-center gap-1.5 rounded-lg border border-indigo-400/30 bg-indigo-500/20 px-3 text-xs font-medium text-indigo-100 hover:bg-indigo-500/30"
+            className="inline-flex h-[var(--hub-control-h)] items-center gap-1.5 rounded-lg border border-indigo-400/30 bg-indigo-500/20 px-3 text-xs font-medium text-indigo-100 hover:bg-indigo-500/30"
             onClick={openAdd}
             >
               <Plus size={12} />
@@ -1153,19 +1199,19 @@ export function CookieAutoSyncTable({
         {shareTarget ? (
           <button
             type="button"
-            className="inline-flex h-[34px] items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-3 text-xs font-medium text-emerald-100 hover:bg-emerald-500/25 disabled:opacity-50"
+            className="inline-flex h-[var(--hub-control-h)] items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-3 text-xs font-medium text-emerald-100 hover:bg-emerald-500/25 disabled:opacity-50"
             disabled={!canShareTarget}
             title={canShareTarget ? "Share selected route" : "Only route owner/manager can share"}
             onClick={() => canShareTarget && shareTarget && openShare(shareTarget)}
           >
             <UserPlus size={12} />
-            Share user
+            Share
           </button>
         ) : null}
         {onUpdate ? (
           <button
             type="button"
-            className="inline-flex h-[34px] items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--panel-2)] px-3 text-xs text-[var(--text)] hover:bg-white/5 disabled:opacity-50"
+            className="inline-flex h-[var(--hub-control-h)] items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--panel-2)] px-3 text-xs text-[var(--text)] hover:bg-white/5 disabled:opacity-50"
             disabled={!editTarget || selectedBindings.length > 1}
             title={selectedBindings.length > 1 ? "Edit supports one selected route" : "Edit selected route"}
             onClick={() => editTarget && openEdit(editTarget)}
@@ -1177,7 +1223,7 @@ export function CookieAutoSyncTable({
         {onRemove ? (
           <button
             type="button"
-            className="inline-flex h-[34px] items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--panel-2)] px-3 text-xs text-rose-300 hover:bg-white/5 disabled:opacity-50"
+            className="inline-flex h-[var(--hub-control-h)] items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--panel-2)] px-3 text-xs text-rose-300 hover:bg-white/5 disabled:opacity-50"
             disabled={deleteTargetIds.length === 0}
             onClick={() => setModal({ type: "delete", ids: deleteTargetIds })}
           >
@@ -1188,7 +1234,7 @@ export function CookieAutoSyncTable({
           {onRefresh ? (
           <button
             type="button"
-            className="inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--panel-2)] px-3 text-xs text-[var(--text)] hover:bg-white/5"
+            className="inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--panel-2)] px-3 text-xs text-[var(--text)] hover:bg-white/5"
             onClick={onRefresh}
           >
               <RefreshCw size={12} />
@@ -1218,9 +1264,7 @@ export function CookieAutoSyncTable({
   ]);
 
   return (
-    <div className="relative z-0">
-      {vaultError ? <p className="mb-2 text-[10px] text-amber-300/90">{vaultError}</p> : null}
-
+    <>
       {modal?.type === "add" && (onAdd || onJoinByNoteId) ? (
         <CookieRouteFormModal
           wide
@@ -1335,12 +1379,12 @@ export function CookieAutoSyncTable({
 
       {modal?.type === "share" && shareBinding ? (
         <CookieRouteFormModal
-          title="Share user"
+          title="Share"
           subtitle="Grant Load or Sync access by email. Manage stays with route owner only."
           onClose={() => setModal(null)}
           footer={
             <CookieRouteModalActions
-              primaryLabel="Share route"
+              primaryLabel="Share"
               primaryIcon={UserPlus}
               primaryBusy={shareBusy}
               primaryDisabled={!shareEmail.trim()}
@@ -1386,37 +1430,13 @@ export function CookieAutoSyncTable({
         </CookieRouteFormModal>
       ) : null}
 
-      {routeKpis.length > 0 ||
-      visCharts.has("status_bar") ||
-      visCharts.has("type_bar") ||
-      visCharts.has("source_donut") ||
-      visCharts.has("vault_donut") ? (
-        <div className="mt-5 space-y-5">
-          {routeKpis.length > 0 ? <KpiStrip items={routeKpis} /> : null}
-          {visCharts.has("status_bar") ||
-          visCharts.has("type_bar") ||
-          visCharts.has("source_donut") ||
-          visCharts.has("vault_donut") ? (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {visCharts.has("status_bar") ? (
-                <MiniBarChart title="By Status" items={charts.statusItems} />
-              ) : null}
-              {visCharts.has("type_bar") ? <MiniBarChart title="By Type" items={charts.typeItems} /> : null}
-              {visCharts.has("source_donut") ? (
-                <MiniDonut title="Publish Mode" items={charts.sourceItems} />
-              ) : null}
-              {visCharts.has("vault_donut") ? (
-                <MiniDonut title="Vault Distribution" items={charts.vaultItems} />
-              ) : null}
-            </div>
-          ) : null}
-        </div>
+      {vaultError ? (
+        <p className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+          {vaultError}
+        </p>
       ) : null}
 
-      <CookieDataSectionRule />
-
-      <div className="space-y-3">
-        {viewMode === "card" ? (
+      {viewMode === "card" ? (
           filteredRows.length === 0 ? (
             <p className="rounded-lg border border-white/5 bg-white/[.02] px-3 py-6 text-center text-[12px] text-[var(--muted)]">
               {rows.length === 0 ? "No active routes — click Add route." : "No routes match search or filters."}
@@ -1704,7 +1724,6 @@ export function CookieAutoSyncTable({
           </p>
         </CookieRouteFormModal>
       ) : null}
-      </div>
-    </div>
+    </>
   );
 }

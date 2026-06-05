@@ -18,10 +18,7 @@ import { relayActiveSessionsToExtension } from "../../../lib/relay-extension-ses
 import { useCookieRouteDetailRenderers } from "../../cookie/useCookieRouteDetailRenderers";
 import { shouldShowExtensionLinkToast } from "../../../lib/extension-link-toast";
 import { supabase } from "../../../lib/supabase";
-import { Boxes, Shield } from "lucide-react";
 import { CookieExtensionFab } from "../../cookie/CookieExtensionFab";
-import { DEFAULT_COOKIE_HEADER_STAT_KEYS } from "../../cookie/cookie-display-prefs";
-import { readHubListPrefs } from "../../../lib/url-prefs";
 import { CookieAutoSyncTable } from "../../cookie/CookieAutoSyncTable";
 import { hasCookieDeepLink, readCookieDeepLink } from "../../cookie/cookieDeepLink";
 import { useCookieBindings } from "../../cookie/useCookieBindings";
@@ -39,7 +36,6 @@ import { SupabaseMigrateBanner } from "../../cookie/SupabaseMigrateBanner";
 import { useCookieSchemaHealth } from "../../cookie/useCookieSchemaHealth";
 import { EXTENSION_BUILD } from "../../cookie/extensionBuildInfo";
 import { PageHeader } from "./PageHeader";
-import { useWorkspaceSearch } from "../../workspace/WorkspaceSearchContext";
 import { getOfflineMode } from "../../../lib/offlineMode";
 import { WorkspaceLoadingView } from "../../../components/sales-shell/HubLoadingView";
 
@@ -69,7 +65,7 @@ function BridgeStatusIndicator({ status }: { status: BridgeStatusBadge }) {
 
   return (
     <span
-      className={`inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-lg border bg-[var(--panel-2)] px-2.5 text-[11px] font-medium ${ringClass}`}
+      className={`inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 rounded-lg border bg-[var(--panel-2)] px-2.5 text-[11px] font-medium ${ringClass}`}
       title={`Extension bridge · ${status.title}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} aria-hidden />
@@ -122,14 +118,6 @@ function CookieSyncMain({
 }) {
   const offline = getOfflineMode();
   const cloudSession: Session | null = offline ? null : session;
-  const { setCenterStats } = useWorkspaceSearch();
-  const [hubPrefs, setHubPrefs] = useState(readHubListPrefs);
-
-  useEffect(() => {
-    const sync = () => setHubPrefs(readHubListPrefs());
-    window.addEventListener("popstate", sync);
-    return () => window.removeEventListener("popstate", sync);
-  }, []);
   const { notes, loading, refresh } = useNotes(session);
   const { bindings, setBindings, addBinding, connectAndCache, updateBinding, removeBinding, pushToExtension } =
     useCookieBindings(notes);
@@ -351,9 +339,6 @@ function CookieSyncMain({
     onShared: () => void refreshCloudRoutes({ silent: true }),
   });
 
-  const enabledRoutes = useMemo(() => bindings.filter((b) => b.enabled).length, [bindings]);
-  const vaultCookieCount = useMemo(() => Object.keys(vaultByKey).length, [vaultByKey]);
-
   const bridgeStatus = useMemo(
     () => bridgeStatusFromState({ schemaHealth, schemaLoading }),
     [schemaHealth, schemaLoading],
@@ -361,43 +346,6 @@ function CookieSyncMain({
   const toolbarBridgeKey = `${bridgeStatus.tone}:${bridgeStatus.label}:${schemaHealth?.ok ?? "unknown"}`;
 
   const cookieBootLoading = tabActive && schemaLoading && !schemaHealth;
-
-  useEffect(() => {
-    if (!shellMode) {
-      setCenterStats([]);
-      return;
-    }
-    const vis = hubPrefs.headerStats ?? DEFAULT_COOKIE_HEADER_STAT_KEYS;
-    setCenterStats(
-      [
-        vis.has("cookie-routes")
-          ? {
-              key: "cookie-routes",
-              icon: Boxes,
-              label: "routes",
-              value: enabledRoutes,
-              toneClass: "text-violet-300",
-            }
-          : null,
-        vis.has("cookie-vault")
-          ? {
-              key: "cookie-vault",
-              icon: Shield,
-              label: "vault keys",
-              value: vaultCookieCount,
-              toneClass: "text-indigo-300",
-            }
-          : null,
-      ].filter((s): s is NonNullable<typeof s> => s !== null),
-    );
-    return () => setCenterStats([]);
-  }, [
-    enabledRoutes,
-    hubPrefs.headerStats,
-    setCenterStats,
-    shellMode,
-    vaultCookieCount,
-  ]);
 
   const bridgeStatusChip = useMemo(() => <BridgeStatusIndicator status={bridgeStatus} />, [bridgeStatus]);
 
@@ -415,20 +363,21 @@ function CookieSyncMain({
       {shellMode ? <CookieExtensionFab active={tabActive} /> : null}
       {tabActive && cookieBootLoading ? <WorkspaceLoadingView screen="cookie" variant="overlay" /> : null}
       <div className={shellMode ? "" : "p-6"}>
-      {offline ? (
-        <p className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
-          Offline mode is enabled. Cloud routes, sharing, and vault status are disabled.
-        </p>
-      ) : null}
       {!shellMode ? (
-        <PageHeader
-          title="Cookie sync"
-          desc={`Domain → note binding · vault · extension v${EXTENSION_BUILD.version} (${EXTENSION_BUILD.updated})`}
-          actions={pageHeaderActions}
-        />
+        <>
+          {offline ? (
+            <p className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
+              Offline mode is enabled. Cloud routes, sharing, and vault status are disabled.
+            </p>
+          ) : null}
+          <PageHeader
+            title="Cookie sync"
+            desc={`Domain → note binding · vault · extension v${EXTENSION_BUILD.version} (${EXTENSION_BUILD.updated})`}
+            actions={pageHeaderActions}
+          />
+        </>
       ) : null}
 
-      <div className="mb-4">
         <CookieAutoSyncTable
           bindings={bindings}
           notes={notes}
@@ -514,7 +463,12 @@ function CookieSyncMain({
           renderAccessDetail={renderAccessDetail}
           onRefresh={onRefreshAll}
         />
-      </div>
+
+      {shellMode && offline ? (
+        <p className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
+          Offline mode is enabled. Cloud routes, sharing, and vault status are disabled.
+        </p>
+      ) : null}
 
       <SupabaseMigrateBanner
         health={schemaHealth}

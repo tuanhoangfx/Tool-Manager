@@ -1,6 +1,6 @@
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { FilterDef } from "../../components/sales-shell/FilterBar";
+import type { FilterDef } from "../../components/sales-shell";
 import {
   FILTER_DROPDOWN_PANEL_CLASS,
   FILTER_DROPDOWN_ROW_CLASS,

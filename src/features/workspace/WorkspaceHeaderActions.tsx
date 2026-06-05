@@ -3,7 +3,7 @@ import { AppLogButton } from "../../components/sales-shell/AppLogButton";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import { WorkspaceTabDisplayPrefs } from "./WorkspaceTabDisplayPrefs";
 import { useWorkspaceLogs } from "./WorkspaceLogProvider";
-import type { FilterDef } from "../../components/sales-shell/FilterBar";
+import type { FilterDef } from "../../components/sales-shell";
 import type { NotesListDensity, NotesListSort } from "../notes/notes-list-prefs";
 
 type Props = {

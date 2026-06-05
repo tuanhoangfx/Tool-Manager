@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
 import { compactIconSize } from "../../lib/ui-scale";
-import { ensureHubTabLoaderRoot, HUB_TAB_LOADER_ROOT_ID } from "./HubLoaderRoot";
+import { ensureHubTabLoaderRoot, HUB_TAB_LOADER_ROOT_ID } from "@tool-workspace/hub-ui";
 
 export type HubLoadingViewProps = {
   icon: LucideIcon;

@@ -1,0 +1,38 @@
+/* Shared modal chrome — edge close button (P0004 golden). */
+
+.hub-modal-frame {
+  position: relative;
+  margin: 0 auto;
+}
+
+.hub-modal-close {
+  position: absolute;
+  z-index: 20;
+  top: -0.55rem;
+  right: -0.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(180deg, #f87171, #dc2626);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.45);
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.hub-modal-close:hover {
+  transform: rotate(90deg) scale(1.06);
+  filter: brightness(1.08);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.55);
+}
+
+.hub-modal-close:active {
+  transform: rotate(90deg) scale(0.96);
+}

@@ -7,8 +7,8 @@ import {
   FolderOpen,
   Package,
   Tag,
-  X,
 } from "lucide-react";
+import { HubModalFrame } from "@tool-workspace/hub-ui";
 import { compactIconSize } from "../../lib/ui-scale";
 import { TocSectionNav } from "../overview/TocSectionNav";
 import { TocHighlightContent, TocSectionHighlightProvider } from "../overview/toc-section-highlight-context";
@@ -127,13 +127,13 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
 
   return createPortal(
     <div className="modal-backdrop modal-backdrop--tool-detail" role="presentation" onClick={onClose}>
-      <div
-        className="modal-shell modal-shell--tool-detail"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cookie-extension-download-title"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <HubModalFrame onClose={onClose}>
+        <div
+          className="modal-shell modal-shell--tool-detail"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cookie-extension-download-title"
+        >
         <header className="user-access-modal__header">
           <div className="user-access-modal__header-main min-w-0 flex-1">
             <img
@@ -149,28 +149,6 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
             >
               {EXTENSION_HEADER_LABEL}
             </h2>
-            <span className="shrink-0 rounded-md border border-slate-400/25 bg-slate-500/10 px-2 py-0.5 font-mono text-[11px] text-slate-200">
-              E0001
-            </span>
-          </div>
-          <div className="user-access-modal__header-actions">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onConfirm}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-400 disabled:opacity-60"
-            >
-              <Download size={12} aria-hidden />
-              {busy ? "Downloading…" : "Confirm download"}
-            </button>
-            <button
-              type="button"
-              className="modal-close modal-close--tool-detail-inline"
-              onClick={onClose}
-              aria-label="Close"
-            >
-              <X size={compactIconSize(16)} />
-            </button>
           </div>
         </header>
 
@@ -190,7 +168,18 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
                   <table className="w-full text-left text-xs">
                     <tbody>
                       <FieldRow icon={Tag} iconClass="text-indigo-300" label="Latest">
-                        <span className="font-semibold tabular-nums text-indigo-200">v{preview.version}</span>
+                        <span className="cookie-dl-modal__latest-row">
+                          <span className="font-semibold tabular-nums text-indigo-200">v{preview.version}</span>
+                          <a
+                            href={preview.releasePage}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="cookie-dl-modal__latest-link"
+                          >
+                            <ExternalLink size={13} aria-hidden />
+                            <span>Open GitHub release</span>
+                          </a>
+                        </span>
                       </FieldRow>
                       <FieldRow icon={Archive} iconClass="text-slate-400" label="Bundled">
                         <span className="tabular-nums">
@@ -205,15 +194,6 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
                       </FieldRow>
                     </tbody>
                   </table>
-                  <a
-                    href={preview.releasePage}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="release-asset-row"
-                  >
-                    <ExternalLink size={14} className="shrink-0 text-[var(--muted)]" aria-hidden />
-                    <span className="release-asset-name">GitHub releases</span>
-                  </a>
                 </DetailSection>
 
                 <DetailSection id={`${ID_PREFIX}install`} title={extensionDownloadSectionTitle("install")}>
@@ -229,7 +209,27 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
             </div>
           </TocSectionHighlightProvider>
         </div>
-      </div>
+
+        <footer className="cookie-dl-modal__footer">
+          <div className="cookie-dl-modal__footer-inner">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onConfirm}
+              className="cookie-dl-modal__confirm"
+              aria-label={busy ? "Downloading" : "Confirm download"}
+            >
+              <Download
+                size={16}
+                aria-hidden
+                className={`cookie-dl-modal__confirm-icon${busy ? " cookie-dl-modal__confirm-icon--busy" : ""}`}
+              />
+              <span>{busy ? "Downloading…" : "Confirm download"}</span>
+            </button>
+          </div>
+        </footer>
+        </div>
+      </HubModalFrame>
     </div>,
     document.body,
   );

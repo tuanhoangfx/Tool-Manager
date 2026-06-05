@@ -31,7 +31,7 @@ export function HubTimeRangeSelect({ value }: { value: TimeRange }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex h-[34px] items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors ${
+        className={`inline-flex h-[var(--hub-control-h)] items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors ${
           value !== DEFAULT_HUB_TIME_RANGE
             ? "border-amber-500/35 bg-amber-500/10 text-amber-200"
             : "border-white/10 bg-[var(--panel-2)] text-[var(--text)] hover:bg-white/5"

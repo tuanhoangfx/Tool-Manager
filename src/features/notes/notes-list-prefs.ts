@@ -1,4 +1,4 @@
-import { readHubListPrefs, patchHubListPrefs, type TimeRange } from "../../lib/url-prefs";
+import { parseHubPrefSet, readHubListPrefs, patchHubListPrefs, type TimeRange } from "../../lib/url-prefs";
 import { NOTES_FILTER_DEFS } from "./notes-filters";
 
 export type NotesListDensity = "comfort" | "compact";
@@ -47,11 +47,6 @@ export type NotesListPrefs = {
   noteFilters: Set<string> | null;
 };
 
-function parseSet(raw: string | null): Set<string> | null {
-  if (raw === null) return null;
-  return new Set(raw.split(",").filter(Boolean));
-}
-
 export function readNotesListPrefs(): NotesListPrefs {
   const hub = readHubListPrefs();
   if (typeof window === "undefined") {
@@ -63,7 +58,7 @@ export function readNotesListPrefs(): NotesListPrefs {
     range: hub.range,
     density,
     sort: parseNotesListSort(sp.get("nsort")),
-    noteFilters: parseSet(sp.get("nfilt")),
+    noteFilters: parseHubPrefSet(sp.get("nfilt")),
   };
 }
 

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 /** Shared Hub filter dropdown trigger — FilterBar + note folder picker. */
 export function filterDropdownTriggerClass(active: boolean, extra = "") {
-  return `inline-flex h-[34px] max-w-full items-center gap-1.5 rounded-lg border px-3 text-xs font-normal transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+  return `inline-flex h-[var(--hub-control-h)] max-w-full items-center gap-1.5 rounded-lg border px-3 text-xs font-normal transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
     active
       ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-200"
       : "border-white/10 bg-[var(--panel-2)] text-[var(--text)] hover:bg-white/5"

@@ -38,7 +38,7 @@ export function NotesListRail({
   const compact = density === "compact";
 
   return (
-    <aside className="notes-rail flex h-full min-h-0 w-[15.5rem] shrink-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[var(--panel)]/40">
+    <aside className="notes-rail flex h-full min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[var(--panel)]/40">
       <div
         className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-1.5"
       >

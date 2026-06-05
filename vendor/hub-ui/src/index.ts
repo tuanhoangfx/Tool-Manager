@@ -10,6 +10,18 @@ export type {
 } from "./display-prefs/types";
 export { compactIconSize, HUB_COMPACT_SCALE } from "./ui-scale";
 export {
+  applyHubUserZoomPct,
+  HUB_USER_ZOOM_DEFAULT,
+  HUB_USER_ZOOM_MAX,
+  HUB_USER_ZOOM_MIN,
+  HUB_USER_ZOOM_STEPS,
+  hubUserZoomStepIndex,
+  initHubUserZoom,
+  readHubUserZoomPct,
+  type HubUserZoomPct,
+} from "./hub-user-zoom";
+export { HubUiZoomControl } from "./shell/HubUiZoomControl";
+export {
   hideBootLoader,
   ensureHubTabLoaderRoot,
   HUB_BOOT_LOADER_ID,
@@ -32,8 +44,6 @@ export {
   type TabHeaderStatItem,
   type TabTitleMenuItem,
 } from "./shell/AppTabHeader";
-export { WorkspaceTabHeader, type WorkspaceTabHeaderProps } from "./shell/WorkspaceTabHeader";
-export { buildVersionMetaItems } from "./shell/workspace-tab-header-meta";
 export { KpiStrip, type KpiTileData } from "./shell/KpiStrip";
 export { MiniBarChart, type BarItem } from "./shell/MiniBarChart";
 export { MiniDonut, type DonutItem } from "./shell/MiniDonut";
@@ -68,16 +78,35 @@ export {
   type FilterIconMeta,
   type FilterIconResolver,
 } from "./shell/filter-icons";
+export {
+  CHART_OTHERS_LABEL,
+  configureChartLegend,
+  prepareChartItems,
+  topChartItems,
+  type ChartRow,
+} from "./chart-items";
 export { usePageSessionSeconds } from "./hooks/usePageSessionSeconds";
 export {
   HUB_SHORTCUT_LEGEND,
   configureHubPageShortcuts,
   getHubActiveScreen,
   registerHubPageShortcuts,
+  registerHubSearchClear,
   registerHubSearchFocus,
+  registerHubSettingsOpen,
   setHubActiveScreen,
   type HubPageShortcutHandlers,
   type HubShortcutId,
 } from "./keyboard/hub-keyboard-shortcuts";
 export { useHubPageShortcuts } from "./keyboard/useHubPageShortcuts";
+export {
+  hubSystemShortcutScope,
+  resolveHubActiveScreenId,
+  useHubActiveScreenSync,
+} from "./keyboard/useHubActiveScreenSync";
 export { HubKeyboardHints } from "./keyboard/HubKeyboardHints";
+export { HubKeyboardQuickHints } from "./keyboard/HubKeyboardQuickHints";
+export { WorkspaceTabHeader, type WorkspaceTabHeaderProps } from "./shell/WorkspaceTabHeader";
+export { buildVersionMetaItems } from "./shell/workspace-tab-header-meta";
+export { HubModalCloseButton, type HubModalCloseButtonProps } from "./shell/HubModalCloseButton";
+export { HubModalFrame, type HubModalFrameProps } from "./shell/HubModalFrame";

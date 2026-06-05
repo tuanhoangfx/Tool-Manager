@@ -16,11 +16,14 @@ import { LIMIT_OPTIONS, TIME_RANGES } from "./constants";
 import { Section, SectionIcon, TabButton, ToggleRow } from "./primitives";
 import type { HubDisplayPrefsProps, PrefItem } from "./types";
 import { compactIconSize } from "../ui-scale";
+import { HubKeyboardQuickHints } from "../keyboard/HubKeyboardQuickHints";
+import { registerHubSettingsOpen } from "../keyboard/hub-keyboard-shortcuts";
 
 type BuiltinTab = "general" | "display" | "table";
 
 function parseSet(raw: string | null): Set<string> | null {
   if (raw === null) return null;
+  if (raw === "") return new Set();
   return new Set(raw.split(",").filter(Boolean));
 }
 
@@ -88,6 +91,11 @@ export function HubDisplayPrefs({
       window.removeEventListener("system-display-change", sync);
     };
   }, [getScreen, getSystemTab]);
+
+  useEffect(() => {
+    if (scope === "global") return;
+    return registerHubSettingsOpen(() => setOpen(true));
+  }, [scope]);
 
   useLayoutEffect(() => {
     if (!open || !ref.current) return;
@@ -545,6 +553,10 @@ export function HubDisplayPrefs({
       >
         Reset to defaults
       </button>
+
+      <div className="mt-2">
+        <HubKeyboardQuickHints />
+      </div>
     </div>
   ) : null;
 

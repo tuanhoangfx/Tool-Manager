@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Pin, StickyNote } from "lucide-react";
-import { FilterBar, type FilterDef, type FilterValues } from "../../components/sales-shell";
-import { WorkspaceTabHeader } from "@tool-workspace/hub-ui";
-import { readHubListPrefs } from "../../lib/url-prefs";
+import { HubDirectoryScreen, useHubChromePrefs, WorkspaceTabHeader } from "@tool-workspace/hub-ui";
+import type { FilterDef, FilterValues } from "../../components/sales-shell";
+import { readHubListPrefs, subscribeHubListPrefs } from "../../lib/url-prefs";
 import { DEFAULT_NOTES_HEADER_STAT_KEYS } from "./notes-display-prefs";
 import { NotesFilterToolbar } from "./NotesFilterToolbar";
 import {
@@ -30,10 +30,12 @@ type Props = {
   onDensityChange: (d: NotesListDensity) => void;
   sort: NotesListSort;
   onSortChange: (sort: NotesListSort) => void;
-  filterToolbar?: React.ReactNode;
-  folderSettingsPanel?: React.ReactNode;
+  filterToolbar?: ReactNode;
+  folderSettingsPanel?: ReactNode;
+  children: ReactNode;
 };
 
+/** P0004 HubDirectoryScreen — Notes tab (split body via bodyFlex). */
 export function NotesHubChrome({
   query,
   onQueryChange,
@@ -48,25 +50,23 @@ export function NotesHubChrome({
   onSortChange,
   filterToolbar,
   folderSettingsPanel,
+  children,
 }: Props) {
   const [prefs, setPrefs] = useState(readNotesListPrefs);
   const [hubPrefs, setHubPrefs] = useState(readHubListPrefs);
+  const { searchPin, headerPin, stackChrome } = useHubChromePrefs();
+  const version = useMemo(() => workspaceVersionLine(), []);
 
-  useEffect(() => {
-    const sync = () => {
-      setPrefs(readNotesListPrefs());
-      setHubPrefs(readHubListPrefs());
-    };
-    window.addEventListener("popstate", sync);
-    return () => window.removeEventListener("popstate", sync);
-  }, []);
+  useEffect(() => subscribeHubListPrefs(() => {
+    setPrefs(readNotesListPrefs());
+    setHubPrefs(readHubListPrefs());
+  }), []);
 
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_NOTES_HEADER_STAT_KEYS;
   const visFilterKeys = prefs.noteFilters ?? DEFAULT_NOTES_FILTER_KEYS;
   const opts = useMemo(() => notesFilterOptions(notes, mergeDisplayFolders(noteFolders)), [noteFolders, notes]);
   const pinnedCount = useMemo(() => notes.filter((n) => n.pinned).length, [notes]);
   const syncedCount = useMemo(() => notes.filter((n) => n.sync_status === "synced").length, [notes]);
-  const version = useMemo(() => workspaceVersionLine(), []);
 
   const hubFilters: FilterDef[] = useMemo(
     () =>
@@ -79,35 +79,9 @@ export function NotesHubChrome({
     [opts, visFilterKeys],
   );
 
-  const filterBar = (
-    <FilterBar
-      layout="hub"
-      pinSticky
-      headerPinned
-      embedded
-      placeholder="Search notes, domain, slug, sync ID…"
-      filters={hubFilters}
-      query={query}
-      onQueryChange={onQueryChange}
-      values={filterValues}
-      onValuesChange={onFilterValuesChange}
-      toolbar={
-        <NotesFilterToolbar
-          range={hubPrefs.range}
-          shown={shown}
-          total={notes.length}
-          density={density}
-          onDensityChange={onDensityChange}
-          sort={sort}
-        />
-      }
-      filterToolbar={filterToolbar}
-    />
-  );
-
   return (
-    <div data-search-pin data-header-pin>
-      <div className="hub-chrome-sticky sticky top-0 z-40 -mx-6 border-b border-white/5 bg-[var(--bg)]">
+    <HubDirectoryScreen
+      header={
         <WorkspaceTabHeader
           ariaLabel="Notes header"
           titleIcon={StickyNote}
@@ -154,12 +128,25 @@ export function NotesHubChrome({
               notesFolderSettings={folderSettingsPanel}
             />
           }
-          pinSticky={false}
-          dividerBelow={false}
-          embedded
+          pinSticky={stackChrome ? false : headerPin}
+          dividerBelow={stackChrome ? false : !searchPin}
+          embedded={stackChrome}
         />
-        {filterBar}
-      </div>
-    </div>
+      }
+      filters={hubFilters}
+      query={query}
+      onQueryChange={onQueryChange}
+      filterValues={filterValues}
+      onFilterValuesChange={onFilterValuesChange}
+      filterPlaceholder="Search notes, domain, slug, sync ID…"
+      filterShortcutScope="notes"
+      directoryToolbar={
+        <NotesFilterToolbar range={hubPrefs.range} shown={shown} total={notes.length} />
+      }
+      filterRowActions={filterToolbar}
+      bodyFlex
+    >
+      <div className="notes-workspace__body flex min-h-0 flex-1 overflow-hidden">{children}</div>
+    </HubDirectoryScreen>
   );
 }

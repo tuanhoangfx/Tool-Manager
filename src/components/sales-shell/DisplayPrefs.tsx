@@ -10,14 +10,17 @@ import {
 } from "@tool-workspace/hub-ui";
 import { readAppScreen } from "../../lib/app-screen";
 import { useOfflineMode } from "../../lib/offlineMode";
-import { patchHubListPrefs, readHubListPrefs } from "../../lib/url-prefs";
+import { patchHubListPrefs, readHubListPrefs, subscribeHubListPrefs } from "../../lib/url-prefs";
 
 export type { PrefItem };
 
 type DisplayPrefsProps = Omit<
   HubDisplayPrefsProps,
-  "readPrefs" | "patchPrefs" | "getScreen" | "showNavToggle" | "hideSearchPinOnSystem"
->;
+  "getScreen" | "showNavToggle" | "hideSearchPinOnSystem" | "readPrefs" | "patchPrefs"
+> & {
+  readPrefs?: HubDisplayPrefsProps["readPrefs"];
+  patchPrefs?: HubDisplayPrefsProps["patchPrefs"];
+};
 
 function OfflineModeSection() {
   const { offline, toggle: toggleOffline } = useOfflineMode();
@@ -33,16 +36,14 @@ const HEADER_SETTINGS_MAX_PANEL_HEIGHT = "min(80vh, 42rem)";
 
 export function DisplayPrefs({
   generalExtras,
+  readPrefs = readHubListPrefs,
+  patchPrefs = patchHubListPrefs,
   panelWidth = HEADER_SETTINGS_PANEL_WIDTH,
   maxPanelHeight = HEADER_SETTINGS_MAX_PANEL_HEIGHT,
   ...props
 }: DisplayPrefsProps) {
   const [, setTick] = useState(0);
-  useEffect(() => {
-    const bump = () => setTick((n) => n + 1);
-    window.addEventListener("popstate", bump);
-    return () => window.removeEventListener("popstate", bump);
-  }, []);
+  useEffect(() => subscribeHubListPrefs(() => setTick((n) => n + 1)), []);
 
   return (
     <HubDisplayPrefs
@@ -52,8 +53,9 @@ export function DisplayPrefs({
       showNavToggle={false}
       hideSearchPinOnSystem
       filtersFromUrl={props.filtersFromUrl ?? true}
-      readPrefs={readHubListPrefs}
-      patchPrefs={(patch) => patchHubListPrefs(patch)}
+      readPrefs={readPrefs}
+      patchPrefs={patchPrefs}
+      prefsChangeEvent="hub-list-prefs-change"
       getScreen={() => readAppScreen()}
       generalExtras={
         <>

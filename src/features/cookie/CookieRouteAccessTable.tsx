@@ -61,6 +61,8 @@ type Props = {
   rows: RouteAccessRow[];
   routePublished: boolean;
   publishedLabel: string;
+  /** When false, Route column shows neutral placeholder until publish status loads. */
+  routeStatusReady?: boolean;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: () => void;
@@ -73,6 +75,7 @@ export function CookieRouteAccessTable({
   rows,
   routePublished,
   publishedLabel,
+  routeStatusReady = true,
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
@@ -216,7 +219,11 @@ export function CookieRouteAccessTable({
                   <PermIcon allowed={row.canPublish} label="Sync" />
                 </td>
                 <td className="hub-route-access-col--route">
-                  <Pill tone={routePublished ? "indigo" : "amber"}>{publishedLabel}</Pill>
+                  <Pill
+                    tone={!routeStatusReady ? "slate" : routePublished ? "indigo" : "amber"}
+                  >
+                    {publishedLabel}
+                  </Pill>
                 </td>
                 <td className="hub-route-access-col--expires hub-users-cell-muted">
                   {formatExpires(row.expiresAt)}

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { FolderOpen } from "lucide-react";
 import { DisplayPrefs } from "../../components/sales-shell";
-import type { FilterDef } from "../../components/sales-shell/FilterBar";
+import type { FilterDef } from "../../components/sales-shell";
 import { compactIconSize } from "../../lib/ui-scale";
 import {
   COOKIE_CHART_DEFS,
@@ -12,6 +12,7 @@ import {
   DEFAULT_COOKIE_HEADER_STAT_KEYS,
   DEFAULT_COOKIE_KPI_KEYS,
 } from "../cookie/cookie-display-prefs";
+import { patchCookieHubPrefs, readCookieHubPrefs } from "../cookie/cookie-tab-prefs";
 import { DEFAULT_COOKIE_ROUTE_FILTER_KEYS } from "../cookie/cookie-route-filters";
 import { NotesSortExtras } from "../notes/NotesSortExtras";
 import {
@@ -22,9 +23,14 @@ import {
 import { DEFAULT_NOTES_FILTER_KEYS } from "../notes/notes-list-prefs";
 import type { NotesListDensity, NotesListSort } from "../notes/notes-list-prefs";
 import {
+  DEFAULT_TWOFA_CHART_KEYS,
   DEFAULT_TWOFA_HEADER_STAT_KEYS,
+  DEFAULT_TWOFA_KPI_KEYS,
+  TWOFA_CHART_DEFS,
   TWOFA_HEADER_STAT_DEFS,
+  TWOFA_KPI_DEFS,
 } from "../twofa/twofa-display-prefs";
+import { patchTwofaHubPrefs, readTwofaHubPrefs } from "../twofa/twofa-tab-prefs";
 import { DEFAULT_TWOFA_FILTER_KEYS, TWOFA_FILTER_DEFS } from "../twofa/twofa-filters";
 import {
   countHiddenTwofaTableColumns,
@@ -45,7 +51,11 @@ function TwofaTabDisplayPrefs({ screenFilters }: { screenFilters: FilterDef[] })
 
   return (
     <DisplayPrefs
+      kpis={TWOFA_KPI_DEFS}
+      charts={TWOFA_CHART_DEFS}
       filters={filters.map(({ key, label }) => ({ key, label }))}
+      defaultKpiKeys={DEFAULT_TWOFA_KPI_KEYS}
+      defaultChartKeys={DEFAULT_TWOFA_CHART_KEYS}
       defaultFilterKeys={DEFAULT_TWOFA_FILTER_KEYS}
       filterParam="afilt"
       filtersFromUrl
@@ -54,12 +64,14 @@ function TwofaTabDisplayPrefs({ screenFilters }: { screenFilters: FilterDef[] })
       showRange={false}
       showLimit={false}
       showHeaderPin
-      panelWidth={360}
-      maxPanelHeight="min(78vh, 36rem)"
+      panelWidth={420}
+      maxPanelHeight="min(80vh, 42rem)"
       headerStatLabel={() => "2FA header"}
       scope="tab"
       tablePanel={<TwofaTableColumnsSettings />}
       tableActiveCount={hiddenCols}
+      readPrefs={readTwofaHubPrefs}
+      patchPrefs={patchTwofaHubPrefs}
     />
   );
 }
@@ -112,6 +124,8 @@ export function WorkspaceTabDisplayPrefs({
         maxPanelHeight="min(80vh, 42rem)"
         headerStatLabel={() => "Cookie header"}
         scope="tab"
+        readPrefs={readCookieHubPrefs}
+        patchPrefs={patchCookieHubPrefs}
       />
     );
   }

@@ -178,7 +178,6 @@
   cursor: not-allowed;
 }
 
-/* Compact form modal — wider body (2FA bulk paste, etc.) */
 .auth-gate-modal--wide {
   max-width: 440px;
 }
@@ -189,9 +188,9 @@
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 12px;
-  border: 1px solid rgba(245, 158, 11, 0.28);
-  background: rgba(245, 158, 11, 0.12);
-  color: #fcd34d;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
 }
 
 .auth-gate-hint {
@@ -212,25 +211,6 @@
   color: #86efac;
 }
 
-.auth-gate-file-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  font-size: 0.75rem;
-  color: var(--muted);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.auth-gate-file-btn:hover {
-  color: var(--text);
-  border-color: rgba(129, 140, 248, 0.35);
-}
-
 .auth-gate-actions {
   display: flex;
   gap: 0.5rem;
@@ -238,27 +218,21 @@
 }
 
 .auth-gate-secondary {
-  flex: 0 0 auto;
+  flex: 1;
   padding: 0.7rem 1rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
-  background: transparent;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.15s, border-color 0.15s;
 }
 
-.auth-gate-secondary:hover:not(:disabled) {
+.auth-gate-secondary:hover {
   color: var(--text);
   border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.auth-gate-secondary:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 .auth-gate-actions .auth-gate-submit {
@@ -313,198 +287,6 @@
 
 .auth-inline-btn:active {
   transform: translateY(1px);
-}
-
-/* Cookie route form modals — same shell as Login / Hub confirm */
-.auth-gate-modal.cookie-route-form-modal {
-  max-width: 480px;
-  padding: 1.35rem 1.35rem 1.25rem;
-}
-
-.auth-gate-modal.auth-gate-modal--cookie-route-wide {
-  max-width: 640px;
-}
-
-.cookie-route-form-modal__head {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-right: 1.5rem;
-}
-
-.cookie-route-form-modal__icon {
-  flex-shrink: 0;
-  border-color: rgba(129, 140, 248, 0.32);
-  background: rgba(99, 102, 241, 0.14);
-  color: #a5b4fc;
-}
-
-.cookie-route-form-modal__eyebrow {
-  margin: 0 0 0.2rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #a5b4fc;
-  text-transform: none;
-}
-
-.cookie-route-form-modal__title {
-  margin: 0;
-  text-align: left;
-  font-size: 1.125rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  color: var(--text);
-  background: none;
-  -webkit-text-fill-color: unset;
-}
-
-.cookie-route-form-modal__subtitle {
-  margin: 0.35rem 0 0;
-  text-align: left;
-  font-size: 0.75rem;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
-.cookie-route-modal__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.cookie-route-modal__footer {
-  margin-top: 0.15rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.cookie-route-modal__actions {
-  margin-top: 0;
-}
-
-.cookie-route-field-label {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-bottom: 0.35rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--muted);
-  text-transform: none;
-}
-
-.cookie-route-field-label__icon {
-  flex-shrink: 0;
-  opacity: 0.9;
-  color: rgb(129 140 248);
-}
-
-.cookie-route-modal__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-}
-
-.cookie-route-modal__note {
-  border-radius: 10px;
-  border: 1px solid rgba(56, 189, 248, 0.22);
-  background: rgba(14, 165, 233, 0.08);
-  padding: 0.65rem 0.75rem;
-  font-size: 0.75rem;
-  line-height: 1.45;
-  color: rgb(186 230 253 / 0.92);
-}
-
-.cookie-route-modal__note code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.6875rem;
-  color: #93c5fd;
-}
-
-.cookie-route-modal__route-card {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  border-radius: 10px;
-  border: 1px solid rgba(52, 211, 153, 0.2);
-  background: rgba(16, 185, 129, 0.08);
-  padding: 0.65rem 0.75rem;
-}
-
-.cookie-route-modal__route-card-title {
-  margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: rgb(167 243 208);
-}
-
-.cookie-route-modal__route-card-meta {
-  margin: 0.15rem 0 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.625rem;
-  color: rgb(167 243 208 / 0.7);
-}
-
-.cookie-route-modal__copy-btn {
-  border-radius: 999px;
-  border: 1px solid rgba(52, 211, 153, 0.28);
-  background: rgba(16, 185, 129, 0.12);
-  padding: 0.25rem 0.55rem;
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: rgb(167 243 208);
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
-}
-
-.cookie-route-modal__copy-btn:hover {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: rgba(52, 211, 153, 0.45);
-}
-
-.cookie-route-modal__warn {
-  border-radius: 10px;
-  border: 1px solid rgba(244, 63, 94, 0.28);
-  background: rgba(244, 63, 94, 0.1);
-  padding: 0.75rem;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: rgb(254 205 211);
-}
-
-.cookie-route-modal__submit--danger {
-  background: linear-gradient(90deg, #dc2626 0%, #be123c 100%);
-  box-shadow: 0 8px 24px rgba(244, 63, 94, 0.32);
-}
-
-.cookie-route-modal__presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.cookie-route-modal__preset-btn {
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 0.2rem 0.5rem;
-  font-size: 0.625rem;
-  color: var(--muted);
-  cursor: pointer;
-  transition: border-color 0.12s, color 0.12s, background 0.12s;
-}
-
-.cookie-route-modal__preset-btn:hover {
-  border-color: rgba(129, 140, 248, 0.35);
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--text);
 }
 
 .btn-danger {

@@ -30,6 +30,7 @@ import {
   WORKSPACE_LIST_REFRESHING,
 } from "../../lib/workspace-refresh-bus";
 import { useAppToast } from "../toast";
+import { HubUiZoomControl, compactIconSize } from "@tool-workspace/hub-ui";
 
 const items: { screen: WorkspaceNavScreen; label: string; icon: typeof FileText }[] = [
   { screen: "notes", label: "Notes", icon: FileText },
@@ -66,7 +67,7 @@ function SidebarFooterButton({
 }) {
   return (
     <button type="button" className={footerBtn} onClick={onClick} disabled={disabled} title={title}>
-      <Icon size={15} className={`shrink-0 ${iconClass}`} />
+      <Icon size={compactIconSize(15)} className={`shrink-0 ${iconClass}`} />
       <span className="flex-1 text-left">{label}</span>
       {trailing}
     </button>
@@ -234,7 +235,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
               {active ? (
                 <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r bg-indigo-400" />
               ) : null}
-              <Icon size={16} className={active ? "text-indigo-300" : ""} />
+              <Icon size={compactIconSize(16)} className={active ? "text-indigo-300" : ""} />
               <span className="flex-1 text-left">{label}</span>
             </button>
           );
@@ -261,7 +262,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
           className={footerBtn}
           title="Workspace users & roles (Tool Hub P0004)"
         >
-          <ExternalLink size={15} className="shrink-0 text-indigo-300" />
+          <ExternalLink size={compactIconSize(15)} className="shrink-0 text-indigo-300" />
           <span className="flex-1 text-left">Tool Hub — Users</span>
         </a>
         <SidebarFooterButton
@@ -272,6 +273,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
           title={listRefreshing ? "Updating notes in background" : "Refresh notes list"}
         />
         {displayPrefs}
+        <HubUiZoomControl />
       </footer>
       {userModal}
     </aside>

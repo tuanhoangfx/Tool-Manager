@@ -1,15 +1,4 @@
-/* P0020-Data-Box shell layout — synced from P0004-Tool-Hub p0008-globals */
-
-:root,
-.theme-hub {
-  --app-tab-header-py: 0.75rem;
-  --app-tab-header-px: 1.5rem;
-  --app-tab-header-min-h: 2.75rem;
-  --app-tab-header-gap-below: 0.75rem;
-  --app-tab-header-sticky-h: var(--app-tab-header-min-h);
-  --hub-filter-pin-est-h: 6.75rem;
-  --hub-chrome-sticky-est-h: calc(var(--app-tab-header-min-h) + var(--hub-filter-pin-est-h));
-}
+/* P0020 — layout overrides only; shell chrome/spacing: vendor hub-shell-layout.css */
 
 html,
 body,
@@ -20,65 +9,7 @@ body,
   color: var(--text);
 }
 
-.hub-app {
-  --hub-sidebar-width: 15rem;
-  display: flex;
-  height: 100%;
-  min-height: 0;
-  width: 100%;
-  overflow: hidden;
-}
-
-.hub-app > aside {
-  position: relative;
-  z-index: 50;
-  width: 15rem;
-  flex-shrink: 0;
-  min-height: 0;
-  overflow: visible;
-}
-
-.hub-app > main,
-.hub-main {
-  position: relative;
-  z-index: 0;
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0 1.5rem 1.5rem;
-  scroll-padding-top: var(--hub-chrome-sticky-est-h);
-}
-
-.hub-main:has([data-search-pin][data-header-pin]) {
-  scroll-padding-top: var(--hub-chrome-sticky-est-h);
-}
-
-.hub-chrome-sticky {
-  isolation: isolate;
-}
-
-.hub-filter-sticky {
-  isolation: isolate;
-}
-
-/* Tab screens (Cookie, 2FA, …): chrome + flex body for embeds */
-.hub-main--tab {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.hub-main--tab .hub-screen-body {
-  display: flex;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
-}
-
-/* Notes: full-height workspace (list | editor) */
+/* Notes: split pane — no main scroll (Hub tab chrome + body flex) */
 .hub-main--notes {
   display: flex;
   flex-direction: column;
@@ -93,14 +24,25 @@ body,
   width: 100%;
 }
 
+.hub-tab-body-zone--split > .notes-workspace__body {
+  flex-direction: row;
+  gap: var(--hub-chrome-content-gap, 0.75rem);
+}
+
 .notes-workspace__body {
   min-height: 0;
   flex: 1;
-  gap: 1rem;
-  margin-top: 1rem;
+}
+
+/* Notes inbox list — wider rail for long titles (email routes, etc.) */
+:root {
+  --notes-rail-width: 22rem;
 }
 
 .notes-rail {
+  width: var(--notes-rail-width);
+  min-width: var(--notes-rail-width);
+  max-width: min(var(--notes-rail-width), 40vw);
   background:
     radial-gradient(circle at 18% 0%, rgba(99, 102, 241, 0.12), transparent 36%),
     linear-gradient(180deg, rgba(17, 24, 39, 0.88), rgba(13, 20, 41, 0.94)),
@@ -215,7 +157,6 @@ body,
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-/* Notes — folder directory table (Hub Users skin) */
 table.hub-users-table--folders {
   table-layout: fixed;
 }
@@ -251,5 +192,3 @@ table.hub-users-table--folders .notes-folder-icon {
   height: 24px;
   border-radius: 7px;
 }
-
-/* Hub boot + tab loader: /hub-boot.css (index.html) + main.tsx import */

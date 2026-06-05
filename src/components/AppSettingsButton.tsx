@@ -18,7 +18,7 @@ export function AppSettingsButton({
   return (
     <button
       type="button"
-      className={`btn-ghost btn text-[12px] ${header ? "h-[34px] shrink-0" : ""} ${
+      className={`btn-ghost btn text-[12px] ${header ? "h-[var(--hub-control-h)] shrink-0" : ""} ${
         active ? "ring-1 ring-indigo-400/50 bg-indigo-500/10" : ""
       }`}
       onClick={onClick}

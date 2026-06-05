@@ -245,6 +245,11 @@
   transition: background 0.15s, border-color 0.15s;
 }
 
+.release-asset-row.release-asset-row--compact {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.74rem;
+}
+
 .release-asset-row:hover {
   background: rgba(168, 85, 247, 0.08);
   border-color: rgba(168, 85, 247, 0.35);
@@ -258,6 +263,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.release-asset-row.release-asset-row--compact .release-asset-name {
+  font-family: inherit;
+  font-size: 0.72rem;
 }
 
 .release-asset-size {
@@ -460,12 +470,12 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  width: min(1320px, calc(100vw - var(--app-sidebar-width) - 2rem));
+  width: min(1080px, calc(100vw - var(--app-sidebar-width) - 2rem));
   max-width: calc(100vw - var(--app-sidebar-width) - 2rem);
   height: auto;
   flex: 0 1 auto;
   min-height: 0;
-  max-height: min(88vh, 860px);
+  max-height: min(82vh, 780px);
   margin: 0 auto;
   padding: 0;
   overflow: hidden;
@@ -519,7 +529,7 @@
   }
 
   .modal-shell.modal-shell--tool-detail {
-    width: min(96vw, 720px);
+    width: min(96vw, 640px);
     max-width: 96vw;
   }
 }
@@ -547,6 +557,7 @@ body.hub-modal-open {
   gap: 0.5rem;
 }
 
+.user-access-modal__header-main .hub-users-role-badge,
 .user-access-modal__header-main .user-access-modal__avatar {
   flex-shrink: 0;
   margin: 0;
@@ -555,7 +566,7 @@ body.hub-modal-open {
 .user-access-modal__header-name {
   flex-shrink: 1;
   min-width: 4rem;
-  line-height: var(--hub-control-h, 2rem);
+  line-height: var(--hub-control-h);
 }
 
 .user-access-modal__header-actions {
@@ -566,6 +577,37 @@ body.hub-modal-open {
   margin-left: auto;
 }
 
+.user-access-modal__profile-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.user-access-modal__profile-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-access-modal__profile-field--role {
+  min-width: 9rem;
+}
+
+.user-access-modal__profile-label {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
+.user-access-modal__profile-field .field,
+.user-access-modal__profile-field .hub-filter-select-trigger,
+.user-access-modal__profile-field button[class*="inline-flex"][class*="hub-control-h"] {
+  min-height: var(--hub-control-h);
+}
+
 .modal-close--tool-detail-inline {
   position: static;
   box-shadow: none;
@@ -573,5 +615,138 @@ body.hub-modal-open {
 
 .modal-shell__scroll--user-access {
   padding-top: 1rem;
+}
+
+.cookie-dl-modal__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: transparent;
+}
+
+.cookie-dl-modal__footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.85rem 0.85rem 1rem;
+}
+
+.cookie-dl-modal__latest-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cookie-dl-modal__latest-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #c4b5fd;
+  text-decoration: none;
+  padding: 0.22rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(129, 140, 248, 0.45);
+  background: rgba(99, 102, 241, 0.18);
+  white-space: nowrap;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.cookie-dl-modal__latest-link:hover {
+  color: #ede9fe;
+  border-color: rgba(165, 180, 252, 0.7);
+  background: rgba(99, 102, 241, 0.32);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.cookie-dl-modal__release-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--color-text-subtle);
+  text-decoration: none;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.cookie-dl-modal__release-link:hover {
+  border-color: rgba(168, 85, 247, 0.35);
+  color: #c4b5fd;
+  background: rgba(168, 85, 247, 0.08);
+}
+
+.cookie-dl-modal__confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 190px;
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.45);
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.98), rgba(79, 70, 229, 0.98));
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 28px rgba(79, 70, 229, 0.35);
+}
+
+.cookie-dl-modal__confirm:hover {
+  filter: brightness(1.05);
+}
+
+.cookie-dl-modal__confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.cookie-dl-modal__confirm-icon {
+  animation: cookieDlIconBounce 1.4s ease-in-out infinite;
+}
+
+.cookie-dl-modal__confirm:hover .cookie-dl-modal__confirm-icon {
+  animation-duration: 0.7s;
+}
+
+.cookie-dl-modal__confirm-icon--busy {
+  animation: cookieDlIconPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes cookieDlIconBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+@keyframes cookieDlIconPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+/* Filter dropdowns inside user modal — above table/search (Role uses portal z-index 2500) */
+.modal-shell--tool-detail .anim-pop {
+  z-index: 120;
 }
 

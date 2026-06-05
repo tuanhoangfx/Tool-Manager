@@ -15,6 +15,8 @@ import { noteMatchesFolderFilter, useNoteFolders, mergeDisplayFolders, getEffect
 import { NotesFoldersSettingsPanel } from "./NotesFoldersSettingsPanel";
 import { filterNotes } from "./notes-filters";
 import { readNotesListPrefs, type NotesListDensity } from "./notes-list-prefs";
+import { subscribeHubListPrefs } from "../../lib/url-prefs";
+import { pathnameToNavScreen } from "../../lib/workspace-path";
 import { shareAccessFromRow, shareFlagsFromAccess, type NoteShareAccess } from "./shareAccess";
 import { cookieLines, slugifyTitle, sortNoteRows } from "./noteUtils";
 import { NOTES_AUTOSAVE_DEBOUNCE_MS } from "./notes-egress";
@@ -32,10 +34,12 @@ import {
 } from "../../lib/workspace-refresh-bus";
 
 type Props = {
+  /** When false, do not sync URL note or auto-pick (avoids leaving 2FA on display prefs change). */
+  tabActive?: boolean;
   navigate: (opts?: { note?: string; replace?: boolean }) => void;
 };
 
-export function NotesWorkspaceScreen({ navigate }: Props) {
+export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
   const { pushToast } = useAppToast();
   const { session, loading: authLoading, isSupabaseConfigured } = useNotesAuth();
   const {
@@ -79,13 +83,13 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
   const loadedEditorNoteId = useRef<string | null>(null);
 
   useEffect(() => {
-    const sync = () => {
+    return subscribeHubListPrefs(() => {
       setPrefs(readNotesListPrefs());
+      if (!tabActive) return;
+      if (pathnameToNavScreen(window.location.pathname) !== "notes") return;
       setSelectedId(readNoteIdFromUrl());
-    };
-    window.addEventListener("popstate", sync);
-    return () => window.removeEventListener("popstate", sync);
-  }, []);
+    });
+  }, [tabActive]);
 
   useEffect(() => {
     if (!session) return;
@@ -280,12 +284,13 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
         }
       }
       setSelectedId(id);
-      navigate({ note: id });
+      if (tabActive) navigate({ note: id });
     },
-    [applyNoteToEditor, navigate, notes, routeByNoteId],
+    [applyNoteToEditor, navigate, notes, routeByNoteId, tabActive],
   );
 
   useEffect(() => {
+    if (!tabActive) return;
     if (listLoading || creating) return;
     if (!selectedId) {
       if (sortedFiltered.length > 0) pickNote(sortedFiltered[0].id);
@@ -293,7 +298,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
     }
     const stillExists = notes.some((n) => n.id === selectedId);
     if (!stillExists && sortedFiltered.length > 0) pickNote(sortedFiltered[0].id);
-  }, [creating, listLoading, sortedFiltered, notes, selectedId, pickNote]);
+  }, [tabActive, creating, listLoading, sortedFiltered, notes, selectedId, pickNote]);
 
   const onNew = async () => {
     setCreating(true);
@@ -490,8 +495,9 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           sort={prefs.sort}
           onSortChange={(next) => setPrefs((p) => ({ ...p, sort: next }))}
           filterToolbar={null}
-        />
-        <p className="px-4 py-8 text-center text-[12px] text-[var(--muted)]">Signing in…</p>
+        >
+          <p className="px-4 py-8 text-center text-[12px] text-[var(--muted)]">Signing in…</p>
+        </NotesHubChrome>
       </div>
     );
   }
@@ -552,7 +558,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
 
   if (!session) {
     return (
-      <div className="notes-workspace anim-fade flex min-h-0 flex-col">
+      <div className="notes-workspace anim-fade flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <NotesHubChrome
           query={query}
           onQueryChange={setQuery}
@@ -565,16 +571,16 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
           sort={prefs.sort}
           onSortChange={(next) => setPrefs((p) => ({ ...p, sort: next }))}
           filterToolbar={null}
-        />
-        <div className="pt-5">
+          folderSettingsPanel={folderSettingsPanel}
+        >
           <NotesAuthGate variant="notes" />
-        </div>
+        </NotesHubChrome>
       </div>
     );
   }
 
   return (
-    <div className="notes-workspace anim-fade flex min-h-0 flex-col">
+    <div className="notes-workspace anim-fade flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <NotesHubChrome
         query={query}
         onQueryChange={setQuery}
@@ -589,9 +595,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
         onSortChange={(next) => setPrefs((p) => ({ ...p, sort: next }))}
         filterToolbar={workspaceToolbar}
         folderSettingsPanel={folderSettingsPanel}
-      />
-
-      <div className="notes-workspace__body flex min-h-0 flex-1 overflow-hidden">
+      >
         <NotesListRail
           notes={sortedFiltered}
           selectedId={selectedId}
@@ -644,7 +648,7 @@ export function NotesWorkspaceScreen({ navigate }: Props) {
             onClose={() => setRouteDetailDomain(null)}
           />
         ) : null}
-      </div>
+      </NotesHubChrome>
 
       <ToolConfirmDialog
         open={pendingDeleteNote}

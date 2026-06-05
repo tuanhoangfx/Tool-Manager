@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { useHubActiveScreenSync } from "@tool-workspace/hub-ui";
 import { DisplayPrefs, HubLoaderRoot } from "../../components/sales-shell";
 import { hideBootLoader } from "../../lib/hide-boot-loader";
-import type { FilterDef } from "../../components/sales-shell/FilterBar";
+import type { FilterDef } from "../../components/sales-shell";
 import { WorkspaceSidebar } from "../../components/sales-shell/WorkspaceSidebar";
 import { ToastContainer, ToastProvider } from "../../components/toast";
 import type { WorkspaceNavScreen, WorkspaceScreen } from "../../lib/workspace-screen";
@@ -77,6 +78,7 @@ function WorkspaceAppInner() {
   useExtensionBindingsRelay(true);
   useExtensionSessionRelay(session);
   const activeNav = navScreen(screen);
+  useHubActiveScreenSync(activeNav);
   const isNotesLayout = NOTES_SCREENS.has(screen);
   const [visited, setVisited] = useState<Set<WorkspaceNavScreen>>(() => new Set([activeNav]));
 
@@ -120,7 +122,9 @@ function WorkspaceAppInner() {
     [navigate],
   );
 
-  const mainClass = isNotesLayout ? "hub-main hub-main--notes" : "hub-main hub-main--tab";
+  const mainClass = isNotesLayout
+    ? "hub-main hub-main--notes flex-1 min-h-0 min-w-0 flex-col overflow-hidden"
+    : "hub-main flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden";
 
   return (
     <WorkspaceLogProvider>
@@ -131,11 +135,14 @@ function WorkspaceAppInner() {
         displayPrefs={<WorkspaceSidebarDisplayPrefs screen={activeNav} screenFilters={[]} />}
       />
 
-      <main className={`${mainClass} flex min-h-0 min-w-0 flex-col`}>
+      <main className={mainClass}>
         <HubLoaderRoot />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <WorkspaceVisitedTabPanel tabId="notes" active={isNotesLayout} visited={visited}>
-            <NotesWorkspaceScreen navigate={(opts) => navigate("notes", opts)} />
+            <NotesWorkspaceScreen
+              tabActive={isNotesLayout}
+              navigate={(opts) => navigate("notes", opts)}
+            />
           </WorkspaceVisitedTabPanel>
 
           <WorkspaceVisitedTabPanel tabId="twofa" active={screen === "twofa"} visited={visited}>

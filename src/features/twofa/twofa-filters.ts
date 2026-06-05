@@ -1,5 +1,4 @@
-import type { FilterDef } from "../../components/sales-shell/FilterBar";
-import type { FilterValues } from "../../components/sales-shell/FilterBar";
+import type { FilterDef, FilterValues } from "../../components/sales-shell";
 import type { TwofaAccount } from "./types";
 import { matchesTimeRange } from "../notes/notes-filters";
 import type { TimeRange } from "../../lib/url-prefs";

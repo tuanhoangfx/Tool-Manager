@@ -1,4 +1,4 @@
-import type { FilterDef } from "../../components/sales-shell/FilterBar";
+import type { FilterDef } from "../../components/sales-shell";
 
 export const COOKIE_ROUTE_FILTER_DEFS: FilterDef[] = [
   {

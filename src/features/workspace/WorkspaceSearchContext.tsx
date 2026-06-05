@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { TabHeaderStatItem } from "../../components/sales-shell";
-import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
+import type { KpiTileData, TabHeaderStatItem } from "../../components/sales-shell";
+import type { FilterDef, FilterValues } from "../../components/sales-shell";
 
 type Ctx = {
   query: string;
@@ -15,6 +15,12 @@ type Ctx = {
   setFilterToolbar: (toolbar: ReactNode) => void;
   centerStats: TabHeaderStatItem[];
   setCenterStats: (stats: TabHeaderStatItem[]) => void;
+  directoryKpis: KpiTileData[] | undefined;
+  setDirectoryKpis: (kpis: KpiTileData[] | undefined) => void;
+  directoryCharts: ReactNode;
+  setDirectoryCharts: (charts: ReactNode) => void;
+  sectionRuleLabel: string | undefined;
+  setSectionRuleLabel: (label: string | undefined) => void;
 };
 
 const WorkspaceSearchContext = createContext<Ctx | null>(null);
@@ -32,6 +38,12 @@ export function WorkspaceSearchProvider({
   setFilterToolbar,
   centerStats,
   setCenterStats,
+  directoryKpis,
+  setDirectoryKpis,
+  directoryCharts,
+  setDirectoryCharts,
+  sectionRuleLabel,
+  setSectionRuleLabel,
   children,
 }: {
   query: string;
@@ -46,6 +58,12 @@ export function WorkspaceSearchProvider({
   setFilterToolbar: (toolbar: ReactNode) => void;
   centerStats: TabHeaderStatItem[];
   setCenterStats: (stats: TabHeaderStatItem[]) => void;
+  directoryKpis: KpiTileData[] | undefined;
+  setDirectoryKpis: (kpis: KpiTileData[] | undefined) => void;
+  directoryCharts: ReactNode;
+  setDirectoryCharts: (charts: ReactNode) => void;
+  sectionRuleLabel: string | undefined;
+  setSectionRuleLabel: (label: string | undefined) => void;
   children: ReactNode;
 }) {
   return (
@@ -63,6 +81,12 @@ export function WorkspaceSearchProvider({
         setFilterToolbar,
         centerStats,
         setCenterStats,
+        directoryKpis,
+        setDirectoryKpis,
+        directoryCharts,
+        setDirectoryCharts,
+        sectionRuleLabel,
+        setSectionRuleLabel,
       }}
     >
       {children}
@@ -70,23 +94,27 @@ export function WorkspaceSearchProvider({
   );
 }
 
+const noopCtx: Ctx = {
+  query: "",
+  setQuery: () => {},
+  filters: [],
+  setFilters: () => {},
+  filterValues: {},
+  setFilterValues: () => {},
+  toolbar: null,
+  setToolbar: () => {},
+  filterToolbar: null,
+  setFilterToolbar: () => {},
+  centerStats: [],
+  setCenterStats: () => {},
+  directoryKpis: undefined,
+  setDirectoryKpis: () => {},
+  directoryCharts: null,
+  setDirectoryCharts: () => {},
+  sectionRuleLabel: undefined,
+  setSectionRuleLabel: () => {},
+};
+
 export function useWorkspaceSearch() {
-  const ctx = useContext(WorkspaceSearchContext);
-  if (!ctx) {
-    return {
-      query: "",
-      setQuery: () => {},
-      filters: [],
-      setFilters: () => {},
-      filterValues: {},
-      setFilterValues: () => {},
-      toolbar: null,
-      setToolbar: () => {},
-      filterToolbar: null,
-      setFilterToolbar: () => {},
-      centerStats: [],
-      setCenterStats: () => {},
-    };
-  }
-  return ctx;
+  return useContext(WorkspaceSearchContext) ?? noopCtx;
 }

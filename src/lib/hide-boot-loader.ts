@@ -1,4 +1,4 @@
-import { HUB_TAB_LOADER_ROOT_ID } from "../components/sales-shell/HubLoaderRoot";
+import { HUB_TAB_LOADER_ROOT_ID } from "@tool-workspace/hub-ui";
 
 /** Clears portaled tab orb (e.g. after StrictMode remount or stuck overlay). */
 export function clearHubTabLoader() {

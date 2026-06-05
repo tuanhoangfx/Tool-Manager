@@ -35,8 +35,10 @@ export type HubListPrefs = {
   searchPin: boolean;
 };
 
-function parseSet(raw: string | null): Set<string> | null {
+/** `null` = defaults; `""` = explicitly none visible. */
+export function parseHubPrefSet(raw: string | null): Set<string> | null {
   if (raw === null) return null;
+  if (raw === "") return new Set();
   return new Set(raw.split(",").filter(Boolean));
 }
 
@@ -63,23 +65,37 @@ export function readHubListPrefs(): HubListPrefs {
   return {
     range: TIME_RANGES.some((r) => r.value === range) ? range : DEFAULT_HUB_TIME_RANGE,
     limit,
-    kpi: parseSet(sp.get("kpi")),
-    charts: parseSet(sp.get("charts")),
-    hubFilters: parseSet(sp.get("hfilt")),
-    headerStats: parseSet(sp.get("hstat")),
-    systemHeaderStats: parseSet(sp.get("sstat")),
+    kpi: parseHubPrefSet(sp.get("kpi")),
+    charts: parseHubPrefSet(sp.get("charts")),
+    hubFilters: parseHubPrefSet(sp.get("hfilt")),
+    headerStats: parseHubPrefSet(sp.get("hstat")),
+    systemHeaderStats: parseHubPrefSet(sp.get("sstat")),
     headerPin: hpin !== "0",
     searchPin: spin !== "0",
+  };
+}
+
+/** Fired after URL prefs change — use instead of synthetic `popstate` (avoids tab navigation side effects). */
+export const HUB_LIST_PREFS_CHANGE_EVENT = "hub-list-prefs-change";
+
+export function subscribeHubListPrefs(onSync: () => void) {
+  if (typeof window === "undefined") return () => {};
+  const handler = () => onSync();
+  window.addEventListener(HUB_LIST_PREFS_CHANGE_EVENT, handler);
+  window.addEventListener("popstate", handler);
+  return () => {
+    window.removeEventListener(HUB_LIST_PREFS_CHANGE_EVENT, handler);
+    window.removeEventListener("popstate", handler);
   };
 }
 
 export function patchHubListPrefs(patch: Record<string, string | null>) {
   const sp = new URLSearchParams(window.location.search);
   for (const [k, v] of Object.entries(patch)) {
-    if (v == null || v === "") sp.delete(k);
+    if (v == null) sp.delete(k);
     else sp.set(k, v);
   }
   const q = sp.toString();
   window.history.replaceState(null, "", `${window.location.pathname}${q ? `?${q}` : ""}${window.location.hash}`);
-  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.dispatchEvent(new CustomEvent(HUB_LIST_PREFS_CHANGE_EVENT));
 }

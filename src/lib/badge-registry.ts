@@ -37,11 +37,11 @@ import {
   Tag,
   Zap,
 } from "lucide-react";
-import type { FilterOption } from "../components/sales-shell/FilterBar";
+import type { FilterOption } from "@tool-workspace/hub-ui";
 import type { LinkGroup } from "../features/overview/tool-link-filters";
 import type { Mode } from "./hub-schema-spec";
 import { deployLabel } from "./tooling";
-import type { MetricBadgeTone } from "../components/sales-shell/MetricBadge";
+import type { MetricBadgeTone } from "@tool-workspace/hub-ui";
 
 export type FilterIconMeta = {
   icon: ElementType<{ size?: number; className?: string }>;

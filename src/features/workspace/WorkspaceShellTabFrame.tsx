@@ -1,24 +1,37 @@
 import { useState, type ReactNode } from "react";
-import type { TabHeaderStatItem } from "../../components/sales-shell";
-import type { FilterDef, FilterValues } from "../../components/sales-shell/FilterBar";
+import type { KpiTileData, TabHeaderStatItem } from "../../components/sales-shell";
+import type { FilterDef, FilterValues } from "../../components/sales-shell";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
-import { WorkspaceScreenChrome } from "./WorkspaceScreenChrome";
+import { WorkspaceDirectoryScreen } from "./WorkspaceDirectoryScreen";
 import { WorkspaceSearchProvider } from "./WorkspaceSearchContext";
 
 type Props = {
   screen: WorkspaceNavScreen;
   active: boolean;
   children: ReactNode;
+  filterShortcutScope?: string;
+  bodyFlex?: boolean;
 };
 
-/** Per-tab shell (search + header) — stays mounted when visited (P0004 keep-mounted). */
-export function WorkspaceShellTabFrame({ screen, active, children }: Props) {
+/** Per-tab shell — P0004 HubDirectoryScreen (header + FilterBar + KPI/charts + body). */
+export function WorkspaceShellTabFrame({
+  screen,
+  active,
+  children,
+  filterShortcutScope,
+  bodyFlex = false,
+}: Props) {
+  const scope = filterShortcutScope ?? screen;
   const [query, setQuery] = useState("");
   const [screenFilters, setScreenFilters] = useState<FilterDef[]>([]);
   const [screenFilterValues, setScreenFilterValues] = useState<FilterValues>({});
   const [screenToolbar, setScreenToolbar] = useState<ReactNode>(null);
   const [screenFilterToolbar, setScreenFilterToolbar] = useState<ReactNode>(null);
   const [screenCenterStats, setScreenCenterStats] = useState<TabHeaderStatItem[]>([]);
+  const [directoryKpis, setDirectoryKpis] = useState<KpiTileData[] | undefined>(undefined);
+  const [directoryCharts, setDirectoryCharts] = useState<ReactNode>(null);
+  const [sectionRuleLabel, setSectionRuleLabel] = useState<string | undefined>(undefined);
+
   return (
     <div
       className={active ? "flex min-h-0 min-w-0 flex-1 flex-col" : "hidden"}
@@ -37,8 +50,14 @@ export function WorkspaceShellTabFrame({ screen, active, children }: Props) {
         setFilterToolbar={setScreenFilterToolbar}
         centerStats={screenCenterStats}
         setCenterStats={setScreenCenterStats}
+        directoryKpis={directoryKpis}
+        setDirectoryKpis={setDirectoryKpis}
+        directoryCharts={directoryCharts}
+        setDirectoryCharts={setDirectoryCharts}
+        sectionRuleLabel={sectionRuleLabel}
+        setSectionRuleLabel={setSectionRuleLabel}
       >
-        <WorkspaceScreenChrome
+        <WorkspaceDirectoryScreen
           screen={screen}
           query={query}
           onQueryChange={setQuery}
@@ -46,11 +65,16 @@ export function WorkspaceShellTabFrame({ screen, active, children }: Props) {
           filterValues={screenFilterValues}
           onFilterValuesChange={setScreenFilterValues}
           toolbar={screenToolbar}
-          filterToolbar={screenFilterToolbar}
+          filterRowActions={screenFilterToolbar}
           centerStats={screenCenterStats}
+          filterShortcutScope={scope}
+          kpis={directoryKpis}
+          charts={directoryCharts}
+          sectionRuleLabel={sectionRuleLabel}
+          bodyFlex={bodyFlex}
         >
           {children}
-        </WorkspaceScreenChrome>
+        </WorkspaceDirectoryScreen>
       </WorkspaceSearchProvider>
     </div>
   );
