@@ -11,8 +11,8 @@
 - Product: P0020
 - Prompt: Release P0020 — official ship after Deploy verify; hub-ui shell, Cookie download modal, shared edge close.
 - Commit: `79784a4`
-- Status: Committed
-- Release: (after Release keyword only — GitHub release URL)
+- Status: Verified
+- Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.1.1
 
 ### Changes
 
