@@ -4,6 +4,167 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-05 - Data Box 3.1.9 — Remove Notes Comfort/Compact toggle (P0020)
+
+- Version: `3.1.9`
+- Type: Patch
+- Product: P0020
+- Prompt: Xóa nhãn Comfort/Compact (không cần thiết)
+- Status: Verified
+- Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v3.1.9
+
+### Changes
+
+- Gỡ `NotesViewToggle` khỏi toolbar Notes; xóa `NotesViewToggle.tsx`, `NotesDensityExtras.tsx` (không dùng).
+- List density vẫn đọc từ `ndens` URL nếu có; mặc định comfort.
+
+---
+
+## 2026-06-05 - Data Box 3.1.8 — Notes sort in Settings + 2FA KPI tab fix (P0020)
+
+- Version: `3.1.8`
+- Type: Patch
+- Product: P0020
+- Prompt: Sort label vào Settings; sửa KPI 2FA nhảy về Notes
+- Status: Verified
+
+### Changes
+
+- Bỏ `HubSortLabel` trên toolbar Notes; sort chỉ trong Settings → General (`NotesSortExtras`).
+- `patchHubListPrefs` → event `hub-list-prefs-change` (không synthetic `popstate`).
+- Notes auto-pick/`navigate` chỉ khi tab Notes active.
+- 2FA KPI/charts URL: `2kpi` / `2charts` (tách khỏi Cookie `kpi`).
+
+### Verification
+
+- `pnpm build` · 2FA Settings KPI không đổi tab · Notes sort trong Settings
+
+---
+
+## 2026-06-05 - Data Box 3.1.7 — Notes inbox rail width (P0020)
+
+- Version: `3.1.7`
+- Type: Patch
+- Product: P0020
+- Prompt: Tăng kích thước chiều ngang list inbox Notes
+- Status: Verified
+
+### Changes
+
+- `--notes-rail-width: 22rem` (trước `15.5rem`) — inbox list rộng hơn, title/email ít bị cắt.
+
+### Verification
+
+- Notes tab · list inbox ~22rem, editor vẫn flex phần còn lại
+
+---
+
+## 2026-06-05 - Data Box 3.1.6 — Route detail access table load flash (P0020)
+
+- Version: `3.1.6`
+- Type: Patch
+- Product: P0020
+- Prompt: Route Details — bảng user nháy, hiện sau một lúc
+- Status: Verified
+
+### Changes
+
+- People & access: skeleton thay vì bảng 1 dòng owner rồi nhảy sang đủ members.
+- Chờ xong members + publish status + activity một lần (`accessReady`); bỏ fetch activity lặp khi Realtime SUBSCRIBED.
+- Route column không flip Missing → Published khi publish status chưa về.
+
+### Verification
+
+- `pnpm build` · mở Route detail → Access không nháy hàng
+
+---
+
+## 2026-06-05 - Data Box 3.1.5 — 2FA KPI/charts + remove cloud label (P0020)
+
+- Version: `3.1.5`
+- Type: Patch
+- Product: P0020
+- Prompt: 2FA KPI/Charts mặc định như tab khác; xóa nhãn Cloud vault
+- Status: Verified
+
+### Changes
+
+- `twofa-display-prefs`: KPI + chart defs (mặc định bật hết); Display prefs tab 2FA có KPI/Charts.
+- `twofa-aggregates` + `TwofaManagerScreen`: đẩy KPI/charts lên `WorkspaceDirectoryScreen` (URL `kpi`/`charts`).
+- Xóa dòng `Cloud vault: Synced (delta)` trên tab 2FA.
+
+### Verification
+
+- `pnpm build` · `/twofa` shell KPI + charts band
+
+---
+
+## 2026-06-05 - Data Box 3.1.4 — 100% Hub directory stack (P0004)
+
+- Version: `3.1.4`
+- Type: Patch
+- Product: P0020
+- Prompt: Clone 100% spacing/layer Hub — searchbar, KPI, chart, main; xóa layer trùng
+- Status: Verified
+
+### Changes
+
+- `WorkspaceDirectoryScreen` = `HubDirectoryScreen` (giống `HubListPage` P0004) — bỏ `HubTabBody` + `HubTabScreenBody` lồng nhau.
+- Cookie/2FA: KPI/charts/section rule qua `WorkspaceSearchContext`; body chỉ còn list/table.
+- `hub-tab-chrome-stack` + flex gap (không `hub-chrome-sticky-gap`); sync `KpiStrip` 1 hàng + CSS `--hub-kpi-*`.
+- `hub-main` scroll như P0004 (`overflow-y-auto`); chỉ Notes giữ `hub-main--notes`.
+- Xóa override `.hub-chrome-sticky` / `hub-main--tab` trùng trong `data-box-layout.css`.
+
+### Verification
+
+- `http://127.0.0.1:5177/cookie` · `pnpm build`
+
+---
+
+## 2026-06-05 - Data Box 3.1.3 — esbuild recover + 2FA Hub body
+
+- Version: `3.1.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Sửa lỗi esbuild overlay; ok 1 2 3 (2FA HubTabScreenBody, sales-shell cleanup, dev recover)
+- Status: Verified
+
+### Changes
+
+- `dev:recover` + `scripts/dev-recover.cjs` — kill :5177, clear `.vite`, restart (P0004 parity).
+- `vite.config`: `optimizeDeps` + `esbuild.target`; bỏ manualChunks notes↔twofa (circular chunk).
+- Tab **2FA**: `HubTabScreenBody` + section rule **Accounts**.
+- Xóa duplicate `sales-shell/*` (FilterBar, AppTabHeader, KPI, charts…) — chỉ re-export `@tool-workspace/hub-ui`.
+
+### Verification
+
+- `pnpm dev:recover` then `http://127.0.0.1:5177/twofa`
+- `corepack pnpm build`
+
+---
+
+## 2026-06-05 - Data Box 3.1.2 — Hub UI chrome parity (P0004)
+
+- Version: `3.1.2`
+- Type: Patch
+- Product: P0020
+- Prompt: Chuẩn hóa header/search/KPI/chart spacing giống tab Hub P0004; dùng chung hub-ui stack
+- Status: Verified
+
+### Changes
+
+- `WorkspaceScreenChrome` + `NotesHubChrome`: `HubTabChrome` / `HubTabBody` (golden P0004 stack) thay sticky thủ công + `pt-5`.
+- `CookieAutoSyncTable`: `HubTabScreenBody` + `HubTabSectionRule` cho KPI/charts/Routes list.
+- `sales-shell/index.ts`: re-export shell từ `@tool-workspace/hub-ui`; sync vendor `hub-shell-layout.css` (`--hub-chrome-content-gap`).
+- Toolbar controls: `h-[var(--hub-control-h)]` thay `h-[34px]`.
+- Bootstrap: `setupHubUi()` + `configureHubChromePrefs` từ URL (`hpin`/`spin`).
+
+### Verification
+
+- `corepack pnpm build` (P0020-Data-Box)
+
+---
+
 ## 2026-06-05 - Data Box 3.1 — cookie routes, access, public share
 
 - Version: `3.1.1`
