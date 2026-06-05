@@ -4,6 +4,35 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-05 - Data Box 4.1 — Hub shell + Cookie Auto download (P0020)
+
+- Version: `4.1.1`
+- Type: Major
+- Product: P0020
+- Prompt: Release P0020 — official ship after Deploy verify; hub-ui shell, Cookie download modal, shared edge close.
+- Commit: `79784a4`
+- Status: Committed
+- Release: (after Release keyword only — GitHub release URL)
+
+### Changes
+
+- Major release: unified hub-ui vendor stack, workspace directory screen, Notes/2FA/Cookie tab prefs and header metrics.
+- Cookie Auto extension download: ZIP fallback, modal polish, `HubModalFrame` edge close pattern.
+- Production verified at https://databox.infi.io.vn after Vercel deploy.
+
+### Verification
+
+- `pnpm build` · Deploy smoke OK · production 200
+
+### Rollback
+
+```powershell
+cd E:\Dev\Tool\P0020-Data-Box
+git checkout v3.3.1
+```
+
+---
+
 ## 2026-06-05 - Data Box 3.3 — Hub shell sync + Cookie download modal (P0020)
 
 - Version: `3.3.1`
