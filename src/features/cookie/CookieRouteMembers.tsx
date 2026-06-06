@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Mail, Save, Shield, UserPlus, Users } from "lucide-react";
-import { FilterBar, HubFilterSingleSelect, type FilterDef, type FilterValues } from "../../components/sales-shell";
+import {
+  FilterBar,
+  HubSingleFilterDropdown,
+  type FilterValues,
+} from "../../components/sales-shell";
+import { ACCESS_FILTER_DEFS, accessFiltersWithCounts } from "./access-filter-counts";
 import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
 import type { CookieVaultRow } from "./useCookieVaultMap";
 import { useNotesAuth } from "../notes/useNotesAuth";
@@ -23,7 +28,13 @@ import {
   CookieRouteFieldLabel,
   CookieRouteFormModal,
   CookieRouteModalActions,
+  CookieRouteModalSection,
 } from "./CookieRouteFormModal";
+import {
+  COOKIE_ROUTE_EDIT_MEMBER_TOC,
+  COOKIE_ROUTE_SHARE_TOC,
+  cookieRouteSectionTitle,
+} from "./cookie-route-form-toc";
 import { COOKIE_ACCESS_SELECT_OPTIONS } from "./cookieAccessSelectOptions";
 
 type Props = {
@@ -38,37 +49,6 @@ type PublishedState = {
   published: boolean;
   updatedAt: string | null;
 };
-
-const ACCESS_FILTER_DEFS: FilterDef[] = [
-  {
-    key: "role",
-    label: "Access",
-    showAllLabel: true,
-    options: [
-      { value: "owner", label: "Owner", color: "#a78bfa" },
-      { value: "load", label: "Load", color: "#38bdf8" },
-      { value: "sync", label: "Sync", color: "#818cf8" },
-    ],
-  },
-  {
-    key: "permission",
-    label: "Permission",
-    showAllLabel: true,
-    options: [
-      { value: "load", label: "Load", color: "#34d399" },
-      { value: "sync", label: "Sync", color: "#818cf8" },
-    ],
-  },
-  {
-    key: "status",
-    label: "Route",
-    showAllLabel: true,
-    options: [
-      { value: "published", label: "Published", color: "#818cf8" },
-      { value: "missing", label: "Missing", color: "#f59e0b" },
-    ],
-  },
-];
 
 type ShareAccess = "load" | "sync";
 
@@ -353,6 +333,11 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
     });
   }, [accessRows, filterValues, query, routePublished]);
 
+  const accessFilters = useMemo(
+    () => accessFiltersWithCounts(accessRows, query, filterValues, routePublished),
+    [accessRows, filterValues, query, routePublished],
+  );
+
   const selectableFiltered = useMemo(
     () => filteredAccessRows.filter((r) => r.selectable),
     [filteredAccessRows],
@@ -502,8 +487,9 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
 
       {shareOpen && canShare ? (
         <CookieRouteFormModal
+          toc={COOKIE_ROUTE_SHARE_TOC}
+          idPrefix="rt-m-share-"
           title="Share"
-          subtitle="Grant Load or Sync access by email. Manage stays with route owner only."
           onClose={() => setShareOpen(false)}
           footer={
             <CookieRouteModalActions
@@ -516,68 +502,64 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
             />
           }
         >
-          <div className="cookie-route-modal__route-card">
-            <div className="min-w-0">
-              <p className="cookie-route-modal__route-card-title">{binding.noteTitle ?? "Cookie route"}</p>
-              <p className="cookie-route-modal__route-card-meta">{binding.noteId}</p>
+          <CookieRouteModalSection
+            id="rt-m-share-route"
+            title={cookieRouteSectionTitle(COOKIE_ROUTE_SHARE_TOC, "route")}
+          >
+            <div className="cookie-route-modal__route-card">
+              <div className="min-w-0">
+                <p className="cookie-route-modal__route-card-title">{binding.noteTitle ?? "Cookie route"}</p>
+                <p className="cookie-route-modal__route-card-meta">{binding.noteId}</p>
+              </div>
+              <button
+                type="button"
+                className="cookie-route-modal__copy-btn"
+                onClick={() => void navigator.clipboard?.writeText(binding.noteId)}
+              >
+                Copy Note ID
+              </button>
             </div>
-            <button
-              type="button"
-              className="cookie-route-modal__copy-btn"
-              onClick={() => void navigator.clipboard?.writeText(binding.noteId)}
-            >
-              Copy Note ID
-            </button>
-          </div>
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <label className="block min-w-0">
-              <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
-              <input
-                className="field auth-gate-field w-full"
-                value={shareEmail}
-                placeholder="user@example.com"
-                onChange={(event) => setShareEmail(event.target.value)}
-              />
-            </label>
-            <label className="block min-w-0">
-              <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
-              <HubFilterSingleSelect
-                value={shareAccess}
-                options={COOKIE_ACCESS_SELECT_OPTIONS}
-                onChange={(v) => setShareAccess(v as ShareAccess)}
-                filterLabel="access"
-                TriggerIcon={Shield}
-              />
-            </label>
-          </div>
+          </CookieRouteModalSection>
+          <CookieRouteModalSection
+            id="rt-m-share-grant"
+            title={cookieRouteSectionTitle(COOKIE_ROUTE_SHARE_TOC, "grant")}
+          >
+            <p className="cookie-route-modal__note">
+              Grant Load or Sync access by email. Manage stays with route owner only.
+            </p>
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
+                <input
+                  className="field auth-gate-field w-full"
+                  value={shareEmail}
+                  placeholder="user@example.com"
+                  onChange={(event) => setShareEmail(event.target.value)}
+                />
+              </label>
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
+                <HubSingleFilterDropdown
+                  filterKey="access"
+                  label="Access"
+                  value={shareAccess}
+                  options={COOKIE_ACCESS_SELECT_OPTIONS}
+                  onChange={(v) => setShareAccess(v as ShareAccess)}
+                  className="w-full"
+                />
+              </label>
+            </div>
+          </CookieRouteModalSection>
         </CookieRouteFormModal>
       ) : null}
 
       {editingMember ? (
-        <div className="mb-3 rounded-2xl border border-indigo-400/22 bg-indigo-500/[.08] p-3">
-          <p className="cookie-route-form-modal__eyebrow">Member access</p>
-          <p className="cookie-route-form-modal__title !text-base">Edit access</p>
-          <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <label className="block min-w-0">
-              <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
-              <input
-                className="field auth-gate-field w-full opacity-80"
-                value={editingMember.grantee_email ?? ""}
-                readOnly
-              />
-            </label>
-            <label className="block min-w-0">
-              <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
-              <HubFilterSingleSelect
-                value={editAccess}
-                options={COOKIE_ACCESS_SELECT_OPTIONS}
-                onChange={(v) => setEditAccess(v as ShareAccess)}
-                filterLabel="access"
-                TriggerIcon={Shield}
-              />
-            </label>
-          </div>
-          <div className="mt-3">
+        <CookieRouteFormModal
+          toc={COOKIE_ROUTE_EDIT_MEMBER_TOC}
+          idPrefix="rt-m-edit-"
+          title="Edit access"
+          onClose={() => setEditingMember(null)}
+          footer={
             <CookieRouteModalActions
               primaryLabel="Save"
               primaryIcon={Save}
@@ -585,36 +567,64 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
               onPrimary={() => void saveEdit()}
               onSecondary={() => setEditingMember(null)}
             />
-          </div>
-        </div>
+          }
+        >
+          <CookieRouteModalSection
+            id="rt-m-edit-member"
+            title={cookieRouteSectionTitle(COOKIE_ROUTE_EDIT_MEMBER_TOC, "member")}
+          >
+            <p className="cookie-route-modal__note">Update Load or Sync access for this member.</p>
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
+                <input
+                  className="field auth-gate-field w-full opacity-80"
+                  value={editingMember.grantee_email ?? ""}
+                  readOnly
+                />
+              </label>
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
+                <HubSingleFilterDropdown
+                  filterKey="access"
+                  label="Access"
+                  value={editAccess}
+                  options={COOKIE_ACCESS_SELECT_OPTIONS}
+                  onChange={(v) => setEditAccess(v as ShareAccess)}
+                  className="w-full"
+                />
+              </label>
+            </div>
+          </CookieRouteModalSection>
+        </CookieRouteFormModal>
       ) : null}
 
       <div className="mb-3">
         <FilterBar
-          layout="hub"
+          layout="inline"
           placeholder="Search access by user, role, route..."
-          filters={ACCESS_FILTER_DEFS}
+          filters={accessFilters}
           query={query}
           onQueryChange={setQuery}
           values={filterValues}
           onValuesChange={setFilterValues}
-          toolbar={
-            <span className="text-[10px] text-[var(--muted)] tabular-nums">
-              {accessReady ? `${filteredAccessRows.length}/${accessRows.length}` : "Loading…"}
-            </span>
-          }
-          row2Actions={
-            canShare ? (
-              <CookieRouteAccessBulkActionBar
-                hasSelection={selectedIds.size > 0}
-                selectedCount={selectedIds.size}
-                canManage={canShare}
-                shareBusy={shareBusy || revokeBusy}
-                onAdd={openShareModal}
-                onEdit={openEditBulk}
-                onDelete={() => requestRevoke([...selectedIds])}
-              />
-            ) : null
+          trailing={
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <span className="text-[10px] text-[var(--muted)] tabular-nums">
+                {accessReady ? `${filteredAccessRows.length}/${accessRows.length}` : "Loading…"}
+              </span>
+              {canShare ? (
+                <CookieRouteAccessBulkActionBar
+                  hasSelection={selectedIds.size > 0}
+                  selectedCount={selectedIds.size}
+                  canManage={canShare}
+                  shareBusy={shareBusy || revokeBusy}
+                  onAdd={openShareModal}
+                  onEdit={openEditBulk}
+                  onDelete={() => requestRevoke([...selectedIds])}
+                />
+              ) : null}
+            </div>
           }
         />
       </div>

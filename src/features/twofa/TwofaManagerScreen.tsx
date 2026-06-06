@@ -15,11 +15,8 @@ import {
 } from "./twofa-display-prefs";
 import { buildTwofaChartItems, buildTwofaKpis } from "./twofa-aggregates";
 import { buildTwofaHeaderStats } from "./twofa-header-metrics";
-import {
-  buildTwofaServiceFilterOptions,
-  filterTwofaAccounts,
-  TWOFA_FILTER_DEFS,
-} from "./twofa-filters";
+import { filterTwofaAccounts } from "./twofa-filters";
+import { twofaFiltersWithCounts } from "./twofa-filter-counts";
 import { parseTwofaSearchQuery } from "./parse-twofa-search";
 import { TwofaAccountsTable } from "./TwofaAccountsTable";
 import { TwofaBulkActionBar } from "./TwofaBulkActionBar";
@@ -103,17 +100,16 @@ function TwofaManagerScreenBody({
 
   useEffect(() => subscribeHubListPrefs(() => setHubPrefs(readTwofaHubPrefs())), []);
 
-  const serviceOptions = useMemo(() => buildTwofaServiceFilterOptions(accounts), [accounts]);
+  const twofaFilters = useMemo(
+    () => twofaFiltersWithCounts(accounts, query, filterValues, hubPrefs.range),
+    [accounts, filterValues, hubPrefs.range, query],
+  );
 
   useEffect(() => {
     if (!shellMode) return;
-    setFilters(
-      TWOFA_FILTER_DEFS.map((def) =>
-        def.key === "service" ? { ...def, options: serviceOptions } : def,
-      ),
-    );
+    setFilters(twofaFilters);
     return () => setFilters([]);
-  }, [serviceOptions, setFilters, shellMode]);
+  }, [setFilters, shellMode, twofaFilters]);
 
   const displayedAccounts = useMemo(
     () => filterTwofaAccounts(accounts, query, filterValues, hubPrefs.range),

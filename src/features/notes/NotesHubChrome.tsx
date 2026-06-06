@@ -13,7 +13,7 @@ import {
 } from "./notes-list-prefs";
 import type { NoteFolder } from "./noteFolders";
 import { mergeDisplayFolders } from "./noteFolders";
-import { NOTES_FILTER_DEFS, notesFilterOptions } from "./notes-filters";
+import { notesFiltersWithCounts } from "./notes-filter-counts";
 import type { NoteListItem } from "./types";
 import { workspaceVersionLine } from "../workspace/workspace-tab-header-meta";
 import { WorkspaceHeaderActions } from "../workspace/WorkspaceHeaderActions";
@@ -25,6 +25,7 @@ type Props = {
   onFilterValuesChange: (v: FilterValues) => void;
   notes: NoteListItem[];
   noteFolders?: NoteFolder[];
+  cookieRouteNoteIds?: ReadonlySet<string>;
   shown: number;
   density: NotesListDensity;
   onDensityChange: (d: NotesListDensity) => void;
@@ -43,6 +44,7 @@ export function NotesHubChrome({
   onFilterValuesChange,
   notes,
   noteFolders = [],
+  cookieRouteNoteIds,
   shown,
   density,
   onDensityChange,
@@ -64,20 +66,20 @@ export function NotesHubChrome({
 
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_NOTES_HEADER_STAT_KEYS;
   const visFilterKeys = prefs.noteFilters ?? DEFAULT_NOTES_FILTER_KEYS;
-  const opts = useMemo(() => notesFilterOptions(notes, mergeDisplayFolders(noteFolders)), [noteFolders, notes]);
   const pinnedCount = useMemo(() => notes.filter((n) => n.pinned).length, [notes]);
   const syncedCount = useMemo(() => notes.filter((n) => n.sync_status === "synced").length, [notes]);
 
-  const hubFilters: FilterDef[] = useMemo(
-    () =>
-      NOTES_FILTER_DEFS.filter((d) => visFilterKeys.has(d.key)).map((d) => ({
-        key: d.key,
-        label: d.label,
-        options: opts[d.key as keyof typeof opts] ?? [],
-        showAllLabel: true,
-      })),
-    [opts, visFilterKeys],
-  );
+  const hubFilters: FilterDef[] = useMemo(() => {
+    const withCounts = notesFiltersWithCounts(
+      notes,
+      mergeDisplayFolders(noteFolders),
+      query,
+      filterValues,
+      hubPrefs.range,
+      cookieRouteNoteIds,
+    );
+    return withCounts.filter((d) => visFilterKeys.has(d.key));
+  }, [cookieRouteNoteIds, filterValues, hubPrefs.range, noteFolders, notes, query, visFilterKeys]);
 
   return (
     <HubDirectoryScreen

@@ -37,6 +37,16 @@ export {
   type FilterValues,
   type HubSingleFilterDropdownProps,
 } from "./shell/FilterBar";
+export {
+  HUB_FILTER_DROPDOWN_PANEL_CLASS,
+  HUB_FILTER_DROPDOWN_PANEL_PORTAL_CLASS,
+  HUB_FILTER_DROPDOWN_ROW_CLASS,
+  HubFilterDropdownCircle,
+  HubFilterDropdownTrigger,
+  folderFilterButtonLabel,
+  hubFilterTriggerClass,
+} from "./shell/filter-dropdown-primitives";
+export { enrichFilterDefs } from "./lib/filter-option-counts";
 export { HubFilterSelect, type HubFilterSelectOption } from "./shell/HubFilterSelect";
 export {
   AppTabHeader,

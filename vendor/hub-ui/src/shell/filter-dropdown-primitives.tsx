@@ -1,8 +1,9 @@
 import { Check, ChevronDown, FolderOpen, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { compactIconSize } from "../ui-scale";
 
-/** Shared Hub filter dropdown trigger — FilterBar + note folder picker. */
-export function filterDropdownTriggerClass(active: boolean, extra = "") {
+/** Shared Hub filter dropdown trigger — FilterBar + folder pickers. */
+export function hubFilterTriggerClass(active: boolean, extra = "") {
   return `inline-flex h-[var(--hub-control-h)] max-w-full items-center gap-1.5 rounded-lg border px-3 text-xs font-normal transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
     active
       ? "border-indigo-500/40 bg-indigo-500/10 text-indigo-200"
@@ -21,13 +22,11 @@ export function folderFilterButtonLabel(
   return `${label}: ${selectedCount} selected`;
 }
 
-type FilterDropdownTriggerProps = {
+type HubFilterDropdownTriggerProps = {
   active: boolean;
   open?: boolean;
   label: string;
-  /** Show indigo count pill when &gt; 1. */
   count?: number;
-  /** Tint folder icon when one folder is selected. */
   iconColor?: string | null;
   Icon?: LucideIcon;
   icon?: ReactNode;
@@ -37,7 +36,7 @@ type FilterDropdownTriggerProps = {
   className?: string;
 };
 
-export function FilterDropdownTrigger({
+export function HubFilterDropdownTrigger({
   active,
   open = false,
   label,
@@ -49,18 +48,18 @@ export function FilterDropdownTrigger({
   onClick,
   title,
   className = "",
-}: FilterDropdownTriggerProps) {
+}: HubFilterDropdownTriggerProps) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
       title={title}
-      className={filterDropdownTriggerClass(active, className)}
+      className={hubFilterTriggerClass(active, className)}
     >
       {icon ?? (
         <Icon
-          size={12}
+          size={compactIconSize(12)}
           className={`shrink-0 ${iconColor ? "" : "opacity-75"}`}
           style={iconColor ? { color: iconColor } : undefined}
           aria-hidden
@@ -68,16 +67,20 @@ export function FilterDropdownTrigger({
       )}
       <span className="min-w-0 max-w-[12rem] truncate">{label}</span>
       {count != null && count > 1 ? (
-        <span className="grid h-4 min-w-[16px] shrink-0 place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold leading-none text-white">
+        <span className="grid h-4 min-w-[var(--hub-count-badge-min-w)] shrink-0 place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white">
           {count}
         </span>
       ) : null}
-      <ChevronDown size={12} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+      <ChevronDown
+        size={compactIconSize(12)}
+        className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        aria-hidden
+      />
     </button>
   );
 }
 
-export function FilterDropdownCircle({ checked, indeterminate }: { checked: boolean; indeterminate?: boolean }) {
+export function HubFilterDropdownCircle({ checked, indeterminate }: { checked: boolean; indeterminate?: boolean }) {
   return (
     <div
       className={`grid h-4 w-4 shrink-0 place-items-center rounded-full border transition-all ${
@@ -100,8 +103,12 @@ export function FilterDropdownCircle({ checked, indeterminate }: { checked: bool
   );
 }
 
-export const FILTER_DROPDOWN_PANEL_CLASS =
+export const HUB_FILTER_DROPDOWN_PANEL_CLASS =
   "anim-pop absolute top-full z-30 mt-1 w-72 rounded-xl border border-white/10 bg-[var(--panel)] shadow-xl shadow-black/40";
 
-export const FILTER_DROPDOWN_ROW_CLASS =
+/** Portaled panel — fixed position, escapes modal overflow clipping. */
+export const HUB_FILTER_DROPDOWN_PANEL_PORTAL_CLASS =
+  "anim-pop fixed z-[2600] w-72 rounded-xl border border-white/10 bg-[var(--panel)] shadow-xl shadow-black/40";
+
+export const HUB_FILTER_DROPDOWN_ROW_CLASS =
   "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-white/5";

@@ -1,15 +1,6 @@
-import { Upload, UserRound } from "lucide-react";
-import type { HubFilterSelectOption } from "../../components/sales-shell/HubFilterSingleSelect";
+import type { FilterOption } from "@tool-workspace/hub-ui";
 
-export const COOKIE_ACCESS_SELECT_OPTIONS: HubFilterSelectOption[] = [
-  {
-    value: "load",
-    label: "Load",
-    leading: <UserRound size={12} className="shrink-0 text-sky-300" aria-hidden />,
-  },
-  {
-    value: "sync",
-    label: "Sync",
-    leading: <Upload size={12} className="shrink-0 text-amber-300" aria-hidden />,
-  },
+export const COOKIE_ACCESS_SELECT_OPTIONS: FilterOption[] = [
+  { value: "load", label: "Load" },
+  { value: "sync", label: "Sync" },
 ];

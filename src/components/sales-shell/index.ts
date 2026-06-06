@@ -4,8 +4,11 @@ export {
   type TabHeaderMetaItem,
   type TabHeaderStatItem,
   FilterBar,
+  HubSingleFilterDropdown,
   type FilterDef,
+  type FilterOption,
   type FilterValues,
+  type HubSingleFilterDropdownProps,
   MetricBadge,
   RegistryMetricBadge,
   type MetricBadgeProps,
@@ -27,10 +30,6 @@ export {
 
 export { DisplayPrefs, type PrefItem } from "./DisplayPrefs";
 export { WorkspaceSidebar } from "./WorkspaceSidebar";
-export {
-  HubFilterSingleSelect,
-  type HubFilterSelectOption,
-} from "./HubFilterSingleSelect";
 export { HubSortLabel } from "./HubSortLabel";
 export { HubTimeRangeSelect } from "./HubTimeRangeSelect";
 export { HubRowLimitSelect } from "./HubRowLimitSelect";

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, ChevronDown } from "lucide-react";
+import { compactIconSize } from "../../lib/ui-scale";
 import {
   DEFAULT_HUB_TIME_RANGE,
   patchHubListPrefs,
@@ -37,9 +38,13 @@ export function HubTimeRangeSelect({ value }: { value: TimeRange }) {
             : "border-white/10 bg-[var(--panel-2)] text-[var(--text)] hover:bg-white/5"
         }`}
       >
-        <CalendarDays size={13} className="shrink-0 opacity-80" />
+        <CalendarDays size={compactIconSize(13)} className="shrink-0 opacity-80" aria-hidden />
         <span>{label}</span>
-        <ChevronDown size={12} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          size={compactIconSize(12)}
+          className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          aria-hidden
+        />
       </button>
       {open ? (
         <div className="anim-pop absolute right-0 top-full z-30 mt-1 min-w-[9rem] rounded-xl border border-white/10 bg-[var(--panel)] p-1 shadow-xl shadow-black/40">

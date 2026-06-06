@@ -4,6 +4,96 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-05 - Filter parity Phase A: faceted counts + inline trailing
+
+- Version: `4.1.5`
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- `enrichFilterDefs` re-export via `src/lib/filter-option-counts.ts`.
+- Cookie routes, 2FA, Notes, Route Access: faceted option counts on FilterBar dropdowns.
+- CookieRouteMembers inline FilterBar: `toolbar`/`row2Actions` → `trailing` (P0004 golden).
+
+Version: 4.1.4 → 4.1.5
+
+## 2026-06-05 - P0020 filters aligned with P0004 Hub golden pattern
+
+- Version: `4.1.4`
+- Type: Patch
+- Product: P0020
+- Prompt: Clone filter style từ P0004 Hub sang toàn bộ P0020.
+- Commit: pending
+- Status: Draft
+- Release: (after Release keyword only — GitHub release URL)
+
+### Changes
+
+- `setupHubUi`: wire `configureFilterIcons` → `badge-registry` (FilterBar icons for Cookie / Notes / 2FA / Access).
+- Replace local `HubFilterSingleSelect` with vendor `HubSingleFilterDropdown` in cookie modals.
+- Extend `badge-registry` filter keys: `folder`, `service`, `usage`, `role`, `permission`, `note`, `access`.
+- `filter-dropdown-ui` + `HubTimeRangeSelect` + `NotesNoteFolderFilter`: P0004 trigger/panel chrome + portal panel.
+- `CookieRouteMembers` nested FilterBar → `layout="inline"` (same as P0004 UserAccessModal).
+
+### Verification
+
+- `npm run build` — passed
+
+---
+
+## 2026-06-05 - Cookie Auto — TOC route modals + filter layer fix (P0020)
+
+- Version: `4.1.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Sửa Layer Filter; chuẩn TOC + icon menu như modal Download; xóa Add by Note ID; giảm khoảng cách header/main.
+- Commit: pending
+- Status: Draft
+- Release: (after Release keyword only — GitHub release URL)
+
+### Changes
+
+- `HubFilterSingleSelect`: portal dropdown to `document.body` with fixed position — fixes Access filter clipped inside modal scroll.
+- `CookieRouteFormModal`: TOC sidebar + `CookieRouteModalSection` (same layout as extension download modal).
+- Add / Share / Edit route modals: section nav with emoji icons; header compact (icon + title only).
+- Remove "Add by Note ID" tab and `onJoinByNoteId` join flow from cookie route UI.
+
+### Verification
+
+- `npm run build` — passed
+
+---
+
+## 2026-06-05 - Cookie Auto — Standardize route modals (P0020)
+
+- Version: `4.1.2`
+- Type: Patch
+- Product: P0020
+- Prompt: Chuẩn hóa Modal Add route, Share, Edit theo modal Download (HubModalFrame + nút X viền).
+- Commit: pending
+- Status: Draft
+- Release: (after Release keyword only — GitHub release URL)
+
+### Changes
+
+- `CookieRouteFormModal`: migrate from auth-gate shell to `modal-backdrop--tool-detail` + `HubModalFrame` + centered confirm footer (same as extension download).
+- `CookieRouteMembers` Edit access: inline panel → full modal overlay.
+- Add route / Share / Edit / Delete route modals inherit shared styling via `CookieRouteFormModal`.
+
+### Verification
+
+- `pnpm -C E:\Dev\Tool\P0020-Data-Box build` — passed
+
+### Rollback
+
+```powershell
+cd E:\Dev\Tool\P0020-Data-Box
+git checkout v4.1.1
+```
+
+---
+
 ## 2026-06-05 - Data Box 4.1 — Hub shell + Cookie Auto download (P0020)
 
 - Version: `4.1.1`

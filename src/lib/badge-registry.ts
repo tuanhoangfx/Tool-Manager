@@ -11,8 +11,10 @@ import {
   Bot,
   Calculator,
   CheckCircle2,
+  Clock,
   Cloud,
   Database,
+  Eye,
   FileCode2,
   FileText,
   Flag,
@@ -22,6 +24,7 @@ import {
   Github,
   HardDrive,
   Heart,
+  KeyRound,
   Layers,
   Link2,
   Lock,
@@ -35,6 +38,9 @@ import {
   ShieldCheck,
   Share2,
   Tag,
+  Upload,
+  UserRound,
+  Users,
   Zap,
 } from "lucide-react";
 import type { FilterOption } from "@tool-workspace/hub-ui";
@@ -109,6 +115,24 @@ const FILTER_ALL: Record<string, FilterIconMeta> = {
   share: { icon: Share2, className: "text-violet-300" },
   type: { icon: Layers, className: "text-indigo-300" },
   source: { icon: Link2, className: "text-emerald-300" },
+  folder: { icon: FolderOpen, className: "text-indigo-300" },
+  service: { icon: KeyRound, className: "text-amber-300" },
+  usage: { icon: Clock, className: "text-cyan-300" },
+  role: { icon: Users, className: "text-indigo-300" },
+  permission: { icon: ShieldCheck, className: "text-emerald-300" },
+  note: { icon: FileText, className: "text-indigo-300" },
+  access: { icon: ShieldCheck, className: "text-emerald-300" },
+};
+
+const COOKIE_ACCESS: Record<string, FilterIconMeta> = {
+  load: { icon: UserRound, className: "text-sky-300" },
+  sync: { icon: Upload, className: "text-amber-300" },
+  owner: { icon: Users, className: "text-violet-300" },
+};
+
+const ROUTE_ACCESS_STATUS: Record<string, FilterIconMeta> = {
+  published: { icon: CheckCircle2, className: "text-emerald-400" },
+  missing: { icon: AlertTriangle, className: "text-amber-400" },
 };
 
 const LINK_STATUS: Record<string, FilterIconMeta> = {
@@ -216,9 +240,24 @@ export function resolveFilterAllIcon(filterKey: string): FilterIconMeta | null {
 
 export function resolveFilterOptionIcon(filterKey: string, option: FilterOption): FilterIconMeta | null {
   switch (filterKey) {
+    case "folder":
+      return null;
+    case "service":
+      return { icon: KeyRound, className: "text-amber-300" };
+    case "usage":
+      return option.value === "recent"
+        ? { icon: Clock, className: "text-emerald-400" }
+        : { icon: Clock, className: "text-slate-400" };
+    case "role":
+    case "permission":
+    case "access":
+      return pick(COOKIE_ACCESS, option.value);
+    case "note":
+      return { icon: FileText, className: "text-indigo-300" };
     case "health":
     case "status":
       return (
+        pick(ROUTE_ACCESS_STATUS, option.value) ??
         pick(STATUS_HEALTH, option.label) ??
         pick(STATUS_HEALTH, option.value) ??
         LINK_STATUS[option.value] ??
@@ -246,9 +285,14 @@ export function resolveFilterOptionIcon(filterKey: string, option: FilterOption)
         }[option.value] ?? { icon: RefreshCw, className: "text-cyan-300" }
       );
     case "share":
-      return option.value === "shared"
-        ? { icon: Share2, className: "text-violet-300" }
-        : { icon: Lock, className: "text-slate-400" };
+      return (
+        {
+          edit: { icon: Pencil, className: "text-violet-300" },
+          view: { icon: Eye, className: "text-cyan-300" },
+          private: { icon: Lock, className: "text-slate-400" },
+          shared: { icon: Share2, className: "text-violet-300" },
+        }[option.value] ?? { icon: Lock, className: "text-slate-400" }
+      );
     case "type":
       return option.value === "facebook"
         ? { icon: Monitor, className: "text-blue-300" }

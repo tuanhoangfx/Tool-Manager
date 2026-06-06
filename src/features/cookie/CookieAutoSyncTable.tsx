@@ -13,7 +13,14 @@ import {
   CookieRouteFieldLabel,
   CookieRouteFormModal,
   CookieRouteModalActions,
+  CookieRouteModalSection,
 } from "./CookieRouteFormModal";
+import {
+  COOKIE_ROUTE_ADD_TOC,
+  COOKIE_ROUTE_EDIT_TOC,
+  COOKIE_ROUTE_SHARE_TOC,
+  cookieRouteSectionTitle,
+} from "./cookie-route-form-toc";
 import { COOKIE_ACCESS_SELECT_OPTIONS } from "./cookieAccessSelectOptions";
 import {
   Activity,
@@ -39,8 +46,8 @@ import {
   UserPlus,
 } from "lucide-react";
 import {
-  HubFilterSingleSelect,
   HubResultCount,
+  HubSingleFilterDropdown,
   HubTimeRangeSelect,
   MetricBadge,
   MiniBarChart,
@@ -64,7 +71,7 @@ import { resolveCookieSiteIcon } from "./cookieSiteIcon";
 import { buildAppUrl } from "../../lib/workspace-path";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
 import { readCookieHubPrefs } from "./cookie-tab-prefs";
-import { COOKIE_ROUTE_FILTER_DEFS } from "./cookie-route-filters";
+import { cookieRouteFiltersWithCounts } from "./cookie-route-filter-counts";
 import {
   DEFAULT_COOKIE_CHART_KEYS,
   DEFAULT_COOKIE_HEADER_STAT_KEYS,
@@ -111,7 +118,6 @@ type Props = {
   selectedBindingId?: string | null;
   onSelect?: (bindingId: string) => void;
   onAdd?: (noteId: string, domain: string, pass: string) => void;
-  onJoinByNoteId?: (noteId: string, domain: string) => Promise<boolean> | boolean;
   onUpdate?: (id: string, patch: Partial<CookieBinding>) => void;
   onRemove?: (id: string) => void;
   onRefresh?: () => void;
@@ -134,7 +140,6 @@ type RouteModalState =
   | { type: "share"; id: string }
   | null;
 
-type AddRouteMode = "create" | "join";
 type ShareRole = "load" | "sync";
 
 function statusTone(status: string | undefined): MetricBadgeTone {
@@ -746,7 +751,6 @@ export function CookieAutoSyncTable({
   selectedBindingId,
   onSelect,
   onAdd,
-  onJoinByNoteId,
   onUpdate,
   onRemove,
   onRefresh,
@@ -763,7 +767,6 @@ export function CookieAutoSyncTable({
       notes.map((n) => ({
         value: n.id,
         label: n.title?.trim() || "Untitled",
-        leading: <FileText size={12} className="shrink-0 opacity-75" aria-hidden />,
       })),
     [notes],
   );
@@ -787,12 +790,10 @@ export function CookieAutoSyncTable({
   const [draftNoteId, setDraftNoteId] = useState("");
   const [draftDomain, setDraftDomain] = useState(".facebook.com");
   const [draftPass, setDraftPass] = useState("");
-  const [addMode, setAddMode] = useState<AddRouteMode>("create");
   const [shareEmail, setShareEmail] = useState("");
   const [shareRole, setShareRole] = useState<ShareRole>("load");
   const [shareBusy, setShareBusy] = useState(false);
   const [shareCounts, setShareCounts] = useState<Record<string, number>>({});
-  const [joinBusy, setJoinBusy] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<HubViewMode>("card");
   const toolbarKeyRef = useRef("");
@@ -858,6 +859,12 @@ export function CookieAutoSyncTable({
       );
     });
   }, [filterValues, prefs.range, routeQuery, rows]);
+
+  const routeFiltersWithCounts = useMemo(
+    () => cookieRouteFiltersWithCounts(rows, routeQuery, filterValues, prefs.range),
+    [filterValues, prefs.range, routeQuery, rows],
+  );
+
   const allVisibleSelected =
     filteredRows.length > 0 && filteredRows.every((row) => selectedIds.includes(row.binding.id));
   const selectedBindings = useMemo(
@@ -985,7 +992,7 @@ export function CookieAutoSyncTable({
   ]);
 
   useEffect(() => {
-    setFilters(COOKIE_ROUTE_FILTER_DEFS);
+    setFilters(routeFiltersWithCounts);
     return () => {
       toolbarKeyRef.current = "";
       filterToolbarKeyRef.current = "";
@@ -997,7 +1004,7 @@ export function CookieAutoSyncTable({
       setSectionRuleLabel(undefined);
       setCenterStats([]);
     };
-  }, [setCenterStats, setFilterToolbar, setFilters, setToolbar]);
+  }, [routeFiltersWithCounts, setCenterStats, setFilterToolbar, setFilters, setToolbar]);
 
   useEffect(() => {
     setSelectedIds((prev) => prev.filter((id) => bindings.some((binding) => binding.id === id)));
@@ -1050,7 +1057,6 @@ export function CookieAutoSyncTable({
   }, [refreshShareCount]);
 
   const openAdd = useCallback(() => {
-    setAddMode("create");
     setDraftNoteId(notes[0]?.id ?? "");
     setDraftDomain(".facebook.com");
     setDraftPass("");
@@ -1069,20 +1075,6 @@ export function CookieAutoSyncTable({
     onAdd(draftNoteId.trim(), draftDomain.trim(), draftPass.trim());
     setModal(null);
     setDraftPass("");
-  };
-
-  const submitJoin = async () => {
-    if (!onJoinByNoteId || !draftNoteId.trim() || joinBusy) return;
-    setJoinBusy(true);
-    try {
-      const ok = await onJoinByNoteId(draftNoteId.trim(), draftDomain.trim());
-      if (ok) {
-        setModal(null);
-        setDraftNoteId("");
-      }
-    } finally {
-      setJoinBusy(false);
-    }
   };
 
   const openShare = useCallback((binding: CookieBinding) => {
@@ -1170,7 +1162,6 @@ export function CookieAutoSyncTable({
   const filterToolbarKey = [
     toolbarActionsKey,
     onAdd ? "add" : "",
-    onJoinByNoteId ? "join" : "",
     onUpdate ? "update" : "",
     onRemove ? "remove" : "",
     onRefresh ? "refresh" : "",
@@ -1186,7 +1177,7 @@ export function CookieAutoSyncTable({
     setFilterToolbar(
       <>
         {toolbarActions}
-          {onAdd || onJoinByNoteId ? (
+          {onAdd ? (
             <button
               type="button"
             className="inline-flex h-[var(--hub-control-h)] items-center gap-1.5 rounded-lg border border-indigo-400/30 bg-indigo-500/20 px-3 text-xs font-medium text-indigo-100 hover:bg-indigo-500/30"
@@ -1249,7 +1240,6 @@ export function CookieAutoSyncTable({
     filterToolbarKey,
     canShareTarget,
     onAdd,
-    onJoinByNoteId,
     openAdd,
     openEdit,
     openShare,
@@ -1265,56 +1255,37 @@ export function CookieAutoSyncTable({
 
   return (
     <>
-      {modal?.type === "add" && (onAdd || onJoinByNoteId) ? (
+      {modal?.type === "add" && onAdd ? (
         <CookieRouteFormModal
-          wide
+          toc={COOKIE_ROUTE_ADD_TOC}
+          idPrefix="rt-add-"
           title="Add route"
-          subtitle="Create a cloud route or join a route shared by Note ID."
           onClose={() => setModal(null)}
           footer={
             <CookieRouteModalActions
-              primaryLabel={addMode === "join" ? "Join shared route" : "Create cloud route"}
-              primaryIcon={addMode === "join" ? Link2 : Plus}
-              primaryBusy={joinBusy}
+              primaryLabel="Create cloud route"
+              primaryIcon={Plus}
               primaryDisabled={!draftNoteId.trim()}
-              onPrimary={() => {
-                if (addMode === "join") void submitJoin();
-                else submitAdd();
-              }}
+              onPrimary={submitAdd}
               onSecondary={() => setModal(null)}
             />
           }
         >
-          <div className="auth-gate-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={addMode === "create"}
-              className={`auth-gate-tab${addMode === "create" ? " auth-gate-tab--active" : ""}`}
-              onClick={() => setAddMode("create")}
-            >
-              Create route
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={addMode === "join"}
-              className={`auth-gate-tab${addMode === "join" ? " auth-gate-tab--active" : ""}`}
-              onClick={() => setAddMode("join")}
-            >
-              Add by Note ID
-            </button>
-          </div>
-          {addMode === "create" ? (
+          <CookieRouteModalSection
+            id="rt-add-create"
+            title={cookieRouteSectionTitle(COOKIE_ROUTE_ADD_TOC, "create")}
+          >
+            <p className="cookie-route-modal__note">Create a new cloud cookie route for the selected note and domain.</p>
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="block min-w-0">
                 <CookieRouteFieldLabel icon={FileText}>Target note</CookieRouteFieldLabel>
-                <HubFilterSingleSelect
+                <HubSingleFilterDropdown
+                  filterKey="note"
+                  label="Target note"
                   value={draftNoteId}
                   options={noteSelectOptions}
                   onChange={setDraftNoteId}
-                  filterLabel="note"
-                  TriggerIcon={FileText}
+                  className="w-full"
                 />
               </label>
               <label className="block min-w-0">
@@ -1335,52 +1306,27 @@ export function CookieAutoSyncTable({
                 />
               </label>
             </div>
-          ) : (
-            <>
-              <p className="cookie-route-modal__note">
-                Paste the Note ID shared by owner. Supabase checks{" "}
-                <code>note_cookie_members</code> before returning routes.
-              </p>
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
-                <label className="block min-w-0">
-                  <CookieRouteFieldLabel icon={Link2}>Shared Note ID</CookieRouteFieldLabel>
-                  <input
-                    className="field auth-gate-field font-mono w-full"
-                    value={draftNoteId}
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                    onChange={(e) => setDraftNoteId(e.target.value)}
-                  />
-                </label>
-                <label className="block min-w-0">
-                  <CookieRouteFieldLabel icon={Globe2}>Domain</CookieRouteFieldLabel>
-                  <input
-                    className="field auth-gate-field font-mono w-full"
-                    value={draftDomain}
-                    onChange={(e) => setDraftDomain(e.target.value)}
-                  />
-                </label>
-              </div>
-            </>
-          )}
-          <div className="cookie-route-modal__presets">
-            {DOMAIN_PRESETS.map((p) => (
-              <button
-                key={p.domain}
-                type="button"
-                className="cookie-route-modal__preset-btn"
-                onClick={() => setDraftDomain(p.domain)}
-              >
-                + {p.label}
-              </button>
-            ))}
-          </div>
+            <div className="cookie-route-modal__presets">
+              {DOMAIN_PRESETS.map((p) => (
+                <button
+                  key={p.domain}
+                  type="button"
+                  className="cookie-route-modal__preset-btn"
+                  onClick={() => setDraftDomain(p.domain)}
+                >
+                  + {p.label}
+                </button>
+              ))}
+            </div>
+          </CookieRouteModalSection>
         </CookieRouteFormModal>
       ) : null}
 
       {modal?.type === "share" && shareBinding ? (
         <CookieRouteFormModal
+          toc={COOKIE_ROUTE_SHARE_TOC}
+          idPrefix="rt-share-"
           title="Share"
-          subtitle="Grant Load or Sync access by email. Manage stays with route owner only."
           onClose={() => setModal(null)}
           footer={
             <CookieRouteModalActions
@@ -1393,40 +1339,54 @@ export function CookieAutoSyncTable({
             />
           }
         >
-          <div className="cookie-route-modal__route-card">
-            <div className="min-w-0">
-              <p className="cookie-route-modal__route-card-title">{shareBinding.noteTitle ?? "Cookie route"}</p>
-              <p className="cookie-route-modal__route-card-meta">{shareBinding.noteId}</p>
+          <CookieRouteModalSection
+            id="rt-share-route"
+            title={cookieRouteSectionTitle(COOKIE_ROUTE_SHARE_TOC, "route")}
+          >
+            <div className="cookie-route-modal__route-card">
+              <div className="min-w-0">
+                <p className="cookie-route-modal__route-card-title">{shareBinding.noteTitle ?? "Cookie route"}</p>
+                <p className="cookie-route-modal__route-card-meta">{shareBinding.noteId}</p>
+              </div>
+              <button
+                type="button"
+                className="cookie-route-modal__copy-btn"
+                onClick={() => void navigator.clipboard?.writeText(shareBinding.noteId)}
+              >
+                Copy Note ID
+              </button>
             </div>
-            <button
-              type="button"
-              className="cookie-route-modal__copy-btn"
-              onClick={() => void navigator.clipboard?.writeText(shareBinding.noteId)}
-            >
-              Copy Note ID
-            </button>
-          </div>
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <label className="block min-w-0">
-              <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
-              <input
-                className="field auth-gate-field w-full"
-                value={shareEmail}
-                placeholder="user@example.com"
-                onChange={(event) => setShareEmail(event.target.value)}
-              />
-            </label>
-            <label className="block min-w-0">
-              <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
-              <HubFilterSingleSelect
-                value={shareRole}
-                options={COOKIE_ACCESS_SELECT_OPTIONS}
-                onChange={(v) => setShareRole(v as ShareRole)}
-                filterLabel="access"
-                TriggerIcon={Shield}
-              />
-            </label>
-          </div>
+          </CookieRouteModalSection>
+          <CookieRouteModalSection
+            id="rt-share-grant"
+            title={cookieRouteSectionTitle(COOKIE_ROUTE_SHARE_TOC, "grant")}
+          >
+            <p className="cookie-route-modal__note">
+              Grant Load or Sync access by email. Manage stays with route owner only.
+            </p>
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
+                <input
+                  className="field auth-gate-field w-full"
+                  value={shareEmail}
+                  placeholder="user@example.com"
+                  onChange={(event) => setShareEmail(event.target.value)}
+                />
+              </label>
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
+                <HubSingleFilterDropdown
+                  filterKey="access"
+                  label="Access"
+                  value={shareRole}
+                  options={COOKIE_ACCESS_SELECT_OPTIONS}
+                  onChange={(v) => setShareRole(v as ShareRole)}
+                  className="w-full"
+                />
+              </label>
+            </div>
+          </CookieRouteModalSection>
         </CookieRouteFormModal>
       ) : null}
 
@@ -1645,9 +1605,9 @@ export function CookieAutoSyncTable({
 
       {editing && onUpdate ? (
         <CookieRouteFormModal
-          wide
+          toc={COOKIE_ROUTE_EDIT_TOC}
+          idPrefix="rt-edit-"
           title="Edit route"
-          subtitle="Update route metadata. Advanced diagnostics are available in route detail when needed."
           onClose={() => setModal(null)}
           footer={
             <CookieRouteModalActions
@@ -1659,36 +1619,45 @@ export function CookieAutoSyncTable({
             />
           }
         >
-          <div className="grid gap-3 sm:grid-cols-3">
-            <label className="block min-w-0">
-              <CookieRouteFieldLabel icon={FileText}>Note</CookieRouteFieldLabel>
-              <HubFilterSingleSelect
-                value={draftNoteId}
-                options={noteSelectOptions}
-                onChange={setDraftNoteId}
-                filterLabel="note"
-                TriggerIcon={FileText}
-              />
-            </label>
-            <label className="block min-w-0">
-              <CookieRouteFieldLabel icon={Globe2}>Domain</CookieRouteFieldLabel>
-              <input
-                className="field auth-gate-field font-mono w-full"
-                value={draftDomain}
-                onChange={(e) => setDraftDomain(e.target.value)}
-              />
-            </label>
-            <label className="block min-w-0">
-              <CookieRouteFieldLabel icon={LockKeyhole}>Sync pass</CookieRouteFieldLabel>
-              <input
-                type="password"
-                className="field auth-gate-field w-full"
-                placeholder={editing.requiresPass ? "Required" : "Optional"}
-                value={draftPass}
-                onChange={(e) => setDraftPass(e.target.value)}
-              />
-            </label>
-          </div>
+          <CookieRouteModalSection
+            id="rt-edit-route"
+            title={cookieRouteSectionTitle(COOKIE_ROUTE_EDIT_TOC, "route")}
+          >
+            <p className="cookie-route-modal__note">
+              Update route metadata. Advanced diagnostics are available in route detail when needed.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={FileText}>Note</CookieRouteFieldLabel>
+                <HubSingleFilterDropdown
+                  filterKey="note"
+                  label="Note"
+                  value={draftNoteId}
+                  options={noteSelectOptions}
+                  onChange={setDraftNoteId}
+                  className="w-full"
+                />
+              </label>
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={Globe2}>Domain</CookieRouteFieldLabel>
+                <input
+                  className="field auth-gate-field font-mono w-full"
+                  value={draftDomain}
+                  onChange={(e) => setDraftDomain(e.target.value)}
+                />
+              </label>
+              <label className="block min-w-0">
+                <CookieRouteFieldLabel icon={LockKeyhole}>Sync pass</CookieRouteFieldLabel>
+                <input
+                  type="password"
+                  className="field auth-gate-field w-full"
+                  placeholder={editing.requiresPass ? "Required" : "Optional"}
+                  value={draftPass}
+                  onChange={(e) => setDraftPass(e.target.value)}
+                />
+              </label>
+            </div>
+          </CookieRouteModalSection>
         </CookieRouteFormModal>
       ) : null}
 

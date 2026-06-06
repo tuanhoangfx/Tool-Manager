@@ -26,11 +26,9 @@ import { useCookieVaultMap } from "../../cookie/useCookieVaultMap";
 import { useNotesCookieRealtime } from "../../cookie/useNotesCookieRealtime";
 import {
   disableCookieRouteInCloud,
-  mergeCookieRoutes,
   pullCookieRoutesFromCloud,
   upsertCookieRouteToCloud,
 } from "../../cookie/cookieRoutesRepository";
-import { joinCookieRouteByNoteId } from "../../cookie/noteCookieMembersRepository";
 import { NotesAuthGate } from "../../notes/NotesAuthGate";
 import { SupabaseMigrateBanner } from "../../cookie/SupabaseMigrateBanner";
 import { useCookieSchemaHealth } from "../../cookie/useCookieSchemaHealth";
@@ -267,24 +265,6 @@ function CookieSyncMain({
     };
   }, [notesKey, session, offline, loading, publishRouteToCloud, refreshCookieBridge]);
 
-  const onJoinByNoteId = useCallback(
-    async (noteId: string, domain: string) => {
-      const res = await joinCookieRouteByNoteId({ noteId, domain });
-      if (!res.ok) {
-        pushToast(res.error, "error", 8000);
-        return false;
-      }
-      const next = mergeCookieRoutes(bindings, [res.route], notes);
-      setBindings(next);
-      const joined = next.find((binding) => binding.noteId === res.route.note_id && binding.domain === res.route.domain);
-      if (joined) setSelectedBindingId(joined.id);
-      pushToExtension(next);
-      pushToast("Shared route joined. Use extension Load on this browser; publish via owner browser only.", "success");
-      return true;
-    },
-    [bindings, notes, pushToExtension, pushToast, setBindings],
-  );
-
   useEffect(() => {
     if (deepLinkDone || loading) return;
     const link = readCookieDeepLink();
@@ -416,7 +396,6 @@ function CookieSyncMain({
               void refreshCookieBridge({ silent: true });
             });
           }}
-          onJoinByNoteId={onJoinByNoteId}
           onUpdate={(id, patch) => {
             const current = bindings.find((binding) => binding.id === id);
             if (!current) return;
