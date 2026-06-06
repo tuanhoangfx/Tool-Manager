@@ -10,7 +10,7 @@
 - Type: Patch
 - Product: P0020
 - Prompt: Migrate all P0020 modals to golden HubToolDetailModal shell (Settings/Log, Cookie, 2FA, User, Auth); sync hub-ui vendor; prune legacy auth-gate portal CSS.
-- Commit: `(pending)`
+- Commit: `ae12992`
 - Status: Committed
 - Release: (after Release keyword only — GitHub release URL)
 
