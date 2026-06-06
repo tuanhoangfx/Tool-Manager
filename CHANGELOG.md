@@ -10,7 +10,7 @@
 - Type: Patch
 - Product: P0020
 - Prompt: Remove TwofaAddForm embedded panel; search-no-match opens HubToolDetailModal; move auth-gate form CSS to packages/hub-ui hub-auth-gate.css.
-- Commit: `pending`
+- Commit: `8f9a95e`
 - Status: Committed
 - Release: (after Release keyword only — GitHub release URL)
 
