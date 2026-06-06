@@ -4,6 +4,38 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-06 - HubToolDetailModal standardization across P0020 modals
+
+- Version: `4.2.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Migrate all P0020 modals to golden HubToolDetailModal shell (Settings/Log, Cookie, 2FA, User, Auth); sync hub-ui vendor; prune legacy auth-gate portal CSS.
+- Commit: `(pending)`
+- Status: Committed
+- Release: (after Release keyword only — GitHub release URL)
+
+### Changes
+
+- Settings/Log: `HubUsageLogPanel` + `HubHeaderPanelButton` modal detail with TOC scroll-spy.
+- Cookie: Add route, Download FAB, route detail → `HubToolDetailModal` + `sectionIds`.
+- 2FA/Notes: Add, Confirm, folder form, User sidebar, NotesAuthGate → compact hub modal shell.
+- CSS: remove dead `route-detail-modal-v1`, cookie modal width overrides, auth-gate portal shell (root/backdrop/close).
+- Vendor: sync `packages/hub-ui` → P0020 (TOC spy, chart-key-migrate, HubUsageLogPanel).
+
+### Verification
+
+- `pnpm build` — passed (tsc, vitest, vite)
+- Browser: `:5177` — User, Settings, Cookie Add/Download, 2FA Add modals smoke pass
+
+### Rollback
+
+```powershell
+cd E:\Dev\Tool\P0020-Data-Box
+git checkout v4.2.1
+```
+
+Version: 4.2.2 → 4.2.3
+
 ## 2026-06-06 - 2FA Design V1 lock + hub-ui copy affordance standard
 
 - Version: `4.2.1`

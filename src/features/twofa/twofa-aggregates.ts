@@ -1,7 +1,7 @@
 import { Fingerprint, KeyRound, LockKeyhole, Shield, Timer } from "lucide-react";
 import { prepareChartItems } from "@tool-workspace/hub-ui";
 import { resolveChartLegendIcon } from "../../lib/badge-registry";
-import type { BarItem, DonutItem, KpiTileData } from "../../components/sales-shell";
+import type { BarItem, KpiTileData } from "../../components/sales-shell";
 import { resolveTwofaPlatformIcon } from "./twofa-platform-icon";
 import type { TwofaAccount } from "./types";
 
@@ -80,7 +80,7 @@ export function buildTwofaKpis(
       prefKey: "accounts_shown",
       label: "Accounts (shown)",
       value: shown.length,
-      hint: `${accounts.length} total`,
+      hint: shown.length < accounts.length ? `${accounts.length} total` : undefined,
       icon: KeyRound,
       tone: "indigo",
     },
@@ -128,7 +128,7 @@ export function buildTwofaChartItems(accounts: TwofaAccount[]) {
     "Older use": "#f59e0b",
     "Never used": "#64748b",
   };
-  const usageItems: DonutItem[] = prepareChartItems(
+  const usageItems: BarItem[] = prepareChartItems(
     usageOrder
       .map((label) => ({
         label,
@@ -141,7 +141,7 @@ export function buildTwofaChartItems(accounts: TwofaAccount[]) {
 
   const withPassword = accounts.filter((row) => Boolean(row.password?.trim())).length;
   const noPassword = accounts.length - withPassword;
-  const passwordItems: DonutItem[] = prepareChartItems(
+  const passwordItems: BarItem[] = prepareChartItems(
     [
       {
         label: "With password",

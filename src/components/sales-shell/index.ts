@@ -26,6 +26,9 @@ export {
   type HubLoadingViewProps,
   HubLoaderRoot,
   HUB_TAB_LOADER_ROOT_ID,
+  resolveVisibleKpiKeys,
+  defaultKpiKeysFromDefs,
+  MAX_VISIBLE_KPI,
 } from "@tool-workspace/hub-ui";
 
 export { DisplayPrefs, type PrefItem } from "./DisplayPrefs";

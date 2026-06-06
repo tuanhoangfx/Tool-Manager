@@ -1,12 +1,5 @@
 import { memo, useMemo } from "react";
-import {
-  CalendarClock,
-  Fingerprint,
-  Lock,
-  Mail,
-  ShieldCheck,
-  Timer,
-} from "lucide-react";
+import { HubTableColumnHeader, type HubTableColumnRole } from "@tool-workspace/hub-ui";
 import { TwofaPlatformIcon } from "./TwofaPlatformIcon";
 import "./twofa-platform-icon.css";
 import "./twofa-table-cells.css";
@@ -25,75 +18,18 @@ type ColumnDef = {
   label: string;
   colClass: string;
   align: ColumnAlign;
-  icon: typeof ShieldCheck;
-  iconClass: string;
+  role: HubTableColumnRole;
 };
 
 const COLUMNS: ColumnDef[] = [
-  {
-    key: "service",
-    label: "Service",
-    colClass: "hub-users-col--twofa-service",
-    align: "left",
-    icon: ShieldCheck,
-    iconClass: "hub-users-th-icon--tools",
-  },
-  {
-    key: "account",
-    label: "Account",
-    colClass: "hub-users-col--twofa-account",
-    align: "left",
-    icon: Mail,
-    iconClass: "hub-users-th-icon--email",
-  },
-  {
-    key: "password",
-    label: "Password",
-    colClass: "hub-users-col--twofa-password",
-    align: "left",
-    icon: Lock,
-    iconClass: "hub-users-th-icon--role",
-  },
-  {
-    key: "secret",
-    label: "Secret",
-    colClass: "hub-users-col--twofa-secret",
-    align: "left",
-    icon: Fingerprint,
-    iconClass: "hub-users-th-icon--id",
-  },
-  {
-    key: "code",
-    label: "Code",
-    colClass: "hub-users-col--twofa-code",
-    align: "left",
-    icon: ShieldCheck,
-    iconClass: "hub-users-th-icon--role",
-  },
-  {
-    key: "period",
-    label: "Time",
-    colClass: "hub-users-col--twofa-period",
-    align: "center",
-    icon: Timer,
-    iconClass: "hub-users-th-icon--actions",
-  },
-  {
-    key: "created",
-    label: "Created",
-    colClass: "hub-users-col--twofa-created",
-    align: "center",
-    icon: CalendarClock,
-    iconClass: "hub-users-th-icon--created",
-  },
-  {
-    key: "used",
-    label: "Last used",
-    colClass: "hub-users-col--twofa-used",
-    align: "center",
-    icon: CalendarClock,
-    iconClass: "hub-users-th-icon--activity",
-  },
+  { key: "service", label: "Service", colClass: "hub-users-col--twofa-service", align: "left", role: "service" },
+  { key: "account", label: "Account", colClass: "hub-users-col--twofa-account", align: "left", role: "email" },
+  { key: "password", label: "Password", colClass: "hub-users-col--twofa-password", align: "left", role: "password" },
+  { key: "secret", label: "Secret", colClass: "hub-users-col--twofa-secret", align: "left", role: "id" },
+  { key: "code", label: "Code", colClass: "hub-users-col--twofa-code", align: "left", role: "code" },
+  { key: "period", label: "Time", colClass: "hub-users-col--twofa-period", align: "center", role: "period" },
+  { key: "created", label: "Created", colClass: "hub-users-col--twofa-created", align: "center", role: "created" },
+  { key: "used", label: "Last used", colClass: "hub-users-col--twofa-used", align: "center", role: "activity" },
 ];
 
 function thBtnClass(align: ColumnAlign) {
@@ -270,19 +206,15 @@ export function TwofaAccountsTable({
                 />
               </label>
             </th>
-            {visibleDefs.map((col) => {
-              const Icon = col.icon;
-              return (
-                <th key={col.key} className={col.colClass} scope="col">
-                  <span className={thBtnClass(col.align)}>
-                    <span className={`hub-users-th-label${col.align === "left" ? " hub-users-th-label--start" : ""}`}>
-                      <Icon size={13} className={`hub-users-th-icon ${col.iconClass}`} aria-hidden />
-                      <span className="hub-users-th-text">{col.label}</span>
-                    </span>
+            {visibleDefs.map((col) => (
+              <th key={col.key} className={col.colClass} scope="col">
+                <span className={thBtnClass(col.align)}>
+                  <span className={`hub-users-th-label${col.align === "left" ? " hub-users-th-label--start" : ""}`}>
+                    <HubTableColumnHeader label={col.label} role={col.role} />
                   </span>
-                </th>
-              );
-            })}
+                </span>
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>

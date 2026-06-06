@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
 import {
   Cookie,
   ExternalLink,
@@ -11,7 +10,6 @@ import {
   Settings2,
   ShieldCheck,
   User,
-  X,
 } from "lucide-react";
 import { toolHubUsersUrl } from "../../lib/hub-identity-urls";
 import { APP_VERSION } from "../../lib/app-meta";
@@ -30,7 +28,12 @@ import {
   WORKSPACE_LIST_REFRESHING,
 } from "../../lib/workspace-refresh-bus";
 import { useAppToast } from "../toast";
-import { HubUiZoomControl, compactIconSize } from "@tool-workspace/hub-ui";
+import {
+  HubToolDetailModal,
+  HubToolDetailModalPrimaryAction,
+  HubUiZoomControl,
+  compactIconSize,
+} from "@tool-workspace/hub-ui";
 
 const items: { screen: WorkspaceNavScreen; label: string; icon: typeof FileText }[] = [
   { screen: "notes", label: "Notes", icon: FileText },
@@ -107,101 +110,29 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
     const base = email || user?.id || "U";
     return base.slice(0, 2).toUpperCase();
   }, [email, user?.id]);
-  const userModal =
-    userModalOpen && typeof document !== "undefined"
-      ? createPortal(
-          <div
-            className="fixed inset-0 z-[1300] grid place-items-center bg-black/60 px-4 py-6 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Workspace user information"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) setUserModalOpen(false);
-            }}
-          >
-            <div className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[var(--panel)] shadow-2xl shadow-black/45">
-              <div className="relative border-b border-white/10 bg-gradient-to-br from-indigo-500/20 via-slate-900/10 to-emerald-500/10 p-5">
-                <button
-                  type="button"
-                  className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/20 text-[var(--muted)] hover:text-[var(--text)]"
-                  onClick={() => setUserModalOpen(false)}
-                  aria-label="Close user modal"
-                >
-                  <X size={15} />
-                </button>
-                <div className="flex items-center gap-3 pr-10">
-                  <div className="grid h-12 w-12 place-items-center rounded-2xl border border-indigo-300/25 bg-indigo-500/20 text-sm font-bold text-indigo-100 shadow-[0_0_28px_rgba(99,102,241,0.2)]">
-                    {initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-200/80">
-                      Workspace user
-                    </p>
-                    <h2 className="mt-1 truncate text-lg font-semibold text-[var(--text)]">{userDisplay(email)}</h2>
-                    <p className="mt-0.5 font-mono text-[10px] text-[var(--muted)]">{user?.id ?? "No active session"}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="grid gap-2 p-4 text-sm">
-                {[
-                  { label: "Email", value: userDisplay(email), icon: Mail },
-                  { label: "Role", value: role, icon: ShieldCheck },
-                  { label: "Provider", value: provider, icon: KeyRound },
-                  { label: "Created", value: createdAt, icon: User },
-                  { label: "Last sign in", value: lastSignIn, icon: RefreshCcw },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[.025] px-3 py-2.5">
-                      <div className="grid h-8 w-8 place-items-center rounded-xl bg-white/[.04] text-indigo-200">
-                        <Icon size={14} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">{item.label}</div>
-                        <div className="mt-0.5 truncate font-medium text-[var(--text)]" title={item.value}>{item.value}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="border-t border-white/10 p-4">
-                <button
-                  type="button"
-                  className="btn-danger btn flex w-full items-center justify-center gap-2 text-[13px]"
-                  disabled={!session || signingOut}
-                  onClick={() => {
-                    void (async () => {
-                      setSigningOut(true);
-                      clearHubIdentity();
-                      clearDataBoxSession();
-                      clearTwofaSession();
-                      const identity = getIdentitySupabase();
-                      const twofa = getTwofaSupabase();
-                      const outs = await Promise.all([
-                        identity ? identity.auth.signOut() : Promise.resolve({ error: null }),
-                        supabase.auth.signOut(),
-                        twofa ? twofa.auth.signOut() : Promise.resolve({ error: null }),
-                      ]);
-                      setSigningOut(false);
-                      const error = outs.find((r) => r.error)?.error;
-                      if (error) {
-                        pushToast(error.message, "error", 8000);
-                        return;
-                      }
-                      window.dispatchEvent(new CustomEvent("p0020:hub-identity"));
-                      setUserModalOpen(false);
-                    })();
-                  }}
-                >
-                  <LogOut size={15} />
-                  {signingOut ? "Signing out…" : "Sign Out"}
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )
-      : null;
+  const signOut = () => {
+    void (async () => {
+      setSigningOut(true);
+      clearHubIdentity();
+      clearDataBoxSession();
+      clearTwofaSession();
+      const identity = getIdentitySupabase();
+      const twofa = getTwofaSupabase();
+      const outs = await Promise.all([
+        identity ? identity.auth.signOut() : Promise.resolve({ error: null }),
+        supabase.auth.signOut(),
+        twofa ? twofa.auth.signOut() : Promise.resolve({ error: null }),
+      ]);
+      setSigningOut(false);
+      const error = outs.find((r) => r.error)?.error;
+      if (error) {
+        pushToast(error.message, "error", 8000);
+        return;
+      }
+      window.dispatchEvent(new CustomEvent("p0020:hub-identity"));
+      setUserModalOpen(false);
+    })();
+  };
 
   return (
     <aside className="flex h-full min-h-0 w-60 shrink-0 flex-col overflow-visible border-r border-white/5 bg-[var(--panel)] p-4">
@@ -275,7 +206,64 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
         {displayPrefs}
         <HubUiZoomControl />
       </footer>
-      {userModal}
+      <HubToolDetailModal
+        open={userModalOpen}
+        onClose={() => setUserModalOpen(false)}
+        title={userDisplay(email)}
+        titleId="workspace-user-modal-title"
+        headerLeading={
+          <span
+            className="user-access-modal__avatar grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-indigo-300/25 bg-indigo-500/20 text-xs font-bold text-indigo-100"
+            aria-hidden
+          >
+            {initials}
+          </span>
+        }
+        shellClassName="hub-header-panel-modal"
+        size="compact"
+        ariaLabelledBy="workspace-user-modal-title"
+        footer={
+          <HubToolDetailModalPrimaryAction
+            label={signingOut ? "Signing out…" : "Sign Out"}
+            onClick={signOut}
+            disabled={!session || signingOut}
+            busy={signingOut}
+            danger
+            icon={LogOut}
+          />
+        }
+      >
+        <div className="space-y-3 px-1">
+          <p className="font-mono text-[10px] text-[var(--muted)]">{user?.id ?? "No active session"}</p>
+          <div className="grid gap-2 text-sm">
+            {[
+              { label: "Email", value: userDisplay(email), icon: Mail },
+              { label: "Role", value: role, icon: ShieldCheck },
+              { label: "Provider", value: provider, icon: KeyRound },
+              { label: "Created", value: createdAt, icon: User },
+              { label: "Last sign in", value: lastSignIn, icon: RefreshCcw },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.label}
+                  className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[.025] px-3 py-2.5"
+                >
+                  <div className="grid h-8 w-8 place-items-center rounded-lg bg-white/[.04] text-indigo-200">
+                    <Icon size={14} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">{item.label}</div>
+                    <div className="mt-0.5 truncate font-medium text-[var(--text)]" title={item.value}>
+                      {item.value}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </HubToolDetailModal>
     </aside>
   );
 }

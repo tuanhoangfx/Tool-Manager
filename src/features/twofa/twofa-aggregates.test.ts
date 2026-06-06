@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTwofaChartItems, twofaAccountIdentityBucket } from "./twofa-aggregates";
+import { buildTwofaChartItems, buildTwofaKpis, twofaAccountIdentityBucket } from "./twofa-aggregates";
 import type { TwofaAccount } from "./types";
 
 function account(partial: Partial<TwofaAccount> & Pick<TwofaAccount, "service">): TwofaAccount {
@@ -68,5 +68,38 @@ describe("buildTwofaChartItems", () => {
         expect.objectContaining({ label: "No password", value: 1 }),
       ]),
     );
+  });
+});
+
+describe("buildTwofaKpis", () => {
+  const allKeys = new Set([
+    "accounts_total",
+    "accounts_shown",
+    "identified_accounts",
+    "with_password",
+    "used_7d",
+  ]);
+
+  it("omits hint on accounts_shown when full list is shown", () => {
+    const rows = [account({ service: "Gmail" }), account({ id: "2", service: "GitHub" })];
+    const kpis = buildTwofaKpis(rows, rows, allKeys);
+    const shown = kpis.find((k) => k.prefKey === "accounts_shown");
+    expect(shown?.value).toBe(2);
+    expect(shown?.hint).toBeUndefined();
+  });
+
+  it("shows total hint on accounts_shown when filtered subset", () => {
+    const rows = [account({ service: "Gmail" }), account({ id: "2", service: "GitHub" })];
+    const kpis = buildTwofaKpis(rows, [rows[0]!], allKeys);
+    const shown = kpis.find((k) => k.prefKey === "accounts_shown");
+    expect(shown?.value).toBe(1);
+    expect(shown?.hint).toBe("2 total");
+  });
+
+  it("omits hint on derived KPIs when unfiltered counts match", () => {
+    const rows = [account({ service: "Gmail", password: "x" })];
+    const kpis = buildTwofaKpis(rows, rows, allKeys);
+    expect(kpis.find((k) => k.prefKey === "with_password")?.hint).toBeUndefined();
+    expect(kpis.find((k) => k.prefKey === "identified_accounts")?.hint).toBeUndefined();
   });
 });

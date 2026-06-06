@@ -1,6 +1,4 @@
 import { useState, type FormEvent } from "react";
-import { createPortal } from "react-dom";
-import { X } from "lucide-react";
 import { ToolAvatar } from "../../components/ToolAvatar";
 import { relaySessionsToExtension } from "../../lib/relay-extension-sessions";
 import { toolIconName, toolSvgIcon } from "../../lib/visual";
@@ -13,6 +11,10 @@ import {
   isHubSupabaseConfigured,
 } from "../../lib/hub-supabase-env";
 import { signInWorkspaceDual } from "../../lib/workspace-dual-auth";
+import {
+  HubToolDetailModal,
+  HubToolDetailModalPrimaryAction,
+} from "@tool-workspace/hub-ui";
 import { useNotesAuth } from "./useNotesAuth";
 
 type Props = {
@@ -53,8 +55,7 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
     return msg || "Sign-in failed. Please try again.";
   };
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
+  const submit = async () => {
     setBusy(true);
     setMessage("");
     try {
@@ -77,6 +78,11 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
       setBusy(false);
       setMessage(normalizeAuthError(err instanceof Error ? err.message : String(err)));
     }
+  };
+
+  const onFormSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    void submit();
   };
 
   const onForgotPassword = async () => {
@@ -107,30 +113,34 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
     }
   };
 
-  return createPortal(
-    <div className="auth-gate-root" role="presentation">
-      <div className="auth-gate-backdrop" aria-hidden onClick={onClose} />
-      <div className="auth-gate-modal" role="dialog" aria-modal="true" aria-labelledby="auth-gate-title">
-        <button
-          type="button"
-          className="auth-gate-close"
-          onClick={onClose}
-          aria-label="Close sign in"
-        >
-          <X size={16} />
-        </button>
-        <div className="auth-gate-brand">
-          <ToolAvatar
-            code="P0020"
-            iconName={toolIconName({ code: "P0020" })}
-            svgSrc={toolSvgIcon({ code: "P0020" }) ?? undefined}
-            size="lg"
-          />
-        </div>
-        <h2 id="auth-gate-title" className="auth-gate-title">
-          Welcome to Data Box
-        </h2>
-        <p className="auth-gate-subtitle">{AUTH_MODAL_SUBTITLE}</p>
+  return (
+    <HubToolDetailModal
+      open
+      onClose={onClose}
+      title="Welcome to Data Box"
+      titleId="auth-gate-title"
+      headerLeading={
+        <ToolAvatar
+          code="P0020"
+          iconName={toolIconName({ code: "P0020" })}
+          svgSrc={toolSvgIcon({ code: "P0020" }) ?? undefined}
+          size="sm"
+        />
+      }
+      shellClassName="hub-header-panel-modal"
+      size="compact"
+      ariaLabelledBy="auth-gate-title"
+      footer={
+        <HubToolDetailModalPrimaryAction
+          label={mode === "signin" ? "Sign In" : "Sign Up"}
+          onClick={() => void submit()}
+          disabled={busy}
+          busy={busy}
+        />
+      }
+    >
+      <div className="space-y-4 px-1">
+        <p className="text-xs leading-relaxed text-[var(--muted)]">{AUTH_MODAL_SUBTITLE}</p>
 
         <div className="auth-gate-tabs" role="tablist">
           <button
@@ -159,7 +169,7 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
           </button>
         </div>
 
-        <form className="auth-gate-form" onSubmit={(e) => void submit(e)}>
+        <form className="auth-gate-form" onSubmit={(e) => void onFormSubmit(e)}>
           <input
             className="field auth-gate-field w-full"
             type="text"
@@ -191,13 +201,9 @@ function AuthGateModal({ onAuthed, onClose }: ModalProps) {
             ) : null}
           </div>
           {message ? <p className="auth-gate-message">{message}</p> : null}
-          <button type="submit" className="auth-gate-submit" disabled={busy}>
-            {busy ? "Please wait…" : mode === "signin" ? "Sign In" : "Sign Up"}
-          </button>
         </form>
       </div>
-    </div>,
-    document.body,
+    </HubToolDetailModal>
   );
 }
 

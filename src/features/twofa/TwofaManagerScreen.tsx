@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { KeyRound, Plus, Shield } from "lucide-react";
-import { MiniBarChart, MiniDonut } from "../../components/sales-shell";
+import { MiniBarChart } from "../../components/sales-shell";
 import { PageHeader } from "../design-preview/screens/PageHeader";
 import { useTwofaAccounts } from "./useTwofaAccounts";
 import type { TwofaAccount, TwofaDraft } from "./types";
@@ -8,10 +8,12 @@ import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
 import { readTwofaHubPrefs } from "./twofa-tab-prefs";
 import { TwofaFilterToolbar } from "./TwofaFilterToolbar";
+import { resolveVisibleKpiKeys } from "../../components/sales-shell";
 import {
   DEFAULT_TWOFA_CHART_KEYS,
   DEFAULT_TWOFA_HEADER_STAT_KEYS,
   DEFAULT_TWOFA_KPI_KEYS,
+  TWOFA_KPI_DEFS,
 } from "./twofa-display-prefs";
 import { buildTwofaChartItems, buildTwofaKpis } from "./twofa-aggregates";
 import { buildTwofaHeaderStats } from "./twofa-header-metrics";
@@ -219,7 +221,7 @@ function TwofaManagerScreenBody({
   );
 
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_TWOFA_HEADER_STAT_KEYS;
-  const visKpi = visibleSet(hubPrefs.kpi, DEFAULT_TWOFA_KPI_KEYS);
+  const visKpi = resolveVisibleKpiKeys(hubPrefs.kpi, DEFAULT_TWOFA_KPI_KEYS, TWOFA_KPI_DEFS);
   const visCharts = visibleSet(hubPrefs.charts, DEFAULT_TWOFA_CHART_KEYS);
   const twofaKpis = useMemo(
     () => (shellMode ? buildTwofaKpis(accounts, displayedAccounts, visKpi) : []),
@@ -231,8 +233,8 @@ function TwofaManagerScreenBody({
     const hasCharts =
       visCharts.has("service_bar") ||
       visCharts.has("identity_bar") ||
-      visCharts.has("usage_donut") ||
-      visCharts.has("password_donut");
+      visCharts.has("usage_bar") ||
+      visCharts.has("password_bar");
     if (!hasCharts) return undefined;
     return (
       <>
@@ -242,9 +244,9 @@ function TwofaManagerScreenBody({
         {visCharts.has("identity_bar") ? (
           <MiniBarChart title="Account Identity" items={twofaChartData.identityItems} />
         ) : null}
-        {visCharts.has("usage_donut") ? <MiniDonut title="Usage" items={twofaChartData.usageItems} /> : null}
-        {visCharts.has("password_donut") ? (
-          <MiniDonut title="Password Saved" items={twofaChartData.passwordItems} />
+        {visCharts.has("usage_bar") ? <MiniBarChart title="Usage" items={twofaChartData.usageItems} /> : null}
+        {visCharts.has("password_bar") ? (
+          <MiniBarChart title="Password Saved" items={twofaChartData.passwordItems} />
         ) : null}
       </>
     );

@@ -1,13 +1,5 @@
-import {
-  CheckCircle2,
-  Clock,
-  Download,
-  Route,
-  Shield,
-  Upload,
-  User,
-  XCircle,
-} from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
+import { HubTableColumnHeader } from "@tool-workspace/hub-ui";
 import { CookieAccessRoleBadge } from "./CookieAccessRoleBadge";
 import { formatTimestampCompactOrDash } from "../../lib/format-timestamp";
 import type { NoteCookieMemberRow } from "./noteCookieMembersRepository";
@@ -116,64 +108,56 @@ export function CookieRouteAccessTable({
             <th className="hub-route-access-col--user" scope="col">
               <span className="hub-users-th-btn hub-users-th-btn--static hub-users-th-btn--align-start">
                 <span className="hub-users-th-label hub-users-th-label--start">
-                  <User size={13} className="hub-users-th-icon hub-users-th-icon--name" aria-hidden />
-                  <span className="hub-users-th-text">User</span>
+                  <HubTableColumnHeader label="User" role="user" />
                 </span>
               </span>
             </th>
             <th className="hub-route-access-col--role" scope="col">
               <span className="hub-users-th-btn hub-users-th-btn--static">
                 <span className="hub-users-th-label">
-                  <Shield size={13} className="hub-users-th-icon hub-users-th-icon--role" aria-hidden />
-                  <span className="hub-users-th-text">Access</span>
+                  <HubTableColumnHeader label="Access" role="access" />
                 </span>
               </span>
             </th>
             <th className="hub-route-access-col--sync-at" scope="col">
               <span className="hub-users-th-btn hub-users-th-btn--static" title="Last Sync to cloud vault">
                 <span className="hub-users-th-label">
-                  <Clock size={13} className="hub-users-th-icon hub-users-th-icon--activity" aria-hidden />
-                  <span className="hub-users-th-text">Synced</span>
+                  <HubTableColumnHeader label="Synced" role="synced" />
                 </span>
               </span>
             </th>
             <th className="hub-route-access-col--load-at" scope="col">
               <span className="hub-users-th-btn hub-users-th-btn--static" title="Last Load on extension">
                 <span className="hub-users-th-label">
-                  <Download size={13} className="hub-users-th-icon hub-users-th-icon--tools" aria-hidden />
-                  <span className="hub-users-th-text">Loaded</span>
+                  <HubTableColumnHeader label="Loaded" role="load" />
                 </span>
               </span>
             </th>
             <th className="hub-route-access-col--perm" scope="col">
               <span className="hub-users-th-btn hub-users-th-btn--static" title="Load cookies from vault">
                 <span className="hub-users-th-label">
-                  <Download size={13} className="hub-users-th-icon hub-users-th-icon--tools" aria-hidden />
-                  <span className="hub-users-th-text">Load</span>
+                  <HubTableColumnHeader label="Load" role="load" />
                 </span>
               </span>
             </th>
             <th className="hub-route-access-col--perm" scope="col">
               <span className="hub-users-th-btn hub-users-th-btn--static" title="Upload cookies to vault">
                 <span className="hub-users-th-label">
-                  <Upload size={13} className="hub-users-th-icon hub-users-th-icon--email" aria-hidden />
-                  <span className="hub-users-th-text">Sync</span>
+                  <HubTableColumnHeader label="Sync" role="sync" />
                 </span>
               </span>
             </th>
             <th className="hub-route-access-col--route" scope="col">
               <span className="hub-users-th-btn hub-users-th-btn--static">
                 <span className="hub-users-th-label">
-                  <Route size={13} className="hub-users-th-icon hub-users-th-icon--id" aria-hidden />
-                  <span className="hub-users-th-text">Route</span>
+                  <HubTableColumnHeader label="Route" role="route" />
                 </span>
               </span>
             </th>
             <th className="hub-route-access-col--expires" scope="col">
               <span className="hub-users-th-btn hub-users-th-btn--static">
                 <span className="hub-users-th-label">
-                  <Clock size={13} className="hub-users-th-icon hub-users-th-icon--created" aria-hidden />
-                  <span className="hub-users-th-text">Expires</span>
+                  <HubTableColumnHeader label="Expires" role="expires" />
                 </span>
               </span>
             </th>

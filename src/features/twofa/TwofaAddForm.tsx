@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileSpreadsheet, KeyRound, Upload, X } from "lucide-react";
+import { FileSpreadsheet, KeyRound, Upload } from "lucide-react";
+import {
+  HubToolDetailModal,
+  HubToolDetailModalPrimaryAction,
+  HubToolDetailModalSecondaryAction,
+} from "@tool-workspace/hub-ui";
 import { generateCode } from "./totp";
 import type { TwofaAccount, TwofaDraft } from "./types";
 import {
@@ -14,7 +19,7 @@ type Tab = "single" | "bulk";
 
 export type TwofaAddFormProps = {
   active: boolean;
-  variant: "modal" | "embedded";
+  variant: "embedded" | "hub-modal";
   mode: "add" | "edit";
   initial?: TwofaAccount | null;
   initialDraft?: Partial<TwofaDraft> | null;
@@ -171,154 +176,133 @@ export function TwofaAddForm({
         ? "Update one TOTP entry stored on this device."
         : "Single entry or bulk import (paste or Excel).";
 
-  const panel = (
-    <div
-      className={`auth-gate-modal auth-gate-modal--wide twofa-add-panel${variant === "embedded" ? " twofa-add-panel--embedded" : ""}`}
-      role={variant === "modal" ? "dialog" : "region"}
-      aria-modal={variant === "modal" ? true : undefined}
-      aria-labelledby="twofa-add-title"
-    >
-      {variant === "modal" ? (
-        <button type="button" className="auth-gate-close" onClick={onClose} aria-label="Close">
-          <X size={16} />
+  const tabs =
+    mode === "add" ? (
+      <div className="auth-gate-tabs" role="tablist" aria-label="Add mode">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "single"}
+          className={`auth-gate-tab${tab === "single" ? " auth-gate-tab--active" : ""}`}
+          onClick={() => setTab("single")}
+        >
+          Single
         </button>
-      ) : null}
-
-      <div className="auth-gate-brand">
-        <div className="auth-gate-icon" aria-hidden>
-          <KeyRound size={20} />
-        </div>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "bulk"}
+          className={`auth-gate-tab${tab === "bulk" ? " auth-gate-tab--active" : ""}`}
+          onClick={() => setTab("bulk")}
+        >
+          Bulk
+        </button>
       </div>
+    ) : null;
 
-      <h2 id="twofa-add-title" className="auth-gate-title">
-        {title}
-      </h2>
-      <p className="auth-gate-subtitle">{subtitle}</p>
-
-      {mode === "add" ? (
-        <div className="auth-gate-tabs" role="tablist" aria-label="Add mode">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "single"}
-            className={`auth-gate-tab${tab === "single" ? " auth-gate-tab--active" : ""}`}
-            onClick={() => setTab("single")}
-          >
-            Single
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "bulk"}
-            className={`auth-gate-tab${tab === "bulk" ? " auth-gate-tab--active" : ""}`}
-            onClick={() => setTab("bulk")}
-          >
-            Bulk
-          </button>
-        </div>
-      ) : null}
-
-      <form
-        className="auth-gate-form"
-        autoComplete="off"
-        onSubmit={(e) => e.preventDefault()}
-        data-twofa-credential-form
-      >
-        {tab === "single" || mode === "edit" ? (
-          <>
+  const formBody = (
+    <form
+      className="auth-gate-form"
+      autoComplete="off"
+      onSubmit={(e) => e.preventDefault()}
+      data-twofa-credential-form
+    >
+      {tab === "single" || mode === "edit" ? (
+        <>
+          <input
+            className="field auth-gate-field w-full"
+            name="twofa-service"
+            autoComplete="off"
+            placeholder="Platform (optional)"
+            value={service}
+            onChange={(e) => setService(e.target.value)}
+          />
+          <input
+            className="field auth-gate-field w-full"
+            name="twofa-account-id"
+            autoComplete="off"
+            placeholder="ID / account (optional)"
+            value={account}
+            readOnly={mode === "add"}
+            onFocus={(e) => {
+              if (mode === "add") e.currentTarget.readOnly = false;
+            }}
+            onChange={(e) => setAccount(e.target.value)}
+          />
+          <input
+            className="field auth-gate-field twofa-add-field-masked w-full"
+            name="twofa-stored-password"
+            type="text"
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore
+            placeholder="Password (optional)"
+            value={password}
+            readOnly={mode === "add"}
+            onFocus={(e) => {
+              if (mode === "add") e.currentTarget.readOnly = false;
+            }}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <input
+            className="field auth-gate-field w-full font-mono"
+            name="twofa-totp-secret"
+            autoComplete="off"
+            placeholder="2FA secret (Base32) — required"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+          />
+        </>
+      ) : (
+        <>
+          <p className="auth-gate-hint">
+            One secret per line, or <span className="auth-gate-mono">Platform|ID|2FA</span> /{" "}
+            <span className="auth-gate-mono">Platform|2FA</span> — platform &amp; ID optional.
+          </p>
+          <textarea
+            className="field auth-gate-field w-full min-h-[120px] font-mono text-[11px] leading-relaxed"
+            placeholder="Paste rows here"
+            value={bulkText}
+            onChange={(e) => {
+              setBulkText(e.target.value);
+              setFileName(null);
+              if (fileRef.current) fileRef.current.value = "";
+            }}
+          />
+          <p className="auth-gate-hint">
+            Examples:{" "}
+            <span className="auth-gate-mono">Google|user@gmail.com|JBSWY3DPEHPK3PXP</span>
+            {" · "}
+            <span className="auth-gate-mono">GitHub|dev|mypass|JBSWY3DPEHPK3PXP</span>
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
             <input
-              className="field auth-gate-field w-full"
-              name="twofa-service"
-              autoComplete="off"
-              placeholder="Platform (optional)"
-              value={service}
-              onChange={(e) => setService(e.target.value)}
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,.txt"
+              className="hidden"
+              onChange={(e) => void onFileChange(e.target.files?.[0] ?? null)}
             />
-            <input
-              className="field auth-gate-field w-full"
-              name="twofa-account-id"
-              autoComplete="off"
-              placeholder="ID / account (optional)"
-              value={account}
-              readOnly={mode === "add"}
-              onFocus={(e) => {
-                if (mode === "add") e.currentTarget.readOnly = false;
-              }}
-              onChange={(e) => setAccount(e.target.value)}
-            />
-            <input
-              className="field auth-gate-field twofa-add-field-masked w-full"
-              name="twofa-stored-password"
-              type="text"
-              autoComplete="off"
-              data-lpignore="true"
-              data-1p-ignore
-              placeholder="Password (optional)"
-              value={password}
-              readOnly={mode === "add"}
-              onFocus={(e) => {
-                if (mode === "add") e.currentTarget.readOnly = false;
-              }}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <input
-              className="field auth-gate-field w-full font-mono"
-              name="twofa-totp-secret"
-              autoComplete="off"
-              placeholder="2FA secret (Base32) — required"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-            />
-          </>
-        ) : (
-          <>
-            <p className="auth-gate-hint">
-              One secret per line, or <span className="auth-gate-mono">Platform|ID|2FA</span> /{" "}
-              <span className="auth-gate-mono">Platform|2FA</span> — platform &amp; ID optional.
-            </p>
-            <textarea
-              className="field auth-gate-field w-full min-h-[120px] font-mono text-[11px] leading-relaxed"
-              placeholder="Paste rows here"
-              value={bulkText}
-              onChange={(e) => {
-                setBulkText(e.target.value);
-                setFileName(null);
-                if (fileRef.current) fileRef.current.value = "";
-              }}
-            />
-            <p className="auth-gate-hint">
-              Examples:{" "}
-              <span className="auth-gate-mono">Google|user@gmail.com|JBSWY3DPEHPK3PXP</span>
-              {" · "}
-              <span className="auth-gate-mono">GitHub|dev|mypass|JBSWY3DPEHPK3PXP</span>
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".xlsx,.xls,.csv,.txt"
-                className="hidden"
-                onChange={(e) => void onFileChange(e.target.files?.[0] ?? null)}
-              />
-              <button type="button" className="auth-gate-file-btn" onClick={() => fileRef.current?.click()}>
-                <Upload size={14} aria-hidden />
-                Excel / CSV
-              </button>
-              {fileName ? (
-                <span className="inline-flex items-center gap-1 text-[11px] text-[var(--muted)]">
-                  <FileSpreadsheet size={12} className="text-emerald-300" />
-                  {fileName}
-                </span>
-              ) : null}
-            </div>
-            {previewCount > 0 ? (
-              <p className="auth-gate-ok">{previewCount} valid row(s) ready to import.</p>
+            <button type="button" className="auth-gate-file-btn" onClick={() => fileRef.current?.click()}>
+              <Upload size={14} aria-hidden />
+              Excel / CSV
+            </button>
+            {fileName ? (
+              <span className="inline-flex items-center gap-1 text-[11px] text-[var(--muted)]">
+                <FileSpreadsheet size={12} className="text-emerald-300" />
+                {fileName}
+              </span>
             ) : null}
-          </>
-        )}
+          </div>
+          {previewCount > 0 ? (
+            <p className="auth-gate-ok">{previewCount} valid row(s) ready to import.</p>
+          ) : null}
+        </>
+      )}
 
-        {error ? <p className="auth-gate-message">{error}</p> : null}
+      {error ? <p className="auth-gate-message">{error}</p> : null}
 
+      {variant === "embedded" ? (
         <div className="auth-gate-actions">
           <button type="button" className="auth-gate-secondary" onClick={onClose}>
             Cancel
@@ -338,13 +322,73 @@ export function TwofaAddForm({
             </button>
           )}
         </div>
-      </form>
+      ) : null}
+    </form>
+  );
+
+  const hubFooter = (
+    <>
+      <HubToolDetailModalSecondaryAction label="Cancel" onClick={onClose} />
+      {tab === "bulk" && mode === "add" ? (
+        <HubToolDetailModalPrimaryAction
+          label={busy ? "Please wait…" : previewCount > 0 ? `Import (${previewCount})` : "Import"}
+          onClick={() => void onImportBulk()}
+          disabled={busy || !canTryBulkImport}
+          busy={busy}
+        />
+      ) : (
+        <HubToolDetailModalPrimaryAction
+          label={mode === "edit" ? "Save changes" : "Add account"}
+          onClick={onSubmitSingle}
+          disabled={busy}
+          busy={busy}
+          icon={KeyRound}
+        />
+      )}
+    </>
+  );
+
+  if (variant === "hub-modal") {
+    return (
+      <HubToolDetailModal
+        open={active}
+        onClose={onClose}
+        title={title}
+        titleId="twofa-add-modal-title"
+        headerIcon={KeyRound}
+        headerIconClassName="text-indigo-300"
+        shellClassName="hub-header-panel-modal"
+        size="compact"
+        footer={hubFooter}
+        bodyClassName="modal-shell__scroll--user-access"
+      >
+        <p className="mb-3 text-xs text-[var(--muted)]">{subtitle}</p>
+        {tabs}
+        {formBody}
+      </HubToolDetailModal>
+    );
+  }
+
+  const panel = (
+    <div
+      className={`auth-gate-modal auth-gate-modal--wide twofa-add-panel twofa-add-panel--embedded`}
+      role="region"
+      aria-labelledby="twofa-add-title"
+    >
+      <div className="auth-gate-brand">
+        <div className="auth-gate-icon" aria-hidden>
+          <KeyRound size={20} />
+        </div>
+      </div>
+
+      <h2 id="twofa-add-title" className="auth-gate-title">
+        {title}
+      </h2>
+      <p className="auth-gate-subtitle">{subtitle}</p>
+      {tabs}
+      {formBody}
     </div>
   );
 
-  if (variant === "embedded") {
-    return <div className="twofa-add-embed">{panel}</div>;
-  }
-
-  return panel;
+  return <div className="twofa-add-embed">{panel}</div>;
 }

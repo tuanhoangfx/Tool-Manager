@@ -1,126 +1,4 @@
-/* Hub Users table — synced from P0004-Tool-Hub/src/features/identity/hub-users-table.css */
-
-.hub-users-table-wrap {
-  background: rgba(255, 255, 255, 0.02);
-  margin-bottom: 10px;
-}
-
-table.hub-users-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  table-layout: fixed;
-}
-
-.hub-users-table thead {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.hub-users-table th {
-  text-align: center;
-  padding: 8px 10px;
-  color: var(--text);
-  font-weight: 600;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  vertical-align: middle;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.hub-users-th-btn {
-  display: flex;
-  width: 100%;
-  min-height: 34px;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 6px;
-  padding: 4px 8px;
-}
-
-.hub-users-th-btn:focus-visible {
-  outline: 2px solid rgba(129, 140, 248, 0.45);
-  outline-offset: 2px;
-}
-
-.hub-users-th-label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.hub-users-th-text {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: var(--text);
-}
-
-.hub-users-th-icon {
-  flex-shrink: 0;
-  opacity: 0.95;
-}
-
-.hub-users-th-icon--name { color: #818cf8; }
-.hub-users-th-icon--id { color: #94a3b8; }
-.hub-users-th-icon--email { color: #60a5fa; }
-.hub-users-th-icon--role { color: #a78bfa; }
-.hub-users-th-icon--tools { color: #34d399; }
-.hub-users-th-icon--created { color: #38bdf8; }
-.hub-users-th-icon--activity { color: #f472b6; }
-.hub-users-th-icon--actions { color: #fbbf24; }
-
-.hub-users-sort {
-  display: inline-flex;
-  flex-shrink: 0;
-  color: var(--muted);
-  opacity: 0.55;
-}
-
-.hub-users-sort.is-active {
-  color: #6ee7b7;
-  opacity: 1;
-}
-
-.hub-users-table td {
-  padding: 6px 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
-  vertical-align: middle;
-  max-height: 52px;
-}
-
-.hub-users-row {
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.hub-users-row:hover {
-  background: rgba(229, 106, 74, 0.06);
-}
-
-.hub-users-row.is-selected {
-  background: rgba(99, 102, 241, 0.08);
-}
-
-.hub-users-row.is-detail {
-  background: rgba(229, 106, 74, 0.1);
-  box-shadow: inset 3px 0 0 rgba(229, 106, 74, 0.55);
-}
-
-/* P0004 Users — select column (same as identity/hub-users-table.css) */
-.hub-users-col--select {
-  width: 36px;
-  text-align: center;
-}
+/* P0020 table extensions — base skin from vendor/hub-ui hub-users-table.css */
 
 table.hub-users-table th.hub-users-col--select,
 table.hub-users-table td.hub-users-col--select {
@@ -139,11 +17,6 @@ table.hub-users-table td.hub-users-col--select {
   cursor: pointer;
 }
 
-.hub-users-col--name { width: 16%; text-align: left; }
-.hub-users-col--id { width: 11%; text-align: left; }
-.hub-users-col--email { width: 16%; text-align: left; }
-.hub-users-col--role { width: 10%; text-align: center; }
-
 .hub-users-role-badge--owner {
   border-color: rgba(129, 140, 248, 0.28);
   background: rgba(99, 102, 241, 0.13);
@@ -155,94 +28,8 @@ table.hub-users-table td.hub-users-col--select {
   background: rgba(245, 158, 11, 0.12);
   color: #fde68a;
 }
-.hub-users-col--tools { width: 10%; text-align: center; }
-.hub-users-col--created { width: 11%; text-align: center; }
-.hub-users-col--activity { width: 14%; text-align: center; }
-.hub-users-col--actions { width: 7%; text-align: center; }
 
-.hub-users-th-btn--static {
-  cursor: default;
-}
-
-.hub-users-cell-name {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.hub-users-avatar-marker {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid rgba(129, 140, 248, 0.18);
-  border-radius: 7px;
-  background: rgba(99, 102, 241, 0.12);
-  color: #a5b4fc;
-  font-size: 8px;
-  font-weight: 700;
-}
-
-.hub-users-name-title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 600;
-  font-size: 12px;
-  line-height: 1.25;
-  color: var(--text);
-}
-
-.hub-users-cell-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  max-height: 2.6em;
-  justify-content: center;
-}
-
-.hub-users-cell-stack--center {
-  align-items: center;
-  text-align: center;
-}
-
-.hub-users-cell-email {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.hub-users-cell-muted {
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.25;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.hub-users-cell-num {
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text);
-  line-height: 1.2;
-}
-
-.hub-users-empty {
-  padding: 24px 16px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-/* 2FA directory — P0004 skin + sentence-case headers (no uppercase) */
+/* 2FA directory — sentence-case headers */
 table.hub-users-table--twofa {
   font-size: 13px;
 }
@@ -282,7 +69,6 @@ table.hub-users-table--twofa .hub-users-th-text {
   box-shadow: inset 3px 0 0 rgba(129, 140, 248, 0.55);
 }
 
-/* Percent widths sum to 100% (select column is fixed 36px via colgroup) */
 .hub-users-col--twofa-service { width: 11%; text-align: left; }
 .hub-users-col--twofa-account { width: 17%; text-align: left; }
 .hub-users-col--twofa-password { width: 11%; text-align: left; }
@@ -303,7 +89,6 @@ table.hub-users-table--twofa td.hub-users-col--select {
   min-width: 36px;
 }
 
-/* Header labels follow body alignment (th defaults to center via .hub-users-th-btn) */
 table.hub-users-table--twofa th.hub-users-col--twofa-service,
 table.hub-users-table--twofa th.hub-users-col--twofa-account,
 table.hub-users-table--twofa th.hub-users-col--twofa-password,
@@ -316,14 +101,6 @@ table.hub-users-table--twofa th.hub-users-col--twofa-created,
 table.hub-users-table--twofa th.hub-users-col--twofa-used,
 table.hub-users-table--twofa th.hub-users-col--twofa-period {
   text-align: center;
-}
-
-.hub-users-th-btn--align-start {
-  justify-content: flex-start;
-}
-
-.hub-users-th-label--start {
-  justify-content: flex-start;
 }
 
 table.hub-users-table--twofa td.hub-users-col--twofa-secret {
@@ -388,7 +165,7 @@ table.hub-users-table--twofa td.hub-users-col--twofa-secret {
   }
 }
 
-/* Route People & access (Cookie Auto detail) — title case like 2FA table */
+/* Route People & access (Cookie Auto detail) */
 table.hub-users-table--route-access {
   table-layout: auto;
   width: 100%;
@@ -442,13 +219,3 @@ table.hub-users-table--route-access td.hub-route-access-col--expires {
   text-align: center;
   white-space: nowrap;
 }
-
-.route-detail-preview .hub-users-table-wrap {
-  overflow-x: visible;
-  max-width: 100%;
-}
-
-.route-detail-preview .rdp-section {
-  min-width: 0;
-}
-

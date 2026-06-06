@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { FolderOpen } from "lucide-react";
-import { HubDetailModal } from "@tool-workspace/hub-ui";
+import {
+  HubToolDetailModal,
+  HubToolDetailModalPrimaryAction,
+  HubToolDetailModalSecondaryAction,
+} from "@tool-workspace/hub-ui";
 import { NOTE_FOLDER_COLORS, type NoteFolder } from "./noteFolders";
 
 type Props = {
@@ -43,42 +47,37 @@ export function NotesFolderFormModal({ open, mode, initial, onClose, onSave }: P
   };
 
   return (
-    <HubDetailModal
+    <HubToolDetailModal
       open={open}
       onClose={onClose}
+      title={mode === "add" ? "Add folder" : "Edit folder"}
+      titleId="notes-folder-form-title"
+      headerIcon={FolderOpen}
+      headerIconClassName="text-amber-300"
+      shellClassName="hub-header-panel-modal"
       size="compact"
-      ariaLabelledBy="notes-folder-form-title"
-      header={
-        <header className="user-access-modal__header">
-          <div className="auth-gate-icon h-8 w-8 shrink-0 rounded-lg" aria-hidden>
-            <FolderOpen size={18} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 id="notes-folder-form-title" className="truncate text-sm font-semibold text-[var(--text)]">
-              {mode === "add" ? "Add folder" : "Edit folder"}
-            </h2>
-            <p className="truncate text-[10px] text-[var(--muted)]">
-              {mode === "add"
-                ? "Create a folder to tag notes and filter the list from the header bar."
-                : "Update folder name and color."}
-            </p>
-          </div>
-        </header>
-      }
       footer={
-        <footer className="flex shrink-0 justify-end gap-2 border-t border-white/10 px-4 py-3">
-          <button type="button" className="auth-gate-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="button" className="auth-gate-submit" disabled={busy} onClick={() => void submit()}>
-            {busy ? "Please wait…" : mode === "add" ? "Add folder" : "Save changes"}
-          </button>
-        </footer>
+        <>
+          <HubToolDetailModalSecondaryAction label="Cancel" onClick={onClose} disabled={busy} />
+          <HubToolDetailModalPrimaryAction
+            label={mode === "add" ? "Add folder" : "Save changes"}
+            onClick={() => void submit()}
+            disabled={busy}
+            busy={busy}
+            icon={FolderOpen}
+          />
+        </>
       }
     >
-      <div className="space-y-4 p-4">
+      <div className="space-y-4">
+        <p className="text-xs text-[var(--muted)]">
+          {mode === "add"
+            ? "Create a folder to tag notes and filter the list from the header bar."
+            : "Update folder name and color."}
+        </p>
+
         <input
-          className="field auth-gate-field w-full"
+          className="field w-full text-xs"
           placeholder="Folder name"
           value={name}
           autoFocus
@@ -107,8 +106,8 @@ export function NotesFolderFormModal({ open, mode, initial, onClose, onSave }: P
           </div>
         </div>
 
-        {error ? <p className="auth-gate-message">{error}</p> : null}
+        {error ? <p className="text-xs text-rose-300">{error}</p> : null}
       </div>
-    </HubDetailModal>
+    </HubToolDetailModal>
   );
 }

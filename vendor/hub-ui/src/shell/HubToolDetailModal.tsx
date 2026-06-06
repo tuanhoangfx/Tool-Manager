@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { HubDetailModal, type HubDetailModalSize } from "./HubDetailModal";
+import { HubTocHighlightContent, HubTocSectionHighlightProvider } from "./HubTocSectionHighlight";
 
 export const HUB_TOOL_DETAIL_TITLE_ID = "hub-tool-detail-modal-title";
 /** Scroll container when modal has TOC — content column only. */
@@ -65,6 +66,27 @@ export function HubToolDetailModalPrimaryAction({
   );
 }
 
+export function HubToolDetailModalSecondaryAction({
+  label,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className="hub-tool-detail-modal__secondary"
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+}
+
 export type HubToolDetailModalProps = {
   open?: boolean;
   onClose: () => void;
@@ -80,6 +102,10 @@ export type HubToolDetailModalProps = {
   header?: ReactNode;
   /** Left TOC column. */
   toc?: ReactNode;
+  /** When set with `toc`, pointer + scroll highlight matching TOC labels. */
+  sectionIds?: string[];
+  /** Scroll root for TOC spy + jump (default modal content column). */
+  scrollRootSelector?: string;
   footer?: ReactNode;
   shellClassName?: string;
   bodyClassName?: string;
@@ -104,6 +130,8 @@ export function HubToolDetailModal({
   headerTrailing,
   header,
   toc,
+  sectionIds,
+  scrollRootSelector = HUB_TOOL_DETAIL_SCROLL_ROOT,
   footer,
   shellClassName = "",
   bodyClassName = "",
@@ -151,9 +179,26 @@ export function HubToolDetailModal({
   ) : undefined;
 
   const body = toc ? (
-    <div className="hub-tool-detail-modal__body">
-      <HubToolDetailModalTocLayout toc={toc}>{children}</HubToolDetailModalTocLayout>
-    </div>
+    (() => {
+      const layout = (
+        <HubToolDetailModalTocLayout toc={toc}>
+          {sectionIds?.length ? (
+            <HubTocHighlightContent className={bodyClassName || undefined}>{children}</HubTocHighlightContent>
+          ) : (
+            children
+          )}
+        </HubToolDetailModalTocLayout>
+      );
+      const wrapped =
+        sectionIds?.length ? (
+          <HubTocSectionHighlightProvider sectionIds={sectionIds} scrollRootSelector={scrollRootSelector}>
+            {layout}
+          </HubTocSectionHighlightProvider>
+        ) : (
+          layout
+        );
+      return <div className="hub-tool-detail-modal__body">{wrapped}</div>;
+    })()
   ) : (
     <div className={`${HUB_TOOL_DETAIL_BODY_SCROLL_CLASS}${bodyClassName ? ` ${bodyClassName}` : ""}`}>{children}</div>
   );

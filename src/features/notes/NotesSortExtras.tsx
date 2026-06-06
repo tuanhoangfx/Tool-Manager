@@ -1,4 +1,6 @@
+import { ArrowDownWideNarrow } from "lucide-react";
 import { HubToolDetailSection } from "@tool-workspace/hub-ui";
+import { compactIconSize } from "../../lib/ui-scale";
 import {
   DEFAULT_NOTES_LIST_SORT,
   notesSortSettingLabel,
@@ -20,7 +22,11 @@ export function NotesSortExtras({ sort, onSortChange }: Props) {
   };
 
   return (
-    <HubToolDetailSection id="settings-list-sort" title="List sort">
+    <HubToolDetailSection
+      id="settings-list-sort"
+      title="List sort"
+      icon={<ArrowDownWideNarrow size={compactIconSize(11)} className="text-sky-300" />}
+    >
       <p className="text-[10px] leading-snug text-[var(--muted)]">Pinned notes always appear first.</p>
       <div className="inline-flex w-full rounded-lg border border-white/10 bg-white/[.02] p-0.5">
         {SORT_OPTIONS.map((id) => (

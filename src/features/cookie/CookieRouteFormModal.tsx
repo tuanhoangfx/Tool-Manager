@@ -8,10 +8,7 @@ import {
   HUB_TOOL_DETAIL_SECTIONS_CLASS,
 } from "@tool-workspace/hub-ui";
 import { TocSectionNav } from "../overview/TocSectionNav";
-import { TocHighlightContent, TocSectionHighlightProvider } from "../overview/toc-section-highlight-context";
 import type { OverviewTocItem } from "../overview/overview-toc";
-
-export const COOKIE_ROUTE_FORM_SCROLL_ROOT = ".cookie-route-form-modal .hub-tool-detail-modal__scroll";
 
 type Props = {
   title: string;
@@ -28,7 +25,10 @@ type Props = {
   open?: boolean;
 };
 
-export { HubToolDetailSection as CookieRouteModalSection, HubFormFieldLabel as CookieRouteFieldLabel } from "@tool-workspace/hub-ui";
+export {
+  HubToolDetailSection as CookieRouteModalSection,
+  HubFormFieldLabel as CookieRouteFieldLabel,
+} from "@tool-workspace/hub-ui";
 
 export function CookieRouteModalActions({
   primaryLabel,
@@ -61,12 +61,12 @@ export function CookieRouteModalActions({
   );
 }
 
-/** Add / Share / Edit route — same shell as Cookie extension download modal. */
+/** Add / Share / Edit / Delete route — golden HubToolDetailModal shell (Settings parity). */
 export function CookieRouteFormModal({
   title,
   subtitle: _subtitle,
   eyebrow: _eyebrow = "Cookie route",
-  wide = false,
+  wide: _wide = false,
   toc,
   idPrefix = "rt-",
   headerIcon = Cookie,
@@ -77,17 +77,10 @@ export function CookieRouteFormModal({
   open = true,
 }: Props) {
   const hasToc = Boolean(toc?.length);
-  const tocSectionIds = useMemo(
+  const sectionIds = useMemo(
     () => (toc ?? []).map(({ id }) => `${idPrefix}${id}`),
     [idPrefix, toc],
   );
-
-  const shellClassName = [
-    "cookie-route-form-modal",
-    hasToc ? "cookie-route-form-modal--with-toc" : wide ? "cookie-route-form-modal--wide" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
 
   return (
     <HubToolDetailModal
@@ -96,21 +89,18 @@ export function CookieRouteFormModal({
       title={title}
       headerIcon={headerIcon}
       headerIconClassName={headerIconClassName}
-      shellClassName={shellClassName}
+      shellClassName="hub-header-panel-modal cookie-route-form-modal"
+      size={hasToc ? "detail" : "compact"}
+      sectionIds={hasToc ? sectionIds : undefined}
+      scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
       footer={footer}
       toc={
         hasToc ? (
-          <TocSectionNav items={toc!} idPrefix={idPrefix} scrollRootSelector={COOKIE_ROUTE_FORM_SCROLL_ROOT} />
+          <TocSectionNav items={toc!} idPrefix={idPrefix} scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT} />
         ) : undefined
       }
     >
-      {hasToc ? (
-        <TocSectionHighlightProvider sectionIds={tocSectionIds}>
-          <TocHighlightContent className={HUB_TOOL_DETAIL_SECTIONS_CLASS}>{children}</TocHighlightContent>
-        </TocSectionHighlightProvider>
-      ) : (
-        <div className={`cookie-route-modal__body min-w-0 ${HUB_TOOL_DETAIL_SECTIONS_CLASS}`}>{children}</div>
-      )}
+      <div className={`cookie-route-modal__body min-w-0 ${HUB_TOOL_DETAIL_SECTIONS_CLASS}`}>{children}</div>
     </HubToolDetailModal>
   );
 }

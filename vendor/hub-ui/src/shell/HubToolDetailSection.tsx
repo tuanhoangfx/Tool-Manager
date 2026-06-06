@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useHubTocSectionHighlightOptional } from "./HubTocSectionHighlight";
 
 export const HUB_TOOL_DETAIL_SECTIONS_CLASS = "hub-tool-detail-modal__sections";
 export const HUB_TOOL_DETAIL_FORM_GRID_CLASS = "hub-tool-detail-form-grid";
@@ -9,16 +10,34 @@ export type HubToolDetailSectionProps = {
   id: string;
   /** Section title — may include emoji prefix (matches TOC labels). */
   title: string;
+  /** Optional icon — same node as TOC row for Settings / detail modals. */
+  icon?: ReactNode;
   children: ReactNode;
   className?: string;
 };
 
 /** Bordered frame for one TOC section inside tool-detail modals. */
-export function HubToolDetailSection({ id, title, children, className = "" }: HubToolDetailSectionProps) {
+export function HubToolDetailSection({ id, title, icon, children, className = "" }: HubToolDetailSectionProps) {
+  const highlightCtx = useHubTocSectionHighlightOptional();
+
   return (
-    <section id={id} className={`hub-tool-detail-section${className ? ` ${className}` : ""}`}>
+    <section
+      id={id}
+      className={`hub-tool-detail-section${className ? ` ${className}` : ""}`}
+      onMouseEnter={() => highlightCtx?.setHighlightedSectionId(id)}
+      onMouseLeave={() => {
+        if (highlightCtx?.highlightedSectionId === id) highlightCtx.setHighlightedSectionId(null);
+      }}
+    >
       <header className="hub-tool-detail-section__header">
-        <h3 className="hub-tool-detail-section__title">{title}</h3>
+        <h3 className="hub-tool-detail-section__title">
+          {icon ? (
+            <span className="hub-tool-detail-section__title-icon" aria-hidden>
+              {icon}
+            </span>
+          ) : null}
+          <span>{title}</span>
+        </h3>
       </header>
       <div className="hub-tool-detail-section__body">{children}</div>
     </section>

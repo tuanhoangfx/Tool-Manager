@@ -36,6 +36,7 @@ import {
   countHiddenTwofaTableColumns,
   TwofaTableColumnsSettings,
 } from "../twofa/TwofaTableColumnsSettings";
+import { TwofaMaskPasswordToggle } from "../twofa/TwofaMaskPasswordToggle";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 
 function TwofaTabDisplayPrefs({ screenFilters }: { screenFilters: FilterDef[] }) {
@@ -72,6 +73,7 @@ function TwofaTabDisplayPrefs({ screenFilters }: { screenFilters: FilterDef[] })
       tableActiveCount={hiddenCols}
       readPrefs={readTwofaHubPrefs}
       patchPrefs={patchTwofaHubPrefs}
+      appModeExtras={<TwofaMaskPasswordToggle />}
     />
   );
 }

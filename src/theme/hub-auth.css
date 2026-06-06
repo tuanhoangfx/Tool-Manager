@@ -1,44 +1,4 @@
-/* Tool Hub identity UI — synced from P0020 NotesAuthGate */
-
-.auth-gate-root {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-}
-
-.auth-gate-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(8, 12, 28, 0.78);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.auth-gate-close {
-  position: absolute;
-  top: 0.85rem;
-  right: 0.85rem;
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.25);
-  color: var(--muted);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-
-.auth-gate-close:hover {
-  color: var(--text);
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
-}
+/* Auth gate form primitives — modal shell is HubToolDetailModal; embedded 2FA panel keeps .auth-gate-modal */
 
 .auth-gate-modal {
   position: relative;

@@ -58,14 +58,13 @@ import {
   HubTimeRangeSelect,
   MetricBadge,
   MiniBarChart,
-  MiniDonut,
   ViewToggle,
   type HubViewMode,
   type KpiTileData,
   type MetricBadgeTone,
+  resolveVisibleKpiKeys,
 } from "../../components/sales-shell";
 import { TocSectionNav } from "../overview/TocSectionNav";
-import { TocHighlightContent, TocSectionHighlightProvider } from "../overview/toc-section-highlight-context";
 import { COOKIE_ROUTE_DETAIL_TOC, cookieRouteDetailSectionTitle } from "./cookie-route-detail-toc";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import type { NoteListItem } from "../notes/types";
@@ -84,6 +83,7 @@ import {
   DEFAULT_COOKIE_CHART_KEYS,
   DEFAULT_COOKIE_HEADER_STAT_KEYS,
   DEFAULT_COOKIE_KPI_KEYS,
+  COOKIE_KPI_DEFS,
 } from "./cookie-display-prefs";
 import { buildCookieHeaderStats } from "./cookie-header-metrics";
 import {
@@ -574,15 +574,17 @@ export function CookieRouteDetailModal({
           scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
         />
       }
+      sectionIds={sectionItems}
+      scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
+      shellClassName="hub-header-panel-modal"
     >
-      <TocSectionHighlightProvider sectionIds={sectionItems}>
-        <TocHighlightContent className={HUB_TOOL_DETAIL_SECTIONS_CLASS}>
-          <div className="flex flex-wrap gap-1.5">
-            <RouteSyncChip status={status} />
-            <RouteVaultChip cookieCount={vault?.cookie_count} />
-          </div>
+      <div className={HUB_TOOL_DETAIL_SECTIONS_CLASS}>
+        <div className="flex flex-wrap gap-1.5">
+          <RouteSyncChip status={status} />
+          <RouteVaultChip cookieCount={vault?.cookie_count} />
+        </div>
 
-          <HubToolDetailSection id={`${idPrefix}about`} title={cookieRouteDetailSectionTitle("about")}>
+        <HubToolDetailSection id={`${idPrefix}about`} title={cookieRouteDetailSectionTitle("about")}>
                 <div className="rdp-stat-strip">
                   <RouteSyncChip status={status} />
                   <RouteVaultChip cookieCount={vault?.cookie_count} />
@@ -640,8 +642,7 @@ export function CookieRouteDetailModal({
                     ? renderDetail(binding)
                     : <p className="text-[12px] text-[var(--muted)]">No access detail.</p>}
               </HubToolDetailSection>
-        </TocHighlightContent>
-      </TocSectionHighlightProvider>
+      </div>
     </HubToolDetailModal>
   );
 }
@@ -685,7 +686,7 @@ export function CookieAutoSyncTable({
     setCenterStats,
   } = useWorkspaceSearch();
   const [prefs, setPrefs] = useState(readCookieHubPrefs);
-  const visKpi = visibleSet(prefs.kpi, DEFAULT_COOKIE_KPI_KEYS);
+  const visKpi = resolveVisibleKpiKeys(prefs.kpi, DEFAULT_COOKIE_KPI_KEYS, COOKIE_KPI_DEFS);
   const visCharts = visibleSet(prefs.charts, DEFAULT_COOKIE_CHART_KEYS);
   const visHeaderStats = prefs.headerStats ?? DEFAULT_COOKIE_HEADER_STAT_KEYS;
   const [modal, setModal] = useState<RouteModalState>(null);
@@ -764,7 +765,7 @@ export function CookieAutoSyncTable({
         prefKey: "routes_shown",
         label: "Routes (shown)",
         value: filteredRows.length,
-        hint: `${rows.length} total`,
+        hint: filteredRows.length < rows.length ? `${rows.length} total` : undefined,
         icon: LayoutGrid,
         tone: "indigo",
       },
@@ -803,8 +804,8 @@ export function CookieAutoSyncTable({
     visCharts.has("status_bar") ||
     visCharts.has("platform_bar") ||
     visCharts.has("cookies_bar") ||
-    visCharts.has("access_donut") ||
-    visCharts.has("share_donut");
+    visCharts.has("access_bar") ||
+    visCharts.has("share_bar");
   const chartsBand = hasCharts ? (
     <>
       {visCharts.has("status_bar") ? <MiniBarChart title="Sync status" items={charts.statusItems} /> : null}
@@ -812,8 +813,8 @@ export function CookieAutoSyncTable({
       {visCharts.has("cookies_bar") ? (
         <MiniBarChart title="Cookies stored" items={charts.cookieItems} formatter={(n) => `${n} cookies`} />
       ) : null}
-      {visCharts.has("access_donut") ? <MiniDonut title="Route access" items={charts.accessItems} /> : null}
-      {visCharts.has("share_donut") ? <MiniDonut title="Route sharing" items={charts.shareItems} /> : null}
+      {visCharts.has("access_bar") ? <MiniBarChart title="Route access" items={charts.accessItems} /> : null}
+      {visCharts.has("share_bar") ? <MiniBarChart title="Route sharing" items={charts.shareItems} /> : null}
     </>
   ) : undefined;
 
@@ -1294,25 +1295,39 @@ export function CookieAutoSyncTable({
                 />
               </th>
               <th className="w-24" scope="col">
-                <HubTableColumnHeader label="Status" icon={Activity} iconClassName="hub-users-th-icon--activity" />
+                <span className="hub-users-th-label">
+                  <HubTableColumnHeader label="Status" role="status" />
+                </span>
               </th>
               <th className="w-20" scope="col">
-                <HubTableColumnHeader label="Type" icon={Boxes} iconClassName="hub-users-th-icon--tools" />
+                <span className="hub-users-th-label">
+                  <HubTableColumnHeader label="Type" role="type" />
+                </span>
               </th>
               <th className="w-28" scope="col">
-                <HubTableColumnHeader label="Share" icon={Share2} iconClassName="hub-users-th-icon--email" />
+                <span className="hub-users-th-label">
+                  <HubTableColumnHeader label="Share" role="share" />
+                </span>
               </th>
               <th scope="col">
-                <HubTableColumnHeader label="Route" icon={Cookie} iconClassName="hub-users-th-icon--name" />
+                <span className="hub-users-th-label">
+                  <HubTableColumnHeader label="Route" role="route" />
+                </span>
               </th>
               <th scope="col">
-                <HubTableColumnHeader label="URL / ID" icon={Globe2} iconClassName="hub-users-th-icon--id" />
+                <span className="hub-users-th-label">
+                  <HubTableColumnHeader label="URL / ID" role="url" />
+                </span>
               </th>
               <th className="w-28" scope="col">
-                <HubTableColumnHeader label="Vault" icon={Shield} iconClassName="hub-users-th-icon--role" />
+                <span className="hub-users-th-label">
+                  <HubTableColumnHeader label="Vault" role="vault" />
+                </span>
               </th>
               <th className="w-32" scope="col">
-                <HubTableColumnHeader label="Source" icon={LockKeyhole} iconClassName="hub-users-th-icon--created" />
+                <span className="hub-users-th-label">
+                  <HubTableColumnHeader label="Source" role="source" />
+                </span>
               </th>
             </tr>
           </thead>

@@ -1,32 +1,20 @@
 import { parseHubPrefSet, patchHubListPrefs, readHubListPrefs, type HubListPrefs } from "../../lib/url-prefs";
+import { migrateChartKeysWithPersist } from "@tool-workspace/hub-ui";
 
 export { HUB_LIST_PREFS_CHANGE_EVENT } from "../../lib/url-prefs";
-
-/** Legacy chart keys → current (Cookie Auto chart redesign). */
-const COOKIE_CHART_KEY_MIGRATION: Record<string, string> = {
-  type_bar: "platform_bar",
-  source_donut: "access_donut",
-  vault_donut: "cookies_bar",
-};
-
-function migrateCookieChartKeys(set: Set<string> | null): Set<string> | null {
-  if (!set) return null;
-  const next = new Set<string>();
-  for (const key of set) {
-    next.add(COOKIE_CHART_KEY_MIGRATION[key] ?? key);
-  }
-  return next;
-}
 
 /** Cookie tab KPI/charts — separate URL keys from 2FA (`2kpi`) and Hub (`kpi`). */
 export function readCookieHubPrefs(): HubListPrefs {
   if (typeof window === "undefined") return readHubListPrefs();
   const hub = readHubListPrefs();
   const sp = new URLSearchParams(window.location.search);
+  const charts = migrateChartKeysWithPersist(sp.get("ccharts"), (value) =>
+    patchHubListPrefs({ ccharts: value }),
+  );
   return {
     ...hub,
     kpi: parseHubPrefSet(sp.get("ckpi")),
-    charts: migrateCookieChartKeys(parseHubPrefSet(sp.get("ccharts"))),
+    charts,
   };
 }
 

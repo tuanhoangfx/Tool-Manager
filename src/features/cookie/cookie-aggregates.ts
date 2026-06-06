@@ -1,5 +1,5 @@
 import { prepareChartItems } from "@tool-workspace/hub-ui";
-import type { BarItem, DonutItem } from "../../components/sales-shell";
+import type { BarItem } from "../../components/sales-shell";
 import { resolveCookieSiteIcon } from "./cookieSiteIcon";
 import type { CookieRouteRow } from "./cookie-route-filter-counts";
 import { lookupVaultRow, type CookieVaultRow } from "./useCookieVaultMap";
@@ -84,7 +84,7 @@ export function buildCookieChartItems(
     else if (row.binding.sourceBrowserId) locked += 1;
     else owner += 1;
   }
-  const accessItems: DonutItem[] = prepareChartItems(
+  const accessItems: BarItem[] = prepareChartItems(
     [
       { label: "Owner", value: owner, color: "#818cf8" },
       { label: "Locked browser", value: locked, color: "#22c55e" },
@@ -104,7 +104,7 @@ export function buildCookieChartItems(
     if (members > 0) sharedOut += 1;
     else privateRoutes += 1;
   }
-  const shareItems: DonutItem[] = prepareChartItems(
+  const shareItems: BarItem[] = prepareChartItems(
     [
       { label: "Private", value: privateRoutes, color: "#64748b" },
       { label: "Shared", value: sharedOut, color: "#a855f7" },

@@ -1,11 +1,13 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import type { HubTableColumnRole } from "../table/hub-table-column-meta";
 import { HubTableColumnHeader } from "./HubTableColumnHeader";
 
 export type HubTableColumn = {
   key: string;
   label: string;
   className?: string;
+  role?: HubTableColumnRole;
   icon?: LucideIcon;
   iconClassName?: string;
   /** Custom header cell (sort buttons, select-all, etc.) */
@@ -29,8 +31,15 @@ export function HubDataTable({
             {columns.map((col) => (
               <th key={col.key} className={col.className} scope="col">
                 {col.header ??
-                  (col.icon ? (
-                    <HubTableColumnHeader label={col.label} icon={col.icon} iconClassName={col.iconClassName} />
+                  (col.role || col.icon ? (
+                    <span className="hub-users-th-label">
+                      <HubTableColumnHeader
+                        label={col.label}
+                        role={col.role}
+                        icon={col.icon}
+                        iconClassName={col.iconClassName}
+                      />
+                    </span>
                   ) : (
                     <span className="hub-users-th-text">{col.label}</span>
                   ))}

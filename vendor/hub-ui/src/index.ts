@@ -1,6 +1,20 @@
 export { HubDisplayPrefs } from "./display-prefs/HubDisplayPrefs";
 export { Section, SectionIcon, TabButton, ToggleRow } from "./display-prefs/primitives";
 export { LIMIT_OPTIONS, TIME_RANGES, type TimeRange } from "./display-prefs/constants";
+export {
+  CHART_KEY_MIGRATION,
+  migrateChartKeyList,
+  migrateChartKeySet,
+  migrateChartKeysWithPersist,
+  serializeChartKeySet,
+} from "./display-prefs/chart-key-migrate";
+export {
+  MAX_VISIBLE_KPI,
+  defaultKpiKeysExcluding,
+  defaultKpiKeysFromDefs,
+  enforceKpiMaxOnAdd,
+  resolveVisibleKpiKeys,
+} from "./display-prefs/kpi-visible";
 export type {
   DisplayPrefsPrefs,
   HubDisplayPrefsProps,
@@ -73,6 +87,12 @@ export { HubTabSectionRule } from "./shell/HubTabSectionRule";
 export { HubAlert } from "./content/HubAlert";
 export { HubDataTable, HubTableEmptyRow, type HubTableColumn } from "./content/HubDataTable";
 export { HubTableColumnHeader, type HubTableColumnHeaderProps } from "./content/HubTableColumnHeader";
+export {
+  HUB_TABLE_COLUMN_META,
+  resolveHubTableColumnMeta,
+  type HubTableColumnMeta,
+  type HubTableColumnRole,
+} from "./table/hub-table-column-meta";
 export { HubPanel } from "./content/HubPanel";
 export { HubDirectoryCard } from "./content/HubDirectoryCard";
 export { HubTabScreenBody } from "./content/HubTabScreenBody";
@@ -127,6 +147,7 @@ export { HubDetailModal, type HubDetailModalProps, type HubDetailModalSize } fro
 export {
   HubToolDetailModal,
   HubToolDetailModalPrimaryAction,
+  HubToolDetailModalSecondaryAction,
   HubToolDetailModalTocLayout,
   HUB_TOOL_DETAIL_BODY_SCROLL_CLASS,
   HUB_TOOL_DETAIL_SCROLL_CLASS,
@@ -147,3 +168,16 @@ export {
   HUB_TOOL_DETAIL_FORM_GRID_3_CLASS,
   type HubToolDetailSectionProps,
 } from "./shell/HubToolDetailSection";
+export {
+  HubTocSectionHighlightProvider,
+  HubTocHighlightContent,
+  useHubTocNavHighlight,
+  useHubTocNavActive,
+  useHubTocSectionHighlightOptional,
+} from "./shell/HubTocSectionHighlight";
+export { scrollToHubTocSection, findHubTocScrollContainer } from "./shell/hub-toc-scroll";
+export { resolveActiveTocSection, useHubTocSectionSpy } from "./shell/hub-toc-section-spy";
+export { HubTocSectionNav, type HubTocNavItem } from "./shell/HubTocSectionNav";
+export { HubHintTooltip } from "./shell/HubHintTooltip";
+export { HubHeaderPanelButton, type HubHeaderPanelButtonProps } from "./shell/HubHeaderPanelButton";
+export { HubUsageLogPanel, type HubLogEntry, type HubUsageLogPanelProps } from "./shell/HubUsageLogPanel";

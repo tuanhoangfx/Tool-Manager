@@ -4,6 +4,7 @@ import {
   readHubListPrefs,
   type HubListPrefs,
 } from "../../lib/url-prefs";
+import { migrateChartKeysWithPersist } from "@tool-workspace/hub-ui";
 
 export { HUB_LIST_PREFS_CHANGE_EVENT } from "../../lib/url-prefs";
 
@@ -12,10 +13,13 @@ export function readTwofaHubPrefs(): HubListPrefs {
   if (typeof window === "undefined") return readHubListPrefs();
   const hub = readHubListPrefs();
   const sp = new URLSearchParams(window.location.search);
+  const charts = migrateChartKeysWithPersist(sp.get("2charts"), (value) =>
+    patchHubListPrefs({ "2charts": value }),
+  );
   return {
     ...hub,
     kpi: parseHubPrefSet(sp.get("2kpi")),
-    charts: parseHubPrefSet(sp.get("2charts")),
+    charts,
   };
 }
 
