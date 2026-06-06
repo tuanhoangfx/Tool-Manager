@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { Mail, Save, Shield, UserPlus, Users } from "lucide-react";
+import { Mail, Pencil, Save, Shield, UserPlus, Users } from "lucide-react";
 import {
   FilterBar,
-  HubSingleFilterDropdown,
   type FilterValues,
 } from "../../components/sales-shell";
+import {
+  HubModalFilterField,
+  HubFormFieldLabel,
+  HUB_TOOL_DETAIL_FORM_GRID_2_CLASS,
+} from "@tool-workspace/hub-ui";
 import { ACCESS_FILTER_DEFS, accessFiltersWithCounts } from "./access-filter-counts";
 import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
 import type { CookieVaultRow } from "./useCookieVaultMap";
@@ -25,7 +29,6 @@ import { CookieRouteAccessBulkActionBar } from "./CookieRouteAccessBulkActionBar
 import { CookieRouteAccessTable, type RouteAccessRow } from "./CookieRouteAccessTable";
 import { CookieRouteAccessTableSkeleton } from "./CookieRouteAccessTableSkeleton";
 import {
-  CookieRouteFieldLabel,
   CookieRouteFormModal,
   CookieRouteModalActions,
   CookieRouteModalSection,
@@ -489,7 +492,8 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
         <CookieRouteFormModal
           toc={COOKIE_ROUTE_SHARE_TOC}
           idPrefix="rt-m-share-"
-          title="Share"
+          title="Add user"
+          headerIcon={UserPlus}
           onClose={() => setShareOpen(false)}
           footer={
             <CookieRouteModalActions
@@ -527,9 +531,9 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
             <p className="cookie-route-modal__note">
               Grant Load or Sync access by email. Manage stays with route owner only.
             </p>
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className={HUB_TOOL_DETAIL_FORM_GRID_2_CLASS}>
               <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
+                <HubFormFieldLabel icon={Mail}>User email</HubFormFieldLabel>
                 <input
                   className="field auth-gate-field w-full"
                   value={shareEmail}
@@ -537,17 +541,14 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
                   onChange={(event) => setShareEmail(event.target.value)}
                 />
               </label>
-              <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
-                <HubSingleFilterDropdown
-                  filterKey="access"
-                  label="Access"
-                  value={shareAccess}
-                  options={COOKIE_ACCESS_SELECT_OPTIONS}
-                  onChange={(v) => setShareAccess(v as ShareAccess)}
-                  className="w-full"
-                />
-              </label>
+              <HubModalFilterField
+                filterKey="access"
+                label="Access"
+                icon={Shield}
+                value={shareAccess}
+                options={COOKIE_ACCESS_SELECT_OPTIONS}
+                onChange={(v) => setShareAccess(v as ShareAccess)}
+              />
             </div>
           </CookieRouteModalSection>
         </CookieRouteFormModal>
@@ -558,6 +559,7 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
           toc={COOKIE_ROUTE_EDIT_MEMBER_TOC}
           idPrefix="rt-m-edit-"
           title="Edit access"
+          headerIcon={Pencil}
           onClose={() => setEditingMember(null)}
           footer={
             <CookieRouteModalActions
@@ -574,26 +576,23 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
             title={cookieRouteSectionTitle(COOKIE_ROUTE_EDIT_MEMBER_TOC, "member")}
           >
             <p className="cookie-route-modal__note">Update Load or Sync access for this member.</p>
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className={HUB_TOOL_DETAIL_FORM_GRID_2_CLASS}>
               <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
+                <HubFormFieldLabel icon={Mail}>User email</HubFormFieldLabel>
                 <input
                   className="field auth-gate-field w-full opacity-80"
                   value={editingMember.grantee_email ?? ""}
                   readOnly
                 />
               </label>
-              <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
-                <HubSingleFilterDropdown
-                  filterKey="access"
-                  label="Access"
-                  value={editAccess}
-                  options={COOKIE_ACCESS_SELECT_OPTIONS}
-                  onChange={(v) => setEditAccess(v as ShareAccess)}
-                  className="w-full"
-                />
-              </label>
+              <HubModalFilterField
+                filterKey="access"
+                label="Access"
+                icon={Shield}
+                value={editAccess}
+                options={COOKIE_ACCESS_SELECT_OPTIONS}
+                onChange={(v) => setEditAccess(v as ShareAccess)}
+              />
             </div>
           </CookieRouteModalSection>
         </CookieRouteFormModal>

@@ -766,11 +766,14 @@ body.hub-modal-open {
   padding: 0.55rem 0.85rem;
 }
 
-.cookie-route-form-modal .modal-shell__scroll--user-access {
-  padding-top: 1rem;
-  padding-left: 1.1rem;
-  padding-right: 1.1rem;
-  padding-bottom: 1.15rem;
+.cookie-route-form-modal .hub-tool-detail-modal__layout {
+  padding: 0.65rem 0.85rem 0.55rem;
+}
+
+.cookie-route-form-modal .hub-tool-detail-modal__scroll-inner {
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+  padding-bottom: 0.85rem;
 }
 
 .cookie-route-form-modal__icon {

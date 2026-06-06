@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useHubPageShortcuts } from "@tool-workspace/hub-ui";
 import type { FilterValues } from "../../components/sales-shell";
 import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
 import { useAppToast } from "../../components/toast";
@@ -300,7 +301,7 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     if (!stillExists && sortedFiltered.length > 0) pickNote(sortedFiltered[0].id);
   }, [tabActive, creating, listLoading, sortedFiltered, notes, selectedId, pickNote]);
 
-  const onNew = async () => {
+  const onNew = useCallback(async () => {
     setCreating(true);
     try {
       const row = await createNote();
@@ -311,7 +312,12 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     } finally {
       setCreating(false);
     }
-  };
+  }, [pickNote, pushToast]);
+
+  useHubPageShortcuts("notes", {
+    onNew,
+    canNew: () => tabActive && !creating && !authLoading && Boolean(session),
+  });
 
   const updateTitle = (next: string) => {
     setTitle(next);

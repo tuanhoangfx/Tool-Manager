@@ -87,7 +87,7 @@ export function useTwofaAccounts() {
         const account = draft.account.trim();
         const secret = normalizeSecret(draft.secret);
         const password = draft.password?.trim();
-        if (!service || !account || !secret) continue;
+        if (!secret) continue;
         const row: TwofaAccount = {
           id: newId(),
           service,
@@ -114,7 +114,7 @@ export function useTwofaAccounts() {
       const account = draft.account.trim();
       const secret = normalizeSecret(draft.secret);
       const password = draft.password?.trim();
-      if (!service || !account || !secret) return false;
+      if (!secret) return false;
       const now = new Date().toISOString();
       const row: TwofaAccount = {
         id: newId(),
@@ -138,7 +138,7 @@ export function useTwofaAccounts() {
       const account = draft.account.trim();
       const secret = normalizeSecret(draft.secret);
       const password = draft.password?.trim();
-      if (!service || !account || !secret) return false;
+      if (!secret) return false;
       const now = new Date().toISOString();
       let updated: TwofaAccount | null = null;
       setAccounts((prev) =>

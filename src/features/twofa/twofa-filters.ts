@@ -1,4 +1,5 @@
-import type { FilterDef, FilterValues } from "../../components/sales-shell";
+import type { FilterDef, FilterOption, FilterValues } from "../../components/sales-shell";
+import { resolveTwofaPlatformIcon } from "./twofa-platform-icon";
 import type { TwofaAccount } from "./types";
 import { matchesTimeRange } from "../notes/notes-filters";
 import type { TimeRange } from "../../lib/url-prefs";
@@ -25,7 +26,7 @@ export const TWOFA_FILTER_DEFS: FilterDef[] = [
 
 export const DEFAULT_TWOFA_FILTER_KEYS = new Set(TWOFA_FILTER_DEFS.map((f) => f.key));
 
-export function buildTwofaServiceFilterOptions(accounts: TwofaAccount[]) {
+export function buildTwofaServiceFilterOptions(accounts: TwofaAccount[]): FilterOption[] {
   const counts = new Map<string, number>();
   for (const row of accounts) {
     const key = row.service.trim() || "Other";
@@ -33,7 +34,10 @@ export function buildTwofaServiceFilterOptions(accounts: TwofaAccount[]) {
   }
   return Array.from(counts.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([value, count]) => ({ value, label: value, count }));
+    .map(([value, count]) => {
+      const brand = resolveTwofaPlatformIcon(value);
+      return { value, label: value, count, iconSrc: brand?.src };
+    });
 }
 
 export function filterTwofaAccounts(

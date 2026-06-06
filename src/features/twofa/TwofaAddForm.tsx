@@ -89,6 +89,10 @@ export function TwofaAddForm({
   if (!active) return null;
 
   const onSubmitSingle = () => {
+    if (!secret.trim()) {
+      setError("2FA secret is required.");
+      return;
+    }
     const draft = { service, account, password: password.trim() || undefined, secret };
     if (!generateCode(draft.service, draft.account, draft.secret)) {
       setError("Invalid Base32 secret.");
@@ -96,7 +100,7 @@ export function TwofaAddForm({
     }
     const ok = onSaveSingle(draft);
     if (!ok) {
-      setError("Fill Platform, ID, and 2FA secret.");
+      setError("Could not save entry.");
       return;
     }
     onClose();
@@ -226,7 +230,7 @@ export function TwofaAddForm({
               className="field auth-gate-field w-full"
               name="twofa-service"
               autoComplete="off"
-              placeholder="Platform (Google, GitHub…)"
+              placeholder="Platform (optional)"
               value={service}
               onChange={(e) => setService(e.target.value)}
             />
@@ -234,7 +238,7 @@ export function TwofaAddForm({
               className="field auth-gate-field w-full"
               name="twofa-account-id"
               autoComplete="off"
-              placeholder="ID / account"
+              placeholder="ID / account (optional)"
               value={account}
               readOnly={mode === "add"}
               onFocus={(e) => {
@@ -261,7 +265,7 @@ export function TwofaAddForm({
               className="field auth-gate-field w-full font-mono"
               name="twofa-totp-secret"
               autoComplete="off"
-              placeholder="2FA secret (Base32)"
+              placeholder="2FA secret (Base32) — required"
               value={secret}
               onChange={(e) => setSecret(e.target.value)}
             />
@@ -269,8 +273,8 @@ export function TwofaAddForm({
         ) : (
           <>
             <p className="auth-gate-hint">
-              One line per entry: <span className="auth-gate-mono">Platform|ID|2FA</span> or{" "}
-              <span className="auth-gate-mono">Platform|ID|Pass|2FA</span> (header optional).
+              One secret per line, or <span className="auth-gate-mono">Platform|ID|2FA</span> /{" "}
+              <span className="auth-gate-mono">Platform|2FA</span> — platform &amp; ID optional.
             </p>
             <textarea
               className="field auth-gate-field w-full min-h-[120px] font-mono text-[11px] leading-relaxed"

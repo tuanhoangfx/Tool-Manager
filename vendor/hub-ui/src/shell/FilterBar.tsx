@@ -24,7 +24,7 @@ import {
 import { compactIconSize } from "../ui-scale";
 import { registerHubSearchClear, registerHubSearchFocus } from "../keyboard/hub-keyboard-shortcuts";
 
-export type FilterOption = { value: string; label: string; color?: string; count?: number };
+export type FilterOption = { value: string; label: string; color?: string; count?: number; iconSrc?: string };
 export type FilterDef = {
   key: string;
   label: string;
@@ -269,6 +269,16 @@ function FilterOptionCount({ value }: { value?: number }) {
 }
 
 function FilterOptionGlyph({ filterKey, option }: { filterKey: string; option: FilterOption }) {
+  if (option.iconSrc) {
+    return (
+      <img
+        src={option.iconSrc}
+        alt=""
+        className="h-3.5 w-3.5 shrink-0 rounded-sm object-contain"
+        aria-hidden
+      />
+    );
+  }
   const meta = resolveFilterOptionIcon(filterKey, option.value);
   if (!meta) {
     return option.color ? (
@@ -339,6 +349,8 @@ function MultiFilterDropdown({
   })();
 
   const triggerIcon = resolveFilterTriggerIcon(filter, selected);
+  const triggerIconSrc =
+    selected.length === 1 ? filter.options.find((o) => o.value === selected[0])?.iconSrc : undefined;
   const allIcon = resolveFilterAllIcon(filter.key);
   const showTotalOnTrigger = selected.length === 0 && filter.totalCount !== undefined;
 
@@ -353,7 +365,11 @@ function MultiFilterDropdown({
             : "border-white/10 bg-[var(--panel-2)] text-[var(--text)] hover:bg-white/5"
         }`}
       >
-        {triggerIcon ? <FilterIconGlyph meta={triggerIcon} size={compactIconSize(12)} /> : null}
+        {triggerIconSrc ? (
+          <img src={triggerIconSrc} alt="" className="h-3 w-3 shrink-0 rounded-sm object-contain" aria-hidden />
+        ) : triggerIcon ? (
+          <FilterIconGlyph meta={triggerIcon} size={compactIconSize(12)} />
+        ) : null}
         <span>{buttonLabel}</span>
         {showTotalOnTrigger ? (
           <span className="shrink-0 tabular-nums text-[10px] font-medium text-[var(--muted)]">{filter.totalCount}</span>

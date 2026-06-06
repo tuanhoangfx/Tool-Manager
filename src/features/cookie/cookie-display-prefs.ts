@@ -9,10 +9,11 @@ export const COOKIE_KPI_DEFS: PrefItem[] = [
 ];
 
 export const COOKIE_CHART_DEFS: PrefItem[] = [
-  { key: "status_bar", label: "By Status (bar)" },
-  { key: "type_bar", label: "By Type (bar)" },
-  { key: "source_donut", label: "Publish mode (donut)" },
-  { key: "vault_donut", label: "Vault distribution (donut)" },
+  { key: "status_bar", label: "Sync status (bar)" },
+  { key: "platform_bar", label: "Routes by platform (bar)" },
+  { key: "cookies_bar", label: "Cookies stored (bar)" },
+  { key: "access_donut", label: "Route access (donut)" },
+  { key: "share_donut", label: "Route sharing (donut)" },
 ];
 
 export const COOKIE_FILTER_DEFS: PrefItem[] = COOKIE_ROUTE_FILTER_DEFS.map(({ key, label }) => ({

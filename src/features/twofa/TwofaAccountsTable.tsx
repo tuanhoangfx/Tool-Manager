@@ -2,7 +2,6 @@ import { memo, useMemo } from "react";
 import {
   CalendarClock,
   Fingerprint,
-  Hash,
   Lock,
   Mail,
   ShieldCheck,
@@ -10,9 +9,10 @@ import {
 } from "lucide-react";
 import { TwofaPlatformIcon } from "./TwofaPlatformIcon";
 import "./twofa-platform-icon.css";
-import { CopyMetaChip } from "../../components/CopyMetaChip";
+import "./twofa-table-cells.css";
+import { TwofaAccountCell, TwofaCodeCell, TwofaPasswordCell, TwofaSecretCell } from "./twofa-copy-cells";
 import type { TwofaAccount } from "./types";
-import { generateCode, normalizeSecret, secondsRemaining } from "./totp";
+import { secondsRemaining } from "./totp";
 import { fmtHubDate, twofaActivityAt } from "./twofa-time";
 import type { TwofaTableColumnKey } from "./twofa-table-prefs";
 
@@ -100,75 +100,11 @@ function thBtnClass(align: ColumnAlign) {
   return `hub-users-th-btn hub-users-th-btn--static${align === "left" ? " hub-users-th-btn--align-start" : ""}`;
 }
 
-const CHIP_BASE =
-  "inline-flex !max-w-none w-auto gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium leading-[1.3]";
-
-const ACCOUNT_CHIP_CLASS = `${CHIP_BASE} max-w-full border-sky-300/45 bg-sky-400/18 text-sky-50 shadow-[0_0_8px_rgba(56,189,248,0.12)]`;
-
-const PASSWORD_CHIP_CLASS = `${CHIP_BASE} max-w-full border-violet-300/40 bg-violet-400/16 text-violet-50 shadow-[0_0_8px_rgba(167,139,250,0.12)]`;
-
-const SECRET_CHIP_CLASS = `${CHIP_BASE} items-start border-indigo-300/40 bg-indigo-400/16 text-indigo-50 shadow-[0_0_8px_rgba(129,140,248,0.12)]`;
-
-const CODE_CHIP_CLASS = `${CHIP_BASE} border-amber-400/55 bg-amber-500/24 text-[11px] font-semibold tracking-[0.12em] text-amber-50 shadow-[0_0_10px_rgba(251,191,36,0.2)]`;
-
 function periodTone(secondsLeft: number): "fresh" | "warn" | "urgent" {
   if (secondsLeft > 20) return "fresh";
   if (secondsLeft > 10) return "warn";
   return "urgent";
 }
-
-function TwofaAccountCell({ account }: { account: TwofaAccount }) {
-  const value = account.account.trim();
-  if (!value) {
-    return <span className="hub-users-cell-muted">—</span>;
-  }
-
-  return (
-    <div onClick={(e) => e.stopPropagation()}>
-      <CopyMetaChip
-        icon={<Mail size={11} />}
-        label={value}
-        value={value}
-        tone="cyan"
-        title="Copy account"
-        className={ACCOUNT_CHIP_CLASS}
-        labelClassName="truncate text-left"
-      />
-    </div>
-  );
-}
-
-const TwofaCodeCell = memo(function TwofaCodeCell({
-  account,
-  tick,
-  onUsed,
-}: {
-  account: TwofaAccount;
-  tick: number;
-  onUsed: (id: string) => void;
-}) {
-  const code = useMemo(
-    () => generateCode(account.service, account.account, account.secret),
-    [account.service, account.account, account.secret, tick],
-  );
-
-  return (
-    <div onClick={(e) => e.stopPropagation()}>
-      <CopyMetaChip
-        icon={<ShieldCheck size={11} />}
-        label={code ?? "------"}
-        value={code ?? ""}
-        tone="amber"
-        title="Copy code"
-        className={CODE_CHIP_CLASS}
-        labelClassName="whitespace-nowrap"
-        onCopied={() => {
-          if (code) onUsed(account.id);
-        }}
-      />
-    </div>
-  );
-});
 
 const TwofaPeriodCell = memo(function TwofaPeriodCell({ tick }: { tick: number }) {
   void tick;
@@ -181,45 +117,6 @@ const TwofaPeriodCell = memo(function TwofaPeriodCell({ tick }: { tick: number }
     </span>
   );
 });
-
-function TwofaPasswordCell({ account }: { account: TwofaAccount }) {
-  const value = account.password?.trim();
-  if (!value) {
-    return <span className="hub-users-cell-muted">—</span>;
-  }
-
-  return (
-    <div onClick={(e) => e.stopPropagation()}>
-      <CopyMetaChip
-        icon={<Lock size={11} />}
-        label={value}
-        value={value}
-        tone="violet"
-        title="Copy password"
-        className={PASSWORD_CHIP_CLASS}
-        labelClassName="truncate text-left"
-      />
-    </div>
-  );
-}
-
-function TwofaSecretCell({ account }: { account: TwofaAccount }) {
-  const secret = normalizeSecret(account.secret);
-
-  return (
-    <div onClick={(e) => e.stopPropagation()}>
-      <CopyMetaChip
-        icon={<Hash size={11} />}
-        label={secret}
-        value={secret}
-        tone="indigo"
-        title={secret}
-        className={SECRET_CHIP_CLASS}
-        labelClassName="whitespace-normal break-all text-left"
-      />
-    </div>
-  );
-}
 
 function renderBodyCell(
   key: ColumnKey,

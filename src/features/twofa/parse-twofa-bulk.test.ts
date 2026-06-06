@@ -17,6 +17,24 @@ describe("parseTwofaBulkLine", () => {
     });
   });
 
+  it("parses secret-only line (1 field)", () => {
+    expect(parseTwofaBulkLine(["JBSWY3DPEHPK3PXP"])).toEqual({
+      service: "",
+      account: "",
+      password: "",
+      secret: "JBSWY3DPEHPK3PXP",
+    });
+  });
+
+  it("parses Platform|2FA without account (2 fields)", () => {
+    expect(parseTwofaBulkLine(["Google", "JBSWY3DPEHPK3PXP"])).toEqual({
+      service: "Google",
+      account: "",
+      password: "",
+      secret: "JBSWY3DPEHPK3PXP",
+    });
+  });
+
   it("parses Platform|ID|Pass|2FA (4 fields)", () => {
     const row = parseTwofaBulkLine(["GitHub", "dev", "mypass", "JBSWY3DPEHPK3PXP"]);
     expect(row).toEqual({
@@ -50,8 +68,15 @@ GitHub|dev|secret123|JBSWY3DPEHPK3PXP`;
     expect(rows[0]?.secret).toBe("JBSWY3DPEHPK3PXP");
   });
 
-  it("reports invalid lines", () => {
-    const { errors } = parseTwofaBulkText("only|two");
+  it("accepts secret-only line without separators", () => {
+    const { rows, errors } = parseTwofaBulkText("JBSWY3DPEHPK3PXP");
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.secret).toBe("JBSWY3DPEHPK3PXP");
+  });
+
+  it("reports lines missing secret", () => {
+    const { errors } = parseTwofaBulkText("Google||");
     expect(errors.length).toBeGreaterThan(0);
   });
 });
@@ -74,6 +99,14 @@ describe("validateTwofaBulkRows", () => {
   it("accepts valid base32", () => {
     const { valid, invalid } = validateTwofaBulkRows([
       { line: 2, service: "GitHub", account: "dev", secret: "JBSWY3DPEHPK3PXP" },
+    ]);
+    expect(valid).toHaveLength(1);
+    expect(invalid).toHaveLength(0);
+  });
+
+  it("accepts rows with empty platform and account", () => {
+    const { valid, invalid } = validateTwofaBulkRows([
+      { line: 1, service: "", account: "", secret: "JBSWY3DPEHPK3PXP" },
     ]);
     expect(valid).toHaveLength(1);
     expect(invalid).toHaveLength(0);

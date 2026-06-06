@@ -8,13 +8,21 @@ import {
   type ElementType,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
 import {
-  CookieRouteFieldLabel,
   CookieRouteFormModal,
   CookieRouteModalActions,
   CookieRouteModalSection,
 } from "./CookieRouteFormModal";
+import {
+  HubModalFilterField,
+  HubFormFieldLabel,
+  HubToolDetailModal,
+  HubToolDetailSection,
+  HubTableColumnHeader,
+  HUB_TOOL_DETAIL_FORM_GRID_3_CLASS,
+  HUB_TOOL_DETAIL_SCROLL_ROOT,
+  HUB_TOOL_DETAIL_SECTIONS_CLASS,
+} from "@tool-workspace/hub-ui";
 import {
   COOKIE_ROUTE_ADD_TOC,
   COOKIE_ROUTE_EDIT_TOC,
@@ -47,19 +55,18 @@ import {
 } from "lucide-react";
 import {
   HubResultCount,
-  HubSingleFilterDropdown,
   HubTimeRangeSelect,
   MetricBadge,
   MiniBarChart,
   MiniDonut,
   ViewToggle,
-  type BarItem,
-  type DonutItem,
   type HubViewMode,
   type KpiTileData,
   type MetricBadgeTone,
 } from "../../components/sales-shell";
-import { HubModalFrame, prepareChartItems } from "@tool-workspace/hub-ui";
+import { TocSectionNav } from "../overview/TocSectionNav";
+import { TocHighlightContent, TocSectionHighlightProvider } from "../overview/toc-section-highlight-context";
+import { COOKIE_ROUTE_DETAIL_TOC, cookieRouteDetailSectionTitle } from "./cookie-route-detail-toc";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import type { NoteListItem } from "../notes/types";
 import { routeMatchesTimeRange } from "./cookie-route-activity";
@@ -71,7 +78,8 @@ import { resolveCookieSiteIcon } from "./cookieSiteIcon";
 import { buildAppUrl } from "../../lib/workspace-path";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
 import { readCookieHubPrefs } from "./cookie-tab-prefs";
-import { cookieRouteFiltersWithCounts } from "./cookie-route-filter-counts";
+import { buildCookieChartItems } from "./cookie-aggregates";
+import { cookieRouteFiltersWithCounts, filterCookieRows } from "./cookie-route-filter-counts";
 import {
   DEFAULT_COOKIE_CHART_KEYS,
   DEFAULT_COOKIE_HEADER_STAT_KEYS,
@@ -213,14 +221,6 @@ function CompactField({
   );
 }
 
-function routeType(domain: string) {
-  return domain.includes("facebook") ? "facebook" : "custom";
-}
-
-function routeSource(binding: CookieBinding) {
-  return binding.sourceBrowserId ? "locked" : "unset";
-}
-
 function siteIcon(domain: string) {
   return resolveCookieSiteIcon(domain);
 }
@@ -231,16 +231,6 @@ function sharePermissions(role: ShareRole) {
     canPublish: role === "sync",
     canManage: false,
   };
-}
-
-function countBy<T extends string>(items: T[]): Record<T, number> {
-  return items.reduce(
-    (acc, item) => {
-      acc[item] = (acc[item] ?? 0) + 1;
-      return acc;
-    },
-    {} as Record<T, number>,
-  );
 }
 
 function RouteMetaRow({
@@ -532,15 +522,10 @@ export function CookieRouteDetailModal({
     };
   }, [binding.noteId]);
   const sectionItems = useMemo(
-    () => [
-      { id: `${idPrefix}about`, label: "About", icon: Info, tone: "indigo" },
-      { id: `${idPrefix}access`, label: "Access", icon: Shield, tone: "emerald" },
-    ],
+    () => COOKIE_ROUTE_DETAIL_TOC.map(({ id }) => `${idPrefix}${id}`),
     [idPrefix],
   );
-  const [activeSection, setActiveSection] = useState(sectionItems[0].id);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
   const routeTitle = binding.noteTitle ?? note?.title ?? "Cookie route";
   const routeSite = siteIcon(binding.domain);
 
@@ -556,126 +541,48 @@ export function CookieRouteDetailModal({
     }
   }, []);
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    document.body.classList.add("hub-modal-open");
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.classList.remove("hub-modal-open");
-    };
-  }, [onClose]);
+  return (
+    <HubToolDetailModal
+      open
+      onClose={onClose}
+      title={routeTitle}
+      titleId={`cookie-route-${binding.id}`}
+      headerLeading={
+        routeSite ? (
+          <img
+            src={routeSite.src}
+            alt=""
+            width={32}
+            height={32}
+            className="user-access-modal__avatar h-8 w-8 shrink-0 rounded-lg object-cover"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <span className="user-access-modal__avatar grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-500/20" aria-hidden>
+            <Globe2 size={18} className="text-indigo-200" />
+          </span>
+        )
+      }
+      headerTrailing={
+        <span className="truncate font-mono text-[10px] text-[var(--muted)]">{binding.domain}</span>
+      }
+      toc={
+        <TocSectionNav
+          items={COOKIE_ROUTE_DETAIL_TOC}
+          idPrefix={idPrefix}
+          scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
+        />
+      }
+    >
+      <TocSectionHighlightProvider sectionIds={sectionItems}>
+        <TocHighlightContent className={HUB_TOOL_DETAIL_SECTIONS_CLASS}>
+          <div className="flex flex-wrap gap-1.5">
+            <RouteSyncChip status={status} />
+            <RouteVaultChip cookieCount={vault?.cookie_count} />
+          </div>
 
-  useEffect(() => {
-    const root = scrollRef.current;
-    if (!root) return;
-    const sections = sectionItems
-      .map((item) => document.getElementById(item.id))
-      .filter((section): section is HTMLElement => Boolean(section));
-    if (!sections.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible?.target.id) setActiveSection(visible.target.id);
-      },
-      {
-        root,
-        rootMargin: "-12% 0px -62% 0px",
-        threshold: [0.08, 0.2, 0.45, 0.7],
-      },
-    );
-
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, [sectionItems]);
-
-  return createPortal(
-    <div className="modal-backdrop modal-backdrop--tool-detail" role="presentation" onClick={onClose}>
-      <HubModalFrame onClose={onClose}>
-        <div
-          className="modal-shell modal-shell--tool-detail"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${binding.noteTitle ?? "Cookie route"} details`}
-        >
-        <div className="modal-shell__scroll" ref={scrollRef}>
-          <div className="route-detail-preview route-detail-preview--classic">
-            <header className="rdp-modal-header">
-              <div className="rdp-modal-header__identity">
-                <div className="rdp-modal-header__avatar" aria-hidden>
-                  {routeSite ? (
-                    <img src={routeSite.src} alt="" loading="lazy" referrerPolicy="no-referrer" />
-                  ) : (
-                    <Globe2 size={20} className="text-indigo-200" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="rdp-modal-header__eyebrow">Cookie route</p>
-                  <h2 className="rdp-modal-header__title">{routeTitle}</h2>
-                  <p className="rdp-modal-header__meta">
-                    <span>{binding.domain}</span>
-                    <span className="rdp-meta-sep">·</span>
-                    <span className="mono" title={binding.syncId || binding.noteId || undefined}>
-                      {binding.syncId ? `Sync ${binding.syncId}` : binding.noteId ? `Note ${shortId(binding.noteId)}` : "No ID"}
-                    </span>
-                    {binding.syncId ? (
-                      <button
-                        type="button"
-                        className="rdp-copy rdp-copy--inline"
-                        onClick={() => void copyValue("header-sync", binding.syncId)}
-                        title="Copy Sync ID"
-                      >
-                        <Copy size={10} />
-                      </button>
-                    ) : null}
-                    {binding.noteId ? (
-                      <button
-                        type="button"
-                        className="rdp-copy rdp-copy--inline"
-                        onClick={() => void copyValue("header-note", binding.noteId)}
-                        title="Copy Note ID"
-                      >
-                        <Copy size={10} />
-                      </button>
-                    ) : null}
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    <RouteSyncChip status={status} />
-                    <RouteVaultChip cookieCount={vault?.cookie_count} />
-                  </div>
-                </div>
-              </div>
-            </header>
-            <aside className="rdp-toc" aria-label="Route sections">
-              {sectionItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <a
-                    key={item.id}
-                    href={`#${item.id}`}
-                    className={activeSection === item.id ? "rdp-toc-item is-active" : "rdp-toc-item"}
-                    onClick={() => setActiveSection(item.id)}
-                  >
-                    <span className={`rdp-toc-chip rdp-${item.tone}`}>
-                      <Icon size={12} />
-                    </span>
-                    <span>{item.label}</span>
-                  </a>
-                );
-              })}
-            </aside>
-            <main className="rdp-content">
-              <section
-                id={`${idPrefix}about`}
-                className="rdp-section"
-                onMouseEnter={() => setActiveSection(`${idPrefix}about`)}
-              >
-                <RouteDetailSectionHead icon={Info} tone="indigo" title="About" />
+          <HubToolDetailSection id={`${idPrefix}about`} title={cookieRouteDetailSectionTitle("about")}>
                 <div className="rdp-stat-strip">
                   <RouteSyncChip status={status} />
                   <RouteVaultChip cookieCount={vault?.cookie_count} />
@@ -724,23 +631,18 @@ export function CookieRouteDetailModal({
                   />
                   <CompactField label="Last user" value={vault?.updated_by || "—"} />
                 </div>
-              </section>
+              </HubToolDetailSection>
 
-              <div id={`${idPrefix}access`} onMouseEnter={() => setActiveSection(`${idPrefix}access`)}>
+              <HubToolDetailSection id={`${idPrefix}access`} title={cookieRouteDetailSectionTitle("access")}>
                 {renderAccessDetail
                   ? renderAccessDetail(binding, { vault, noteSyncedAt: note?.synced_at ?? null })
                   : renderDetail
                     ? renderDetail(binding)
                     : <p className="text-[12px] text-[var(--muted)]">No access detail.</p>}
-              </div>
-
-            </main>
-          </div>
-        </div>
-        </div>
-      </HubModalFrame>
-    </div>,
-    document.body,
+              </HubToolDetailSection>
+        </TocHighlightContent>
+      </TocSectionHighlightProvider>
+    </HubToolDetailModal>
   );
 }
 
@@ -828,37 +730,10 @@ export function CookieAutoSyncTable({
     () => (detailBinding ? rows.find((row) => row.binding.id === detailBinding.id) : null),
     [detailBinding, rows],
   );
-  const filteredRows = useMemo(() => {
-    const normalizedQuery = routeQuery.trim().toLowerCase();
-    const activeStatuses = filterValues.status ?? [];
-    const activeTypes = filterValues.type ?? [];
-    const activeSources = filterValues.source ?? [];
-
-    return rows.filter(({ binding, note }) => {
-      const status = note?.sync_status ?? "pending";
-      const type = routeType(binding.domain);
-      const source = routeSource(binding);
-      const haystack = [
-        binding.domain,
-        binding.syncId,
-        binding.noteId,
-        binding.noteTitle,
-        note?.title,
-        note?.syncLabel,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return (
-        (!normalizedQuery || haystack.includes(normalizedQuery)) &&
-        (activeStatuses.length === 0 || activeStatuses.includes(status)) &&
-        (activeTypes.length === 0 || activeTypes.includes(type)) &&
-        (activeSources.length === 0 || activeSources.includes(source)) &&
-        routeMatchesTimeRange(binding, note, prefs.range)
-      );
-    });
-  }, [filterValues, prefs.range, routeQuery, rows]);
+  const filteredRows = useMemo(
+    () => filterCookieRows(rows, routeQuery, filterValues, prefs.range),
+    [filterValues, prefs.range, routeQuery, rows],
+  );
 
   const routeFiltersWithCounts = useMemo(
     () => cookieRouteFiltersWithCounts(rows, routeQuery, filterValues, prefs.range),
@@ -872,10 +747,18 @@ export function CookieAutoSyncTable({
     [bindings, selectedIds],
   );
   const routeKpis = useMemo<KpiTileData[]>(() => {
-    const vaultRows = rows
+    const vaultRows = filteredRows
       .map((row) => lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain))
       .filter((vault): vault is CookieVaultRow => Boolean(vault));
     const cookieCount = vaultRows.reduce((sum, vault) => sum + (vault.cookie_count ?? 0), 0);
+    const lockedTotal = rows.filter((row) => row.binding.sourceBrowserId).length;
+    const ownerTotal = rows.filter(
+      (row) => row.binding.accessRole !== "member" && !row.binding.sourceBrowserId,
+    ).length;
+    const lockedShown = filteredRows.filter((row) => row.binding.sourceBrowserId).length;
+    const ownerShown = filteredRows.filter(
+      (row) => row.binding.accessRole !== "member" && !row.binding.sourceBrowserId,
+    ).length;
     const all: KpiTileData[] = [
       {
         prefKey: "routes_shown",
@@ -888,7 +771,8 @@ export function CookieAutoSyncTable({
       {
         prefKey: "locked_browser",
         label: "Locked browser",
-        value: rows.filter((row) => row.binding.sourceBrowserId).length,
+        value: lockedShown,
+        hint: lockedShown < lockedTotal ? `${lockedTotal} total` : undefined,
         icon: LockKeyhole,
         tone: "emerald",
       },
@@ -902,67 +786,39 @@ export function CookieAutoSyncTable({
       {
         prefKey: "owner_routes",
         label: "Owner routes",
-        value: rows.filter((row) => !row.binding.sourceBrowserId).length,
+        value: ownerShown,
+        hint: ownerShown < ownerTotal ? `${ownerTotal} total` : undefined,
         icon: Shield,
         tone: "emerald",
       },
     ];
     return all.filter((item) => item.prefKey && visKpi.has(item.prefKey));
-  }, [filteredRows.length, rows, vaultByKey, visKpi]);
-  const charts = useMemo(() => {
-    const statusCounts = countBy(rows.map((row) => row.note?.sync_status ?? "pending"));
-    const typeCounts = countBy(rows.map((row) => routeType(row.binding.domain)));
-    const sourceCounts = countBy(rows.map((row) => routeSource(row.binding)));
-    const vaultCounts = countBy(
-      rows.map((row) => (lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain) ? "has vault" : "no vault")),
-    );
-    const statusItems: BarItem[] = prepareChartItems(
-      Object.entries(statusCounts).map(([label, value], index) => ({
-        label,
-        value,
-        color: ["#22c55e", "#f59e0b", "#f43f5e", "#818cf8"][index % 4],
-      })),
-    );
-    const typeItems: BarItem[] = prepareChartItems(
-      Object.entries(typeCounts).map(([label, value], index) => ({
-        label,
-        value,
-        color: ["#818cf8", "#06b6d4"][index % 2],
-      })),
-    );
-    const sourceItems: DonutItem[] = prepareChartItems(
-      Object.entries(sourceCounts).map(([label, value], index) => ({
-        label: label === "locked" ? "Locked browser" : "Owner route",
-        value,
-        color: ["#22c55e", "#f59e0b"][index % 2],
-      })),
-    );
-    const vaultItems: DonutItem[] = prepareChartItems(
-      Object.entries(vaultCounts).map(([label, value], index) => ({
-        label,
-        value,
-        color: ["#818cf8", "#64748b"][index % 2],
-      })),
-    );
-    return { statusItems, typeItems, sourceItems, vaultItems };
-  }, [rows, vaultByKey]);
+  }, [filteredRows, rows, vaultByKey, visKpi]);
+  const charts = useMemo(
+    () => buildCookieChartItems(filteredRows, vaultByKey, shareCounts),
+    [filteredRows, shareCounts, vaultByKey],
+  );
 
   const hasCharts =
     visCharts.has("status_bar") ||
-    visCharts.has("type_bar") ||
-    visCharts.has("source_donut") ||
-    visCharts.has("vault_donut");
+    visCharts.has("platform_bar") ||
+    visCharts.has("cookies_bar") ||
+    visCharts.has("access_donut") ||
+    visCharts.has("share_donut");
   const chartsBand = hasCharts ? (
     <>
-      {visCharts.has("status_bar") ? <MiniBarChart title="By Status" items={charts.statusItems} /> : null}
-      {visCharts.has("type_bar") ? <MiniBarChart title="By Type" items={charts.typeItems} /> : null}
-      {visCharts.has("source_donut") ? <MiniDonut title="Publish Mode" items={charts.sourceItems} /> : null}
-      {visCharts.has("vault_donut") ? <MiniDonut title="Vault Distribution" items={charts.vaultItems} /> : null}
+      {visCharts.has("status_bar") ? <MiniBarChart title="Sync status" items={charts.statusItems} /> : null}
+      {visCharts.has("platform_bar") ? <MiniBarChart title="Routes by platform" items={charts.platformItems} /> : null}
+      {visCharts.has("cookies_bar") ? (
+        <MiniBarChart title="Cookies stored" items={charts.cookieItems} formatter={(n) => `${n} cookies`} />
+      ) : null}
+      {visCharts.has("access_donut") ? <MiniDonut title="Route access" items={charts.accessItems} /> : null}
+      {visCharts.has("share_donut") ? <MiniDonut title="Route sharing" items={charts.shareItems} /> : null}
     </>
   ) : undefined;
 
   const cookieHeaderKpi = useMemo(() => {
-    const vaultRows = rows
+    const vaultRows = filteredRows
       .map((row) => lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain))
       .filter((vault): vault is CookieVaultRow => Boolean(vault));
     const vaultCookies = vaultRows.reduce((sum, vault) => sum + (vault.cookie_count ?? 0), 0);
@@ -971,7 +827,7 @@ export function CookieAutoSyncTable({
       routesTotal: rows.length,
       vaultCookies,
     };
-  }, [filteredRows.length, rows, vaultByKey]);
+  }, [filteredRows, rows.length, vaultByKey]);
 
   useEffect(() => subscribeHubListPrefs(() => setPrefs(readCookieHubPrefs())), []);
 
@@ -1260,6 +1116,7 @@ export function CookieAutoSyncTable({
           toc={COOKIE_ROUTE_ADD_TOC}
           idPrefix="rt-add-"
           title="Add route"
+          headerIcon={Plus}
           onClose={() => setModal(null)}
           footer={
             <CookieRouteModalActions
@@ -1276,20 +1133,17 @@ export function CookieAutoSyncTable({
             title={cookieRouteSectionTitle(COOKIE_ROUTE_ADD_TOC, "create")}
           >
             <p className="cookie-route-modal__note">Create a new cloud cookie route for the selected note and domain.</p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className={HUB_TOOL_DETAIL_FORM_GRID_3_CLASS}>
+              <HubModalFilterField
+                filterKey="note"
+                label="Target note"
+                icon={FileText}
+                value={draftNoteId}
+                options={noteSelectOptions}
+                onChange={setDraftNoteId}
+              />
               <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={FileText}>Target note</CookieRouteFieldLabel>
-                <HubSingleFilterDropdown
-                  filterKey="note"
-                  label="Target note"
-                  value={draftNoteId}
-                  options={noteSelectOptions}
-                  onChange={setDraftNoteId}
-                  className="w-full"
-                />
-              </label>
-              <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={Globe2}>Auto domain</CookieRouteFieldLabel>
+                <HubFormFieldLabel icon={Globe2}>Auto domain</HubFormFieldLabel>
                 <input
                   className="field auth-gate-field font-mono w-full"
                   value={draftDomain}
@@ -1297,7 +1151,7 @@ export function CookieAutoSyncTable({
                 />
               </label>
               <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={LockKeyhole}>Sync pass (optional)</CookieRouteFieldLabel>
+                <HubFormFieldLabel icon={LockKeyhole}>Sync pass (optional)</HubFormFieldLabel>
                 <input
                   type="password"
                   className="field auth-gate-field w-full"
@@ -1326,7 +1180,8 @@ export function CookieAutoSyncTable({
         <CookieRouteFormModal
           toc={COOKIE_ROUTE_SHARE_TOC}
           idPrefix="rt-share-"
-          title="Share"
+          title="Add user"
+          headerIcon={UserPlus}
           onClose={() => setModal(null)}
           footer={
             <CookieRouteModalActions
@@ -1364,9 +1219,9 @@ export function CookieAutoSyncTable({
             <p className="cookie-route-modal__note">
               Grant Load or Sync access by email. Manage stays with route owner only.
             </p>
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div className={HUB_TOOL_DETAIL_FORM_GRID_3_CLASS}>
               <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={Mail}>User email</CookieRouteFieldLabel>
+                <HubFormFieldLabel icon={Mail}>User email</HubFormFieldLabel>
                 <input
                   className="field auth-gate-field w-full"
                   value={shareEmail}
@@ -1374,17 +1229,14 @@ export function CookieAutoSyncTable({
                   onChange={(event) => setShareEmail(event.target.value)}
                 />
               </label>
-              <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={Shield}>Access</CookieRouteFieldLabel>
-                <HubSingleFilterDropdown
-                  filterKey="access"
-                  label="Access"
-                  value={shareRole}
-                  options={COOKIE_ACCESS_SELECT_OPTIONS}
-                  onChange={(v) => setShareRole(v as ShareRole)}
-                  className="w-full"
-                />
-              </label>
+              <HubModalFilterField
+                filterKey="access"
+                label="Access"
+                icon={Shield}
+                value={shareRole}
+                options={COOKIE_ACCESS_SELECT_OPTIONS}
+                onChange={(v) => setShareRole(v as ShareRole)}
+              />
             </div>
           </CookieRouteModalSection>
         </CookieRouteFormModal>
@@ -1427,40 +1279,40 @@ export function CookieAutoSyncTable({
             </div>
           )
         ) : (
-      <div className="overflow-hidden rounded-2xl border border-white/5 bg-[var(--panel)]">
-        <table className="w-full min-w-[980px] border-collapse text-left text-[12px]">
+      <div className="hub-users-table-wrap overflow-hidden rounded-2xl border border-white/5 bg-[var(--panel)]">
+        <table className="hub-users-table hub-users-table--cookie-routes min-w-[980px]">
           <thead>
-            <tr className="border-b border-white/5 bg-white/[.02] text-[10px] uppercase tracking-wider text-[var(--muted)]">
-              <th className="w-10 px-2 py-2 text-center font-medium">
+            <tr>
+              <th className="hub-users-col--select w-10" scope="col">
                 <input
                   type="checkbox"
+                  className="hub-checkbox"
                   checked={allVisibleSelected}
                   disabled={filteredRows.length === 0}
                   title="Select all visible routes"
                   onChange={(event) => toggleAllVisible(event.target.checked)}
                 />
               </th>
-              <th className="w-24 px-2 py-2 font-medium">Status</th>
-              <th className="w-20 px-2 py-2 font-medium">Type</th>
-              <th className="w-28 px-2 py-2 font-medium">
-                <span className="inline-flex items-center gap-1" title="Route sharing">
-                  <Share2 size={10} />
-                  Share
-                </span>
+              <th className="w-24" scope="col">
+                <HubTableColumnHeader label="Status" icon={Activity} iconClassName="hub-users-th-icon--activity" />
               </th>
-              <th className="px-3 py-2 font-medium">Route</th>
-              <th className="px-3 py-2 font-medium">URL / ID</th>
-              <th className="w-28 px-2 py-2 font-medium">
-                <span className="inline-flex items-center gap-1" title="note_cookie_vault.updated_at on Supabase">
-                  <Shield size={10} />
-                  Vault
-                </span>
+              <th className="w-20" scope="col">
+                <HubTableColumnHeader label="Type" icon={Boxes} iconClassName="hub-users-th-icon--tools" />
               </th>
-              <th className="w-32 px-2 py-2 font-medium" title="Only this browser may publish/promote vault versions">
-                <span className="inline-flex items-center gap-1">
-                  <LockKeyhole size={10} />
-                  Source
-                </span>
+              <th className="w-28" scope="col">
+                <HubTableColumnHeader label="Share" icon={Share2} iconClassName="hub-users-th-icon--email" />
+              </th>
+              <th scope="col">
+                <HubTableColumnHeader label="Route" icon={Cookie} iconClassName="hub-users-th-icon--name" />
+              </th>
+              <th scope="col">
+                <HubTableColumnHeader label="URL / ID" icon={Globe2} iconClassName="hub-users-th-icon--id" />
+              </th>
+              <th className="w-28" scope="col">
+                <HubTableColumnHeader label="Vault" icon={Shield} iconClassName="hub-users-th-icon--role" />
+              </th>
+              <th className="w-32" scope="col">
+                <HubTableColumnHeader label="Source" icon={LockKeyhole} iconClassName="hub-users-th-icon--created" />
               </th>
             </tr>
           </thead>
@@ -1608,6 +1460,7 @@ export function CookieAutoSyncTable({
           toc={COOKIE_ROUTE_EDIT_TOC}
           idPrefix="rt-edit-"
           title="Edit route"
+          headerIcon={Pencil}
           onClose={() => setModal(null)}
           footer={
             <CookieRouteModalActions
@@ -1626,20 +1479,17 @@ export function CookieAutoSyncTable({
             <p className="cookie-route-modal__note">
               Update route metadata. Advanced diagnostics are available in route detail when needed.
             </p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className={HUB_TOOL_DETAIL_FORM_GRID_3_CLASS}>
+              <HubModalFilterField
+                filterKey="note"
+                label="Note"
+                icon={FileText}
+                value={draftNoteId}
+                options={noteSelectOptions}
+                onChange={setDraftNoteId}
+              />
               <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={FileText}>Note</CookieRouteFieldLabel>
-                <HubSingleFilterDropdown
-                  filterKey="note"
-                  label="Note"
-                  value={draftNoteId}
-                  options={noteSelectOptions}
-                  onChange={setDraftNoteId}
-                  className="w-full"
-                />
-              </label>
-              <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={Globe2}>Domain</CookieRouteFieldLabel>
+                <HubFormFieldLabel icon={Globe2}>Domain</HubFormFieldLabel>
                 <input
                   className="field auth-gate-field font-mono w-full"
                   value={draftDomain}
@@ -1647,7 +1497,7 @@ export function CookieAutoSyncTable({
                 />
               </label>
               <label className="block min-w-0">
-                <CookieRouteFieldLabel icon={LockKeyhole}>Sync pass</CookieRouteFieldLabel>
+                <HubFormFieldLabel icon={LockKeyhole}>Sync pass</HubFormFieldLabel>
                 <input
                   type="password"
                   className="field auth-gate-field w-full"
@@ -1669,6 +1519,8 @@ export function CookieAutoSyncTable({
         <CookieRouteFormModal
           title={deleting.length > 1 ? `Delete ${deleting.length} routes` : "Delete route"}
           subtitle="This disables the cloud route so linked browsers remove it on the next realtime refresh. Existing vault data is not deleted."
+          headerIcon={Trash2}
+          headerIconClassName="text-rose-300"
           onClose={() => setModal(null)}
           footer={
             <CookieRouteModalActions

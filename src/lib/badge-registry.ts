@@ -14,6 +14,7 @@ import {
   Clock,
   Cloud,
   Database,
+  Ellipsis,
   Eye,
   FileCode2,
   FileText,
@@ -22,12 +23,15 @@ import {
   FolderOpen,
   Fingerprint,
   Github,
+  Globe2,
   HardDrive,
   Heart,
   KeyRound,
   Layers,
+  LockKeyhole,
   Link2,
   Lock,
+  Mail,
   Monitor,
   Package,
   Pencil,
@@ -38,6 +42,7 @@ import {
   ShieldCheck,
   Share2,
   Tag,
+  Timer,
   Upload,
   UserRound,
   Users,
@@ -108,6 +113,7 @@ const FILTER_ALL: Record<string, FilterIconMeta> = {
   category: { icon: Layers, className: "text-indigo-400" },
   deploy: { icon: Rocket, className: "text-sky-400" },
   status: { icon: Flag, className: "text-violet-400" },
+  platform: { icon: Globe2, className: "text-cyan-300" },
   drift: { icon: AlertTriangle, className: "text-rose-400" },
   links: { icon: Link2, className: "text-amber-400" },
   pinned: { icon: Pin, className: "text-indigo-300" },
@@ -133,6 +139,14 @@ const COOKIE_ACCESS: Record<string, FilterIconMeta> = {
 const ROUTE_ACCESS_STATUS: Record<string, FilterIconMeta> = {
   published: { icon: CheckCircle2, className: "text-emerald-400" },
   missing: { icon: AlertTriangle, className: "text-amber-400" },
+};
+
+/** Cookie route + Notes — sync_status filter options */
+const SYNC_STATUS: Record<string, FilterIconMeta> = {
+  synced: { icon: CheckCircle2, className: "text-emerald-400" },
+  pending: { icon: RefreshCw, className: "text-amber-400" },
+  error: { icon: AlertTriangle, className: "text-rose-400" },
+  manual: { icon: Pencil, className: "text-slate-400" },
 };
 
 const LINK_STATUS: Record<string, FilterIconMeta> = {
@@ -246,8 +260,8 @@ export function resolveFilterOptionIcon(filterKey: string, option: FilterOption)
       return { icon: KeyRound, className: "text-amber-300" };
     case "usage":
       return option.value === "recent"
-        ? { icon: Clock, className: "text-emerald-400" }
-        : { icon: Clock, className: "text-slate-400" };
+        ? { icon: Timer, className: "text-emerald-400" }
+        : { icon: Eye, className: "text-slate-400" };
     case "role":
     case "permission":
     case "access":
@@ -257,6 +271,7 @@ export function resolveFilterOptionIcon(filterKey: string, option: FilterOption)
     case "health":
     case "status":
       return (
+        pick(SYNC_STATUS, option.value) ??
         pick(ROUTE_ACCESS_STATUS, option.value) ??
         pick(STATUS_HEALTH, option.label) ??
         pick(STATUS_HEALTH, option.value) ??
@@ -276,14 +291,9 @@ export function resolveFilterOptionIcon(filterKey: string, option: FilterOption)
         ? { icon: Pin, className: "text-indigo-300" }
         : { icon: ShieldCheck, className: "text-slate-400" };
     case "sync":
-      return (
-        {
-          synced: { icon: CheckCircle2, className: "text-emerald-400" },
-          pending: { icon: RefreshCw, className: "text-amber-400" },
-          error: { icon: AlertTriangle, className: "text-rose-400" },
-          manual: { icon: Pencil, className: "text-slate-400" },
-        }[option.value] ?? { icon: RefreshCw, className: "text-cyan-300" }
-      );
+      return pick(SYNC_STATUS, option.value) ?? { icon: RefreshCw, className: "text-cyan-300" };
+    case "platform":
+      return option.value === "other" ? { icon: Globe2, className: "text-slate-400" } : null;
     case "share":
       return (
         {
@@ -362,8 +372,73 @@ export function resolveHubKpiIcon(key: string): FilterIconMeta | null {
   return HUB_KPI[key] ?? null;
 }
 
+const CHART_SYNC_STATUS: Record<string, FilterIconMeta> = {
+  Synced: { icon: CheckCircle2, className: "text-emerald-400" },
+  Pending: { icon: RefreshCw, className: "text-amber-400" },
+  Error: { icon: AlertTriangle, className: "text-rose-400" },
+  Manual: { icon: Pencil, className: "text-slate-400" },
+};
+
+const CHART_ROUTE_ACCESS: Record<string, FilterIconMeta> = {
+  Owner: { icon: ShieldCheck, className: "text-indigo-300" },
+  "Locked browser": { icon: Lock, className: "text-emerald-400" },
+  Member: { icon: Users, className: "text-cyan-300" },
+};
+
+const CHART_ROUTE_SHARING: Record<string, FilterIconMeta> = {
+  Private: { icon: UserRound, className: "text-slate-400" },
+  Shared: { icon: Users, className: "text-violet-300" },
+  "Shared to me": { icon: Share2, className: "text-cyan-300" },
+};
+
+const CHART_TWOFA_USAGE: Record<string, FilterIconMeta> = {
+  "Used (7d)": { icon: Timer, className: "text-emerald-400" },
+  "Older use": { icon: Clock, className: "text-amber-400" },
+  "Never used": { icon: Eye, className: "text-slate-400" },
+};
+
+const CHART_TWOFA_PASSWORD: Record<string, FilterIconMeta> = {
+  "With password": { icon: LockKeyhole, className: "text-emerald-400" },
+  "No password": { icon: KeyRound, className: "text-slate-400" },
+};
+
+const CHART_TWOFA_SERVICE: Record<string, FilterIconMeta> = {
+  Imported: { icon: Upload, className: "text-cyan-300" },
+};
+
+const CHART_TWOFA_IDENTITY: Record<string, FilterIconMeta> = {
+  "Email address": { icon: Mail, className: "text-cyan-300" },
+  "Username / ID": { icon: UserRound, className: "text-indigo-300" },
+  "Missing / generic": { icon: Ellipsis, className: "text-slate-400" },
+};
+
+const CHART_COOKIE_PLATFORM: Record<string, FilterIconMeta> = {
+  Facebook: { icon: Monitor, className: "text-blue-300" },
+  Google: { icon: Monitor, className: "text-sky-300" },
+  YouTube: { icon: Monitor, className: "text-rose-300" },
+  TikTok: { icon: Monitor, className: "text-slate-200" },
+  Instagram: { icon: Monitor, className: "text-pink-300" },
+  Kalodata: { icon: Database, className: "text-cyan-300" },
+  Netflix: { icon: Monitor, className: "text-rose-400" },
+  Surfshark: { icon: ShieldCheck, className: "text-emerald-300" },
+  Other: { icon: Globe2, className: "text-slate-400" },
+};
+
 export function resolveChartLegendIcon(label: string): FilterIconMeta | null {
-  return pick(STATUS_HEALTH, label) ?? pick(CATEGORY, label) ?? pick(DEPLOY, label) ?? null;
+  return (
+    pick(CHART_TWOFA_USAGE, label) ??
+    pick(CHART_TWOFA_PASSWORD, label) ??
+    pick(CHART_TWOFA_IDENTITY, label) ??
+    pick(CHART_TWOFA_SERVICE, label) ??
+    pick(CHART_SYNC_STATUS, label) ??
+    pick(CHART_ROUTE_ACCESS, label) ??
+    pick(CHART_ROUTE_SHARING, label) ??
+    pick(CHART_COOKIE_PLATFORM, label) ??
+    pick(STATUS_HEALTH, label) ??
+    pick(CATEGORY, label) ??
+    pick(DEPLOY, label) ??
+    null
+  );
 }
 
 /** Hub deploy chip spec — reused for link group `vercel` and deployTarget fields. */

@@ -225,17 +225,27 @@ function TwofaManagerScreenBody({
     () => (shellMode ? buildTwofaKpis(accounts, displayedAccounts, visKpi) : []),
     [accounts, displayedAccounts, shellMode, visKpi],
   );
-  const twofaChartData = useMemo(() => buildTwofaChartItems(accounts), [accounts]);
+  const twofaChartData = useMemo(() => buildTwofaChartItems(displayedAccounts), [displayedAccounts]);
   const chartsBand = useMemo(() => {
     if (!shellMode) return undefined;
-    const hasCharts = visCharts.has("service_bar") || visCharts.has("usage_donut");
+    const hasCharts =
+      visCharts.has("service_bar") ||
+      visCharts.has("identity_bar") ||
+      visCharts.has("usage_donut") ||
+      visCharts.has("password_donut");
     if (!hasCharts) return undefined;
     return (
       <>
         {visCharts.has("service_bar") ? (
-          <MiniBarChart title="By Service" items={twofaChartData.serviceItems} />
+          <MiniBarChart title="Top Services" items={twofaChartData.serviceItems} />
+        ) : null}
+        {visCharts.has("identity_bar") ? (
+          <MiniBarChart title="Account Identity" items={twofaChartData.identityItems} />
         ) : null}
         {visCharts.has("usage_donut") ? <MiniDonut title="Usage" items={twofaChartData.usageItems} /> : null}
+        {visCharts.has("password_donut") ? (
+          <MiniDonut title="Password Saved" items={twofaChartData.passwordItems} />
+        ) : null}
       </>
     );
   }, [shellMode, twofaChartData, visCharts]);

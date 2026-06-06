@@ -1,9 +1,13 @@
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { HubTableColumnHeader } from "./HubTableColumnHeader";
 
 export type HubTableColumn = {
   key: string;
   label: string;
   className?: string;
+  icon?: LucideIcon;
+  iconClassName?: string;
   /** Custom header cell (sort buttons, select-all, etc.) */
   header?: ReactNode;
 };
@@ -24,7 +28,12 @@ export function HubDataTable({
           <tr>
             {columns.map((col) => (
               <th key={col.key} className={col.className} scope="col">
-                {col.header ?? <span className="hub-users-th-text">{col.label}</span>}
+                {col.header ??
+                  (col.icon ? (
+                    <HubTableColumnHeader label={col.label} icon={col.icon} iconClassName={col.iconClassName} />
+                  ) : (
+                    <span className="hub-users-th-text">{col.label}</span>
+                  ))}
               </th>
             ))}
           </tr>

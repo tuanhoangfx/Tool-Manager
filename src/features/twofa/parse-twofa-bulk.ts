@@ -22,9 +22,17 @@ function isHeaderLine(raw: string): boolean {
   return HEADER_3_RE.test(compact) || HEADER_4_RE.test(compact);
 }
 
-/** Parse line as `Platform|ID|2FA` (3 fields) or `Platform|ID|Pass|2FA` (4+ fields). */
+/** Parse line as secret-only, `Platform|2FA`, `Platform|ID|2FA`, or `Platform|ID|Pass|2FA`. */
 export function parseTwofaBulkLine(parts: string[]): Pick<TwofaDraft, "service" | "account" | "password" | "secret"> | null {
-  if (parts.length < 3) return null;
+  if (parts.length === 0) return null;
+
+  if (parts.length === 1) {
+    return { service: "", account: "", password: "", secret: parts[0] ?? "" };
+  }
+
+  if (parts.length === 2) {
+    return { service: parts[0] ?? "", account: "", password: "", secret: parts[1] ?? "" };
+  }
 
   const service = parts[0] ?? "";
   const account = parts[1] ?? "";
@@ -59,18 +67,18 @@ export function parseTwofaBulkText(text: string): TwofaBulkParseResult {
     if (isHeaderLine(raw)) continue;
 
     const parts = splitFields(raw);
-    const parsed = parseTwofaBulkLine(parts);
+    const parsed = parseTwofaBulkLine(parts.length ? parts : [raw]);
     if (!parsed) {
       errors.push({
         line: lineNo,
-        message: "Expected Platform|ID|2FA or Platform|ID|Pass|2FA",
+        message: "Expected 2FA secret (Base32) or Platform|ID|2FA",
       });
       continue;
     }
 
     const { service, account, password, secret } = parsed;
-    if (!service || !account || !secret) {
-      errors.push({ line: lineNo, message: "Missing platform, ID, or 2FA secret" });
+    if (!secret.trim()) {
+      errors.push({ line: lineNo, message: "Missing 2FA secret" });
       continue;
     }
 
@@ -100,8 +108,8 @@ export function validateTwofaBulkRows(rows: TwofaBulkRow[]): {
       password: row.password?.trim() || undefined,
       secret: normalizeSecret(row.secret),
     };
-    if (!draft.service || !draft.account || !draft.secret) {
-      invalid.push({ line: row.line, message: "Empty field after trim" });
+    if (!draft.secret) {
+      invalid.push({ line: row.line, message: "Missing 2FA secret" });
       continue;
     }
     if (!generateCode(draft.service, draft.account, draft.secret)) {

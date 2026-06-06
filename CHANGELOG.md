@@ -4,6 +4,39 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-06 - 2FA Design V1 lock + hub-ui copy affordance standard
+
+- Version: `4.2.1`
+- Type: Minor
+- Product: P0020
+- Prompt: Lock V1 Platform Mirror; widen Account / narrow Secret; copy check icon beside (no "Copied" label); HubCopyBadge + CopyMetaChip in hub-ui.
+- Commit: pending
+- Status: Draft
+- Release: (after Release keyword only — GitHub release URL)
+
+### Changes
+
+- 2FA table: Design V1 production (`twofa-copy-cells.tsx`) — Account/Password/Secret/Code plain copy + Check 10px beside.
+- Column widths: Account 17%, Secret 14%; Secret drops indigo chip border (mono text like V1).
+- `HubCopyBadge` + `CopyMetaChip` canonical in `packages/hub-ui`; P0020 re-exports from `@tool-workspace/hub-ui`.
+- 2FA charts: service brand icons, Account identity KPI; fill validation secret-only; Design Template cleared (V1 locked).
+- Cookie modals: `HubToolDetailModal` + `HubModalFilterField`; vendor hub-ui sync (form fields, keyboard panel).
+- `UI_PATTERNS.md`: Copy affordance section; `ui-patterns.catalog.json` adds `HubCopyBadge` to directory composed.
+
+### Verification
+
+- `corepack pnpm build` — passed (tsc, 103 vitest, vite)
+- Browser: `http://127.0.0.1:5177/twofa` — V1 cells, copy check beside, no "Copied" label
+
+### Rollback
+
+```powershell
+cd E:\Dev\Tool\P0020-Data-Box
+git checkout v4.1.5
+```
+
+Version: 4.1.7 → 4.2.1
+
 ## 2026-06-05 - Filter parity Phase A: faceted counts + inline trailing
 
 - Version: `4.1.5`

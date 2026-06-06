@@ -1,4 +1,4 @@
-export type DesignFeatureId = "notes-list-rail";
+export type DesignFeatureId = "twofa-table-cells";
 
 export type ActiveDesignFeature = {
   id: DesignFeatureId;

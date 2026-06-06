@@ -3,6 +3,7 @@ import type { TimeRange } from "../../lib/url-prefs";
 import { enrichFilterDefs } from "../../lib/filter-option-counts";
 import type { CookieBinding } from "./cookieBridge";
 import { routeMatchesTimeRange } from "./cookie-route-activity";
+import { buildCookiePlatformOptions, routePlatformKey } from "./cookie-route-platform";
 import { COOKIE_ROUTE_FILTER_DEFS } from "./cookie-route-filters";
 import type { NoteListItem } from "../notes/types";
 
@@ -41,16 +42,19 @@ function matchesCookieRouteRow(
 ): boolean {
   const normalizedQuery = query.trim().toLowerCase();
   const activeStatuses = filterValues.status ?? [];
+  const activePlatforms = filterValues.platform ?? [];
   const activeTypes = filterValues.type ?? [];
   const activeSources = filterValues.source ?? [];
   const { binding, note } = row;
   const status = note?.sync_status ?? "pending";
+  const platform = routePlatformKey(binding.domain);
   const type = routeType(binding.domain);
   const source = routeSource(binding);
 
   return (
     (!normalizedQuery || rowHaystack(row).includes(normalizedQuery)) &&
     (activeStatuses.length === 0 || activeStatuses.includes(status)) &&
+    (activePlatforms.length === 0 || activePlatforms.includes(platform)) &&
     (activeTypes.length === 0 || activeTypes.includes(type)) &&
     (activeSources.length === 0 || activeSources.includes(source)) &&
     routeMatchesTimeRange(binding, note, range)
@@ -62,6 +66,8 @@ function matchesCookieRouteOption(row: CookieRouteRow, filterKey: string, option
   switch (filterKey) {
     case "status":
       return (note?.sync_status ?? "pending") === optionValue;
+    case "platform":
+      return routePlatformKey(binding.domain) === optionValue;
     case "type":
       return routeType(binding.domain) === optionValue;
     case "source":
@@ -71,15 +77,29 @@ function matchesCookieRouteOption(row: CookieRouteRow, filterKey: string, option
   }
 }
 
+export function filterCookieRows<T extends CookieRouteRow>(
+  rows: T[],
+  query: string,
+  filterValues: FilterValues,
+  range: TimeRange,
+): T[] {
+  return rows.filter((row) => matchesCookieRouteRow(row, query, filterValues, range));
+}
+
 export function cookieRouteFiltersWithCounts(
   rows: CookieRouteRow[],
   query: string,
   values: FilterValues,
   range: TimeRange,
 ): FilterDef[] {
+  const platformOptions = buildCookiePlatformOptions(rows);
+  const defs = COOKIE_ROUTE_FILTER_DEFS.map((def) =>
+    def.key === "platform" ? { ...def, options: platformOptions } : def,
+  );
+
   return enrichFilterDefs(
     rows,
-    COOKIE_ROUTE_FILTER_DEFS,
+    defs,
     query,
     values,
     (row, q, filters) => matchesCookieRouteRow(row, q, filters, range),

@@ -3,6 +3,11 @@ import { Columns3, RotateCcw } from "lucide-react";
 import { ToggleRow } from "@tool-workspace/hub-ui";
 import { compactIconSize } from "../../lib/ui-scale";
 import {
+  readTwofaMaskPasswordInTable,
+  TWOFA_TABLE_DISPLAY_CHANGE_EVENT,
+  writeTwofaMaskPasswordInTable,
+} from "./twofa-table-display-prefs";
+import {
   DEFAULT_TWOFA_TABLE_COLUMNS,
   readTwofaTableColumns,
   resetTwofaTableColumns,
@@ -19,11 +24,17 @@ export function countHiddenTwofaTableColumns(): number {
 /** 2FA table column toggles — embedded in tab Settings (DisplayPrefs → Table). */
 export function TwofaTableColumnsSettings() {
   const [visible, setVisible] = useState<Set<TwofaTableColumnKey>>(() => readTwofaTableColumns());
+  const [maskPassword, setMaskPassword] = useState(() => readTwofaMaskPasswordInTable());
 
   useEffect(() => {
-    const sync = () => setVisible(readTwofaTableColumns());
-    window.addEventListener("twofa-table-columns-change", sync);
-    return () => window.removeEventListener("twofa-table-columns-change", sync);
+    const syncCols = () => setVisible(readTwofaTableColumns());
+    const syncDisplay = () => setMaskPassword(readTwofaMaskPasswordInTable());
+    window.addEventListener("twofa-table-columns-change", syncCols);
+    window.addEventListener(TWOFA_TABLE_DISPLAY_CHANGE_EVENT, syncDisplay);
+    return () => {
+      window.removeEventListener("twofa-table-columns-change", syncCols);
+      window.removeEventListener(TWOFA_TABLE_DISPLAY_CHANGE_EVENT, syncDisplay);
+    };
   }, []);
 
   function toggle(key: TwofaTableColumnKey) {
@@ -54,6 +65,18 @@ export function TwofaTableColumnsSettings() {
           <RotateCcw size={10} aria-hidden />
           Reset
         </button>
+      </div>
+      <div className="mb-4 rounded-lg border border-white/6 bg-white/[.02] px-2 py-1">
+        <ToggleRow
+          label="Mask password in table"
+          on={maskPassword}
+          onChange={() => {
+            const next = !maskPassword;
+            writeTwofaMaskPasswordInTable(next);
+            setMaskPassword(next);
+          }}
+        />
+        <p className="px-1 pb-1 text-[9px] text-[var(--muted)]">Shows •••• — click still copies plain text.</p>
       </div>
       <ul className="space-y-0.5">
         {TWOFA_TABLE_COLUMN_ITEMS.map((col) => {

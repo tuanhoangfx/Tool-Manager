@@ -50,6 +50,31 @@
 
 ---
 
+## Copy affordance (golden — hub-ui)
+
+**Canonical source:** `packages/hub-ui/src/shell/HubCopyBadge.tsx`, `CopyMetaChip.tsx` → fan-out via `node Tool/scripts/sync-hub-ui-vendor.cjs`.
+
+| Component | When to use | Feedback |
+|-----------|-------------|----------|
+| `HubCopyBadge` | Directory table ID column, mono value chip (P0004 Users, P0016 bots/groups/channels) | Fingerprint + label + **Copy icon always visible**; small **Check** appended on success (~1.4s) |
+| `CopyMetaChip` | Meta strip pills (note ID, tagged values) | Tone chip unchanged; **Check** beside chip on success — never swap label to "Copied" |
+| `TwofaCopyControl` | 2FA table Account / Password / Secret / Code (P0020 production) | Plain text or badge body unchanged; **Check 10px** beside value |
+
+**Rules**
+
+- Import from `@tool-workspace/hub-ui` — no per-tool `HubCopyBadge` forks (P0016/P0020 re-export shims are deprecated).
+- Do **not** replace content with "Copied" text or swap the leading icon for a check.
+- Do **not** change chip tone on copy (`CopyMetaChip` keeps original `MetaTone`).
+- Table cells: `e.stopPropagation()` on copy button so row select does not fire.
+
+**Golden refs**
+
+- `HubCopyBadge` — `P0004/UserDirectoryTable.tsx` ID column
+- `CopyMetaChip` — `P0020/NoteEditorMetaStrip.tsx` note ID
+- `TwofaCopyControl` — `P0020/twofa-copy-cells.tsx` (Design V1 Platform Mirror)
+
+---
+
 ## Agent Kind (manifest)
 
 | Kind | Nội dung |

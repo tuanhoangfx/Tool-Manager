@@ -1,7 +1,7 @@
 import { Search, Settings2 } from "lucide-react";
 import { Glass } from "../../../theme/p0008";
 
-/** Design previews removed after Notes list rail locked to V1. */
+/** Design previews removed after 2FA table cells locked to V1 (Platform Mirror). */
 export function DesignTemplatePage() {
   return (
     <div className="design-template-page space-y-4 pb-10">
@@ -11,8 +11,8 @@ export function DesignTemplatePage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-purple-300">System</p>
             <h1 className="mt-1 text-xl font-semibold">Design Template</h1>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Notes list rail — locked to <strong className="text-purple-200">V1</strong> (title-only + cookie route
-              icon).
+              2FA table cells — locked to <strong className="text-purple-200">V1 Platform Mirror</strong> (
+              <code className="text-indigo-300">TwofaAccountsTable.tsx</code>).
             </p>
           </div>
           <span className="inline-flex items-center gap-2 rounded-full border border-purple-400/25 bg-purple-400/10 px-3 py-1.5 text-xs text-purple-100">
@@ -37,7 +37,7 @@ export function DesignTemplatePage() {
         <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/[.02] px-4 py-10 text-center">
           <p className="text-sm font-semibold text-[var(--text)]">No active designs</p>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Production: <code className="text-indigo-300">NotesListRail.tsx</code> — Design V1.
+            Production: <code className="text-indigo-300">twofa-copy-cells.tsx</code> — Design V1.
           </p>
         </div>
       </Glass>

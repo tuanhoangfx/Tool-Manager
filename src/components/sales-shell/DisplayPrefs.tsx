@@ -1,9 +1,7 @@
-import { WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   HubDisplayPrefs,
-  Section,
-  SectionIcon,
+  HubToolDetailSection,
   ToggleRow,
   type HubDisplayPrefsProps,
   type PrefItem,
@@ -25,9 +23,9 @@ type DisplayPrefsProps = Omit<
 function OfflineModeSection() {
   const { offline, toggle: toggleOffline } = useOfflineMode();
   return (
-    <Section icon={<SectionIcon icon={WifiOff} className="text-rose-300" />} label="App mode">
+    <HubToolDetailSection id="settings-app-mode" title="App mode">
       <ToggleRow label="Offline mode (limited features)" on={offline} onChange={toggleOffline} />
-    </Section>
+    </HubToolDetailSection>
   );
 }
 

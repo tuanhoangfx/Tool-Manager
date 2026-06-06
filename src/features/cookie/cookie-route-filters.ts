@@ -13,6 +13,12 @@ export const COOKIE_ROUTE_FILTER_DEFS: FilterDef[] = [
     showAllLabel: true,
   },
   {
+    key: "platform",
+    label: "Platform",
+    options: [],
+    showAllLabel: true,
+  },
+  {
     key: "type",
     label: "Type",
     options: [

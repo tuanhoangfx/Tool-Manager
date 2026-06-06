@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "4.1.5",
+    "version": "4.2.1",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -131,5 +131,5 @@
       "golden": "P0020/auth"
     }
   ],
-  "manifestUpdatedAt": "2026-06-06T09:06:02.567Z"
+  "manifestUpdatedAt": "2026-06-06T12:06:49.565Z"
 }

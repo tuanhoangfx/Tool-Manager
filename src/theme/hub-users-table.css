@@ -284,9 +284,9 @@ table.hub-users-table--twofa .hub-users-th-text {
 
 /* Percent widths sum to 100% (select column is fixed 36px via colgroup) */
 .hub-users-col--twofa-service { width: 11%; text-align: left; }
-.hub-users-col--twofa-account { width: 12%; text-align: left; }
+.hub-users-col--twofa-account { width: 17%; text-align: left; }
 .hub-users-col--twofa-password { width: 11%; text-align: left; }
-.hub-users-col--twofa-secret { width: 22%; text-align: left; }
+.hub-users-col--twofa-secret { width: 14%; text-align: left; }
 .hub-users-col--twofa-code { width: 9%; text-align: left; }
 .hub-users-col--twofa-period { width: 7%; text-align: center; }
 .hub-users-col--twofa-created { width: 12%; text-align: center; }

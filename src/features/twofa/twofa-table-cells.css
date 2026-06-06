@@ -1,0 +1,74 @@
+/* 2FA table — Design V1 Platform Mirror (locked) */
+
+.twofa-copy-control {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: opacity 0.12s ease;
+}
+
+.twofa-copy-control:hover {
+  opacity: 0.9;
+}
+
+.twofa-copy-control__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.twofa-copy-control--account {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.twofa-copy-control--password {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: color-mix(in srgb, #c4b5fd 75%, var(--text));
+  letter-spacing: 0.02em;
+}
+
+.twofa-copy-control--password-masked {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.14em;
+  color: color-mix(in srgb, var(--muted) 85%, #c4b5fd);
+}
+
+.twofa-copy-control--secret {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: color-mix(in srgb, #c4b5fd 78%, var(--text));
+  letter-spacing: 0.04em;
+}
+
+.twofa-copy-control--secret .twofa-copy-control__value {
+  white-space: normal;
+  word-break: break-all;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.twofa-code-badge {
+  cursor: pointer;
+  border: none;
+  transition: filter 0.12s ease;
+}
+
+.twofa-code-badge:hover {
+  filter: brightness(1.06);
+}

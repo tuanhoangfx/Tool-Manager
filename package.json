@@ -1,7 +1,7 @@
 {
   "name": "p0020-data-box",
   "private": true,
-  "version": "4.1.5",
+  "version": "4.2.1",
   "packageManager": "pnpm@9.15.9",
   "type": "module",
   "description": "P0020-Data-Box — unified data workspace for Notes, 2FA, secure cookie vault, and browser agents.",
