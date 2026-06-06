@@ -4,6 +4,36 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-06 - 2FA add hub-modal only + auth-gate CSS in hub-ui
+
+- Version: `4.2.4`
+- Type: Patch
+- Product: P0020
+- Prompt: Remove TwofaAddForm embedded panel; search-no-match opens HubToolDetailModal; move auth-gate form CSS to packages/hub-ui hub-auth-gate.css.
+- Commit: `pending`
+- Status: Committed
+- Release: (after Release keyword only — GitHub release URL)
+
+### Changes
+
+- `TwofaAddForm`: drop `embedded` variant; always `HubToolDetailModal`; search empty → auto-open modal with prefilled draft.
+- `hub-auth-gate.css` canonical in `packages/hub-ui`; P0020 imports vendor copy; delete local `theme/hub-auth.css`.
+- Add `auth-inline-btn--ghost` to shared auth-gate CSS.
+
+### Verification
+
+- `pnpm build` — passed
+- Browser: `:5177/twofa` — search no-match opens Add account modal; close clears query
+
+### Rollback
+
+```powershell
+cd E:\Dev\Tool\P0020-Data-Box
+git checkout v4.2.3
+```
+
+Version: 4.2.3 → 4.2.4
+
 ## 2026-06-06 - HubToolDetailModal standardization across P0020 modals
 
 - Version: `4.2.3`

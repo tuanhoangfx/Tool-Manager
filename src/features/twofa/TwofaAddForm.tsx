@@ -13,16 +13,16 @@ import {
   parseTwofaBulkText,
   validateTwofaBulkRows,
 } from "./parse-twofa-bulk";
-import "./twofa-add-embed.css";
+import "./twofa-add-form.css";
 
 type Tab = "single" | "bulk";
 
 export type TwofaAddFormProps = {
   active: boolean;
-  variant: "embedded" | "hub-modal";
   mode: "add" | "edit";
   initial?: TwofaAccount | null;
   initialDraft?: Partial<TwofaDraft> | null;
+  /** When opened from search-with-no-match, customizes title/subtitle. */
   searchQuery?: string;
   onClose: () => void;
   onSaveSingle: (draft: TwofaDraft) => boolean;
@@ -31,7 +31,6 @@ export type TwofaAddFormProps = {
 
 export function TwofaAddForm({
   active,
-  variant,
   mode,
   initial,
   initialDraft,
@@ -162,19 +161,17 @@ export function TwofaAddForm({
     }
   };
 
-  const title =
-    variant === "embedded" && searchQuery?.trim()
-      ? "Add account"
-      : mode === "edit"
-        ? "Edit account"
-        : "Add accounts";
+  const title = searchQuery?.trim()
+    ? "Add account"
+    : mode === "edit"
+      ? "Edit account"
+      : "Add accounts";
 
-  const subtitle =
-    variant === "embedded" && searchQuery?.trim()
-      ? `No match for "${searchQuery.trim()}" — fill in or adjust fields below.`
-      : mode === "edit"
-        ? "Update one TOTP entry stored on this device."
-        : "Single entry or bulk import (paste or Excel).";
+  const subtitle = searchQuery?.trim()
+    ? `No match for "${searchQuery.trim()}" — fill in or adjust fields below.`
+    : mode === "edit"
+      ? "Update one TOTP entry stored on this device."
+      : "Single entry or bulk import (paste or Excel).";
 
   const tabs =
     mode === "add" ? (
@@ -283,7 +280,11 @@ export function TwofaAddForm({
               className="hidden"
               onChange={(e) => void onFileChange(e.target.files?.[0] ?? null)}
             />
-            <button type="button" className="auth-gate-file-btn" onClick={() => fileRef.current?.click()}>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[.04] px-2.5 py-1.5 text-[11px] font-medium text-[var(--text)] transition-colors hover:bg-white/[.08]"
+              onClick={() => fileRef.current?.click()}
+            >
               <Upload size={14} aria-hidden />
               Excel / CSV
             </button>
@@ -301,28 +302,6 @@ export function TwofaAddForm({
       )}
 
       {error ? <p className="auth-gate-message">{error}</p> : null}
-
-      {variant === "embedded" ? (
-        <div className="auth-gate-actions">
-          <button type="button" className="auth-gate-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          {tab === "bulk" && mode === "add" ? (
-            <button
-              type="button"
-              disabled={busy || !canTryBulkImport}
-              className="auth-gate-submit"
-              onClick={() => void onImportBulk()}
-            >
-              {busy ? "Please wait…" : previewCount > 0 ? `Import (${previewCount})` : "Import"}
-            </button>
-          ) : (
-            <button type="button" className="auth-gate-submit" disabled={busy} onClick={onSubmitSingle}>
-              {busy ? "Please wait…" : mode === "edit" ? "Save" : "Add"}
-            </button>
-          )}
-        </div>
-      ) : null}
     </form>
   );
 
@@ -348,47 +327,22 @@ export function TwofaAddForm({
     </>
   );
 
-  if (variant === "hub-modal") {
-    return (
-      <HubToolDetailModal
-        open={active}
-        onClose={onClose}
-        title={title}
-        titleId="twofa-add-modal-title"
-        headerIcon={KeyRound}
-        headerIconClassName="text-indigo-300"
-        shellClassName="hub-header-panel-modal"
-        size="compact"
-        footer={hubFooter}
-        bodyClassName="modal-shell__scroll--user-access"
-      >
-        <p className="mb-3 text-xs text-[var(--muted)]">{subtitle}</p>
-        {tabs}
-        {formBody}
-      </HubToolDetailModal>
-    );
-  }
-
-  const panel = (
-    <div
-      className={`auth-gate-modal auth-gate-modal--wide twofa-add-panel twofa-add-panel--embedded`}
-      role="region"
-      aria-labelledby="twofa-add-title"
+  return (
+    <HubToolDetailModal
+      open={active}
+      onClose={onClose}
+      title={title}
+      titleId="twofa-add-modal-title"
+      headerIcon={KeyRound}
+      headerIconClassName="text-indigo-300"
+      shellClassName="hub-header-panel-modal"
+      size="compact"
+      footer={hubFooter}
+      bodyClassName="modal-shell__scroll--user-access"
     >
-      <div className="auth-gate-brand">
-        <div className="auth-gate-icon" aria-hidden>
-          <KeyRound size={20} />
-        </div>
-      </div>
-
-      <h2 id="twofa-add-title" className="auth-gate-title">
-        {title}
-      </h2>
-      <p className="auth-gate-subtitle">{subtitle}</p>
+      <p className="mb-3 text-xs text-[var(--muted)]">{subtitle}</p>
       {tabs}
       {formBody}
-    </div>
+    </HubToolDetailModal>
   );
-
-  return <div className="twofa-add-embed">{panel}</div>;
 }

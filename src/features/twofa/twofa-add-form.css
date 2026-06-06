@@ -1,0 +1,5 @@
+/* Not type=password — avoids Chrome login autofill on ID + pass pair */
+.twofa-add-field-masked {
+  -webkit-text-security: disc;
+  text-security: disc;
+}

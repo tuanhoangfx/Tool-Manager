@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { KeyRound, Plus, Shield } from "lucide-react";
 import { MiniBarChart } from "../../components/sales-shell";
 import { PageHeader } from "../design-preview/screens/PageHeader";
@@ -8,7 +8,12 @@ import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
 import { readTwofaHubPrefs } from "./twofa-tab-prefs";
 import { TwofaFilterToolbar } from "./TwofaFilterToolbar";
-import { resolveVisibleKpiKeys } from "../../components/sales-shell";
+import { useResolvedVisibleKpiKeys } from "../../components/sales-shell";
+import {
+  barChartSeriesSignature,
+  chartKeysSignature,
+  kpiTilesSignature,
+} from "@tool-workspace/hub-ui";
 import {
   DEFAULT_TWOFA_CHART_KEYS,
   DEFAULT_TWOFA_HEADER_STAT_KEYS,
@@ -22,7 +27,6 @@ import { twofaFiltersWithCounts } from "./twofa-filter-counts";
 import { parseTwofaSearchQuery } from "./parse-twofa-search";
 import { TwofaAccountsTable } from "./TwofaAccountsTable";
 import { TwofaBulkActionBar } from "./TwofaBulkActionBar";
-import { TwofaAddForm } from "./TwofaAddForm";
 import { TwofaAddModal } from "./TwofaAddModal";
 import { TwofaConfirmDialog } from "./TwofaConfirmDialog";
 import { readTwofaTableColumns } from "./twofa-table-prefs";
@@ -32,6 +36,8 @@ import { NotesAuthGate } from "../notes/NotesAuthGate";
 function visibleSet(set: Set<string> | null, defaults: Set<string>) {
   return set ?? defaults;
 }
+
+const TWOFA_CHART_ORDER = ["service_bar", "identity_bar", "usage_bar", "password_bar"] as const;
 
 type AddModalState =
   | { mode: "add"; draft?: Partial<TwofaDraft> }
@@ -221,7 +227,7 @@ function TwofaManagerScreenBody({
   );
 
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_TWOFA_HEADER_STAT_KEYS;
-  const visKpi = resolveVisibleKpiKeys(hubPrefs.kpi, DEFAULT_TWOFA_KPI_KEYS, TWOFA_KPI_DEFS);
+  const visKpi = useResolvedVisibleKpiKeys(hubPrefs.kpi, DEFAULT_TWOFA_KPI_KEYS, TWOFA_KPI_DEFS);
   const visCharts = visibleSet(hubPrefs.charts, DEFAULT_TWOFA_CHART_KEYS);
   const twofaKpis = useMemo(
     () => (shellMode ? buildTwofaKpis(accounts, displayedAccounts, visKpi) : []),
@@ -252,29 +258,53 @@ function TwofaManagerScreenBody({
     );
   }, [shellMode, twofaChartData, visCharts]);
 
+  const kpiSig = useMemo(
+    () => kpiTilesSignature(twofaKpis.length > 0 ? twofaKpis : undefined),
+    [twofaKpis],
+  );
+  const chartsDepKey = useMemo(() => {
+    if (!shellMode) return "";
+    const visible = chartKeysSignature(visCharts, TWOFA_CHART_ORDER);
+    if (!visible) return "";
+    const parts: string[] = [];
+    if (visCharts.has("service_bar")) parts.push(barChartSeriesSignature(twofaChartData.serviceItems));
+    if (visCharts.has("identity_bar")) parts.push(barChartSeriesSignature(twofaChartData.identityItems));
+    if (visCharts.has("usage_bar")) parts.push(barChartSeriesSignature(twofaChartData.usageItems));
+    if (visCharts.has("password_bar")) parts.push(barChartSeriesSignature(twofaChartData.passwordItems));
+    return `${visible}|${parts.join(";")}`;
+  }, [shellMode, twofaChartData, visCharts]);
+
+  const twofaKpisRef = useRef(twofaKpis);
+  twofaKpisRef.current = twofaKpis;
+  const chartsBandRef = useRef(chartsBand);
+  chartsBandRef.current = chartsBand;
+
   useEffect(() => {
     if (!shellMode) return;
-    setDirectoryKpis(twofaKpis.length > 0 ? twofaKpis : undefined);
-    setDirectoryCharts(chartsBand ?? null);
+    setDirectoryKpis(twofaKpisRef.current.length > 0 ? twofaKpisRef.current : undefined);
+    setDirectoryCharts(chartsBandRef.current ?? null);
     setSectionRuleLabel("Accounts");
     return () => {
       setDirectoryKpis(undefined);
       setDirectoryCharts(null);
       setSectionRuleLabel(undefined);
     };
-  }, [chartsBand, shellMode, setDirectoryCharts, setDirectoryKpis, setSectionRuleLabel, twofaKpis]);
+  }, [chartsDepKey, kpiSig, shellMode, setDirectoryCharts, setDirectoryKpis, setSectionRuleLabel]);
 
   const editingId = addModal?.mode === "edit" ? addModal.account.id : null;
 
   const modalInitialDraft =
-    addModal?.mode === "add" && addModal.draft
+    addModal?.mode === "add"
       ? {
-          service: addModal.draft.service ?? "",
-          account: addModal.draft.account ?? "",
-          password: addModal.draft.password ?? "",
-          secret: addModal.draft.secret ?? "",
+          service: addModal.draft?.service ?? (showInlineAdd ? inlineDraft.service ?? "" : ""),
+          account: addModal.draft?.account ?? (showInlineAdd ? inlineDraft.account ?? "" : ""),
+          password: addModal.draft?.password ?? (showInlineAdd ? inlineDraft.password ?? "" : ""),
+          secret: addModal.draft?.secret ?? (showInlineAdd ? inlineDraft.secret ?? "" : ""),
         }
       : null;
+
+  const addModalOpen = addModal !== null || showInlineAdd;
+  const inlineSearchAdd = showInlineAdd && addModal === null;
 
   const deleteTitle =
     pendingDelete?.length === 1 ? "Delete account?" : `Delete ${pendingDelete?.length ?? 0} accounts?`;
@@ -352,9 +382,9 @@ function TwofaManagerScreenBody({
 
   const accountsBody = (
     <>
-      {error && !addModal ? <p className="text-[12px] text-rose-300">{error}</p> : null}
+      {error && !addModalOpen ? <p className="text-[12px] text-rose-300">{error}</p> : null}
 
-      {!shellMode && !showInlineAdd ? (
+      {!shellMode && !addModalOpen ? (
         <button
           type="button"
           className="btn inline-flex gap-2 text-[12px]"
@@ -365,20 +395,7 @@ function TwofaManagerScreenBody({
         </button>
       ) : null}
 
-      {showInlineAdd ? (
-        <TwofaAddForm
-          active
-          variant="embedded"
-          mode="add"
-          initialDraft={inlineDraft}
-          searchQuery={query}
-          onClose={() => {
-            if (shellMode) setWsQuery("");
-          }}
-          onSaveSingle={handleSaveSingle}
-          onImportMany={handleImportMany}
-        />
-      ) : displayedAccounts.length === 0 ? (
+      {displayedAccounts.length === 0 && !addModalOpen ? (
         <div className="rounded-xl border border-dashed border-white/15 bg-white/[.02] px-6 py-10 text-center text-sm text-[var(--muted)]">
           <Shield className="mx-auto mb-2 text-amber-300/80" size={28} />
           {accounts.length === 0
@@ -427,11 +444,15 @@ function TwofaManagerScreenBody({
       {shellMode ? accountsBody : <div className="space-y-3">{accountsBody}</div>}
 
       <TwofaAddModal
-        open={addModal !== null && !showInlineAdd}
+        open={addModalOpen}
         mode={addModal?.mode ?? "add"}
         initial={addModal?.mode === "edit" ? addModal.account : null}
         initialDraft={modalInitialDraft}
-        onClose={closeModal}
+        searchQuery={inlineSearchAdd ? query : undefined}
+        onClose={() => {
+          closeModal();
+          if (showInlineAdd && shellMode) setWsQuery("");
+        }}
         onSaveSingle={handleSaveSingle}
         onImportMany={handleImportMany}
       />

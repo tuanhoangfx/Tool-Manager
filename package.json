@@ -1,7 +1,7 @@
 {
   "name": "p0020-data-box",
   "private": true,
-  "version": "4.2.3",
+  "version": "4.2.4",
   "packageManager": "pnpm@9.15.9",
   "type": "module",
   "description": "P0020-Data-Box — unified data workspace for Notes, 2FA, secure cookie vault, and browser agents.",
@@ -29,6 +29,7 @@
     "db:migrate": "node scripts/apply-migrations.mjs",
     "db:migrate:api": "node scripts/apply-databox-migrations-api.mjs",
     "db:apply:note-share": "node scripts/apply-note-share-can-edit-api.mjs",
+    "db:apply:note-versions": "node scripts/apply-note-versions-api.mjs",
     "db:bundle:api": "node scripts/bundle-databox-migrations.mjs",
     "db:migrate:batches": "node scripts/apply-batches-pg.mjs",
     "db:sync-manifest": "node scripts/sync-databox-manifest.mjs",

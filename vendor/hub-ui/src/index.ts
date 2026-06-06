@@ -14,7 +14,14 @@ export {
   defaultKpiKeysFromDefs,
   enforceKpiMaxOnAdd,
   resolveVisibleKpiKeys,
+  useResolvedVisibleKpiKeys,
 } from "./display-prefs/kpi-visible";
+export {
+  barChartSeriesSignature,
+  chartKeysSignature,
+  kpiTilesSignature,
+  visibleKpiKeysSignature,
+} from "./directory-band/directory-band-sync";
 export type {
   DisplayPrefsPrefs,
   HubDisplayPrefsProps,
