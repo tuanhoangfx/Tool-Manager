@@ -10,8 +10,8 @@
 - Type: Minor
 - Product: P0020
 - Prompt: Lock V1 Platform Mirror; widen Account / narrow Secret; copy check icon beside (no "Copied" label); HubCopyBadge + CopyMetaChip in hub-ui.
-- Commit: pending
-- Status: Draft
+- Commit: `88a4c2b`
+- Status: Committed
 - Release: (after Release keyword only — GitHub release URL)
 
 ### Changes
