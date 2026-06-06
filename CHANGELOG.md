@@ -4,6 +4,25 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-06 - Settings modal: no row hover, focus-visible only
+
+- Version: `4.2.5`
+- Type: Patch
+- Product: P0020
+- Prompt: Remove gray hover on Settings modal checkbox/segmented rows; keep tooltips and keyboard focus ring.
+- Commit: `fbeeb10`
+- Status: Committed
+
+### Changes
+
+- `ToggleRow` / `TabButton`: no hover background in modal content; `hub-settings-toggle` + `focus-visible` outline.
+- `hub-modal.css`: suppress hover on `.hub-tool-detail-section__body` buttons; sync `primitives.tsx` via package canonical in vendor sync.
+- Notes Settings: List sort + folder chips without hover chrome.
+
+### Verification
+
+- Pre-commit parity + hub-ui-css-check — passed
+
 ## 2026-06-06 - 2FA add hub-modal only + auth-gate CSS in hub-ui
 
 - Version: `4.2.4`
