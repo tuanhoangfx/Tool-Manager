@@ -37,7 +37,7 @@ export function NotesSortExtras({ sort, onSortChange }: Props) {
             className={`min-w-0 flex-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
               sort === id
                 ? "bg-indigo-500/22 text-indigo-100 shadow-sm ring-1 ring-indigo-500/35"
-                : "text-[var(--muted)] hover:bg-white/[.05] hover:text-[var(--text)]"
+                : "text-[var(--muted)]"
             }`}
           >
             {notesSortSettingLabel(id)}

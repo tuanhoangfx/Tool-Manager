@@ -178,7 +178,7 @@ export function NotesFoldersSettingsPanel({
                   className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all ${
                     active
                       ? "border-indigo-400/35 bg-indigo-500/14 text-indigo-100"
-                      : "border-white/10 bg-white/[.03] text-[var(--muted)] hover:border-white/18 hover:bg-white/[.05] hover:text-[var(--text)]"
+                      : "border-white/10 bg-white/[.03] text-[var(--muted)]"
                   } disabled:cursor-default disabled:opacity-85`}
                   onClick={() => {
                     if (chipDisabled || !selectedNoteId) return;

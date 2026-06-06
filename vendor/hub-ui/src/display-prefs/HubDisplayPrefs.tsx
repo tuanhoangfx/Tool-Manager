@@ -69,6 +69,7 @@ export function HubDisplayPrefs({
   generalExtras,
   generalSectionToc = [],
   tablePanel,
+  tableSectionActions,
   tableActiveCount = 0,
   headerStatLabel = (isSystem) => (isSystem ? "System header" : "Hub header"),
   onLog,
@@ -259,12 +260,18 @@ export function HubDisplayPrefs({
   const sectionIds: string[] = [];
   const sectionNodes: ReactNode[] = [];
 
-  const pushSection = (id: string, label: string, icon: ReactNode | undefined, body: ReactNode) => {
+  const pushSection = (
+    id: string,
+    label: string,
+    icon: ReactNode | undefined,
+    body: ReactNode,
+    headerActions?: ReactNode,
+  ) => {
     const sectionId = settingsSectionId(id);
     tocItems.push({ id: sectionId, label, icon });
     sectionIds.push(sectionId);
     sectionNodes.push(
-      <HubToolDetailSection key={sectionId} id={sectionId} title={label} icon={icon}>
+      <HubToolDetailSection key={sectionId} id={sectionId} title={label} icon={icon} headerActions={headerActions}>
         {body}
       </HubToolDetailSection>,
     );
@@ -292,7 +299,7 @@ export function HubDisplayPrefs({
             className={`rounded-md px-2 py-1.5 text-[11px] font-medium transition-colors ${
               prefs.range === r.value
                 ? "bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-500/40"
-                : "bg-white/[.03] text-[var(--muted)] hover:bg-white/[.06] hover:text-[var(--text)]"
+                : "bg-white/[.03] text-[var(--muted)]"
             }`}
           >
             {r.label}
@@ -316,7 +323,7 @@ export function HubDisplayPrefs({
             className={`rounded-md px-1.5 py-1.5 text-[11px] font-semibold transition-colors ${
               prefs.limit === n
                 ? "bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-500/40"
-                : "bg-white/[.03] text-[var(--muted)] hover:bg-white/[.06] hover:text-[var(--text)]"
+                : "bg-white/[.03] text-[var(--muted)]"
             }`}
           >
             {n}
@@ -446,6 +453,7 @@ export function HubDisplayPrefs({
       "Table columns",
       <Columns3 size={compactIconSize(11)} className="text-violet-300" />,
       tablePanel,
+      tableSectionActions,
     );
   }
 
