@@ -4,6 +4,7 @@ import type { FilterDef, FilterValues } from "../../components/sales-shell";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
 import { WorkspaceDirectoryScreen } from "./WorkspaceDirectoryScreen";
 import { WorkspaceSearchProvider } from "./WorkspaceSearchContext";
+import { screenChromeConfig } from "./workspace-screen-meta";
 
 type Props = {
   screen: WorkspaceNavScreen;
@@ -31,6 +32,7 @@ export function WorkspaceShellTabFrame({
   const [directoryKpis, setDirectoryKpis] = useState<KpiTileData[] | undefined>(undefined);
   const [directoryCharts, setDirectoryCharts] = useState<ReactNode>(null);
   const [sectionRuleLabel, setSectionRuleLabel] = useState<string | undefined>(undefined);
+  const reserveAnalyticsBand = Boolean(screenChromeConfig(screen).directoryBand);
 
   return (
     <div
@@ -71,6 +73,7 @@ export function WorkspaceShellTabFrame({
           kpis={directoryKpis}
           charts={directoryCharts}
           sectionRuleLabel={sectionRuleLabel}
+          reserveAnalyticsBand={reserveAnalyticsBand}
           bodyFlex={bodyFlex}
         >
           {children}

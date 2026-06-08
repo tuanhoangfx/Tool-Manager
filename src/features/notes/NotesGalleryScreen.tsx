@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pin, Plus } from "lucide-react";
+import { HubPaginatedCardGrid } from "@tool-workspace/hub-ui";
 import { useAppToast } from "../../components/toast";
 import { WorkspaceLoadingView } from "../../components/sales-shell";
 import { StatusBadge } from "../../theme/p0008";
@@ -101,34 +102,41 @@ export function NotesGalleryScreen({ onOpenNote, shellMode, query: externalQuery
 
       {loading ? <p className="text-[12px] text-[var(--muted)]">Loading notes…</p> : null}
 
-      <div className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((n) => {
-          const active = n.id === selectedId;
-          return (
-            <button
-              key={n.id}
-              type="button"
-              onClick={() => onOpenNote?.(n.id)}
-              className={`anim-pop block w-full rounded-xl border p-4 text-left transition-all ${
-                active
-                  ? "border-indigo-400/50 bg-gradient-to-br from-indigo-500/15 via-indigo-500/5 to-transparent ring-1 ring-indigo-400/30"
-                  : "border-white/10 bg-white/[.03] hover:border-white/20 hover:bg-white/[.05]"
-              }`}
-            >
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <h3 className="text-sm font-semibold leading-snug text-[var(--text)]">{n.title}</h3>
-                {n.pinned ? <Pin size={14} className="shrink-0 text-indigo-300" /> : null}
-              </div>
-              {n.domain ? <p className="font-mono text-[10px] text-indigo-300/80">{n.domain}</p> : null}
-              <p className="mt-1 text-[10px] text-[var(--muted)]">Updated {n.updatedLabel}</p>
-              <footer className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
-                <StatusBadge tone={n.syncTone}>{n.syncLabel}</StatusBadge>
-                <span className="text-[10px] text-indigo-300">Open →</span>
-              </footer>
-            </button>
-          );
-        })}
-      </div>
+      <HubPaginatedCardGrid
+        items={filtered}
+        resetKey={query}
+        ariaLabel="Notes gallery pages"
+        className="stagger grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+      >
+        {(pageNotes) =>
+          pageNotes.map((n) => {
+            const active = n.id === selectedId;
+            return (
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => onOpenNote?.(n.id)}
+                className={`anim-pop block w-full rounded-xl border p-4 text-left transition-all ${
+                  active
+                    ? "border-indigo-400/50 bg-gradient-to-br from-indigo-500/15 via-indigo-500/5 to-transparent ring-1 ring-indigo-400/30"
+                    : "border-white/10 bg-white/[.03] hover:border-white/20 hover:bg-white/[.05]"
+                }`}
+              >
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <h3 className="text-sm font-semibold leading-snug text-[var(--text)]">{n.title}</h3>
+                  {n.pinned ? <Pin size={14} className="shrink-0 text-indigo-300" /> : null}
+                </div>
+                {n.domain ? <p className="font-mono text-[10px] text-indigo-300/80">{n.domain}</p> : null}
+                <p className="mt-1 text-[10px] text-[var(--muted)]">Updated {n.updatedLabel}</p>
+                <footer className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
+                  <StatusBadge tone={n.syncTone}>{n.syncLabel}</StatusBadge>
+                  <span className="text-[10px] text-indigo-300">Open →</span>
+                </footer>
+              </button>
+            );
+          })
+        }
+      </HubPaginatedCardGrid>
 
       {!loading && filtered.length === 0 ? (
         <p className="mt-4 text-[12px] text-[var(--muted)]">No notes yet. Click New note to get started.</p>

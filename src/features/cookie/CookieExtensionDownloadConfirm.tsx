@@ -106,7 +106,6 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
       title={EXTENSION_HEADER_LABEL}
       titleId="cookie-extension-download-title"
       headerImageUrl={E0001_ICON_URL}
-      shellClassName="hub-header-panel-modal"
       sectionIds={sectionIds}
       scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
       footer={

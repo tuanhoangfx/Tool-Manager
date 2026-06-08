@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Eye, Link2, PenLine, Save, StickyNote } from "lucide-react";
-import { MetaChip } from "../../components/CopyMetaChip";
+import { MetaChip } from "@tool-workspace/hub-ui";
 import { useAppToast } from "../../components/toast";
 import { cookieLines } from "./noteUtils";
 import type { NoteRow } from "./types";

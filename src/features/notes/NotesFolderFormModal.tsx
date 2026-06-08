@@ -54,8 +54,7 @@ export function NotesFolderFormModal({ open, mode, initial, onClose, onSave }: P
       titleId="notes-folder-form-title"
       headerIcon={FolderOpen}
       headerIconClassName="text-amber-300"
-      shellClassName="hub-header-panel-modal"
-      size="compact"
+      shellClassName="hub-tool-detail-modal--fit"
       footer={
         <>
           <HubToolDetailModalSecondaryAction label="Cancel" onClick={onClose} disabled={busy} />

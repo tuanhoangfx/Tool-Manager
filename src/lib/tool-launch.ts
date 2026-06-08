@@ -3,7 +3,7 @@ import type { ResolvedTool } from "../types";
 export const LAUNCHER_URL = "http://127.0.0.1:5190";
 
 export const LAUNCHER_SETUP_HINT =
-  "Chạy launch.bat hoặc dev.bat trong thư mục GitHub-Tool-Manager (E:\\Dev\\Tool\\GitHub-Tool-Manager), giữ cửa sổ mở, rồi thử lại.";
+  "Chạy launch.bat trong P0004-Tool-Hub (E:\\Dev\\Tool\\P0004-Tool-Hub) hoặc P0020-Data-Box, giữ cửa sổ mở, rồi thử lại.";
 
 export const LAUNCHER_HTTPS_HINT =
   "Từ infi.io.vn, trình duyệt không gọi được localhost. Bấm Chạy tool → tab mở http://127.0.0.1:5190 — nếu trang trắng/lỗi, chạy launch.bat trước.";

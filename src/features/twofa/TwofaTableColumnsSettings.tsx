@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
-import { RotateCcw } from "lucide-react";
 import { ToggleRow } from "@tool-workspace/hub-ui";
 import {
-  DEFAULT_TWOFA_TABLE_COLUMNS,
   readTwofaTableColumns,
-  resetTwofaTableColumns,
   TWOFA_TABLE_COLUMN_ITEMS,
   writeTwofaTableColumns,
   type TwofaTableColumnKey,
@@ -36,37 +33,22 @@ export function TwofaTableColumnsSettings() {
   }
 
   return (
-    <>
-      <div className="mb-1 flex justify-end">
-        <button
-          type="button"
-          onClick={() => {
-            resetTwofaTableColumns();
-            setVisible(new Set(DEFAULT_TWOFA_TABLE_COLUMNS));
-          }}
-          className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-[var(--muted)] hover:bg-white/5 hover:text-[var(--text)]"
-        >
-          <RotateCcw size={10} aria-hidden />
-          Reset columns
-        </button>
-      </div>
-      <ul className="space-y-0.5">
-        {TWOFA_TABLE_COLUMN_ITEMS.map((col) => {
-          const on = visible.has(col.key);
-          return (
-            <li key={col.key} className={col.required ? "opacity-80" : undefined}>
-              <div className="flex items-center gap-2">
-                <div className={col.required ? "pointer-events-none flex-1" : "flex-1"}>
-                  <ToggleRow label={col.label} on={on} onChange={() => toggle(col.key)} />
-                </div>
-                {col.required ? (
-                  <span className="shrink-0 pr-2 text-[9px] text-[var(--muted)]">Required</span>
-                ) : null}
+    <ul className="space-y-0.5">
+      {TWOFA_TABLE_COLUMN_ITEMS.map((col) => {
+        const on = visible.has(col.key);
+        return (
+          <li key={col.key} className={col.required ? "opacity-80" : undefined}>
+            <div className="flex items-center gap-2">
+              <div className={col.required ? "pointer-events-none flex-1" : "flex-1"}>
+                <ToggleRow label={col.label} on={on} onChange={() => toggle(col.key)} />
               </div>
-            </li>
-          );
-        })}
-      </ul>
-    </>
+              {col.required ? (
+                <span className="shrink-0 pr-2 text-[9px] text-[var(--muted)]">Required</span>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

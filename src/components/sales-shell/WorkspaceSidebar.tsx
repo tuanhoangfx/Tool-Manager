@@ -28,11 +28,14 @@ import {
   WORKSPACE_LIST_REFRESHING,
 } from "../../lib/workspace-refresh-bus";
 import { useAppToast } from "../toast";
+import { compactIconSize } from "../../lib/ui-scale";
 import {
+  HUB_SIDEBAR_FOOTER_BTN_CLASS,
+  HubLogButton,
+  HubSidebarFooterButton,
   HubToolDetailModal,
   HubToolDetailModalPrimaryAction,
   HubUiZoomControl,
-  compactIconSize,
 } from "@tool-workspace/hub-ui";
 
 const items: { screen: WorkspaceNavScreen; label: string; icon: typeof FileText }[] = [
@@ -47,35 +50,6 @@ type Props = {
   onNavigate: (screen: WorkspaceNavScreen) => void;
   displayPrefs?: ReactNode;
 };
-
-const footerBtn =
-  "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors text-[var(--muted)] hover:bg-white/5 hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-60";
-
-function SidebarFooterButton({
-  icon: Icon,
-  label,
-  iconClass,
-  onClick,
-  disabled,
-  title,
-  trailing,
-}: {
-  icon: typeof RefreshCcw;
-  label: string;
-  iconClass: string;
-  onClick?: () => void;
-  disabled?: boolean;
-  title?: string;
-  trailing?: ReactNode;
-}) {
-  return (
-    <button type="button" className={footerBtn} onClick={onClick} disabled={disabled} title={title}>
-      <Icon size={compactIconSize(15)} className={`shrink-0 ${iconClass}`} />
-      <span className="flex-1 text-left">{label}</span>
-      {trailing}
-    </button>
-  );
-}
 
 function shortId(value: string | null | undefined) {
   return value ? value.slice(0, 8) : "";
@@ -174,7 +148,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
       </nav>
 
       <footer className="mt-2 shrink-0 space-y-0.5 overflow-visible border-t border-white/5 pt-2.5">
-        <SidebarFooterButton
+        <HubSidebarFooterButton
           icon={User}
           iconClass="text-violet-400"
           label="User"
@@ -190,19 +164,20 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
           href={toolHubUsersUrl()}
           target="_blank"
           rel="noopener noreferrer"
-          className={footerBtn}
+          className={HUB_SIDEBAR_FOOTER_BTN_CLASS}
           title="Workspace users & roles (Tool Hub P0004)"
         >
           <ExternalLink size={compactIconSize(15)} className="shrink-0 text-indigo-300" />
           <span className="flex-1 text-left">Tool Hub — Users</span>
         </a>
-        <SidebarFooterButton
+        <HubSidebarFooterButton
           icon={RefreshCcw}
           iconClass={`text-indigo-300 ${listRefreshing ? "animate-spin" : ""}`}
           label={listRefreshing ? "Updating…" : "Refresh"}
           onClick={() => requestWorkspaceDataRefresh()}
           title={listRefreshing ? "Updating notes in background" : "Refresh notes list"}
         />
+        <HubLogButton variant="global" />
         {displayPrefs}
         <HubUiZoomControl />
       </footer>
@@ -219,8 +194,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
             {initials}
           </span>
         }
-        shellClassName="hub-header-panel-modal"
-        size="compact"
+        shellClassName="hub-header-panel-modal hub-tool-detail-modal--fit"
         ariaLabelledBy="workspace-user-modal-title"
         footer={
           <HubToolDetailModalPrimaryAction
@@ -250,7 +224,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
                   className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[.025] px-3 py-2.5"
                 >
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-white/[.04] text-indigo-200">
-                    <Icon size={14} />
+                    <Icon size={compactIconSize(14)} />
                   </div>
                   <div className="min-w-0">
                     <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">{item.label}</div>

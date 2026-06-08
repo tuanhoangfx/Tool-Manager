@@ -7,6 +7,7 @@ import {
   Activity,
   AlertTriangle,
   Archive,
+  ArrowDownWideNarrow,
   Beaker,
   Bot,
   Calculator,
@@ -26,6 +27,7 @@ import {
   Globe2,
   HardDrive,
   Heart,
+  History,
   KeyRound,
   Layers,
   LockKeyhole,
@@ -109,6 +111,10 @@ const LINKS: Record<string, FilterIconMeta> = {
 };
 
 const FILTER_ALL: Record<string, FilterIconMeta> = {
+  "notes-list-sort": { icon: ArrowDownWideNarrow, className: "text-sky-300" },
+  "cookie-list-sort": { icon: ArrowDownWideNarrow, className: "text-sky-300" },
+  "notes-autosave-delay": { icon: Timer, className: "text-emerald-300" },
+  "notes-version-interval": { icon: History, className: "text-indigo-300" },
   health: { icon: Activity, className: "text-emerald-400" },
   category: { icon: Layers, className: "text-indigo-400" },
   deploy: { icon: Rocket, className: "text-sky-400" },
@@ -268,6 +274,19 @@ export function resolveFilterOptionIcon(filterKey: string, option: FilterOption)
       return pick(COOKIE_ACCESS, option.value);
     case "note":
       return { icon: FileText, className: "text-indigo-300" };
+    case "notes-list-sort":
+      if (option.value === "created") return { icon: Clock, className: "text-sky-300" };
+      if (option.value === "title") return { icon: ArrowDownWideNarrow, className: "text-sky-300" };
+      return { icon: Pencil, className: "text-sky-300" };
+    case "cookie-list-sort":
+      if (option.value === "created") return { icon: Clock, className: "text-sky-300" };
+      if (option.value === "platform") return { icon: Globe2, className: "text-cyan-300" };
+      if (option.value === "title") return { icon: ArrowDownWideNarrow, className: "text-sky-300" };
+      return { icon: Pencil, className: "text-sky-300" };
+    case "notes-autosave-delay":
+      return { icon: Timer, className: "text-emerald-300" };
+    case "notes-version-interval":
+      return { icon: History, className: "text-indigo-300" };
     case "health":
     case "status":
       return (

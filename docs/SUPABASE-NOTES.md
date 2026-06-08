@@ -38,3 +38,36 @@ Notes dùng **Supabase Auth** (email/password). Đăng nhập tại màn Notes h
 | `pinned`, `share_enabled`, `share_token` | UI V5 |
 
 RLS: mỗi user chỉ CRUD row `user_id = auth.uid()`.
+
+## Version history (`note_versions`)
+
+Autosave vẫn ghi thẳng `notes`. Snapshot chỉ qua RPC (không hook autosave 3s):
+
+| Client trigger | `source` | Ghi chú |
+|----------------|----------|---------|
+| Bấm **Save** | `save` | Hash dedup — không tạo nếu trùng bản cuối |
+| Chuyển note | `session` | Hash dedup |
+| Mỗi **15 / 30 / 60 phút** edit (Settings) | `interval` | Hash dedup + RPC interval gate theo setting |
+| **Restore** | `restore` | Backup trước khi ghi đè |
+
+| RPC | Mục đích |
+|-----|----------|
+| `note_create_version_if_changed` | Tạo snapshot khi hash đổi; `source`: `session` \| `interval` \| `restore` \| `save` |
+| `note_versions_list` | List snapshot theo note |
+| `note_version_get` | Chi tiết 1 snapshot |
+| `note_version_restore` | Backup hiện tại (`restore`) rồi ghi đè note |
+
+Retention (auto): tối đa **50** snapshot non-manual / note; xóa auto cũ hơn **90 ngày**.
+
+Apply migration:
+
+```bash
+pnpm db:apply:note-versions
+pnpm db:apply:note-version-save
+pnpm db:apply:note-version-digest
+pnpm verify:note-version   # hoặc pnpm verify:cookie (gồm cả cookie + version)
+```
+
+Storage ước lượng: ~4 KB/snapshot → 1 000 note × 30 version ≈ **120 MB** (thực tế thấp hơn nhờ session + hash dedup).
+
+**Auto interval:** Settings → General → **Version history** — `15` / `30` / `60` min (`localStorage` key `p0020:notes-version-interval-minutes`).

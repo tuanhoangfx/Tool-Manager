@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Pin, StickyNote } from "lucide-react";
-import { HubDirectoryScreen, useHubChromePrefs, WorkspaceTabHeader } from "@tool-workspace/hub-ui";
+import { HubSplitWorkspaceScreen, useHubChromePrefs, WorkspaceTabHeader } from "@tool-workspace/hub-ui";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
 import { readHubListPrefs, subscribeHubListPrefs } from "../../lib/url-prefs";
 import { DEFAULT_NOTES_HEADER_STAT_KEYS } from "./notes-display-prefs";
@@ -36,7 +36,7 @@ type Props = {
   children: ReactNode;
 };
 
-/** P0004 HubDirectoryScreen — Notes tab (split body via bodyFlex). */
+/** HubSplitWorkspaceScreen — Notes tab (split body). */
 export function NotesHubChrome({
   query,
   onQueryChange,
@@ -82,7 +82,8 @@ export function NotesHubChrome({
   }, [cookieRouteNoteIds, filterValues, hubPrefs.range, noteFolders, notes, query, visFilterKeys]);
 
   return (
-    <HubDirectoryScreen
+    <HubSplitWorkspaceScreen
+      bodyClassName="notes-workspace__body flex min-h-0 flex-1 overflow-hidden"
       header={
         <WorkspaceTabHeader
           ariaLabel="Notes header"
@@ -146,9 +147,8 @@ export function NotesHubChrome({
         <NotesFilterToolbar range={hubPrefs.range} shown={shown} total={notes.length} />
       }
       filterRowActions={filterToolbar}
-      bodyFlex
     >
-      <div className="notes-workspace__body flex min-h-0 flex-1 overflow-hidden">{children}</div>
-    </HubDirectoryScreen>
+      {children}
+    </HubSplitWorkspaceScreen>
   );
 }

@@ -1,4 +1,4 @@
-/* P0020 table extensions — base skin from vendor/hub-ui hub-users-table.css */
+/* P0020 table extensions ΓÇö base skin from vendor/hub-ui hub-users-table.css */
 
 table.hub-users-table th.hub-users-col--select,
 table.hub-users-table td.hub-users-col--select {
@@ -29,7 +29,7 @@ table.hub-users-table td.hub-users-col--select {
   color: #fde68a;
 }
 
-/* 2FA directory — sentence-case headers */
+/* 2FA directory ΓÇö sentence-case headers */
 table.hub-users-table--twofa {
   font-size: 13px;
 }
@@ -165,57 +165,4 @@ table.hub-users-table--twofa td.hub-users-col--twofa-secret {
   }
 }
 
-/* Route People & access (Cookie Auto detail) */
-table.hub-users-table--route-access {
-  table-layout: auto;
-  width: 100%;
-  min-width: 0;
-}
-
-table.hub-users-table--route-access th,
-table.hub-users-table--route-access .hub-users-th-text {
-  text-transform: none;
-  letter-spacing: 0.02em;
-  font-size: 12px;
-}
-
-table.hub-users-table--route-access th.hub-route-access-col--user,
-table.hub-users-table--route-access td.hub-route-access-col--user {
-  min-width: 10rem;
-  max-width: 18rem;
-  text-align: left;
-}
-
-table.hub-users-table--route-access th.hub-route-access-col--role,
-table.hub-users-table--route-access td.hub-route-access-col--role {
-  width: 5.5rem;
-  text-align: center;
-}
-
-table.hub-users-table--route-access th.hub-route-access-col--sync-at,
-table.hub-users-table--route-access td.hub-route-access-col--sync-at,
-table.hub-users-table--route-access th.hub-route-access-col--load-at,
-table.hub-users-table--route-access td.hub-route-access-col--load-at {
-  width: 6.5rem;
-  text-align: center;
-  white-space: nowrap;
-}
-
-table.hub-users-table--route-access th.hub-route-access-col--perm,
-table.hub-users-table--route-access td.hub-route-access-col--perm {
-  width: 3.25rem;
-  text-align: center;
-}
-
-table.hub-users-table--route-access th.hub-route-access-col--route,
-table.hub-users-table--route-access td.hub-route-access-col--route {
-  width: 5.5rem;
-  text-align: center;
-}
-
-table.hub-users-table--route-access th.hub-route-access-col--expires,
-table.hub-users-table--route-access td.hub-route-access-col--expires {
-  width: 7rem;
-  text-align: center;
-  white-space: nowrap;
-}
+/* Route access columns — canonical in @tool-workspace/hub-ui/styles/hub-users-table.css */

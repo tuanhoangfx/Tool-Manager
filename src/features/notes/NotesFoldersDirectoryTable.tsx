@@ -1,19 +1,11 @@
 import { useMemo } from "react";
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  FolderOpen,
-  Hash,
-  StickyNote,
-} from "lucide-react";
+import { HubPaginatedTableShell, HubSortIndicator, type HubSortDir } from "@tool-workspace/hub-ui";
+import { FolderOpen, Hash, StickyNote } from "lucide-react";
 import type { NoteFolder } from "./noteFolders";
 import { NotesFolderGlyph } from "./NotesFolderGlyph";
 import { isSystemFolder } from "./noteFolderLifecycle";
 
 export type FolderTableSortKey = "name" | "noteCount";
-
-type SortDir = "asc" | "desc";
 
 export type FolderTableRow = NoteFolder & { noteCount: number };
 
@@ -44,11 +36,6 @@ const COLUMNS: ColumnDef[] = [
     align: "center",
   },
 ];
-
-function SortIndicator({ active, dir }: { active: boolean; dir: SortDir }) {
-  const Icon = !active ? ArrowUpDown : dir === "asc" ? ArrowUp : ArrowDown;
-  return <Icon size={13} className={`hub-users-sort${active ? " is-active" : ""}`} aria-hidden />;
-}
 
 function FolderNameCell({ folder }: { folder: FolderTableRow }) {
   return (
@@ -110,7 +97,7 @@ export function NotesFoldersDirectoryTable({
 }: {
   rows: FolderTableRow[];
   sortKey: FolderTableSortKey;
-  sortDir: SortDir;
+  sortDir: HubSortDir;
   onSort: (key: FolderTableSortKey) => void;
   selectedIds: Set<string>;
   onToggleSelect: (folderId: string) => void;
@@ -121,6 +108,8 @@ export function NotesFoldersDirectoryTable({
   const visibleDefs = useMemo(() => COLUMNS, []);
 
   return (
+    <HubPaginatedTableShell items={rows} ariaLabel="Folders table pages">
+      {(pageRows) => (
     <div className="hub-users-table-wrap overflow-hidden rounded-2xl border border-white/5">
       <table className="hub-users-table hub-users-table--folders">
         <colgroup>
@@ -155,7 +144,7 @@ export function NotesFoldersDirectoryTable({
                     <span className={`hub-users-th-label${col.align === "left" ? " hub-users-th-label--start" : ""}`}>
                       <Icon size={13} className={`hub-users-th-icon ${col.iconClass}`} aria-hidden />
                       <span className="hub-users-th-text">{col.label}</span>
-                      <SortIndicator active={sortKey === col.key} dir={sortDir} />
+                      <HubSortIndicator active={sortKey === col.key} dir={sortDir} />
                     </span>
                   </button>
                 </th>
@@ -164,7 +153,7 @@ export function NotesFoldersDirectoryTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((folder) => {
+          {pageRows.map((folder) => {
             const selected = selectedIds.has(folder.id);
             const isEditing = editingId === folder.id;
             return (
@@ -191,6 +180,8 @@ export function NotesFoldersDirectoryTable({
       </table>
       {rows.length === 0 ? <div className="hub-users-empty">No folders yet — use Add to create one.</div> : null}
     </div>
+      )}
+    </HubPaginatedTableShell>
   );
 }
 
@@ -205,7 +196,7 @@ export function countNotesInFolder(noteFolders: Record<string, string[]>, folder
 export function sortFolderRows(
   rows: FolderTableRow[],
   sortKey: FolderTableSortKey,
-  sortDir: SortDir,
+  sortDir: HubSortDir,
 ): FolderTableRow[] {
   const dir = sortDir === "asc" ? 1 : -1;
   return [...rows].sort((a, b) => {

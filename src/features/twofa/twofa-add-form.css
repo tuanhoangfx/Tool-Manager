@@ -3,3 +3,46 @@
   -webkit-text-security: disc;
   text-security: disc;
 }
+
+/*
+ * Add modal — fixed body height (Bulk tab is tallest).
+ * Tab swap hides panels; shell + TOC slot stay the same size (Hub detail modal golden).
+ */
+.modal-shell.hub-tool-detail-modal.twofa-add-modal {
+  --overview-toc-w: 11.5rem;
+  --twofa-add-modal-body-h: 20rem;
+  --twofa-add-modal-toc-bulk-slot-h: 5.75rem;
+  min-height: calc(var(--twofa-add-modal-body-h) + 8.75rem);
+}
+
+.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__body {
+  flex: 1 1 auto;
+  min-height: var(--twofa-add-modal-body-h);
+}
+
+.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__layout {
+  min-height: var(--twofa-add-modal-body-h);
+  align-items: stretch;
+}
+
+.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__content,
+.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__scroll {
+  min-height: var(--twofa-add-modal-body-h);
+}
+
+.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__scroll {
+  flex: 1 1 auto;
+}
+
+/* Reserve Bulk sub-TOC height on Single tab — no TOC rail jump. */
+.twofa-add-modal__toc-sections {
+  min-height: var(--twofa-add-modal-toc-bulk-slot-h);
+}
+
+.twofa-add-modal__panels {
+  min-height: var(--twofa-add-modal-body-h);
+}
+
+.twofa-add-modal__panel--hidden {
+  display: none;
+}

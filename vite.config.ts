@@ -4,6 +4,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const hubUiRoot = path.resolve(rootDir, "../../packages/hub-ui/src");
+const devRoot = path.resolve(rootDir, "../..");
 
 export default defineConfig({
   plugins: [react()],
@@ -21,6 +23,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ["react", "react-dom", "lucide-react"],
+    exclude: ["@tool-workspace/hub-ui"],
     holdUntilCrawlEnd: false,
   },
   esbuild: {
@@ -31,13 +34,17 @@ export default defineConfig({
     port: 5177,
     strictPort: true,
     open: false,
+    fs: {
+      allow: [rootDir, hubUiRoot, devRoot],
+    },
   },
   resolve: {
+    dedupe: ["react", "react-dom"],
     alias: {
       "@p0020/bridge": path.resolve(rootDir, "packages/p0020-bridge/src"),
       "@dev/hub-load": path.resolve(rootDir, "vendor/hub-load/src"),
-      "@tool-workspace/hub-ui": path.resolve(rootDir, "vendor/hub-ui/src"),
-      "@tool-workspace/hub-identity": path.resolve(rootDir, "vendor/hub-identity/src"),
+      "@tool-workspace/hub-ui": hubUiRoot,
+      "@tool-workspace/hub-identity": path.resolve(rootDir, "../../packages/hub-identity/src"),
     },
   },
 });

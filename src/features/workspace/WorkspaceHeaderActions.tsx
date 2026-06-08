@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
-import { AppLogButton } from "../../components/sales-shell/AppLogButton";
+import { HubLogButton } from "@tool-workspace/hub-ui";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import { WorkspaceTabDisplayPrefs } from "./WorkspaceTabDisplayPrefs";
-import { useWorkspaceLogs } from "./WorkspaceLogProvider";
 import type { FilterDef } from "../../components/sales-shell";
 import type { NotesListDensity, NotesListSort } from "../notes/notes-list-prefs";
 
@@ -29,12 +28,10 @@ export function WorkspaceHeaderActions({
   notesFolderSettings,
   trailing,
 }: Props) {
-  const { logs } = useWorkspaceLogs();
-
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       {trailing}
-      <AppLogButton logs={logs} />
+      <HubLogButton variant="tab" />
       <WorkspaceTabDisplayPrefs
         screen={screen}
         screenFilters={screenFilters}

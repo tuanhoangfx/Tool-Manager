@@ -8,7 +8,7 @@ const STATUS_ORDER = ["synced", "pending", "error", "manual"] as const;
 
 const STATUS_LABEL: Record<(typeof STATUS_ORDER)[number], string> = {
   synced: "Synced",
-  pending: "Pending",
+  pending: "Awaiting sync",
   error: "Error",
   manual: "Manual",
 };

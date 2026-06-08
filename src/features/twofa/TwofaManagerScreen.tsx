@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { KeyRound, Plus, Shield } from "lucide-react";
 import { MiniBarChart } from "../../components/sales-shell";
+import { useAppToast } from "../../components/toast";
 import { PageHeader } from "../design-preview/screens/PageHeader";
 import { useTwofaAccounts } from "./useTwofaAccounts";
 import type { TwofaAccount, TwofaDraft } from "./types";
@@ -13,6 +14,7 @@ import {
   barChartSeriesSignature,
   chartKeysSignature,
   kpiTilesSignature,
+  useDirectoryBandSync,
 } from "@tool-workspace/hub-ui";
 import {
   DEFAULT_TWOFA_CHART_KEYS,
@@ -29,6 +31,14 @@ import { TwofaAccountsTable } from "./TwofaAccountsTable";
 import { TwofaBulkActionBar } from "./TwofaBulkActionBar";
 import { TwofaAddModal } from "./TwofaAddModal";
 import { TwofaConfirmDialog } from "./TwofaConfirmDialog";
+import { findTwofaDraftConflict } from "./twofa-upsert-accounts";
+import {
+  formatTwofaEntryLabel,
+  twofaDedupeToast,
+  twofaImportToast,
+  twofaSingleAddToast,
+  twofaUpdateToast,
+} from "./twofa-toast-messages";
 import { readTwofaTableColumns } from "./twofa-table-prefs";
 import { useNotesAuth } from "../notes/useNotesAuth";
 import { NotesAuthGate } from "../notes/NotesAuthGate";
@@ -43,6 +53,12 @@ type AddModalState =
   | { mode: "add"; draft?: Partial<TwofaDraft> }
   | { mode: "edit"; account: TwofaAccount }
   | null;
+
+type PendingReplaceState = {
+  editingId: string;
+  draft: TwofaDraft;
+  conflict: TwofaAccount;
+} | null;
 
 export function TwofaManagerScreen({
   shellMode,
@@ -78,7 +94,8 @@ function TwofaManagerScreenBody({
   shellMode?: boolean;
   query?: string;
 } = {}) {
-  const { accounts, tick, add, addMany, update, remove, touchLastUsed } = useTwofaAccounts();
+  const { accounts, tick, add, addMany, update, remove, touchLastUsed, dedupeNow } = useTwofaAccounts();
+  const { pushToast } = useAppToast();
   const {
     query: wsQuery,
     setQuery: setWsQuery,
@@ -96,6 +113,7 @@ function TwofaManagerScreenBody({
   const [hubPrefs, setHubPrefs] = useState(readTwofaHubPrefs);
   const [addModal, setAddModal] = useState<AddModalState>(null);
   const [pendingDelete, setPendingDelete] = useState<TwofaAccount[] | null>(null);
+  const [pendingReplace, setPendingReplace] = useState<PendingReplaceState>(null);
   const [error, setError] = useState<string | null>(null);
   const [visibleColumns, setVisibleColumns] = useState(() => readTwofaTableColumns());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -207,24 +225,65 @@ function TwofaManagerScreenBody({
   }, [selectedRows, startEdit]);
 
   const handleSaveSingle = useCallback(
-    (draft: TwofaDraft) => {
+    (draft: TwofaDraft): "ok" | "conflict" | "fail" => {
       if (addModal?.mode === "edit") {
-        return update(addModal.account.id, draft);
+        const conflict = findTwofaDraftConflict(accounts, draft, addModal.account.id);
+        if (conflict) {
+          setPendingReplace({ editingId: addModal.account.id, draft, conflict });
+          return "conflict";
+        }
+        const ok = update(addModal.account.id, draft);
+        if (ok) {
+          pushToast(twofaUpdateToast(draft.service, draft.account), "success");
+          setError(null);
+          return "ok";
+        }
+        return "fail";
       }
-      const ok = add(draft);
-      if (ok) setError(null);
-      return ok;
+      const result = add(draft);
+      if (!result.ok) return "fail";
+      pushToast(
+        twofaSingleAddToast(result.replaced, draft.service, draft.account),
+        result.replaced ? "info" : "success",
+      );
+      setError(null);
+      return "ok";
     },
-    [add, addModal, update],
+    [accounts, add, addModal, pushToast, update],
   );
 
   const handleImportMany = useCallback(
     (drafts: TwofaDraft[]) => {
-      const { added } = addMany(drafts);
-      return added;
+      const result = addMany(drafts);
+      if (result.total > 0) {
+        pushToast(twofaImportToast(result), result.replaced > 0 ? "info" : "success");
+      }
+      return result;
     },
-    [addMany],
+    [addMany, pushToast],
   );
+
+  const handleDedupeNow = useCallback(() => {
+    const removed = dedupeNow();
+    pushToast(twofaDedupeToast(removed), removed > 0 ? "success" : "info");
+  }, [dedupeNow, pushToast]);
+
+  const confirmReplace = useCallback(() => {
+    if (!pendingReplace) return;
+    const ok = update(pendingReplace.editingId, pendingReplace.draft);
+    if (ok) {
+      pushToast(
+        `Replaced ${formatTwofaEntryLabel(
+          pendingReplace.conflict.service,
+          pendingReplace.conflict.account,
+        )}`,
+        "success",
+      );
+      setAddModal(null);
+      setError(null);
+    }
+    setPendingReplace(null);
+  }, [pendingReplace, pushToast, update]);
 
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_TWOFA_HEADER_STAT_KEYS;
   const visKpi = useResolvedVisibleKpiKeys(hubPrefs.kpi, DEFAULT_TWOFA_KPI_KEYS, TWOFA_KPI_DEFS);
@@ -274,22 +333,17 @@ function TwofaManagerScreenBody({
     return `${visible}|${parts.join(";")}`;
   }, [shellMode, twofaChartData, visCharts]);
 
-  const twofaKpisRef = useRef(twofaKpis);
-  twofaKpisRef.current = twofaKpis;
-  const chartsBandRef = useRef(chartsBand);
-  chartsBandRef.current = chartsBand;
-
-  useEffect(() => {
-    if (!shellMode) return;
-    setDirectoryKpis(twofaKpisRef.current.length > 0 ? twofaKpisRef.current : undefined);
-    setDirectoryCharts(chartsBandRef.current ?? null);
-    setSectionRuleLabel("Accounts");
-    return () => {
-      setDirectoryKpis(undefined);
-      setDirectoryCharts(null);
-      setSectionRuleLabel(undefined);
-    };
-  }, [chartsDepKey, kpiSig, shellMode, setDirectoryCharts, setDirectoryKpis, setSectionRuleLabel]);
+  useDirectoryBandSync(
+    {
+      kpis: twofaKpis.length > 0 ? twofaKpis : undefined,
+      charts: chartsBand ?? null,
+      sectionRuleLabel: "Accounts",
+      kpiKey: kpiSig,
+      chartsKey: chartsDepKey,
+    },
+    { setDirectoryKpis, setDirectoryCharts, setSectionRuleLabel },
+    shellMode,
+  );
 
   const editingId = addModal?.mode === "edit" ? addModal.account.id : null;
 
@@ -308,6 +362,14 @@ function TwofaManagerScreenBody({
 
   const deleteTitle =
     pendingDelete?.length === 1 ? "Delete account?" : `Delete ${pendingDelete?.length ?? 0} accounts?`;
+
+  const replaceTitle = "Replace existing entry?";
+  const replaceMessage = pendingReplace ? (
+    <>
+      <strong>{formatTwofaEntryLabel(pendingReplace.conflict.service, pendingReplace.conflict.account)}</strong>{" "}
+      already exists. Saving will remove that entry and keep your edits.
+    </>
+  ) : null;
 
   const deleteMessage =
     pendingDelete && pendingDelete.length > 0 ? (
@@ -340,6 +402,7 @@ function TwofaManagerScreenBody({
         tableShown={tableRows.length}
         filteredTotal={displayedAccounts.length}
         total={accounts.length}
+        onDedupe={handleDedupeNow}
       />,
     );
     setFilterToolbar(
@@ -366,6 +429,7 @@ function TwofaManagerScreenBody({
     accounts.length,
     displayedAccounts.length,
     handleBulkEdit,
+    handleDedupeNow,
     hasSelection,
     hubPrefs.limit,
     hubPrefs.range,
@@ -466,6 +530,18 @@ function TwofaManagerScreenBody({
         }
         onConfirm={confirmBulkDelete}
         onClose={() => setPendingDelete(null)}
+      />
+
+      <TwofaConfirmDialog
+        open={pendingReplace !== null}
+        title={replaceTitle}
+        message={replaceMessage}
+        confirmLabel="Replace entry"
+        danger={false}
+        headerIcon={KeyRound}
+        headerIconClassName="text-amber-300"
+        onConfirm={confirmReplace}
+        onClose={() => setPendingReplace(null)}
       />
     </div>
   );

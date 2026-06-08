@@ -11,6 +11,8 @@ export type ScreenChromeConfig = {
   searchPlaceholder: string;
   showSearch: boolean;
   filterParam: "hfilt" | "nfilt" | "cfilt" | "afilt";
+  /** Directory tab with KPI/charts band (reserve slot on F5). */
+  directoryBand?: boolean;
   /** Extra left meta after version · release (tab-specific). */
   extraMetaItems?: TabHeaderMetaItem[];
 };
@@ -37,6 +39,7 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         searchPlaceholder: "Search service or account…",
         showSearch: true,
         filterParam: "afilt",
+        directoryBand: true,
       };
     case "cookie":
       return {
@@ -47,6 +50,7 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         searchPlaceholder: "Search domain, note, sync ID…",
         showSearch: true,
         filterParam: "cfilt",
+        directoryBand: true,
       };
     case "system":
       return {

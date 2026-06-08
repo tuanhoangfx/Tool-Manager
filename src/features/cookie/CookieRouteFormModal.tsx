@@ -61,7 +61,7 @@ export function CookieRouteModalActions({
   );
 }
 
-/** Add / Share / Edit / Delete route — golden HubToolDetailModal shell (Settings parity). */
+/** Add / Share / Edit / Delete route — golden HubToolDetailModal shell (User access / tool detail size). */
 export function CookieRouteFormModal({
   title,
   subtitle: _subtitle,
@@ -89,7 +89,7 @@ export function CookieRouteFormModal({
       title={title}
       headerIcon={headerIcon}
       headerIconClassName={headerIconClassName}
-      shellClassName="hub-header-panel-modal cookie-route-form-modal"
+      shellClassName={`cookie-route-form-modal${hasToc ? "" : " hub-tool-detail-modal--fit"}`}
       size={hasToc ? "detail" : "compact"}
       sectionIds={hasToc ? sectionIds : undefined}
       scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}

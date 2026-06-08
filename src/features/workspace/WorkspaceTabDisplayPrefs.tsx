@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { FolderOpen } from "lucide-react";
+import { Section } from "@tool-workspace/hub-ui";
 import { DisplayPrefs } from "../../components/sales-shell";
 import type { FilterDef } from "../../components/sales-shell";
 import { compactIconSize } from "../../lib/ui-scale";
@@ -11,9 +12,12 @@ import {
   DEFAULT_COOKIE_CHART_KEYS,
   DEFAULT_COOKIE_HEADER_STAT_KEYS,
   DEFAULT_COOKIE_KPI_KEYS,
+  DEFAULT_COOKIE_ROUTE_FILTER_KEYS,
 } from "../cookie/cookie-display-prefs";
 import { patchCookieHubPrefs, readCookieHubPrefs } from "../cookie/cookie-tab-prefs";
-import { DEFAULT_COOKIE_ROUTE_FILTER_KEYS } from "../cookie/cookie-route-filters";
+import { CookieSortExtras } from "../cookie/CookieSortExtras";
+import { readCookieListPrefs, type CookieListSort } from "../cookie/cookie-list-prefs";
+import { NotesSaveBehaviorSettings } from "../notes/NotesSaveBehaviorSettings";
 import { NotesSortExtras } from "../notes/NotesSortExtras";
 import {
   DEFAULT_NOTES_HEADER_STAT_KEYS,
@@ -36,6 +40,7 @@ import {
   countHiddenTwofaTableColumns,
   TwofaTableColumnsSettings,
 } from "../twofa/TwofaTableColumnsSettings";
+import { TwofaTableColumnsResetAction } from "../twofa/TwofaTableColumnsResetAction";
 import { TwofaMaskPasswordToggle } from "../twofa/TwofaMaskPasswordToggle";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 
@@ -65,11 +70,10 @@ function TwofaTabDisplayPrefs({ screenFilters }: { screenFilters: FilterDef[] })
       showRange={false}
       showLimit={false}
       showHeaderPin
-      panelWidth={420}
-      maxPanelHeight="min(80vh, 42rem)"
       headerStatLabel={() => "2FA header"}
       scope="tab"
       tablePanel={<TwofaTableColumnsSettings />}
+      tableSectionActions={<TwofaTableColumnsResetAction />}
       tableActiveCount={hiddenCols}
       readPrefs={readTwofaHubPrefs}
       patchPrefs={patchTwofaHubPrefs}
@@ -86,6 +90,8 @@ type Props = {
   onNotesDensityChange?: (d: NotesListDensity) => void;
   notesSort?: NotesListSort;
   onNotesSortChange?: (sort: NotesListSort) => void;
+  cookieSort?: CookieListSort;
+  onCookieSortChange?: (sort: CookieListSort) => void;
   notesFolderSettings?: ReactNode;
 };
 
@@ -97,6 +103,8 @@ export function WorkspaceTabDisplayPrefs({
   onNotesDensityChange,
   notesSort = "updated",
   onNotesSortChange,
+  cookieSort = readCookieListPrefs().sort,
+  onCookieSortChange,
   notesFolderSettings,
 }: Props) {
   if (screen === "cookie") {
@@ -122,12 +130,11 @@ export function WorkspaceTabDisplayPrefs({
         showRange={false}
         showLimit={false}
         showHeaderPin
-        panelWidth={420}
-        maxPanelHeight="min(80vh, 42rem)"
         headerStatLabel={() => "Cookie header"}
         scope="tab"
         readPrefs={readCookieHubPrefs}
         patchPrefs={patchCookieHubPrefs}
+        displayExtras={<CookieSortExtras sort={cookieSort} onSortChange={onCookieSortChange} />}
       />
     );
   }
@@ -144,21 +151,20 @@ export function WorkspaceTabDisplayPrefs({
         showRange={false}
         showLimit={false}
         showHeaderPin
-        generalExtras={<NotesSortExtras sort={notesSort} onSortChange={onNotesSortChange} />}
-        extraTabs={
-          notesFolderSettings
-            ? [
-                {
-                  id: "folders",
-                  label: "Folders",
-                  icon: <FolderOpen size={compactIconSize(12)} className="text-amber-300" />,
-                  content: notesFolderSettings,
-                },
-              ]
-            : undefined
+        displayExtras={
+          <>
+            <NotesSortExtras sort={notesSort} onSortChange={onNotesSortChange} />
+            <NotesSaveBehaviorSettings />
+            {notesFolderSettings ? (
+              <Section
+                label="Folders"
+                icon={<FolderOpen size={compactIconSize(12)} className="text-amber-300" />}
+              >
+                {notesFolderSettings}
+              </Section>
+            ) : null}
+          </>
         }
-        panelWidth={440}
-        maxPanelHeight="min(78vh, 36rem)"
         headerStatLabel={() => "Notes header"}
         scope="tab"
       />
@@ -179,7 +185,6 @@ export function WorkspaceTabDisplayPrefs({
         showRange={false}
         showLimit={false}
         showHeaderPin
-        panelWidth={340}
         headerStatLabel={() => "System header"}
         scope="tab"
       />

@@ -162,3 +162,8 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Settings option picker — title + filter in subsection header only */
+.hub-settings-option-section--compact .hub-settings-subsection__header {
+  margin-bottom: 0;
+}

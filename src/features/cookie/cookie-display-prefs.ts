@@ -1,5 +1,5 @@
 import type { PrefItem } from "../../components/sales-shell/DisplayPrefs";
-import { defaultKpiKeysFromDefs } from "@tool-workspace/hub-ui";
+import { defaultChartKeysFromDefs, defaultKpiKeysFromDefs } from "@tool-workspace/hub-ui";
 import { COOKIE_ROUTE_FILTER_DEFS } from "./cookie-route-filters";
 
 export const COOKIE_KPI_DEFS: PrefItem[] = [
@@ -28,5 +28,6 @@ export const COOKIE_HEADER_STAT_DEFS: PrefItem[] = [
 ];
 
 export const DEFAULT_COOKIE_KPI_KEYS = defaultKpiKeysFromDefs(COOKIE_KPI_DEFS);
-export const DEFAULT_COOKIE_CHART_KEYS = new Set(COOKIE_CHART_DEFS.map((c) => c.key));
+export const DEFAULT_COOKIE_CHART_KEYS = defaultChartKeysFromDefs(COOKIE_CHART_DEFS);
 export const DEFAULT_COOKIE_HEADER_STAT_KEYS = new Set(COOKIE_HEADER_STAT_DEFS.map((s) => s.key));
+export { DEFAULT_COOKIE_ROUTE_FILTER_KEYS } from "./cookie-route-filters";

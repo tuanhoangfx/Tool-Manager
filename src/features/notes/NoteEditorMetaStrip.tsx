@@ -1,5 +1,5 @@
 import { AlertCircle, CalendarPlus, CheckCircle2, Clock3, Globe2, Hash, Pin } from "lucide-react";
-import { CopyMetaChip, MetaChip, type MetaTone } from "../../components/CopyMetaChip";
+import { CopyMetaChip, MetaChip, type MetaTone } from "@tool-workspace/hub-ui";
 import { NoteEditorTitleOnlyBadge } from "./NoteEditorRouteTitleActions";
 import { formatNoteTimestamp } from "./noteUtils";
 import type { NoteRow, NoteSyncStatus } from "./types";

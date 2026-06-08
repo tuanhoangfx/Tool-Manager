@@ -30,7 +30,7 @@ describe("buildCookieChartItems", () => {
       [row(".kalodata.com", "synced"), row(".facebook.com", "pending")],
       {},
     );
-    expect(charts.statusItems.map((item) => item.label)).toEqual(["Synced", "Pending"]);
+    expect(charts.statusItems.map((item) => item.label)).toEqual(["Synced", "Awaiting sync"]);
   });
 
   it("groups routes by platform label", () => {

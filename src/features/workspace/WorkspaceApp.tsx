@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { useHubActiveScreenSync } from "@tool-workspace/hub-ui";
+import { HubAppLogProvider, resolveHubActiveScreenId, useHubActiveScreenSync } from "@tool-workspace/hub-ui";
 import { DisplayPrefs, HubLoaderRoot } from "../../components/sales-shell";
 import { hideBootLoader } from "../../lib/hide-boot-loader";
-import type { FilterDef } from "../../components/sales-shell";
 import { WorkspaceSidebar } from "../../components/sales-shell/WorkspaceSidebar";
 import { ToastContainer, ToastProvider } from "../../components/toast";
 import type { WorkspaceNavScreen, WorkspaceScreen } from "../../lib/workspace-screen";
 import { NAV_SCREENS } from "../../lib/workspace-screen";
 import { readNoteIdFromUrl } from "../design-preview/design-nav";
-import { DEFAULT_NOTES_FILTER_KEYS } from "../notes/notes-list-prefs";
-import { NOTES_FILTER_DEFS } from "../notes/notes-filters";
-import { COOKIE_ROUTE_FILTER_DEFS, DEFAULT_COOKIE_ROUTE_FILTER_KEYS } from "../cookie/cookie-route-filters";
-import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
 import { useHubIdentityRelay } from "../hub/useHubIdentityRelay";
 import { useHubNavigation } from "../hub/useHubNavigation";
 import { AuthSessionProvider } from "../notes/AuthSessionProvider";
@@ -22,43 +17,18 @@ import { TwofaManagerScreen } from "../twofa/TwofaManagerScreen";
 import { CookieSyncScreen } from "../cookie/CookieSyncScreen";
 import { SystemDesignTemplateScreen } from "../system/SystemDesignTemplateScreen";
 import { prefetchNotesListBackground } from "../../lib/hub-background-prefetch";
-import { WorkspaceLogProvider } from "./WorkspaceLogProvider";
+import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
 import { WorkspaceShellTabFrame } from "./WorkspaceShellTabFrame";
 import { WorkspaceVisitedTabPanel } from "./WorkspaceVisitedTabPanel";
 
-function WorkspaceSidebarDisplayPrefs({
-  screen,
-  screenFilters,
-}: {
-  screen: WorkspaceNavScreen;
-  screenFilters: FilterDef[];
-}) {
-  const filterConfig =
-    screen === "cookie"
-      ? { filters: COOKIE_ROUTE_FILTER_DEFS, defaultFilterKeys: DEFAULT_COOKIE_ROUTE_FILTER_KEYS, filterParam: "cfilt" as const }
-      : screen === "notes"
-        ? { filters: [...NOTES_FILTER_DEFS], defaultFilterKeys: DEFAULT_NOTES_FILTER_KEYS, filterParam: "nfilt" as const }
-        : screenFilters.length
-          ? {
-              filters: screenFilters.map(({ key, label }) => ({ key, label })),
-              defaultFilterKeys: new Set(screenFilters.map((filter) => filter.key)),
-              filterParam: screen === "twofa" ? ("afilt" as const) : ("hfilt" as const),
-            }
-          : { filters: [], defaultFilterKeys: new Set<string>(), filterParam: "hfilt" as const };
-
+function WorkspaceSidebarDisplayPrefs() {
   return (
     <DisplayPrefs
-      filters={filterConfig.filters}
-      defaultFilterKeys={filterConfig.defaultFilterKeys}
-      filterParam={filterConfig.filterParam}
-      filtersFromUrl
-      headerStats={[]}
-      defaultHeaderStatKeys={new Set()}
       showRange={false}
       showLimit={false}
       showHeaderPin
       sidebarRow
-      scope="tab"
+      scope="global"
     />
   );
 }
@@ -79,6 +49,7 @@ function WorkspaceAppInner() {
   useExtensionSessionRelay(session);
   const activeNav = navScreen(screen);
   useHubActiveScreenSync(activeNav);
+  const activeScreenId = resolveHubActiveScreenId(activeNav);
   const isNotesLayout = NOTES_SCREENS.has(screen);
   const [visited, setVisited] = useState<Set<WorkspaceNavScreen>>(() => new Set([activeNav]));
 
@@ -127,12 +98,15 @@ function WorkspaceAppInner() {
     : "hub-main flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden";
 
   return (
-    <WorkspaceLogProvider>
+    <HubAppLogProvider
+      activeScreen={activeScreenId}
+      bootLog={{ scope: "P0020", message: "Data-Box workspace started", screen: activeScreenId }}
+    >
     <div className="hub-app theme-hub flex h-full min-h-0 w-full overflow-hidden">
       <WorkspaceSidebar
         screen={activeNav}
         onNavigate={onNav}
-        displayPrefs={<WorkspaceSidebarDisplayPrefs screen={activeNav} screenFilters={[]} />}
+        displayPrefs={<WorkspaceSidebarDisplayPrefs />}
       />
 
       <main className={mainClass}>
@@ -166,7 +140,7 @@ function WorkspaceAppInner() {
       </main>
       <ToastContainer />
     </div>
-    </WorkspaceLogProvider>
+    </HubAppLogProvider>
   );
 }
 

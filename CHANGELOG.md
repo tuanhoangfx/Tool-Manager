@@ -4,6 +4,225 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-07 - Hub header: Log label + center-stats scrollbar
+
+- Version: `4.3.11`
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Shared hub-ui: hide center-stats scrollbar track (P0004 golden parity).
+
+Version: 4.3.10 → 4.3.11
+
+## 2026-06-07 - Cookie modal About + route sort
+
+- Version: `4.3.11`
+- Type: Patch
+- Product: P0020
+- Prompt: Remove redundant Sync label in modal About; Note ID CopyMetaChip; Cookie Auto sort (Edited/Created/Platform/A–Z).
+- Status: Draft
+
+### Changes
+
+- `HubRouteAboutSummary`: drop Sync chip; Note ID via `CopyMetaChip` + `Hash` icon (P0004 parity).
+- `cookie-list-prefs` + `CookieSortExtras`: URL `csort` — Edited (sync time), Created, Platform, A–Z.
+- `CookieAutoSyncTable`: apply `sortCookieAutoRows` after filter (was binding storage order only).
+
+### Verification
+
+- Modal About: only Note ID chip; TM sync id remains on route table/header.
+- Settings → Route sort changes card/table order live.
+
+---
+
+## 2026-06-07 - Cookie Detail: restore Sync/Load/permission columns
+
+- Version: `4.3.10`
+- Type: Patch
+- Product: P0020
+- Prompt: Ship Cookie Detail — restore Sync, Loaded, Load/Sync permission columns; horizontal scroll; hub-ui expanded layout.
+- Status: Draft
+
+### Changes
+
+- `HubRouteAccessDirectoryTable`: refactor to `HubDataTable` + pager; `columnLayout="expanded"` (Synced · Loaded · Load · Sync · Route · Expires).
+- `hub-route-access-table-meta`: expanded vs compact column builders; modal wrap `overflow-x-auto` + `min-width: 44rem`.
+- `CookieRouteAccessTable`: wired separate sync/load timestamp + permission icon columns (golden pre-merge layout).
+
+### Verification
+
+- Browser: Cookie Auto → route detail Access — 9 cols visible, horizontal scroll if narrow.
+- Kalodata Shared 3: owner + 3 members load without overlap.
+
+---
+
+## 2026-06-07 - Settings: lock F1 hub filter option picker
+
+- Version: `4.3.8`
+- Type: Patch
+- Product: P0020
+- Prompt: Lock F1 — hub-ui filter dropdown; strip Save behavior chrome; purge design template after lock.
+- Status: Draft
+
+### Changes
+
+- `settings-option-filter.tsx`: shared `SettingsOptionFilter` wrapper (Design F1 locked).
+- `NotesSortExtras`, `NotesSaveBehaviorSettings`: `HubFormFieldLabel` outside; filter trigger value-only + option icon (`triggerFormat="value"`).
+- `design-registry.ts`: `SETTINGS_OPTION_PICKER_DESIGN_LOCK = "F1"`.
+- Design gate: deleted `settings-segmented/*` preview + CSS; template tab → no active reviews.
+
+### Verification
+
+- Browser: Notes → Settings → General — List sort / Autosave / Version interval open hub filter panel.
+- System → Design Template — empty state, lock badge only.
+
+## 2026-06-07 - 2FA: toasts, Dedupe toolbar, edit replace confirm
+
+- Version: `4.3.8`
+- Type: Patch
+- Product: P0020
+- Prompt: Toast Added/Replaced, nút Dedupe toolbar, confirm khi edit trùng identity.
+- Status: Draft
+
+### Changes
+
+- `twofa-toast-messages.ts`: toast copy for add, import, dedupe, update.
+- `TwofaManagerScreen`: pushToast on save/import/dedupe; edit conflict → `TwofaConfirmDialog`.
+- `TwofaFilterToolbar`: **Dedupe** button scans vault and removes duplicates.
+- `TwofaConfirmDialog`: optional `danger` + custom icon for non-delete confirms.
+- `useTwofaAccounts`: `dedupeNow()` + `add()` returns `{ ok, replaced }`.
+
+### Verification
+
+- `vitest run twofa-upsert-accounts.test.ts`
+- Browser: `:5177/twofa` — toast, Dedupe, edit replace confirm
+
+## 2026-06-07 - 2FA: dedupe on import, replace existing entries
+
+- Version: `4.3.7`
+- Type: Patch
+- Product: P0020
+- Prompt: Lọc trùng 2FA — tự động thay thế bằng dữ liệu mới nếu cùng identity (xóa bản cũ).
+- Status: Draft
+
+### Changes
+
+- `twofa-identity.ts`, `twofa-upsert-accounts.ts`: identity key `(service, account)` or secret-only; upsert replaces old row.
+- `useTwofaAccounts`: `add`/`addMany`/`update` dedupe; load + cloud sync collapse duplicates.
+- `twofa-cloud-sync`: handle unique `(user_id, service, account)` conflict on upsert.
+- `TwofaAddForm`: bulk import summary shows new vs replaced counts.
+
+### Verification
+
+- `vitest run twofa-upsert-accounts.test.ts`
+
+## 2026-06-07 - 2FA add modal: fixed shell height (Single/Bulk tabs)
+
+- Version: `4.3.6`
+- Type: Patch
+- Product: P0020
+- Prompt: Cố định kích thước modal Add 2FA khi đổi tab Single/Bulk.
+- Status: Draft
+
+### Changes
+
+- `twofa-add-form.css`: `--twofa-add-modal-body-h` locks body; TOC bulk slot reserved; panel swap via `display:none`.
+- `TwofaAddForm`: both tab panels in DOM; TOC sub-rail placeholder on Single tab.
+
+### Verification
+
+- Browser: `:5177/twofa` — Add modal same size Single ↔ Bulk
+
+## 2026-06-07 - 2FA add modal: restore Single/Bulk tabs
+
+- Version: `4.3.5`
+- Type: Patch
+- Product: P0020
+- Prompt: Quay lại tab Single như cũ (thay vì một trang scroll tất cả section).
+- Status: Draft
+
+### Changes
+
+- `TwofaAddForm`: TOC tab Single · Bulk; main đổi theo tab; footer Add account / Import theo tab.
+- Bulk tab: sub-TOC scroll-spy Paste · File · Preview (giữ từ bản trước).
+
+### Verification
+
+- Browser: `:5177/twofa` — Add modal tab Single/Bulk
+
+## 2026-06-07 - 2FA add modal: single scroll page (fixed shell)
+
+- Version: `4.3.4`
+- Type: Patch
+- Product: P0020
+- Prompt: Chuẩn modal Add 2FA — cùng một màn, không tách Single/Bulk đổi kích thước.
+- Status: Draft
+
+### Changes
+
+- `TwofaAddForm`: bỏ tab Single/Bulk; tất cả section (Credentials · Paste · File · Preview) trên một trang scroll; TOC scroll-spy như Cookie Add route.
+- Footer add mode: Cancel · Import · Add account (cố định, không đổi theo tab).
+- `twofa-add-toc.ts` + CSS min-height shell cố định.
+
+### Verification
+
+- Browser: `:5177/twofa` — Add modal kích thước ổn định khi TOC jump giữa sections
+
+## 2026-06-07 - 2FA modal: remove hint labels + Hub form fields + auth TOC
+
+- Version: `4.3.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Xóa nhãn giải thích modal 2FA; ok 1 2 3 (HubFormFieldLabel, HubAuthGate TOC, Bulk sections).
+- Status: Draft
+
+### Changes
+
+- `TwofaAddForm`: drop subtitle/hint/example paragraphs; `HubFormFieldLabel` + `HubToolDetailSection` (Credentials · Paste · File · Preview); bulk TOC scroll-spy rail.
+- `HubAuthGateModal` (hub-ui): Sign In / Sign Up → left `hub-toc-nav`; field labels via `HubFormFieldLabel`; no subtitle/hints.
+- `NotesAuthGate`: remove modal subtitle constant.
+
+### Verification
+
+- Browser: `:5177/twofa` Add modal — no hint lines; Bulk sections + TOC spy
+
+## 2026-06-07 - 2FA add modal: Hub UI TOC layout
+
+- Version: `4.3.2`
+- Type: Patch
+- Product: P0020
+- Prompt: Chuẩn hóa nhập 2FA modal theo chuẩn modal chung Hub UI (Header · TOC · main · footer).
+- Status: Draft
+
+### Changes
+
+- `TwofaAddForm`: Single/Bulk tabs move to left `hub-toc-nav` TOC rail; main column holds subtitle + form; footer actions unchanged.
+- Edit mode stays compact single-column (no TOC); add mode uses `size="detail"` with `HubToolDetailModal` TOC layout.
+
+### Verification
+
+- Browser: `:5177/twofa` — Add accounts modal TOC + tab switch + footer actions
+
+## 2026-06-06 - NotesAuthGate → shared HubAuthGate
+
+- Version: `4.3.1`
+- Type: Patch
+- Product: P0020
+- Prompt: Refactor P0020 NotesAuthGate to shared hub-ui HubAuthGate (option 1 from hub auth shared work).
+- Status: Draft
+
+### Changes
+
+- `NotesAuthGate`: thin wrapper around `HubAuthGate` + `extraInlineActions` (Offline mode) and `signInWorkspaceDual` on submit.
+- Vendor sync: `hub-identity` (`HubSessionLike` extended), `hub-ui` auth stack including `HubFullUserAccountModal`.
+- `pnpm install` refresh after vendor sync (display-prefs modules).
+
+### Verification
+
+- `pnpm build` P0020 — passed (tsc, 106 tests, vite)
+
 ## 2026-06-06 - Settings modal: no row hover, focus-visible only
 
 - Version: `4.2.5`

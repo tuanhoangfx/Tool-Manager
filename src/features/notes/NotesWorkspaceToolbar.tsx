@@ -1,4 +1,4 @@
-import { Eye, Lock, PenLine, Pin, Plus, Save, Share2, Trash2 } from "lucide-react";
+import { Eye, History, Lock, PenLine, Pin, Plus, Save, Share2, Trash2, Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useAppToast } from "../../components/toast";
@@ -14,12 +14,18 @@ type Props = {
   shareDraftPassword: string;
   saving?: boolean;
   creating?: boolean;
-  savedHint?: string;
+  saveAcknowledged?: boolean;
   routeLocked?: boolean;
+  historyOpen?: boolean;
+  historyDisabled?: boolean;
+  historyVersionCount?: number;
+  historyBadgePulse?: boolean;
   onNew: () => void;
   onSave: () => void;
   onDelete: () => void;
   onPinnedToggle: () => void;
+  onHistoryToggle?: () => void;
+  onHistoryHover?: () => void;
   onShareDraftAccessChange: (access: NoteShareAccess) => void;
   onShareDraftPasswordChange: (v: string) => void;
   onShareSave: () => void;
@@ -35,12 +41,18 @@ export function NotesWorkspaceToolbar({
   shareDraftPassword,
   saving,
   creating,
-  savedHint,
+  saveAcknowledged,
   routeLocked = false,
+  historyOpen = false,
+  historyDisabled = false,
+  historyVersionCount = 0,
+  historyBadgePulse = false,
   onNew,
   onSave,
   onDelete,
   onPinnedToggle,
+  onHistoryToggle,
+  onHistoryHover,
   onShareDraftAccessChange,
   onShareDraftPasswordChange,
   onShareSave,
@@ -74,8 +86,19 @@ export function NotesWorkspaceToolbar({
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
-      {savedHint ? <span className="hidden text-[10px] text-emerald-300 sm:inline">{savedHint}</span> : null}
       <ToolbarButton icon={<Plus size={12} />} label={creating ? "Creating…" : "New"} tone="indigo" disabled={creating} onClick={onNew} />
+      <ToolbarButton
+        icon={<Save size={12} />}
+        label={saving ? "Saving…" : "Save"}
+        tone="emerald"
+        disabled={!hasNote || saving}
+        onClick={onSave}
+        trailing={
+          saveAcknowledged && !saving ? (
+            <Check size={11} className="text-emerald-300 anim-pop" aria-hidden />
+          ) : null
+        }
+      />
       <ToolbarButton
         icon={<Pin size={12} />}
         label={pinned ? "Pinned" : "Pin"}
@@ -112,13 +135,32 @@ export function NotesWorkspaceToolbar({
         ) : null}
       </div>
       <ToolbarButton icon={<Trash2 size={12} />} label="Delete" tone="rose" disabled={!hasNote} onClick={onDelete} />
-      <ToolbarButton
-        icon={<Save size={12} />}
-        label={saving ? "Saving…" : "Save"}
-        tone="emerald"
-        disabled={!hasNote || saving}
-        onClick={onSave}
-      />
+      <div
+        className="relative"
+        onMouseEnter={() => onHistoryHover?.()}
+        onFocus={() => onHistoryHover?.()}
+      >
+        <ToolbarButton
+          icon={<History size={12} />}
+          label="History"
+          tone="indigo"
+          active={historyOpen}
+          disabled={!hasNote || historyDisabled}
+          onClick={() => onHistoryToggle?.()}
+        />
+        {hasNote && historyVersionCount > 0 ? (
+          <span
+            className={`pointer-events-none absolute -right-1 -top-1 flex h-[15px] min-w-[15px] items-center justify-center rounded-full border px-0.5 text-[9px] font-bold leading-none ${
+              historyBadgePulse
+                ? "border-emerald-400/50 bg-emerald-500/90 text-white anim-pop"
+                : "border-indigo-400/35 bg-indigo-500/85 text-indigo-50"
+            }`}
+            aria-hidden
+          >
+            {historyVersionCount > 99 ? "99+" : historyVersionCount}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -132,6 +174,7 @@ function ToolbarButton({
   active,
   disabled,
   onClick,
+  trailing,
 }: {
   icon: ReactNode;
   label: string;
@@ -139,6 +182,7 @@ function ToolbarButton({
   active?: boolean;
   disabled?: boolean;
   onClick: () => void;
+  trailing?: ReactNode;
 }) {
   const toneClass = {
     cyan: "border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/16",
@@ -160,6 +204,7 @@ function ToolbarButton({
     >
       {icon}
       <span className="hidden sm:inline">{label}</span>
+      {trailing}
     </button>
   );
 }

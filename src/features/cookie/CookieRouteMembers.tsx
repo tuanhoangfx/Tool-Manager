@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { Mail, Pencil, Save, Shield, UserPlus, Users } from "lucide-react";
+import { Mail, Pencil, Save, Shield, UserPlus } from "lucide-react";
 import {
   FilterBar,
   type FilterValues,
@@ -8,6 +8,8 @@ import {
 import {
   HubModalFilterField,
   HubFormFieldLabel,
+  HubModalDirectorySection,
+  HubRouteAccessDirectoryTableSkeleton,
   HUB_TOOL_DETAIL_FORM_GRID_2_CLASS,
 } from "@tool-workspace/hub-ui";
 import { ACCESS_FILTER_DEFS, accessFiltersWithCounts } from "./access-filter-counts";
@@ -22,12 +24,18 @@ import {
   upsertNoteCookieMember,
   type NoteCookieMemberRow,
 } from "./noteCookieMembersRepository";
+import { getOfflineMode } from "../../lib/offlineMode";
 import { supabase } from "../../lib/supabase";
-import { listCookieRouteActivity } from "./cookieRouteActivityRepository";
+import { listCookieRouteActivityCached, invalidateCookieRouteActivity } from "./cookieRouteActivityCache";
+import {
+  getCachedNoteCookieMembers,
+  invalidateNoteCookieMembersCache,
+  rememberNoteCookieMembers,
+  takePrefetchedNoteCookieMembers,
+} from "./cookieRouteMembersPrefetch";
 import { cookieRouteDomainKey } from "./cookieRouteDomain";
 import { CookieRouteAccessBulkActionBar } from "./CookieRouteAccessBulkActionBar";
 import { CookieRouteAccessTable, type RouteAccessRow } from "./CookieRouteAccessTable";
-import { CookieRouteAccessTableSkeleton } from "./CookieRouteAccessTableSkeleton";
 import {
   CookieRouteFormModal,
   CookieRouteModalActions,
@@ -81,8 +89,11 @@ function sharePermissions(access: ShareAccess) {
 
 export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }: Props) {
   const { session } = useNotesAuth();
-  const [members, setMembers] = useState<NoteCookieMemberRow[]>([]);
-  const [accessReady, setAccessReady] = useState(false);
+  const [members, setMembers] = useState<NoteCookieMemberRow[]>(() => {
+    const hit = getCachedNoteCookieMembers(binding.noteId);
+    return hit?.ok ? hit.members : [];
+  });
+  const [accessReady, setAccessReady] = useState(() => Boolean(getCachedNoteCookieMembers(binding.noteId)?.ok));
   const [publishedState, setPublishedState] = useState<PublishedState | null>(null);
   const loadSeqRef = useRef(0);
   const [error, setError] = useState<string | null>(null);
@@ -107,14 +118,14 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
   const canShare = binding.accessRole !== "member" && binding.canManage !== false;
 
   const loadPublishStatus = useCallback(async () => {
-    if (binding.accessRole === "member") {
-      setPublishedState({ published: true, updatedAt: null });
+    if (binding.accessRole === "member" || getOfflineMode()) {
+      setPublishedState({ published: false, updatedAt: null });
       return;
     }
     const res = await getCookieRoutePublishStatus(session, binding);
     if (!res.ok) {
       setPublishedState(null);
-      setError(res.error);
+      if (!getOfflineMode()) setError(res.error);
       return;
     }
     setPublishedState({ published: res.published, updatedAt: res.updatedAt });
@@ -128,7 +139,7 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
       setSyncByEmail({});
       return;
     }
-    const res = await listCookieRouteActivity(binding.noteId, cookieRouteDomainKey(binding.domain));
+    const res = await listCookieRouteActivityCached(binding.noteId, cookieRouteDomainKey(binding.domain));
     if (!res.ok) {
       setLoadByUserId({});
       setLoadByEmail({});
@@ -159,24 +170,26 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
     }
     const seq = ++loadSeqRef.current;
     setError(null);
-    const [membersRes] = await Promise.all([
-      listNoteCookieMembers(binding.noteId),
-      loadPublishStatus(),
-      loadActivity(),
-    ]);
+
+    const prefetched = takePrefetchedNoteCookieMembers(binding.noteId);
+    const membersRes = prefetched ? await prefetched : await listNoteCookieMembers(binding.noteId);
     if (seq !== loadSeqRef.current) return;
+    rememberNoteCookieMembers(binding.noteId, membersRes);
     if (!membersRes.ok) {
       setMembers([]);
-      if (binding.accessRole !== "member") setError(membersRes.error);
+      if (binding.accessRole !== "member" && !getOfflineMode()) setError(membersRes.error);
     } else {
       setMembers(membersRes.members);
     }
     setAccessReady(true);
+
+    void Promise.all([loadPublishStatus(), loadActivity()]);
   }, [binding.accessRole, binding.noteId, loadActivity, loadPublishStatus]);
 
   useEffect(() => {
-    setAccessReady(false);
-    setMembers([]);
+    const hit = getCachedNoteCookieMembers(binding.noteId);
+    setMembers(hit?.ok ? hit.members : []);
+    setAccessReady(Boolean(hit?.ok));
     setPublishedState(null);
     setLoadByUserId({});
     setLoadByEmail({});
@@ -189,6 +202,7 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
   }, [load]);
 
   useEffect(() => {
+    if (!accessReady) return;
     const noteId = binding.noteId?.trim();
     if (!noteId) return;
 
@@ -229,7 +243,7 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
       window.clearInterval(poll);
       if (activityChannel) void supabase.removeChannel(activityChannel);
     };
-  }, [binding.domain, binding.noteId, loadActivity]);
+  }, [accessReady, binding.domain, binding.noteId, loadActivity]);
 
   const routeStatusReady = publishedState !== null;
   const routePublished = publishedState?.published === true;
@@ -396,6 +410,8 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
     setShareEmail("");
     setShareAccess("load");
     setShareOpen(false);
+    invalidateCookieRouteActivity(binding.noteId, binding.domain);
+    invalidateNoteCookieMembersCache(binding.noteId);
     onToast?.("Shared route access. Recipient can refresh routes immediately.", "success");
     await load();
     window.dispatchEvent(new CustomEvent("p0020-cookie-route-shared", { detail: { noteId: binding.noteId } }));
@@ -417,6 +433,8 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
       return;
     }
     setEditingMember(null);
+    invalidateCookieRouteActivity(binding.noteId, binding.domain);
+    invalidateNoteCookieMembersCache(binding.noteId);
     onToast?.("Access updated.", "success");
     await load();
     window.dispatchEvent(new CustomEvent("p0020-cookie-route-shared", { detail: { noteId: binding.noteId } }));
@@ -441,6 +459,8 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
       onToast?.(lastError || "Revoke failed.", "error");
       return;
     }
+    invalidateCookieRouteActivity(binding.noteId, binding.domain);
+    invalidateNoteCookieMembersCache(binding.noteId);
     onToast?.(`Revoked access for ${ok} member(s).`, "success");
     await load();
     window.dispatchEvent(new CustomEvent("p0020-cookie-route-shared", { detail: { noteId: binding.noteId } }));
@@ -472,21 +492,64 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
   }, []);
 
   return (
-    <section className="rdp-section">
-      <div className="rdp-section-head rdp-section-head--with-icon">
-        <span className="rdp-section-icon rdp-emerald">
-          <Users size={14} />
-        </span>
-        <div className="min-w-0">
-          <h4>People & access</h4>
-        </div>
-      </div>
-
-      {error ? (
-        <p className="mb-3 rounded-lg border border-amber-400/20 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-100">
-          {error}
-        </p>
-      ) : null}
+    <>
+      <HubModalDirectorySection
+        error={
+          error ? (
+            <p className="rounded-lg border border-amber-400/20 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-100">
+              {error}
+            </p>
+          ) : undefined
+        }
+        filterBar={
+          <FilterBar
+            layout="inline"
+            placeholder="Search access by user, role, route..."
+            filters={accessFilters}
+            query={query}
+            onQueryChange={setQuery}
+            values={filterValues}
+            onValuesChange={setFilterValues}
+            trailing={
+              <>
+                <span className="hidden text-[10px] text-[var(--muted)] tabular-nums sm:inline">
+                  {accessReady ? `${filteredAccessRows.length}/${accessRows.length}` : "Loading…"}
+                </span>
+                {canShare ? (
+                  <CookieRouteAccessBulkActionBar
+                    hasSelection={selectedIds.size > 0}
+                    selectedCount={selectedIds.size}
+                    canManage={canShare}
+                    shareBusy={shareBusy || revokeBusy}
+                    onAdd={openShareModal}
+                    onEdit={openEditBulk}
+                    onDelete={() => requestRevoke([...selectedIds])}
+                  />
+                ) : null}
+              </>
+            }
+          />
+        }
+        table={
+          !accessReady ? (
+            <HubRouteAccessDirectoryTableSkeleton
+              rows={2}
+              columnOptions={{ layout: "expanded", showRouteColumn: false }}
+            />
+          ) : (
+            <CookieRouteAccessTable
+              rows={filteredAccessRows}
+              resetKey={`${query}|${JSON.stringify(filterValues)}`}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
+              allVisibleSelected={allVisibleSelected}
+              syncAtForRow={syncAtForRow}
+              loadAtForRow={loadAtForRow}
+            />
+          )
+        }
+      />
 
       {shareOpen && canShare ? (
         <CookieRouteFormModal
@@ -598,53 +661,6 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
         </CookieRouteFormModal>
       ) : null}
 
-      <div className="mb-3">
-        <FilterBar
-          layout="inline"
-          placeholder="Search access by user, role, route..."
-          filters={accessFilters}
-          query={query}
-          onQueryChange={setQuery}
-          values={filterValues}
-          onValuesChange={setFilterValues}
-          trailing={
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <span className="text-[10px] text-[var(--muted)] tabular-nums">
-                {accessReady ? `${filteredAccessRows.length}/${accessRows.length}` : "Loading…"}
-              </span>
-              {canShare ? (
-                <CookieRouteAccessBulkActionBar
-                  hasSelection={selectedIds.size > 0}
-                  selectedCount={selectedIds.size}
-                  canManage={canShare}
-                  shareBusy={shareBusy || revokeBusy}
-                  onAdd={openShareModal}
-                  onEdit={openEditBulk}
-                  onDelete={() => requestRevoke([...selectedIds])}
-                />
-              ) : null}
-            </div>
-          }
-        />
-      </div>
-
-      {!accessReady ? (
-        <CookieRouteAccessTableSkeleton rows={Math.max(3, members.length || 3)} />
-      ) : (
-        <CookieRouteAccessTable
-          rows={filteredAccessRows}
-          routePublished={routePublished}
-          publishedLabel={publishedLabel}
-          routeStatusReady={routeStatusReady}
-          selectedIds={selectedIds}
-          onToggleSelect={toggleSelect}
-          onToggleSelectAll={toggleSelectAll}
-          allVisibleSelected={allVisibleSelected}
-          syncAtForRow={syncAtForRow}
-          loadAtForRow={loadAtForRow}
-        />
-      )}
-
       <ToolConfirmDialog
         open={pendingRevokeIds !== null}
         title="Revoke route access"
@@ -661,6 +677,6 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
           if (!revokeBusy) setPendingRevokeIds(null);
         }}
       />
-    </section>
+    </>
   );
 }

@@ -38,7 +38,8 @@ function redirectUsersPathToToolHub(): void {
   }
 }
 
-function readScreenFromLocation(): WorkspaceScreen {
+/** Sync read for DisplayPrefs / log provider (no React hook). */
+export function readWorkspaceScreenFromLocation(): WorkspaceScreen {
   if (typeof window === "undefined") return "notes";
 
   const normalizedPath = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -123,7 +124,7 @@ function migrateUrl(): WorkspaceScreen {
     return "notes";
   }
 
-  const screen = readScreenFromLocation();
+  const screen = readWorkspaceScreenFromLocation();
   if (NAV_SCREENS.includes(screen as WorkspaceNavScreen)) {
     window.history.replaceState(null, "", buildAppUrl(screen as WorkspaceNavScreen, p.toString()));
   }
@@ -135,7 +136,7 @@ export function useHubNavigation() {
   const [screen, setScreen] = useState<WorkspaceScreen>(() => migrateUrl());
 
   useEffect(() => {
-    const onPop = () => setScreen(readScreenFromLocation());
+    const onPop = () => setScreen(readWorkspaceScreenFromLocation());
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);

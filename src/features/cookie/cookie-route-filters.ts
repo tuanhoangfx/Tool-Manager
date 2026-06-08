@@ -6,7 +6,7 @@ export const COOKIE_ROUTE_FILTER_DEFS: FilterDef[] = [
     label: "Status",
     options: [
       { value: "synced", label: "Synced" },
-      { value: "pending", label: "Pending" },
+      { value: "pending", label: "Awaiting sync" },
       { value: "error", label: "Error" },
       { value: "manual", label: "Manual" },
     ],

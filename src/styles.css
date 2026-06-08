@@ -1,10 +1,10 @@
-@import "../vendor/hub-ui/src/styles/hub-check-indicator.css";
-@import "../vendor/hub-ui/src/styles/hub-fields.css";
-@import "../vendor/hub-ui/src/styles/hub-shell-layout.css";
-@import "../vendor/hub-ui/src/styles/hub-app-tab-header.css";
-@import "../vendor/hub-ui/src/styles/hub-users-table.css";
-@import "../vendor/hub-ui/src/styles/hub-modal.css";
-@import "../vendor/hub-ui/src/styles/hub-auth-gate.css";
+@import "@tool-workspace/hub-ui/styles/hub-check-indicator.css";
+@import "@tool-workspace/hub-ui/styles/hub-fields.css";
+@import "@tool-workspace/hub-ui/styles/hub-shell-layout.css";
+@import "@tool-workspace/hub-ui/styles/hub-app-tab-header.css";
+@import "@tool-workspace/hub-ui/styles/hub-users-table.css";
+@import "@tool-workspace/hub-ui/styles/hub-modal.css";
+@import "@tool-workspace/hub-ui/styles/hub-auth-gate.css";
 @import "./theme/hub-appearance.css";
 @import "./styles/base.css";
 @import "./styles/layout.css";
@@ -14,8 +14,8 @@
 @import "./styles/library.css";
 @import "./styles/system.css";
 @import "./styles/modal.css";
-@import "./styles/overview-toc.css";
 @import "./styles/cookie-route-chips.css";
+@import "@tool-workspace/hub-ui/styles/hub-route-detail.css";
 @import "./styles/activity.css";
 @import "./styles/activity-tab.css";
 @import "./styles/running-badge.css";
@@ -25,3 +25,4 @@
 @import "./styles/sync-hub.css";
 @import "./theme/hub-users-table.css";
 @import "./theme/hub-bulk-actions.css";
+@import "./features/notes/note-history-modal.css";

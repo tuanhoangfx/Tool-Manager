@@ -1,0 +1,126 @@
+/* Note History compare modal — Design V4: fixed shell + emoji hub-toc-nav rails. */
+
+.modal-shell.hub-tool-detail-modal.note-history-modal-v3 {
+  --hub-modal-max-w: min(100rem, calc(100vw - var(--app-sidebar-width, 0px) - 1.5rem));
+  --hub-modal-max-h: 900px;
+  --hub-modal-max-vh: 92vh;
+  --overview-toc-w: 14rem;
+  --note-history-body-h: min(34rem, 64vh);
+
+  height: min(var(--hub-modal-max-h), var(--hub-modal-max-vh));
+  max-height: min(var(--hub-modal-max-h), var(--hub-modal-max-vh));
+}
+
+.modal-shell.hub-tool-detail-modal.note-history-modal-v3 .note-history-modal__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 0.85rem 0.65rem;
+}
+
+.note-history-modal__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: var(--note-history-body-h);
+  height: var(--note-history-body-h);
+  overflow: hidden;
+}
+
+.note-history-toc-rail__title {
+  margin: 0 0 0.45rem;
+  padding: 0 0.35rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.note-history-toc-rail__title--emoji {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.6875rem;
+  color: var(--text);
+  opacity: 0.85;
+}
+
+.note-history-desktop-grid {
+  display: grid;
+  grid-template-columns: var(--overview-toc-w) minmax(0, 1fr) var(--overview-toc-w);
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.note-history-snapshot-toc,
+.note-history-inspector-toc {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.note-history-compare-center {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.note-history-compare-panes {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.note-history-diff-pane {
+  height: 100%;
+}
+
+.note-history-diff-pane__scroll {
+  scrollbar-gutter: stable;
+}
+
+.note-history-compare-panes--loading .note-history-diff-pane {
+  opacity: 0.72;
+}
+
+@media (max-width: 1023px) {
+  .modal-shell.hub-tool-detail-modal.note-history-modal-v3 {
+    --hub-modal-max-w: min(98vw, 100rem);
+    --overview-toc-w: 12.5rem;
+    --note-history-body-h: min(30rem, 58vh);
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-shell.hub-tool-detail-modal.note-history-modal-v3 {
+    --hub-modal-max-w: 98vw;
+    --note-history-body-h: min(26rem, 54vh);
+  }
+}
+
+/* Word-level diff — text color only (no row background) */
+.note-history-word-add {
+  color: rgb(52 211 153);
+  font-weight: 500;
+}
+
+.note-history-word-remove {
+  color: rgb(251 113 133);
+  font-weight: 500;
+}

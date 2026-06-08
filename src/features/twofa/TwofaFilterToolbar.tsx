@@ -1,4 +1,4 @@
-import { Shield } from "lucide-react";
+import { GitMerge, Shield } from "lucide-react";
 import { HubResultCount, HubRowLimitSelect, HubTimeRangeSelect } from "../../components/sales-shell";
 import type { TimeRange } from "../../lib/url-prefs";
 
@@ -11,9 +11,17 @@ type Props = {
   filteredTotal: number;
   /** All accounts in vault. */
   total: number;
+  onDedupe?: () => void;
 };
 
-export function TwofaFilterToolbar({ range, limit, tableShown, filteredTotal, total }: Props) {
+export function TwofaFilterToolbar({
+  range,
+  limit,
+  tableShown,
+  filteredTotal,
+  total,
+  onDedupe,
+}: Props) {
   return (
     <>
       <HubTimeRangeSelect value={range} />
@@ -26,6 +34,17 @@ export function TwofaFilterToolbar({ range, limit, tableShown, filteredTotal, to
         >
           vault {total}
         </span>
+      ) : null}
+      {onDedupe ? (
+        <button
+          type="button"
+          className="inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1 rounded-lg border border-amber-400/25 bg-amber-400/10 px-2.5 text-[10px] font-semibold text-amber-200/90 transition-colors hover:bg-amber-400/20"
+          title="Remove duplicate accounts (same platform + ID, or same secret-only)"
+          onClick={onDedupe}
+        >
+          <GitMerge size={12} aria-hidden />
+          Dedupe
+        </button>
       ) : null}
     </>
   );

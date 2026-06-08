@@ -16,12 +16,20 @@ import {
 import {
   HubModalFilterField,
   HubFormFieldLabel,
+  HubPaginatedTableShell,
   HubToolDetailModal,
+  HubToolDetailIdentityHeader,
   HubToolDetailSection,
+  MetaChip,
   HubTableColumnHeader,
   HUB_TOOL_DETAIL_FORM_GRID_3_CLASS,
   HUB_TOOL_DETAIL_SCROLL_ROOT,
   HUB_TOOL_DETAIL_SECTIONS_CLASS,
+  barChartSeriesSignature,
+  chartKeysSignature,
+  kpiTilesSignature,
+  useDirectoryBandSync,
+  useResolvedVisibleChartKeys,
 } from "@tool-workspace/hub-ui";
 import {
   COOKIE_ROUTE_ADD_TOC,
@@ -29,16 +37,14 @@ import {
   COOKIE_ROUTE_SHARE_TOC,
   cookieRouteSectionTitle,
 } from "./cookie-route-form-toc";
-import { COOKIE_ACCESS_SELECT_OPTIONS } from "./cookieAccessSelectOptions";
+import { CookieRouteAboutSummary } from "./CookieRouteAboutSummary";
+import { CookieAccessRoleBadge } from "./CookieAccessRoleBadge";
 import {
-  Activity,
   Boxes,
   Check,
   Cookie,
-  Copy,
   Database,
   FileText,
-  Info,
   LayoutGrid,
   Globe2,
   Link2,
@@ -62,14 +68,13 @@ import {
   type HubViewMode,
   type KpiTileData,
   type MetricBadgeTone,
-  resolveVisibleKpiKeys,
+  useResolvedVisibleKpiKeys,
 } from "../../components/sales-shell";
 import { TocSectionNav } from "../overview/TocSectionNav";
 import { COOKIE_ROUTE_DETAIL_TOC, cookieRouteDetailSectionTitle } from "./cookie-route-detail-toc";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import type { NoteListItem } from "../notes/types";
 import { routeMatchesTimeRange } from "./cookie-route-activity";
-import { fetchNoteCookieSnapshot } from "../notes/notesRepository";
 import { cookieLines } from "../notes/noteUtils";
 import { DOMAIN_PRESETS, normalizeCookieDomain, type CookieBinding } from "./cookieBridge";
 import { readCookieDeepLink } from "./cookieDeepLink";
@@ -77,27 +82,29 @@ import { resolveCookieSiteIcon } from "./cookieSiteIcon";
 import { buildAppUrl } from "../../lib/workspace-path";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
 import { readCookieHubPrefs } from "./cookie-tab-prefs";
+import { readCookieListPrefs } from "./cookie-list-prefs";
+import { sortCookieAutoRows } from "./cookie-route-sort";
 import { buildCookieChartItems } from "./cookie-aggregates";
 import { cookieRouteFiltersWithCounts, filterCookieRows } from "./cookie-route-filter-counts";
 import {
   DEFAULT_COOKIE_CHART_KEYS,
   DEFAULT_COOKIE_HEADER_STAT_KEYS,
   DEFAULT_COOKIE_KPI_KEYS,
+  COOKIE_CHART_DEFS,
   COOKIE_KPI_DEFS,
 } from "./cookie-display-prefs";
 import { buildCookieHeaderStats } from "./cookie-header-metrics";
 import {
-  RouteLockChip,
   RouteShareChip,
-  RouteStatChip,
   RouteSyncChip,
   RouteVaultChip,
 } from "./cookieRouteStatChips";
 
-function visibleSet(set: Set<string> | null, defaults: Set<string>) {
-  return set ?? defaults;
-}
+
+const COOKIE_CHART_ORDER = ["status_bar", "platform_bar", "cookies_bar", "access_bar", "share_bar"] as const;
+import { COOKIE_ACCESS_SELECT_OPTIONS } from "./cookieAccessSelectOptions";
 import { listNoteCookieMembers, upsertNoteCookieMember } from "./noteCookieMembersRepository";
+import { prefetchNoteCookieMembers, prefetchNoteCookieMembersBatch, rememberNoteCookieMembers } from "./cookieRouteMembersPrefetch";
 import type { CookieVaultRow } from "./useCookieVaultMap";
 import { lookupVaultRow } from "./useCookieVaultMap";
 import { formatTimestampCompact, formatTimestampCompactOrDash } from "../../lib/format-timestamp";
@@ -188,39 +195,6 @@ function RouteDetailSectionHead({
   );
 }
 
-function CompactField({
-  label,
-  value,
-  mono,
-  copyField,
-  copyValue,
-  onCopy,
-  copied,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  copyField?: string;
-  copyValue?: string | null;
-  onCopy?: (field: string, value: string) => void;
-  copied?: boolean;
-}) {
-  return (
-    <div className="rdp-compact-item">
-      <span className="rdp-compact-label">{label}</span>
-      <span className={mono ? "rdp-compact-value mono" : "rdp-compact-value"} title={value}>
-        {value}
-      </span>
-      {copyField && copyValue && onCopy ? (
-        <button type="button" className="rdp-copy rdp-copy--inline" onClick={() => onCopy(copyField, copyValue)} title={`Copy ${label}`}>
-          <Copy size={10} />
-          {copied ? "Copied" : "Copy"}
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
 function siteIcon(domain: string) {
   return resolveCookieSiteIcon(domain);
 }
@@ -280,6 +254,7 @@ function CookieRouteCard({
     <button
       type="button"
       onClick={onOpen}
+      onMouseEnter={() => prefetchNoteCookieMembers(binding.noteId)}
       className={`group flex h-full min-h-[220px] w-full flex-col rounded-xl border bg-[var(--panel)] p-4 text-left transition-[border-color,box-shadow,background-color] duration-200 hover:border-indigo-500/40 hover:bg-white/[0.02] hover:shadow-[0_8px_24px_rgba(99,102,241,0.12)] ${
         selected || checked ? "border-indigo-500/35 shadow-[0_0_18px_rgba(99,102,241,0.10)]" : "border-white/5"
       }`}
@@ -374,7 +349,11 @@ function CookieRouteCard({
 
       <div className="mt-auto shrink-0 pt-3">
         <div className="flex min-h-[22px] flex-wrap items-center gap-1.5">
-          <RouteSyncChip status={status} />
+          <RouteSyncChip
+            status={status}
+            noteSyncedAt={note?.synced_at}
+            vaultCookieCount={vault?.cookie_count}
+          />
           <RouteVaultChip cookieCount={vault?.cookie_count} />
           <RouteShareChip binding={binding} shareCount={shareCount} />
         </div>
@@ -501,26 +480,8 @@ export function CookieRouteDetailModal({
   ) => ReactNode;
   onClose: () => void;
 }) {
-  const { binding, note, lines } = row;
-  const status = note?.sync_status ?? "pending";
+  const { binding, note } = row;
   const idPrefix = `cookie-route-${binding.id}-`;
-  const [snapshotLines, setSnapshotLines] = useState(lines);
-  useEffect(() => {
-    setSnapshotLines(lines);
-  }, [lines]);
-
-  useEffect(() => {
-    const noteId = binding.noteId?.trim();
-    if (!noteId) return;
-    let cancelled = false;
-    void fetchNoteCookieSnapshot(noteId).then(({ data, error }) => {
-      if (cancelled || error || !data) return;
-      setSnapshotLines(cookieLines(data.cookie_snapshot));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [binding.noteId]);
   const sectionItems = useMemo(
     () => COOKIE_ROUTE_DETAIL_TOC.map(({ id }) => `${idPrefix}${id}`),
     [idPrefix],
@@ -541,31 +502,44 @@ export function CookieRouteDetailModal({
     }
   }, []);
 
+  const titleId = `cookie-route-${binding.id}`;
+
   return (
     <HubToolDetailModal
       open
       onClose={onClose}
-      title={routeTitle}
-      titleId={`cookie-route-${binding.id}`}
-      headerLeading={
-        routeSite ? (
-          <img
-            src={routeSite.src}
-            alt=""
-            width={32}
-            height={32}
-            className="user-access-modal__avatar h-8 w-8 shrink-0 rounded-lg object-cover"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span className="user-access-modal__avatar grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-500/20" aria-hidden>
-            <Globe2 size={18} className="text-indigo-200" />
-          </span>
-        )
-      }
-      headerTrailing={
-        <span className="truncate font-mono text-[10px] text-[var(--muted)]">{binding.domain}</span>
+      ariaLabelledBy={titleId}
+      header={
+        <HubToolDetailIdentityHeader
+          titleId={titleId}
+          title={routeTitle}
+          leading={
+            routeSite ? (
+              <img
+                src={routeSite.src}
+                alt=""
+                width={32}
+                height={32}
+                className="user-access-modal__avatar h-8 w-8 shrink-0 rounded-lg object-cover"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span
+                className="user-access-modal__avatar grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-indigo-500/20"
+                aria-hidden
+              >
+                <Globe2 size={18} className="text-indigo-200" />
+              </span>
+            )
+          }
+          trailing={
+            <>
+              <CookieAccessRoleBadge role={binding.accessRole ?? "member"} />
+              <MetaChip icon={<Globe2 size={11} />} label={binding.domain} tone="cyan" title="Route domain" />
+            </>
+          }
+        />
       }
       toc={
         <TocSectionNav
@@ -576,66 +550,26 @@ export function CookieRouteDetailModal({
       }
       sectionIds={sectionItems}
       scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
-      shellClassName="hub-header-panel-modal"
     >
       <div className={HUB_TOOL_DETAIL_SECTIONS_CLASS}>
-        <div className="flex flex-wrap gap-1.5">
-          <RouteSyncChip status={status} />
-          <RouteVaultChip cookieCount={vault?.cookie_count} />
-        </div>
+        <HubToolDetailSection
+          id={`${idPrefix}about`}
+          title={cookieRouteDetailSectionTitle("about")}
+        >
+          <CookieRouteAboutSummary
+            binding={binding}
+            vault={vault}
+            noteSyncedAt={note?.synced_at ?? null}
+            syncStatus={note?.sync_status ?? "pending"}
+            copiedField={copiedField}
+            onCopy={copyValue}
+          />
+        </HubToolDetailSection>
 
-        <HubToolDetailSection id={`${idPrefix}about`} title={cookieRouteDetailSectionTitle("about")}>
-                <div className="rdp-stat-strip">
-                  <RouteSyncChip status={status} />
-                  <RouteVaultChip cookieCount={vault?.cookie_count} />
-                  <RouteLockChip locked={Boolean(binding.sourceBrowserId)} />
-                  <RouteStatChip
-                    icon={Activity}
-                    label={binding.canApply === false ? "Apply blocked" : "Apply ready"}
-                    tone={binding.canApply === false ? "warn" : "ok"}
-                  />
-                </div>
-                <div className="rdp-compact-grid rdp-compact-grid--3">
-                  <CompactField label="Domain" value={binding.domain} />
-                  <CompactField
-                    label="Sync ID"
-                    value={binding.syncId || (binding.useNoteIdRpc ? "UUID" : "—")}
-                    mono
-                    copyField="sync"
-                    copyValue={binding.syncId}
-                    onCopy={copyValue}
-                    copied={copiedField === "sync"}
-                  />
-                  <CompactField
-                    label="Note ID"
-                    value={binding.noteId ? shortId(binding.noteId) : "—"}
-                    mono
-                    copyField="note"
-                    copyValue={binding.noteId}
-                    onCopy={copyValue}
-                    copied={copiedField === "note"}
-                  />
-                  <CompactField label="Role" value={binding.accessRole ?? "owner"} />
-                  <CompactField label="Owner" value={ownerLabel(binding)} />
-                  <CompactField
-                    label="Vault updated"
-                    value={formatTimestampCompactOrDash(vault?.updated_at)}
-                  />
-                  <CompactField label="Snapshot" value={snapshotLines.length ? `${snapshotLines.length} lines` : "—"} />
-                  <CompactField
-                    label="Publisher"
-                    value={binding.sourceLabel || (binding.sourceBrowserId ? shortId(binding.sourceBrowserId) : "Owner")}
-                    mono={Boolean(binding.sourceBrowserId)}
-                    copyField="source"
-                    copyValue={binding.sourceBrowserId}
-                    onCopy={copyValue}
-                    copied={copiedField === "source"}
-                  />
-                  <CompactField label="Last user" value={vault?.updated_by || "—"} />
-                </div>
-              </HubToolDetailSection>
-
-              <HubToolDetailSection id={`${idPrefix}access`} title={cookieRouteDetailSectionTitle("access")}>
+        <HubToolDetailSection
+          id={`${idPrefix}access`}
+          title={cookieRouteDetailSectionTitle("access")}
+        >
                 {renderAccessDetail
                   ? renderAccessDetail(binding, { vault, noteSyncedAt: note?.synced_at ?? null })
                   : renderDetail
@@ -686,8 +620,9 @@ export function CookieAutoSyncTable({
     setCenterStats,
   } = useWorkspaceSearch();
   const [prefs, setPrefs] = useState(readCookieHubPrefs);
-  const visKpi = resolveVisibleKpiKeys(prefs.kpi, DEFAULT_COOKIE_KPI_KEYS, COOKIE_KPI_DEFS);
-  const visCharts = visibleSet(prefs.charts, DEFAULT_COOKIE_CHART_KEYS);
+  const [listPrefs, setListPrefs] = useState(readCookieListPrefs);
+  const visKpi = useResolvedVisibleKpiKeys(prefs.kpi, DEFAULT_COOKIE_KPI_KEYS, COOKIE_KPI_DEFS);
+  const visCharts = useResolvedVisibleChartKeys(prefs.charts, DEFAULT_COOKIE_CHART_KEYS, COOKIE_CHART_DEFS);
   const visHeaderStats = prefs.headerStats ?? DEFAULT_COOKIE_HEADER_STAT_KEYS;
   const [modal, setModal] = useState<RouteModalState>(null);
   const [draftNoteId, setDraftNoteId] = useState("");
@@ -735,6 +670,10 @@ export function CookieAutoSyncTable({
     () => filterCookieRows(rows, routeQuery, filterValues, prefs.range),
     [filterValues, prefs.range, routeQuery, rows],
   );
+  const sortedFilteredRows = useMemo(
+    () => sortCookieAutoRows(filteredRows, listPrefs.sort),
+    [filteredRows, listPrefs.sort],
+  );
 
   const routeFiltersWithCounts = useMemo(
     () => cookieRouteFiltersWithCounts(rows, routeQuery, filterValues, prefs.range),
@@ -742,13 +681,13 @@ export function CookieAutoSyncTable({
   );
 
   const allVisibleSelected =
-    filteredRows.length > 0 && filteredRows.every((row) => selectedIds.includes(row.binding.id));
+    sortedFilteredRows.length > 0 && sortedFilteredRows.every((row) => selectedIds.includes(row.binding.id));
   const selectedBindings = useMemo(
     () => bindings.filter((binding) => selectedIds.includes(binding.id)),
     [bindings, selectedIds],
   );
   const routeKpis = useMemo<KpiTileData[]>(() => {
-    const vaultRows = filteredRows
+    const vaultRows = sortedFilteredRows
       .map((row) => lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain))
       .filter((vault): vault is CookieVaultRow => Boolean(vault));
     const cookieCount = vaultRows.reduce((sum, vault) => sum + (vault.cookie_count ?? 0), 0);
@@ -756,16 +695,16 @@ export function CookieAutoSyncTable({
     const ownerTotal = rows.filter(
       (row) => row.binding.accessRole !== "member" && !row.binding.sourceBrowserId,
     ).length;
-    const lockedShown = filteredRows.filter((row) => row.binding.sourceBrowserId).length;
-    const ownerShown = filteredRows.filter(
+    const lockedShown = sortedFilteredRows.filter((row) => row.binding.sourceBrowserId).length;
+    const ownerShown = sortedFilteredRows.filter(
       (row) => row.binding.accessRole !== "member" && !row.binding.sourceBrowserId,
     ).length;
     const all: KpiTileData[] = [
       {
         prefKey: "routes_shown",
         label: "Routes (shown)",
-        value: filteredRows.length,
-        hint: filteredRows.length < rows.length ? `${rows.length} total` : undefined,
+        value: sortedFilteredRows.length,
+        hint: sortedFilteredRows.length < rows.length ? `${rows.length} total` : undefined,
         icon: LayoutGrid,
         tone: "indigo",
       },
@@ -794,10 +733,10 @@ export function CookieAutoSyncTable({
       },
     ];
     return all.filter((item) => item.prefKey && visKpi.has(item.prefKey));
-  }, [filteredRows, rows, vaultByKey, visKpi]);
+  }, [sortedFilteredRows, rows, vaultByKey, visKpi]);
   const charts = useMemo(
-    () => buildCookieChartItems(filteredRows, vaultByKey, shareCounts),
-    [filteredRows, shareCounts, vaultByKey],
+    () => buildCookieChartItems(sortedFilteredRows, vaultByKey, shareCounts),
+    [sortedFilteredRows, shareCounts, vaultByKey],
   );
 
   const hasCharts =
@@ -806,47 +745,68 @@ export function CookieAutoSyncTable({
     visCharts.has("cookies_bar") ||
     visCharts.has("access_bar") ||
     visCharts.has("share_bar");
-  const chartsBand = hasCharts ? (
-    <>
-      {visCharts.has("status_bar") ? <MiniBarChart title="Sync status" items={charts.statusItems} /> : null}
-      {visCharts.has("platform_bar") ? <MiniBarChart title="Routes by platform" items={charts.platformItems} /> : null}
-      {visCharts.has("cookies_bar") ? (
-        <MiniBarChart title="Cookies stored" items={charts.cookieItems} formatter={(n) => `${n} cookies`} />
-      ) : null}
-      {visCharts.has("access_bar") ? <MiniBarChart title="Route access" items={charts.accessItems} /> : null}
-      {visCharts.has("share_bar") ? <MiniBarChart title="Route sharing" items={charts.shareItems} /> : null}
-    </>
-  ) : undefined;
+  const chartsBand = useMemo(() => {
+    if (!hasCharts) return undefined;
+    return (
+      <>
+        {visCharts.has("status_bar") ? <MiniBarChart title="Sync status" items={charts.statusItems} /> : null}
+        {visCharts.has("platform_bar") ? <MiniBarChart title="Routes by platform" items={charts.platformItems} /> : null}
+        {visCharts.has("cookies_bar") ? (
+          <MiniBarChart title="Cookies stored" items={charts.cookieItems} formatter={(n) => `${n} cookies`} />
+        ) : null}
+        {visCharts.has("access_bar") ? <MiniBarChart title="Route access" items={charts.accessItems} /> : null}
+        {visCharts.has("share_bar") ? <MiniBarChart title="Route sharing" items={charts.shareItems} /> : null}
+      </>
+    );
+  }, [charts, hasCharts, visCharts]);
+
+  const kpiSig = useMemo(
+    () => kpiTilesSignature(routeKpis.length > 0 ? routeKpis : undefined),
+    [routeKpis],
+  );
+  const chartsDepKey = useMemo(() => {
+    const visible = chartKeysSignature(visCharts, COOKIE_CHART_ORDER);
+    if (!visible) return "";
+    const parts: string[] = [];
+    if (visCharts.has("status_bar")) parts.push(barChartSeriesSignature(charts.statusItems));
+    if (visCharts.has("platform_bar")) parts.push(barChartSeriesSignature(charts.platformItems));
+    if (visCharts.has("cookies_bar")) parts.push(barChartSeriesSignature(charts.cookieItems));
+    if (visCharts.has("access_bar")) parts.push(barChartSeriesSignature(charts.accessItems));
+    if (visCharts.has("share_bar")) parts.push(barChartSeriesSignature(charts.shareItems));
+    return `${visible}|${parts.join(";")}`;
+  }, [charts, visCharts]);
 
   const cookieHeaderKpi = useMemo(() => {
-    const vaultRows = filteredRows
+    const vaultRows = sortedFilteredRows
       .map((row) => lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain))
       .filter((vault): vault is CookieVaultRow => Boolean(vault));
     const vaultCookies = vaultRows.reduce((sum, vault) => sum + (vault.cookie_count ?? 0), 0);
     return {
-      routesShown: filteredRows.length,
+      routesShown: sortedFilteredRows.length,
       routesTotal: rows.length,
       vaultCookies,
     };
-  }, [filteredRows, rows.length, vaultByKey]);
+  }, [sortedFilteredRows, rows.length, vaultByKey]);
 
-  useEffect(() => subscribeHubListPrefs(() => setPrefs(readCookieHubPrefs())), []);
+  useEffect(() => subscribeHubListPrefs(() => {
+    setPrefs(readCookieHubPrefs());
+    setListPrefs(readCookieListPrefs());
+  }), []);
+
+  useDirectoryBandSync(
+    {
+      kpis: routeKpis.length > 0 ? routeKpis : undefined,
+      charts: chartsBand ?? null,
+      sectionRuleLabel: "Routes",
+      kpiKey: kpiSig,
+      chartsKey: chartsDepKey,
+    },
+    { setDirectoryKpis, setDirectoryCharts, setSectionRuleLabel },
+  );
 
   useEffect(() => {
-    setDirectoryKpis(routeKpis.length > 0 ? routeKpis : undefined);
-    setDirectoryCharts(chartsBand);
-    setSectionRuleLabel("Routes");
     setCenterStats(buildCookieHeaderStats(visHeaderStats, cookieHeaderKpi));
-  }, [
-    chartsBand,
-    cookieHeaderKpi,
-    routeKpis,
-    setCenterStats,
-    setDirectoryCharts,
-    setDirectoryKpis,
-    setSectionRuleLabel,
-    visHeaderStats,
-  ]);
+  }, [cookieHeaderKpi, setCenterStats, visHeaderStats]);
 
   useEffect(() => {
     setFilters(routeFiltersWithCounts);
@@ -856,9 +816,6 @@ export function CookieAutoSyncTable({
       setFilters([]);
       setToolbar(null);
       setFilterToolbar(null);
-      setDirectoryKpis(undefined);
-      setDirectoryCharts(null);
-      setSectionRuleLabel(undefined);
       setCenterStats([]);
     };
   }, [routeFiltersWithCounts, setCenterStats, setFilterToolbar, setFilters, setToolbar]);
@@ -883,9 +840,11 @@ export function CookieAutoSyncTable({
       setShareCounts({});
       return;
     }
+    prefetchNoteCookieMembersBatch(uniqueNoteIds);
     void Promise.all(
       uniqueNoteIds.map(async (noteId) => {
         const res = await listNoteCookieMembers(noteId);
+        rememberNoteCookieMembers(noteId, res);
         return [noteId, res.ok ? res.members.length : 0] as const;
       }),
     ).then((entries) => {
@@ -900,6 +859,7 @@ export function CookieAutoSyncTable({
   const refreshShareCount = useCallback(async (noteId: string) => {
     if (!noteId) return;
     const res = await listNoteCookieMembers(noteId);
+    rememberNoteCookieMembers(noteId, res);
     if (!res.ok) return;
     setShareCounts((prev) => ({ ...prev, [noteId]: res.members.length }));
   }, []);
@@ -987,7 +947,7 @@ export function CookieAutoSyncTable({
   };
 
   const toggleAllVisible = (checked: boolean) => {
-    const visibleIds = filteredRows.map((row) => row.binding.id);
+    const visibleIds = sortedFilteredRows.map((row) => row.binding.id);
     setSelectedIds((prev) => {
       if (!checked) return prev.filter((id) => !visibleIds.includes(id));
       return Array.from(new Set([...prev, ...visibleIds]));
@@ -1003,7 +963,8 @@ export function CookieAutoSyncTable({
     [selectedBindingId, selectedIds],
   );
 
-  const toolbarKey = `${viewMode}:${prefs.range}:${filteredRows.length}:${rows.length}`;
+  const routeFilterResetKey = `${routeQuery}|${JSON.stringify(filterValues)}|${prefs.range}`;
+  const toolbarKey = `${viewMode}:${prefs.range}:${sortedFilteredRows.length}:${rows.length}`;
   useEffect(() => {
     if (toolbarKeyRef.current === toolbarKey) return;
     toolbarKeyRef.current = toolbarKey;
@@ -1011,10 +972,10 @@ export function CookieAutoSyncTable({
       <>
         <HubTimeRangeSelect value={prefs.range} />
         <ViewToggle value={viewMode} onChange={setViewMode} />
-        <HubResultCount icon={Boxes} shown={filteredRows.length} total={rows.length} />
+        <HubResultCount icon={Boxes} shown={sortedFilteredRows.length} total={rows.length} />
       </>,
     );
-  }, [filteredRows.length, prefs.range, rows.length, setToolbar, toolbarKey, viewMode]);
+  }, [sortedFilteredRows.length, prefs.range, rows.length, setToolbar, toolbarKey, viewMode]);
 
   const filterToolbarKey = [
     toolbarActionsKey,
@@ -1250,13 +1211,19 @@ export function CookieAutoSyncTable({
       ) : null}
 
       {viewMode === "card" ? (
-          filteredRows.length === 0 ? (
-            <p className="rounded-lg border border-white/5 bg-white/[.02] px-3 py-6 text-center text-[12px] text-[var(--muted)]">
+          sortedFilteredRows.length === 0 ? (
+            <p className="hub-users-empty rounded-lg border border-white/5 bg-white/[.02] px-3 py-6 text-center text-[12px] text-[var(--muted)]">
               {rows.length === 0 ? "No active routes — click Add route." : "No routes match search or filters."}
             </p>
           ) : (
+            <HubPaginatedTableShell
+              items={sortedFilteredRows}
+              resetKey={routeFilterResetKey}
+              ariaLabel="Route cards pages"
+            >
+              {(pageRows) => (
             <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredRows.map((row) => {
+              {pageRows.map((row) => {
                 const vault = row.binding.noteId ? lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain) : undefined;
                 const selected = selectedBindingId === row.binding.id;
                 const checked = selectedIds.includes(row.binding.id);
@@ -1269,6 +1236,7 @@ export function CookieAutoSyncTable({
                     checked={checked}
                     shareCount={shareCounts[row.binding.noteId]}
                     onOpen={() => {
+                      prefetchNoteCookieMembers(row.binding.noteId);
                       onSelect?.(row.binding.id);
                       setModal({ type: "detail", id: row.binding.id });
                     }}
@@ -1278,8 +1246,16 @@ export function CookieAutoSyncTable({
                 );
               })}
             </div>
+              )}
+            </HubPaginatedTableShell>
           )
         ) : (
+      <HubPaginatedTableShell
+        items={sortedFilteredRows}
+        resetKey={routeFilterResetKey}
+        ariaLabel="Route table pages"
+      >
+        {(pageRows) => (
       <div className="hub-users-table-wrap overflow-hidden rounded-2xl border border-white/5 bg-[var(--panel)]">
         <table className="hub-users-table hub-users-table--cookie-routes min-w-[980px]">
           <thead>
@@ -1289,7 +1265,7 @@ export function CookieAutoSyncTable({
                   type="checkbox"
                   className="hub-checkbox"
                   checked={allVisibleSelected}
-                  disabled={filteredRows.length === 0}
+                  disabled={sortedFilteredRows.length === 0}
                   title="Select all visible routes"
                   onChange={(event) => toggleAllVisible(event.target.checked)}
                 />
@@ -1332,7 +1308,7 @@ export function CookieAutoSyncTable({
             </tr>
           </thead>
           <tbody>
-            {filteredRows.map(({ binding, note, lines }) => {
+            {pageRows.map(({ binding, note, lines }) => {
               const status = note?.sync_status ?? "pending";
               const vault: CookieVaultRow | undefined = binding.noteId
                 ? lookupVaultRow(vaultByKey, binding.noteId, binding.domain)
@@ -1357,7 +1333,11 @@ export function CookieAutoSyncTable({
                     />
                   </td>
                   <td className="px-2 py-2 align-top">
-                    <RouteSyncChip status={status} />
+                    <RouteSyncChip
+            status={status}
+            noteSyncedAt={note?.synced_at}
+            vaultCookieCount={vault?.cookie_count}
+          />
                   </td>
                   <td className="px-2 py-2 align-top">
                     <MetricBadge label={icon?.label ?? "Cookie"} tone="neutral" />
@@ -1448,9 +1428,9 @@ export function CookieAutoSyncTable({
                 </tr>
               );
             })}
-            {!loading && filteredRows.length === 0 ? (
+            {!loading && sortedFilteredRows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-[12px] text-[var(--muted)]">
+                <td colSpan={8} className="hub-users-empty px-3 py-6 text-center text-[12px] text-[var(--muted)]">
                   {rows.length === 0 ? "No active routes — click Add route." : "No routes match search or filters."}
                 </td>
               </tr>
@@ -1458,6 +1438,8 @@ export function CookieAutoSyncTable({
           </tbody>
         </table>
       </div>
+        )}
+      </HubPaginatedTableShell>
         )}
 
       {detailRow ? (

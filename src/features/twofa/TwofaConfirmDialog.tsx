@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import {
   HubToolDetailModal,
@@ -11,16 +12,22 @@ type Props = {
   title: string;
   message: ReactNode;
   confirmLabel?: string;
+  danger?: boolean;
+  headerIcon?: LucideIcon;
+  headerIconClassName?: string;
   onConfirm: () => void;
   onClose: () => void;
 };
 
-/** Confirm delete — golden HubToolDetailModal compact shell. */
+/** Confirm action — golden HubToolDetailModal shell (--hub-modal-*). */
 export function TwofaConfirmDialog({
   open,
   title,
   message,
   confirmLabel = "Delete",
+  danger = true,
+  headerIcon: HeaderIcon = AlertTriangle,
+  headerIconClassName = "text-rose-300",
   onConfirm,
   onClose,
 }: Props) {
@@ -30,10 +37,9 @@ export function TwofaConfirmDialog({
       onClose={onClose}
       title={title}
       titleId="twofa-confirm-title"
-      headerIcon={AlertTriangle}
-      headerIconClassName="text-rose-300"
-      shellClassName="hub-header-panel-modal"
-      size="compact"
+      headerIcon={HeaderIcon}
+      headerIconClassName={headerIconClassName}
+      shellClassName="hub-tool-detail-modal--fit"
       ariaLabelledBy="twofa-confirm-title"
       footer={
         <>
@@ -41,8 +47,8 @@ export function TwofaConfirmDialog({
           <HubToolDetailModalPrimaryAction
             label={confirmLabel}
             onClick={onConfirm}
-            danger
-            icon={Trash2}
+            danger={danger}
+            icon={danger ? Trash2 : HeaderIcon}
           />
         </>
       }

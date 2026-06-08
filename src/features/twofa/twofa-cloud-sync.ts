@@ -2,6 +2,7 @@ import { ensureTwofaAuth } from "../../lib/ensure-twofa-auth";
 import { isTwofaSupabaseConfigured } from "../../lib/twofa-supabase-env";
 import { getTwofaSupabase } from "../../lib/twofa-supabase";
 import type { TwofaAccount, TwofaDraft } from "./types";
+import { dedupeTwofaAccounts } from "./twofa-upsert-accounts";
 
 const SYNC_WATERMARK_KEY = "p0020-twofa-cloud-sync-at-v1";
 const PAGE_SIZE = 200;
@@ -127,16 +128,12 @@ export async function pullTwofaCloudDelta(local: TwofaAccount[]): Promise<{
     if (rows.length < PAGE_SIZE) break;
   }
 
-  const merged =
-    remote.length > 0
-      ? since
-        ? mergeAccounts(local, remote)
-        : mergeAccounts(local, remote)
-      : local;
-  const maxUpdated = merged.reduce((max, a) => (a.updatedAt > max ? a.updatedAt : max), since ?? "");
+  const merged = remote.length > 0 ? mergeAccounts(local, remote) : local;
+  const { accounts: deduped } = dedupeTwofaAccounts(merged);
+  const maxUpdated = deduped.reduce((max, a) => (a.updatedAt > max ? a.updatedAt : max), since ?? "");
   if (maxUpdated) writeWatermark(maxUpdated);
 
-  return { accounts: merged, error: null };
+  return { accounts: deduped, error: null };
 }
 
 /** Push local-only rows (not on server) after delta pull. */
@@ -155,21 +152,39 @@ export async function pushTwofaLocalOnly(local: TwofaAccount[]): Promise<string 
   const pending = local.filter((a) => !remoteIds.has(a.id));
   if (!pending.length) return null;
 
-  const { error } = await client.from("twofa_accounts").upsert(
-    pending.map((a) => accountToPayload(a, session.user!.id)),
-    { onConflict: "id" },
-  );
-  return error?.message ?? null;
+  for (const row of pending) {
+    const err = await upsertTwofaCloud(row);
+    if (err) return err;
+  }
+  return null;
 }
 
 export async function upsertTwofaCloud(account: TwofaAccount): Promise<string | null> {
   const session = await ensureTwofaAuth();
   const client = getTwofaSupabase();
   if (!session?.user?.id || !client) return null;
-  const { error } = await client
+  const payload = accountToPayload(account, session.user.id);
+  const { error } = await client.from("twofa_accounts").upsert(payload, { onConflict: "id" });
+  if (!error) return null;
+
+  if (error.code !== "23505") return error.message;
+
+  const { data: existing, error: findError } = await client
     .from("twofa_accounts")
-    .upsert(accountToPayload(account, session.user.id), { onConflict: "id" });
-  return error?.message ?? null;
+    .select("id")
+    .eq("user_id", session.user.id)
+    .eq("service", account.service)
+    .eq("account", account.account)
+    .maybeSingle();
+  if (findError || !existing?.id) return error.message;
+
+  if (existing.id !== account.id) {
+    await client.from("twofa_accounts").delete().eq("user_id", session.user.id).eq("id", account.id);
+  }
+  const { error: retryError } = await client
+    .from("twofa_accounts")
+    .upsert({ ...payload, id: existing.id as string }, { onConflict: "id" });
+  return retryError?.message ?? null;
 }
 
 export async function upsertTwofaCloudDraft(id: string, draft: TwofaDraft, now: string): Promise<string | null> {

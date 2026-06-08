@@ -7,6 +7,13 @@ import { readNoteIdFromUrl } from "../design-preview/design-nav";
 import { useNoteCookieRouteLock } from "../cookie/useNoteCookieRouteLock";
 import { useNotesCookieRouteIndex } from "../cookie/useNotesCookieRouteIndex";
 import { NoteEditorPanel } from "./NoteEditorPanel";
+import { NoteHistoryModal } from "./NoteHistoryModal";
+import {
+  clearNoteVersionDetailCache,
+  ensureFullNoteVersion,
+  invalidateNoteVersionDetailCache,
+  prefetchHistoryVersions,
+} from "./noteVersionDetailCache";
 import { NotesRouteDetailOverlay } from "./NotesRouteDetailOverlay";
 import { NotesHubChrome } from "./NotesHubChrome";
 import { NotesWorkspaceToolbar } from "./NotesWorkspaceToolbar";
@@ -20,15 +27,19 @@ import { subscribeHubListPrefs } from "../../lib/url-prefs";
 import { pathnameToNavScreen } from "../../lib/workspace-path";
 import { shareAccessFromRow, shareFlagsFromAccess, type NoteShareAccess } from "./shareAccess";
 import { cookieLines, slugifyTitle, sortNoteRows } from "./noteUtils";
-import { NOTES_AUTOSAVE_DEBOUNCE_MS } from "./notes-egress";
+import { useNotesVersionIntervalMinutes } from "./NotesVersionIntervalSettings";
+import { notesVersionIntervalMs } from "./notes-version-prefs";
+import { useNotesAutosaveDebounceMs } from "./NotesAutosaveSettings";
 import type { NoteRow } from "./types";
 import type { NoteSaveResult } from "./useNote";
 import { useNote } from "./useNote";
+import { useNoteVersions } from "./useNoteVersions";
 import { useNotes } from "./useNotes";
 import { useNotesAuth } from "./useNotesAuth";
 import { readNoteDetailStale, writeNoteDetailCache } from "../../lib/note-detail-cache";
 import { readNoteRouteLockStale } from "../../lib/note-route-lock-cache";
 import { prefetchCookieBootBackground } from "../../lib/hub-background-prefetch";
+import { getOfflineMode } from "../../lib/offlineMode";
 import {
   publishWorkspaceListRefreshing,
   WORKSPACE_REFRESH_REQUEST,
@@ -75,13 +86,47 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
   const [sharePassword, setSharePassword] = useState("");
   const [shareDraftAccess, setShareDraftAccess] = useState<NoteShareAccess>("private");
   const [shareDraftPassword, setShareDraftPassword] = useState("");
-  const [savedHint, setSavedHint] = useState("");
+  const [saveAcknowledged, setSaveAcknowledged] = useState(false);
+  const pulseSaveAck = useCallback(() => {
+    setSaveAcknowledged(true);
+    window.setTimeout(() => setSaveAcknowledged(false), 2500);
+  }, []);
   const [pendingDeleteNote, setPendingDeleteNote] = useState(false);
   const folders = useNoteFolders(session);
   const [dirty, setDirty] = useState(false);
   const [routeDetailDomain, setRouteDetailDomain] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyBadgePulse, setHistoryBadgePulse] = useState(false);
+  const pulseHistoryBadgeOnSnapshot = useCallback((res: { created?: boolean }) => {
+    if (!res?.created) return;
+    setHistoryBadgePulse(true);
+    window.setTimeout(() => setHistoryBadgePulse(false), 2500);
+  }, []);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
+  const [pendingRestoreVersionId, setPendingRestoreVersionId] = useState<string | null>(null);
+  const [pendingDeleteVersionId, setPendingDeleteVersionId] = useState<string | null>(null);
   const lastAutosaveKey = useRef("");
   const loadedEditorNoteId = useRef<string | null>(null);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  const persistNoteRef = useRef<
+    (overrides?: { pinned?: boolean; shareAccess?: NoteShareAccess; contentOnly?: boolean }) => Promise<NoteSaveResult>
+  >(() => Promise.reject(new Error("Not ready")));
+
+  const versionsActive = Boolean(selectedId) && !getOfflineMode();
+  const {
+    versions,
+    loading: versionsLoading,
+    restoring: versionRestoring,
+    removing: versionRemoving,
+    sessionSnapshot,
+    saveSnapshot,
+    intervalSnapshot,
+    restore: restoreVersion,
+    remove: removeVersion,
+  } = useNoteVersions(selectedId, { active: versionsActive });
+  const versionIntervalMinutes = useNotesVersionIntervalMinutes();
+  const autosaveDebounceMs = useNotesAutosaveDebounceMs();
 
   useEffect(() => {
     return subscribeHubListPrefs(() => {
@@ -143,6 +188,25 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     },
     [],
   );
+
+  useEffect(() => {
+    setSelectedVersionId(null);
+    if (!selectedId) setHistoryOpen(false);
+    clearNoteVersionDetailCache();
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!versions.length) {
+      setSelectedVersionId(null);
+      return;
+    }
+    setSelectedVersionId((prev) => (prev && versions.some((v) => v.id === prev) ? prev : versions[0].id));
+  }, [versions]);
+
+  useEffect(() => {
+    if (!selectedVersionId || !versions.length) return;
+    prefetchHistoryVersions(versions, selectedVersionId);
+  }, [selectedVersionId, versions]);
 
   useEffect(() => {
     if (!listError) return;
@@ -254,71 +318,6 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     [cookieRouteNoteIds, filtered, prefs.sort],
   );
 
-  const pickNote = useCallback(
-    (id: string, seed?: NoteRow | null) => {
-      const hasRoute =
-        routeByNoteId.has(id) || (readNoteRouteLockStale(id)?.length ?? 0) > 0;
-      const cached = seed ?? readNoteDetailStale(id);
-      if (cached) {
-        loadedEditorNoteId.current = id;
-        applyNoteToEditor(cached, { routeLocked: hasRoute });
-        setDirty(false);
-        if (!seed) writeNoteDetailCache(id, cached);
-      } else {
-        loadedEditorNoteId.current = null;
-        const listItem = notes.find((n) => n.id === id);
-        if (listItem) {
-          applyNoteToEditor(
-            {
-              id: listItem.id,
-              title: listItem.title,
-              slug: listItem.slug,
-              domain: listItem.domain,
-              body_md: listItem.body_md ?? "",
-              pinned: listItem.pinned,
-              share_enabled: listItem.share_enabled,
-              cookie_snapshot: listItem.cookie_snapshot,
-            },
-            { routeLocked: hasRoute },
-          );
-          setDirty(false);
-        }
-      }
-      setSelectedId(id);
-      if (tabActive) navigate({ note: id });
-    },
-    [applyNoteToEditor, navigate, notes, routeByNoteId, tabActive],
-  );
-
-  useEffect(() => {
-    if (!tabActive) return;
-    if (listLoading || creating) return;
-    if (!selectedId) {
-      if (sortedFiltered.length > 0) pickNote(sortedFiltered[0].id);
-      return;
-    }
-    const stillExists = notes.some((n) => n.id === selectedId);
-    if (!stillExists && sortedFiltered.length > 0) pickNote(sortedFiltered[0].id);
-  }, [tabActive, creating, listLoading, sortedFiltered, notes, selectedId, pickNote]);
-
-  const onNew = useCallback(async () => {
-    setCreating(true);
-    try {
-      const row = await createNote();
-      pickNote(row.id, row);
-    } catch (err) {
-      const msg = errorMessage(err, "Could not create note");
-      pushToast(`New note failed: ${msg}`, "error", 8000);
-    } finally {
-      setCreating(false);
-    }
-  }, [pickNote, pushToast]);
-
-  useHubPageShortcuts("notes", {
-    onNew,
-    canNew: () => tabActive && !creating && !authLoading && Boolean(session),
-  });
-
   const updateTitle = (next: string) => {
     setTitle(next);
     setDirty(true);
@@ -364,6 +363,7 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     pinned?: boolean;
     shareAccess?: NoteShareAccess;
     contentOnly?: boolean;
+    showSaveAck?: boolean;
   }) => {
     if (!selectedId) throw new Error("No note selected");
     const saved = await save(buildEditorDraft(overrides));
@@ -372,10 +372,10 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     setSlug(saved.slug);
     if (!overrides?.contentOnly) setSharePassword("");
     mergeNoteInList(stripSaveResult(saved));
-    setSavedHint("Saved");
-    setTimeout(() => setSavedHint(""), 2500);
+    if (overrides?.showSaveAck) pulseSaveAck();
     return saved;
   };
+  persistNoteRef.current = persistCurrentNote;
 
   const resetShareDraft = useCallback(() => {
     setShareDraftAccess(shareAccess);
@@ -399,15 +399,207 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     }
   };
 
+  const leaveNoteSnapshot = useCallback(async () => {
+    if (!selectedId || getOfflineMode()) return;
+    try {
+      if (dirty) {
+        await persistCurrentNote({ contentOnly: true });
+        setDirty(false);
+      }
+      const snap = await sessionSnapshot(selectedId);
+      pulseHistoryBadgeOnSnapshot(snap);
+    } catch {
+      /* non-blocking when switching notes */
+    }
+  }, [dirty, persistCurrentNote, pulseHistoryBadgeOnSnapshot, selectedId, sessionSnapshot]);
+
+  const pickNote = useCallback(
+    async (id: string, seed?: NoteRow | null) => {
+      if (selectedId && selectedId !== id) {
+        await leaveNoteSnapshot();
+      }
+
+      const hasRoute =
+        routeByNoteId.has(id) || (readNoteRouteLockStale(id)?.length ?? 0) > 0;
+      const cached = seed ?? readNoteDetailStale(id);
+      if (cached) {
+        loadedEditorNoteId.current = id;
+        applyNoteToEditor(cached, { routeLocked: hasRoute });
+        setDirty(false);
+        if (!seed) writeNoteDetailCache(id, cached);
+      } else {
+        loadedEditorNoteId.current = null;
+        const listItem = notes.find((n) => n.id === id);
+        if (listItem) {
+          applyNoteToEditor(
+            {
+              id: listItem.id,
+              title: listItem.title,
+              slug: listItem.slug,
+              domain: listItem.domain,
+              body_md: listItem.body_md ?? "",
+              pinned: listItem.pinned,
+              share_enabled: listItem.share_enabled,
+              cookie_snapshot: listItem.cookie_snapshot,
+            },
+            { routeLocked: hasRoute },
+          );
+          setDirty(false);
+        }
+      }
+      setSelectedId(id);
+      if (tabActive) navigate({ note: id });
+    },
+    [applyNoteToEditor, leaveNoteSnapshot, navigate, notes, routeByNoteId, selectedId, tabActive],
+  );
+
+  useEffect(() => {
+    if (!tabActive) return;
+    if (listLoading || creating) return;
+    if (!selectedId) {
+      if (sortedFiltered.length > 0) void pickNote(sortedFiltered[0].id);
+      return;
+    }
+    const stillExists = notes.some((n) => n.id === selectedId);
+    if (!stillExists && sortedFiltered.length > 0) void pickNote(sortedFiltered[0].id);
+  }, [tabActive, creating, listLoading, sortedFiltered, notes, selectedId, pickNote]);
+
+  const onNew = useCallback(async () => {
+    setCreating(true);
+    try {
+      const row = await createNote();
+      await pickNote(row.id, row);
+    } catch (err) {
+      const msg = errorMessage(err, "Could not create note");
+      pushToast(`New note failed: ${msg}`, "error", 8000);
+    } finally {
+      setCreating(false);
+    }
+  }, [createNote, pickNote, pushToast]);
+
+  useHubPageShortcuts("notes", {
+    onNew,
+    canNew: () => tabActive && !creating && !authLoading && Boolean(session),
+  });
+
+  const requestRestoreVersion = () => {
+    if (!selectedVersionId) return;
+    setPendingRestoreVersionId(selectedVersionId);
+  };
+
+  const confirmRestoreVersion = async () => {
+    if (!pendingRestoreVersionId || !selectedId) return;
+    const versionId = pendingRestoreVersionId;
+    const listItem = versions.find((v) => v.id === versionId);
+    setPendingRestoreVersionId(null);
+    try {
+      await ensureFullNoteVersion(versionId, listItem);
+      const res = await restoreVersion(versionId);
+      if (res.note) {
+        applyNoteToEditor(
+          {
+            id: res.note.id,
+            title: res.note.title,
+            slug: res.note.slug,
+            domain: note?.domain ?? domain,
+            body_md: res.note.body_md,
+            pinned: note?.pinned ?? pinned,
+            share_enabled: note?.share_enabled ?? false,
+            share_can_edit: note?.share_can_edit,
+            cookie_snapshot: note?.cookie_snapshot,
+          },
+          { routeLocked },
+        );
+        setTitle(res.note.title);
+        setBody(res.note.body_md);
+        setDirty(false);
+        mergeNoteInList(
+          note
+            ? { ...note, title: res.note.title, body_md: res.note.body_md, updated_at: res.note.updated_at }
+            : ({ id: res.note.id, title: res.note.title, body_md: res.note.body_md, updated_at: res.note.updated_at } as NoteRow),
+        );
+        void refreshNote({ silent: true });
+        setHistoryOpen(false);
+        pushToast("Version restored", "success");
+      }
+    } catch (err) {
+      pushToast(errorMessage(err, "Restore failed"), "error");
+    }
+  };
+
+  const requestDeleteVersion = () => {
+    if (!selectedVersionId) return;
+    setPendingDeleteVersionId(selectedVersionId);
+  };
+
+  const confirmDeleteVersion = async () => {
+    if (!pendingDeleteVersionId || !selectedId) return;
+    const deletedId = pendingDeleteVersionId;
+    const prevIdx = versions.findIndex((v) => v.id === deletedId);
+    setPendingDeleteVersionId(null);
+    try {
+      await removeVersion(deletedId);
+      invalidateNoteVersionDetailCache(deletedId);
+      const remaining = versions.filter((v) => v.id !== deletedId);
+      if (remaining.length === 0) {
+        setSelectedVersionId(null);
+      } else {
+        const nextIdx = Math.min(Math.max(prevIdx, 0), remaining.length - 1);
+        setSelectedVersionId(remaining[nextIdx]?.id ?? remaining[0].id);
+      }
+      pushToast("Snapshot deleted", "success");
+    } catch (err) {
+      pushToast(errorMessage(err, "Delete failed"), "error");
+    }
+  };
+
   const onSave = async () => {
     try {
-      await persistCurrentNote();
+      await persistCurrentNote({ showSaveAck: true });
       setDirty(false);
-      pushToast("Note saved", "success");
+      let msg = "Note saved";
+      if (selectedId && !routeLocked && !getOfflineMode()) {
+        const snap = await saveSnapshot();
+        if (snap.created) {
+          msg = "Note saved · snapshot added";
+          pulseHistoryBadgeOnSnapshot(snap);
+        }
+      }
+      pushToast(msg, "success");
     } catch (err) {
       pushToast(errorMessage(err, "Save failed"), "error");
     }
   };
+
+  useEffect(() => {
+    if (!selectedId || !tabActive || !versionsActive || routeLocked) return;
+
+    const tick = () => {
+      void (async () => {
+        try {
+          if (dirtyRef.current) {
+            await persistNoteRef.current({ contentOnly: true });
+            setDirty(false);
+          }
+          const snap = await intervalSnapshot();
+          pulseHistoryBadgeOnSnapshot(snap);
+        } catch {
+          /* non-blocking periodic snapshot */
+        }
+      })();
+    };
+
+    const timer = window.setInterval(tick, notesVersionIntervalMs(versionIntervalMinutes));
+    return () => window.clearInterval(timer);
+  }, [
+    intervalSnapshot,
+    pulseHistoryBadgeOnSnapshot,
+    routeLocked,
+    selectedId,
+    tabActive,
+    versionIntervalMinutes,
+    versionsActive,
+  ]);
 
   useEffect(() => {
     if (!dirty || !selectedId || saving || creating) return;
@@ -417,18 +609,16 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     if (key === lastAutosaveKey.current) return;
     const timer = window.setTimeout(() => {
       lastAutosaveKey.current = key;
-      void persistCurrentNote({ contentOnly: true })
+      void persistCurrentNote({ contentOnly: true, showSaveAck: true })
         .then(() => {
           setDirty(false);
-          setSavedHint("Saved");
-          window.setTimeout(() => setSavedHint(""), 2500);
         })
         .catch((err) => {
           pushToast(errorMessage(err, "Autosave failed"), "error");
         });
-    }, NOTES_AUTOSAVE_DEBOUNCE_MS);
+    }, autosaveDebounceMs);
     return () => window.clearTimeout(timer);
-  }, [body, creating, dirty, domain, pinned, pushToast, routeLocked, saving, selectedId, slug, title]);
+  }, [autosaveDebounceMs, body, creating, dirty, domain, pinned, pushToast, routeLocked, saving, selectedId, slug, title]);
 
   const onPinnedToggle = async () => {
     if (routeLocked) {
@@ -549,12 +739,24 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
       shareDraftPassword={shareDraftPassword}
       saving={saving}
       creating={creating}
-      savedHint={savedHint}
+      saveAcknowledged={saveAcknowledged}
       routeLocked={routeLocked}
+      historyOpen={historyOpen}
+      historyDisabled={getOfflineMode()}
+      historyVersionCount={versions.length}
+      historyBadgePulse={historyBadgePulse}
       onNew={() => void onNew()}
       onSave={() => void onSave()}
       onDelete={requestDeleteNote}
       onPinnedToggle={() => void onPinnedToggle()}
+      onHistoryHover={() => {
+        if (getOfflineMode() || !versions.length) return;
+        prefetchHistoryVersions(versions, selectedVersionId);
+      }}
+      onHistoryToggle={() => {
+        prefetchHistoryVersions(versions, selectedVersionId);
+        setHistoryOpen(true);
+      }}
       onShareMenuOpen={resetShareDraft}
       onShareDraftAccessChange={setShareDraftAccess}
       onShareDraftPasswordChange={setShareDraftPassword}
@@ -659,6 +861,24 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
         ) : null}
       </NotesHubChrome>
 
+      {selectedId ? (
+        <NoteHistoryModal
+          open={historyOpen}
+          noteTitle={title}
+          currentTitle={title}
+          currentBody={body}
+          versions={versions}
+          loading={versionsLoading}
+          restoring={versionRestoring}
+          deleting={versionRemoving}
+          selectedId={selectedVersionId}
+          onSelect={setSelectedVersionId}
+          onRestore={requestRestoreVersion}
+          onDelete={requestDeleteVersion}
+          onClose={() => setHistoryOpen(false)}
+        />
+      ) : null}
+
       <ToolConfirmDialog
         open={pendingDeleteNote}
         title="Delete note?"
@@ -666,6 +886,28 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
         confirmLabel="Delete note"
         onConfirm={() => void confirmDeleteNote()}
         onClose={() => setPendingDeleteNote(false)}
+      />
+
+      <ToolConfirmDialog
+        open={Boolean(pendingRestoreVersionId)}
+        title="Restore version?"
+        message={
+          <>
+            Replace the current note with the selected snapshot? A pre-restore backup is saved automatically.
+          </>
+        }
+        confirmLabel="Restore"
+        onConfirm={() => void confirmRestoreVersion()}
+        onClose={() => setPendingRestoreVersionId(null)}
+      />
+
+      <ToolConfirmDialog
+        open={Boolean(pendingDeleteVersionId)}
+        title="Delete?"
+        message="Remove this snapshot from history? The current note is not changed."
+        confirmLabel="Delete"
+        onConfirm={() => void confirmDeleteVersion()}
+        onClose={() => setPendingDeleteVersionId(null)}
       />
     </div>
   );

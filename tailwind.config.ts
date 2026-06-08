@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss";
 
 /** P0008 hub + P0019 Infi Todo (animations from P0019 index.html tailwind.config) */
 const config: Config = {
-  content: ["./index.html", "./src/**/*.{ts,tsx}", "./vendor/hub-ui/src/**/*.{ts,tsx}"],
+  content: ["./index.html", "./src/**/*.{ts,tsx}", "../../packages/hub-ui/src/**/*.{ts,tsx}"],
   darkMode: "class",
   theme: {
     extend: {

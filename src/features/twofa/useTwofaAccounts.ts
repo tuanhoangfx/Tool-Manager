@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { loadAccounts, newId, saveAccounts } from "./storage";
+import { loadAccounts, saveAccounts } from "./storage";
 import type { TwofaAccount, TwofaDraft } from "./types";
-import { normalizeSecret } from "./totp";
 import {
   deleteTwofaCloud,
   isTwofaCloudAvailable,
@@ -9,9 +8,28 @@ import {
   upsertTwofaCloud,
   type TwofaCloudSyncState,
 } from "./twofa-cloud-sync";
+import {
+  dedupeTwofaAccounts,
+  updateTwofaDraft,
+  upsertTwofaDraft,
+  type TwofaUpsertOutcome,
+} from "./twofa-upsert-accounts";
+
+export type TwofaAddManyResult = {
+  added: number;
+  replaced: number;
+  total: number;
+};
+
+export type TwofaSaveResult = { ok: true; replaced: boolean } | { ok: false };
 
 export function useTwofaAccounts() {
-  const [accounts, setAccounts] = useState<TwofaAccount[]>(() => loadAccounts());
+  const [accounts, setAccounts] = useState<TwofaAccount[]>(() => {
+    const loaded = loadAccounts();
+    const { accounts: deduped, removedIds } = dedupeTwofaAccounts(loaded);
+    if (removedIds.length) saveAccounts(deduped);
+    return deduped;
+  });
   const [tick, setTick] = useState(0);
   const [cloudState, setCloudState] = useState<TwofaCloudSyncState>(
     isTwofaCloudAvailable() ? "idle" : "off",
@@ -39,7 +57,8 @@ export function useTwofaAccounts() {
       setCloudError(error);
       return;
     }
-    setAccounts(merged);
+    const { accounts: deduped } = dedupeTwofaAccounts(merged);
+    setAccounts(deduped);
     setCloudState("ok");
   }, []);
 
@@ -78,89 +97,70 @@ export function useTwofaAccounts() {
   }, []);
 
   const addMany = useCallback(
-    (drafts: TwofaDraft[]) => {
+    (drafts: TwofaDraft[]): TwofaAddManyResult => {
       const now = new Date().toISOString();
-      const next: TwofaAccount[] = [];
-      let added = 0;
-      for (const draft of drafts) {
-        const service = draft.service.trim();
-        const account = draft.account.trim();
-        const secret = normalizeSecret(draft.secret);
-        const password = draft.password?.trim();
-        if (!secret) continue;
-        const row: TwofaAccount = {
-          id: newId(),
-          service,
-          account,
-          ...(password ? { password } : {}),
-          secret,
-          createdAt: now,
-          updatedAt: now,
-        };
-        next.push(row);
-        void cloudUpsert(row);
-        added += 1;
-      }
-      if (!next.length) return { added: 0 };
-      setAccounts((prev) => [...prev, ...next]);
-      return { added };
+      const cloudRows: TwofaAccount[] = [];
+      const cloudRemovals: string[] = [];
+      let result: TwofaAddManyResult = { added: 0, replaced: 0, total: 0 };
+
+      setAccounts((prev) => {
+        let next = prev;
+        let added = 0;
+        let replaced = 0;
+        for (const draft of drafts) {
+          const outcome = upsertTwofaDraft(next, draft, now);
+          if (!outcome) continue;
+          next = outcome.accounts;
+          if (outcome.replaced) replaced += 1;
+          else added += 1;
+          cloudRows.push(outcome.row);
+          cloudRemovals.push(...outcome.removedIds);
+        }
+        result = { added, replaced, total: added + replaced };
+        return next;
+      });
+
+      for (const row of cloudRows) void cloudUpsert(row);
+      for (const removedId of cloudRemovals) void cloudDelete(removedId);
+      return result;
     },
-    [cloudUpsert],
+    [cloudDelete, cloudUpsert],
   );
 
   const add = useCallback(
-    (draft: TwofaDraft) => {
-      const service = draft.service.trim();
-      const account = draft.account.trim();
-      const secret = normalizeSecret(draft.secret);
-      const password = draft.password?.trim();
-      if (!secret) return false;
+    (draft: TwofaDraft): TwofaSaveResult => {
       const now = new Date().toISOString();
-      const row: TwofaAccount = {
-        id: newId(),
-        service,
-        account,
-        ...(password ? { password } : {}),
-        secret,
-        createdAt: now,
-        updatedAt: now,
-      };
-      setAccounts((prev) => [...prev, row]);
-      void cloudUpsert(row);
-      return true;
+      const result: { outcome?: TwofaUpsertOutcome } = {};
+      setAccounts((prev) => {
+        const outcome = upsertTwofaDraft(prev, draft, now);
+        if (!outcome) return prev;
+        result.outcome = outcome;
+        return outcome.accounts;
+      });
+      if (!result.outcome) return { ok: false };
+      void cloudUpsert(result.outcome.row);
+      for (const removedId of result.outcome.removedIds) void cloudDelete(removedId);
+      return { ok: true, replaced: result.outcome.replaced };
     },
-    [cloudUpsert],
+    [cloudDelete, cloudUpsert],
   );
 
   const update = useCallback(
     (id: string, draft: TwofaDraft) => {
-      const service = draft.service.trim();
-      const account = draft.account.trim();
-      const secret = normalizeSecret(draft.secret);
-      const password = draft.password?.trim();
-      if (!secret) return false;
       const now = new Date().toISOString();
-      let updated: TwofaAccount | null = null;
-      setAccounts((prev) =>
-        prev.map((a) => {
-          if (a.id !== id) return a;
-          const next: TwofaAccount = {
-            ...a,
-            service,
-            account,
-            secret,
-            updatedAt: now,
-          };
-          if (password) next.password = password;
-          else delete next.password;
-          updated = next;
-          return next;
-        }),
-      );
-      if (updated) void cloudUpsert(updated);
+      const result: { outcome?: TwofaUpsertOutcome } = {};
+      setAccounts((prev) => {
+        const outcome = updateTwofaDraft(prev, id, draft, now);
+        if (!outcome) return prev;
+        result.outcome = outcome;
+        return outcome.accounts;
+      });
+      if (!result.outcome) return false;
+      void cloudUpsert(result.outcome.row);
+      for (const removedId of result.outcome.removedIds) void cloudDelete(removedId);
       return true;
     },
-    [cloudUpsert],
+    [cloudDelete, cloudUpsert],
   );
 
   const remove = useCallback(
@@ -186,6 +186,19 @@ export function useTwofaAccounts() {
     [cloudUpsert],
   );
 
+  const dedupeNow = useCallback((): number => {
+    const cloudRemovals: string[] = [];
+    let removed = 0;
+    setAccounts((prev) => {
+      const { accounts: deduped, removedIds } = dedupeTwofaAccounts(prev);
+      removed = removedIds.length;
+      cloudRemovals.push(...removedIds);
+      return deduped;
+    });
+    for (const removedId of cloudRemovals) void cloudDelete(removedId);
+    return removed;
+  }, [cloudDelete]);
+
   return {
     accounts,
     tick,
@@ -194,6 +207,7 @@ export function useTwofaAccounts() {
     update,
     remove,
     touchLastUsed,
+    dedupeNow,
     cloudState,
     cloudError,
     syncFromCloud,

@@ -1,6 +1,18 @@
 import type { ElementType } from "react";
-import { CheckCircle2, Clock, Cookie, Database, Lock, Share2, UserRound, Users } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Cookie,
+  Database,
+  Globe2,
+  Lock,
+  Share2,
+  UserRound,
+  Users,
+} from "lucide-react";
 import type { CookieBinding } from "./cookieBridge";
+import { resolveRouteSyncDisplay } from "./route-sync-display";
 
 export type RouteStatChipTone = "ok" | "warn" | "neutral" | "info" | "share";
 
@@ -21,13 +33,43 @@ export function RouteStatChip({
   );
 }
 
-export function RouteSyncChip({ status }: { status: string }) {
-  const synced = status === "synced";
+export function RouteSyncChip({
+  status,
+  noteSyncedAt,
+  vaultCookieCount,
+}: {
+  status: string;
+  noteSyncedAt?: string | null;
+  vaultCookieCount?: number | null;
+}) {
+  const display = resolveRouteSyncDisplay({
+    syncStatus: status,
+    noteSyncedAt,
+    vaultCookieCount,
+  });
+  const Icon = display.tone === "ok" ? CheckCircle2 : display.label === "Error" ? AlertCircle : Clock;
+  return (
+    <span title={display.title}>
+      <RouteStatChip icon={Icon} label={display.label} tone={display.tone} />
+    </span>
+  );
+}
+
+export function RoutePublishChip({
+  published,
+  ready = true,
+}: {
+  published?: boolean;
+  ready?: boolean;
+}) {
+  if (!ready) {
+    return <RouteStatChip icon={Globe2} label="Route…" tone="neutral" />;
+  }
   return (
     <RouteStatChip
-      icon={synced ? CheckCircle2 : Clock}
-      label={synced ? "Synced" : status}
-      tone={synced ? "ok" : "warn"}
+      icon={published ? Globe2 : AlertCircle}
+      label={published ? "Published" : "Missing"}
+      tone={published ? "ok" : "warn"}
     />
   );
 }

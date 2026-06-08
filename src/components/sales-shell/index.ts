@@ -27,15 +27,15 @@ export {
   HubLoaderRoot,
   HUB_TAB_LOADER_ROOT_ID,
   resolveVisibleKpiKeys,
+  useResolvedVisibleKpiKeys,
   defaultKpiKeysFromDefs,
   MAX_VISIBLE_KPI,
+  HubTimeRangeSelect,
+  HubRowLimitSelect,
 } from "@tool-workspace/hub-ui";
 
 export { DisplayPrefs, type PrefItem } from "./DisplayPrefs";
 export { WorkspaceSidebar } from "./WorkspaceSidebar";
-export { HubSortLabel } from "./HubSortLabel";
-export { HubTimeRangeSelect } from "./HubTimeRangeSelect";
-export { HubRowLimitSelect } from "./HubRowLimitSelect";
 export {
   WorkspaceLoadingView,
   WORKSPACE_LOADING_PRESETS,

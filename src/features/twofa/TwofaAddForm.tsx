@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileSpreadsheet, KeyRound, Upload } from "lucide-react";
+import { Boxes, FileSpreadsheet, KeyRound, LockKeyhole, Upload, User } from "lucide-react";
 import {
+  HubFormFieldLabel,
   HubToolDetailModal,
   HubToolDetailModalPrimaryAction,
   HubToolDetailModalSecondaryAction,
+  HubToolDetailSection,
+  HubTocSectionNav,
+  HUB_TOOL_DETAIL_FORM_GRID_2_CLASS,
+  HUB_TOOL_DETAIL_SCROLL_ROOT,
+  HUB_TOOL_DETAIL_SECTIONS_CLASS,
 } from "@tool-workspace/hub-ui";
 import { generateCode } from "./totp";
 import type { TwofaAccount, TwofaDraft } from "./types";
@@ -13,20 +19,83 @@ import {
   parseTwofaBulkText,
   validateTwofaBulkRows,
 } from "./parse-twofa-bulk";
+import { TWOFA_ADD_TABS, TWOFA_BULK_SECTIONS, twofaBulkSectionTitle } from "./twofa-add-toc";
+import type { TwofaAddManyResult } from "./useTwofaAccounts";
 import "./twofa-add-form.css";
 
 type Tab = "single" | "bulk";
+
+const TWOFA_ID_PREFIX = "twofa-";
+
+function TwofaAddTocNav({
+  tab,
+  onTabChange,
+  showBulkSections,
+}: {
+  tab: Tab;
+  onTabChange: (next: Tab) => void;
+  showBulkSections: boolean;
+}) {
+  const bulkNavItems = useMemo(
+    () =>
+      TWOFA_BULK_SECTIONS.filter((item) => item.id !== "bulk-preview" || showBulkSections).map(
+        (item) => ({ id: item.id, label: item.label, emoji: item.emoji }),
+      ),
+    [showBulkSections],
+  );
+
+  return (
+    <nav className="hub-toc-nav twofa-add-modal__toc" aria-label="Add mode">
+      <ul className="hub-toc-nav__list space-y-0.5" role="tablist">
+        {TWOFA_ADD_TABS.map((item) => {
+          const active = tab === item.id;
+          return (
+            <li key={item.id}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={`hub-toc-nav__item group relative z-[1] min-h-[var(--overview-toc-row-h,2rem)] w-full cursor-pointer text-left text-[13px] transition-colors${
+                  active ? " is-active" : ""
+                }`}
+                onClick={() => onTabChange(item.id as Tab)}
+              >
+                <span className="hub-toc-nav__label flex min-w-0 items-center gap-1.5 truncate rounded-lg px-2 py-1 font-medium text-[var(--muted)] transition-all duration-200 group-hover:text-[var(--text)]">
+                  <span className="shrink-0 text-[12px] leading-none opacity-90" aria-hidden>
+                    {item.emoji}
+                  </span>
+                  <span className="truncate">{item.label}</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {tab === "bulk" && bulkNavItems.length ? (
+        <div className="twofa-add-modal__toc-sections mt-3 border-t border-white/5 pt-3">
+          <HubTocSectionNav
+            items={bulkNavItems}
+            sectionIdPrefix={TWOFA_ID_PREFIX}
+            scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
+          />
+        </div>
+      ) : (
+        <div className="twofa-add-modal__toc-sections mt-3 border-t border-white/5 pt-3" aria-hidden />
+      )}
+    </nav>
+  );
+}
 
 export type TwofaAddFormProps = {
   active: boolean;
   mode: "add" | "edit";
   initial?: TwofaAccount | null;
   initialDraft?: Partial<TwofaDraft> | null;
-  /** When opened from search-with-no-match, customizes title/subtitle. */
+  /** When opened from search-with-no-match, customizes title. */
   searchQuery?: string;
   onClose: () => void;
-  onSaveSingle: (draft: TwofaDraft) => boolean;
-  onImportMany: (drafts: TwofaDraft[]) => number;
+  onSaveSingle: (draft: TwofaDraft) => "ok" | "conflict" | "fail";
+  onImportMany: (drafts: TwofaDraft[]) => TwofaAddManyResult;
 };
 
 export function TwofaAddForm({
@@ -90,6 +159,14 @@ export function TwofaAddForm({
   );
   const canTryBulkImport = Boolean(bulkText.trim() || fileName);
 
+  const sectionIds = useMemo(() => {
+    if (mode === "edit") return [`${TWOFA_ID_PREFIX}single`];
+    if (tab === "single") return [`${TWOFA_ID_PREFIX}single`];
+    const ids = [`${TWOFA_ID_PREFIX}bulk-paste`, `${TWOFA_ID_PREFIX}bulk-file`];
+    if (previewCount > 0) ids.push(`${TWOFA_ID_PREFIX}bulk-preview`);
+    return ids;
+  }, [mode, previewCount, tab]);
+
   if (!active) return null;
 
   const onSubmitSingle = () => {
@@ -102,11 +179,12 @@ export function TwofaAddForm({
       setError("Invalid Base32 secret.");
       return;
     }
-    const ok = onSaveSingle(draft);
-    if (!ok) {
+    const result = onSaveSingle(draft);
+    if (result === "fail") {
       setError("Could not save entry.");
       return;
     }
+    if (result === "conflict") return;
     onClose();
   };
 
@@ -127,13 +205,17 @@ export function TwofaAddForm({
         setError(allErrors[0]?.message ?? "No valid rows to import.");
         return;
       }
-      const added = onImportMany(valid);
+      const { added, replaced, total } = onImportMany(valid);
+      const importSummary =
+        replaced > 0
+          ? `Imported ${total} (${added} new, ${replaced} replaced).`
+          : `Imported ${total}.`;
       if (allErrors.length) {
-        setError(`Imported ${added}. Skipped ${allErrors.length} line(s).`);
-        if (added > 0) onClose();
+        setError(`${importSummary} Skipped ${allErrors.length} line(s).`);
+        if (total > 0) onClose();
         return;
       }
-      if (added > 0) onClose();
+      if (total > 0) onClose();
     } catch {
       setError("Could not read file. Use .xlsx, .csv, or paste text.");
     } finally {
@@ -167,35 +249,135 @@ export function TwofaAddForm({
       ? "Edit account"
       : "Add accounts";
 
-  const subtitle = searchQuery?.trim()
-    ? `No match for "${searchQuery.trim()}" — fill in or adjust fields below.`
-    : mode === "edit"
-      ? "Update one TOTP entry stored on this device."
-      : "Single entry or bulk import (paste or Excel).";
+  const singleFields = (
+    <div className={HUB_TOOL_DETAIL_FORM_GRID_2_CLASS}>
+      <label className="block min-w-0">
+        <HubFormFieldLabel icon={Boxes} iconClassName="text-sky-300">
+          Platform
+        </HubFormFieldLabel>
+        <input
+          className="field auth-gate-field w-full"
+          name="twofa-service"
+          autoComplete="off"
+          placeholder="Optional"
+          value={service}
+          onChange={(e) => setService(e.target.value)}
+        />
+      </label>
+      <label className="block min-w-0">
+        <HubFormFieldLabel icon={User} iconClassName="text-indigo-300">
+          ID / account
+        </HubFormFieldLabel>
+        <input
+          className="field auth-gate-field w-full"
+          name="twofa-account-id"
+          autoComplete="off"
+          placeholder="Optional"
+          value={account}
+          readOnly={mode === "add"}
+          onFocus={(e) => {
+            if (mode === "add") e.currentTarget.readOnly = false;
+          }}
+          onChange={(e) => setAccount(e.target.value)}
+        />
+      </label>
+      <label className="block min-w-0">
+        <HubFormFieldLabel icon={LockKeyhole} iconClassName="text-amber-300">
+          Password
+        </HubFormFieldLabel>
+        <input
+          className="field auth-gate-field twofa-add-field-masked w-full"
+          name="twofa-stored-password"
+          type="text"
+          autoComplete="off"
+          data-lpignore="true"
+          data-1p-ignore
+          placeholder="Optional"
+          value={password}
+          readOnly={mode === "add"}
+          onFocus={(e) => {
+            if (mode === "add") e.currentTarget.readOnly = false;
+          }}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </label>
+      <label className="block min-w-0">
+        <HubFormFieldLabel icon={KeyRound} iconClassName="text-violet-300">
+          2FA secret
+        </HubFormFieldLabel>
+        <input
+          className="field auth-gate-field w-full font-mono"
+          name="twofa-totp-secret"
+          autoComplete="off"
+          placeholder="Base32 — required"
+          value={secret}
+          onChange={(e) => setSecret(e.target.value)}
+        />
+      </label>
+    </div>
+  );
 
-  const tabs =
-    mode === "add" ? (
-      <div className="auth-gate-tabs" role="tablist" aria-label="Add mode">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "single"}
-          className={`auth-gate-tab${tab === "single" ? " auth-gate-tab--active" : ""}`}
-          onClick={() => setTab("single")}
+  const singlePanel = (
+    <HubToolDetailSection id={`${TWOFA_ID_PREFIX}single`} title="Credentials">
+      {singleFields}
+    </HubToolDetailSection>
+  );
+
+  const bulkPanel = (
+    <div className={HUB_TOOL_DETAIL_SECTIONS_CLASS}>
+      <HubToolDetailSection
+        id={`${TWOFA_ID_PREFIX}bulk-paste`}
+        title={twofaBulkSectionTitle("bulk-paste")}
+      >
+        <textarea
+          className="field auth-gate-field w-full min-h-[120px] font-mono text-[11px] leading-relaxed"
+          placeholder="Platform|ID|secret or secret only"
+          value={bulkText}
+          onChange={(e) => {
+            setBulkText(e.target.value);
+            setFileName(null);
+            if (fileRef.current) fileRef.current.value = "";
+          }}
+        />
+      </HubToolDetailSection>
+      <HubToolDetailSection
+        id={`${TWOFA_ID_PREFIX}bulk-file`}
+        title={twofaBulkSectionTitle("bulk-file")}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.xls,.csv,.txt"
+            className="hidden"
+            onChange={(e) => void onFileChange(e.target.files?.[0] ?? null)}
+          />
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[.04] px-2.5 py-1.5 text-[11px] font-medium text-[var(--text)] transition-colors hover:bg-white/[.08]"
+            onClick={() => fileRef.current?.click()}
+          >
+            <Upload size={14} aria-hidden />
+            Excel / CSV
+          </button>
+          {fileName ? (
+            <span className="inline-flex items-center gap-1 text-[11px] text-[var(--muted)]">
+              <FileSpreadsheet size={12} className="text-emerald-300" />
+              {fileName}
+            </span>
+          ) : null}
+        </div>
+      </HubToolDetailSection>
+      {previewCount > 0 ? (
+        <HubToolDetailSection
+          id={`${TWOFA_ID_PREFIX}bulk-preview`}
+          title={twofaBulkSectionTitle("bulk-preview")}
         >
-          Single
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "bulk"}
-          className={`auth-gate-tab${tab === "bulk" ? " auth-gate-tab--active" : ""}`}
-          onClick={() => setTab("bulk")}
-        >
-          Bulk
-        </button>
-      </div>
-    ) : null;
+          <p className="text-xs tabular-nums text-emerald-300">{previewCount} valid row(s)</p>
+        </HubToolDetailSection>
+      ) : null}
+    </div>
+  );
 
   const formBody = (
     <form
@@ -204,101 +386,21 @@ export function TwofaAddForm({
       onSubmit={(e) => e.preventDefault()}
       data-twofa-credential-form
     >
-      {tab === "single" || mode === "edit" ? (
-        <>
-          <input
-            className="field auth-gate-field w-full"
-            name="twofa-service"
-            autoComplete="off"
-            placeholder="Platform (optional)"
-            value={service}
-            onChange={(e) => setService(e.target.value)}
-          />
-          <input
-            className="field auth-gate-field w-full"
-            name="twofa-account-id"
-            autoComplete="off"
-            placeholder="ID / account (optional)"
-            value={account}
-            readOnly={mode === "add"}
-            onFocus={(e) => {
-              if (mode === "add") e.currentTarget.readOnly = false;
-            }}
-            onChange={(e) => setAccount(e.target.value)}
-          />
-          <input
-            className="field auth-gate-field twofa-add-field-masked w-full"
-            name="twofa-stored-password"
-            type="text"
-            autoComplete="off"
-            data-lpignore="true"
-            data-1p-ignore
-            placeholder="Password (optional)"
-            value={password}
-            readOnly={mode === "add"}
-            onFocus={(e) => {
-              if (mode === "add") e.currentTarget.readOnly = false;
-            }}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <input
-            className="field auth-gate-field w-full font-mono"
-            name="twofa-totp-secret"
-            autoComplete="off"
-            placeholder="2FA secret (Base32) — required"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-          />
-        </>
+      {mode === "edit" ? (
+        singlePanel
       ) : (
-        <>
-          <p className="auth-gate-hint">
-            One secret per line, or <span className="auth-gate-mono">Platform|ID|2FA</span> /{" "}
-            <span className="auth-gate-mono">Platform|2FA</span> — platform &amp; ID optional.
-          </p>
-          <textarea
-            className="field auth-gate-field w-full min-h-[120px] font-mono text-[11px] leading-relaxed"
-            placeholder="Paste rows here"
-            value={bulkText}
-            onChange={(e) => {
-              setBulkText(e.target.value);
-              setFileName(null);
-              if (fileRef.current) fileRef.current.value = "";
-            }}
-          />
-          <p className="auth-gate-hint">
-            Examples:{" "}
-            <span className="auth-gate-mono">Google|user@gmail.com|JBSWY3DPEHPK3PXP</span>
-            {" · "}
-            <span className="auth-gate-mono">GitHub|dev|mypass|JBSWY3DPEHPK3PXP</span>
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".xlsx,.xls,.csv,.txt"
-              className="hidden"
-              onChange={(e) => void onFileChange(e.target.files?.[0] ?? null)}
-            />
-            <button
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[.04] px-2.5 py-1.5 text-[11px] font-medium text-[var(--text)] transition-colors hover:bg-white/[.08]"
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload size={14} aria-hidden />
-              Excel / CSV
-            </button>
-            {fileName ? (
-              <span className="inline-flex items-center gap-1 text-[11px] text-[var(--muted)]">
-                <FileSpreadsheet size={12} className="text-emerald-300" />
-                {fileName}
-              </span>
-            ) : null}
+        <div className="twofa-add-modal__panels">
+          <div
+            className={`twofa-add-modal__panel${tab === "single" ? "" : " twofa-add-modal__panel--hidden"}`}
+          >
+            {singlePanel}
           </div>
-          {previewCount > 0 ? (
-            <p className="auth-gate-ok">{previewCount} valid row(s) ready to import.</p>
-          ) : null}
-        </>
+          <div
+            className={`twofa-add-modal__panel${tab === "bulk" ? "" : " twofa-add-modal__panel--hidden"}`}
+          >
+            {bulkPanel}
+          </div>
+        </div>
       )}
 
       {error ? <p className="auth-gate-message">{error}</p> : null}
@@ -307,7 +409,7 @@ export function TwofaAddForm({
 
   const hubFooter = (
     <>
-      <HubToolDetailModalSecondaryAction label="Cancel" onClick={onClose} />
+      <HubToolDetailModalSecondaryAction label="Cancel" onClick={onClose} disabled={busy} />
       {tab === "bulk" && mode === "add" ? (
         <HubToolDetailModalPrimaryAction
           label={busy ? "Please wait…" : previewCount > 0 ? `Import (${previewCount})` : "Import"}
@@ -327,6 +429,8 @@ export function TwofaAddForm({
     </>
   );
 
+  const isAdd = mode === "add";
+
   return (
     <HubToolDetailModal
       open={active}
@@ -335,14 +439,22 @@ export function TwofaAddForm({
       titleId="twofa-add-modal-title"
       headerIcon={KeyRound}
       headerIconClassName="text-indigo-300"
-      shellClassName="hub-header-panel-modal"
-      size="compact"
+      shellClassName={`twofa-add-modal${isAdd ? "" : " hub-tool-detail-modal--fit"}`}
+      size={isAdd ? "detail" : "compact"}
+      sectionIds={sectionIds}
+      scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
+      toc={
+        isAdd ? (
+          <TwofaAddTocNav
+            tab={tab}
+            onTabChange={setTab}
+            showBulkSections={previewCount > 0}
+          />
+        ) : undefined
+      }
       footer={hubFooter}
-      bodyClassName="modal-shell__scroll--user-access"
     >
-      <p className="mb-3 text-xs text-[var(--muted)]">{subtitle}</p>
-      {tabs}
-      {formBody}
+      <div className="twofa-add-modal__main">{formBody}</div>
     </HubToolDetailModal>
   );
 }

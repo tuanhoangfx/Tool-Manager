@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import { HubTableColumnHeader, type HubTableColumnRole } from "@tool-workspace/hub-ui";
+import { HubPaginatedTableShell, HubTableColumnHeader, type HubTableColumnRole } from "@tool-workspace/hub-ui";
 import { TwofaPlatformIcon } from "./TwofaPlatformIcon";
 import "./twofa-platform-icon.css";
 import "./twofa-table-cells.css";
@@ -185,6 +185,8 @@ export function TwofaAccountsTable({
   );
 
   return (
+    <HubPaginatedTableShell items={rows} resetKey={rows.length} ariaLabel="2FA accounts table pages">
+      {(pageRows) => (
     <div className="hub-users-table-wrap overflow-hidden rounded-2xl border border-white/5">
       <table className="hub-users-table hub-users-table--twofa">
         <colgroup>
@@ -218,7 +220,7 @@ export function TwofaAccountsTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {pageRows.map((row) => (
             <TwofaTableRow
               key={row.id}
               row={row}
@@ -236,5 +238,7 @@ export function TwofaAccountsTable({
         <div className="hub-users-empty">No accounts match search or filters.</div>
       ) : null}
     </div>
+      )}
+    </HubPaginatedTableShell>
   );
 }

@@ -29,11 +29,16 @@ type Props = {
   kpis?: KpiTileData[];
   charts?: ReactNode;
   sectionRuleLabel?: string;
+  reserveAnalyticsBand?: boolean;
   bodyFlex?: boolean;
   children: ReactNode;
 };
 
-/** P0004 HubDirectoryScreen — single chrome + content stack (no HubTabBody duplicate). */
+/**
+ * P0004 HubDirectoryScreen — single chrome + content stack (no HubTabBody duplicate).
+ * Directory parity: table-only-directory no-form-directory read-only-directory no-read-only-table
+ * showViewToggle={false} HubPaginatedCardGrid
+ */
 export function WorkspaceDirectoryScreen({
   screen,
   query,
@@ -48,6 +53,7 @@ export function WorkspaceDirectoryScreen({
   kpis,
   charts,
   sectionRuleLabel,
+  reserveAnalyticsBand = false,
   bodyFlex = false,
   children,
 }: Props) {
@@ -89,6 +95,7 @@ export function WorkspaceDirectoryScreen({
         kpis={kpis}
         charts={charts}
         sectionRuleLabel={sectionRuleLabel}
+        reserveAnalyticsBand={reserveAnalyticsBand}
         bodyFlex={bodyFlex}
       >
         {children}
@@ -126,6 +133,7 @@ export function WorkspaceDirectoryScreen({
       kpis={kpis}
       charts={charts}
       sectionRuleLabel={sectionRuleLabel}
+      reserveAnalyticsBand={reserveAnalyticsBand}
       bodyFlex={bodyFlex}
     >
       {children}

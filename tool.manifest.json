@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "4.2.4",
+    "version": "4.3.11",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -126,10 +126,25 @@
       "golden": "P0020/notes"
     },
     {
+      "screen": "cookie",
+      "template": "directory",
+      "golden": "P0004/hub-list"
+    },
+    {
+      "screen": "twofa",
+      "template": "directory",
+      "golden": "P0004/hub-list"
+    },
+    {
+      "screen": "system",
+      "template": "system-panels",
+      "golden": "P0004/system"
+    },
+    {
       "screen": "auth",
       "template": "auth-gate",
       "golden": "P0020/auth"
     }
   ],
-  "manifestUpdatedAt": "2026-06-06T12:06:49.565Z"
+  "manifestUpdatedAt": "2026-06-07T19:02:14.295Z"
 }
