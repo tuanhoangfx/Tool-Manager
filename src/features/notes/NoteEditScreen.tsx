@@ -233,7 +233,7 @@ export function NoteEditScreen({
             </label>
             {offline ? (
               <p className="mb-2 text-[10px] text-amber-200/80">
-                Offline mode: sharing requires Supabase and is disabled.
+                Anonymous mode: sharing requires sign-in and is disabled.
               </p>
             ) : null}
             {shareEnabled ? (

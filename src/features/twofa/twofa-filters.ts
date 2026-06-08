@@ -54,7 +54,7 @@ export function filterTwofaAccounts(
 
   return accounts.filter((row) => {
     if (q) {
-      const haystack = [row.service, row.account, row.secret].join(" ").toLowerCase();
+      const haystack = [row.service, row.browser, row.account, row.secret].join(" ").toLowerCase();
       const secretHay = normalizeSecret(row.secret).toLowerCase();
       const qSecret = normalizeSecret(q).toLowerCase();
       const matchText = haystack.includes(q) || (qSecret.length >= 8 && secretHay.includes(qSecret));

@@ -122,7 +122,7 @@ export function useNote(session: Session | null, noteId: string | null) {
           if (!row) setError("Note not found");
         } catch (err) {
           if (gen !== fetchGen.current) return;
-          setError(err instanceof Error ? err.message : "Offline note load failed");
+          setError(err instanceof Error ? err.message : "Anonymous note load failed");
           setNote(null);
         } finally {
           if (!silent) setLoading(false);

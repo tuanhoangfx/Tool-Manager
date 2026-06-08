@@ -24,7 +24,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ["react", "react-dom", "lucide-react"],
-    exclude: ["@tool-workspace/hub-ui"],
+    exclude: ["@tool-workspace/hub-ui", "@tool-workspace/hub-identity"],
     holdUntilCrawlEnd: false,
   },
   esbuild: {

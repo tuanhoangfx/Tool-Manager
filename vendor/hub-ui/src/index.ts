@@ -84,6 +84,10 @@ export {
   type HubSingleFilterDropdownProps,
 } from "./shell/FilterBar";
 export {
+  HubTableCellFilterDropdown,
+  type HubTableCellFilterDropdownProps,
+} from "./shell/HubTableCellFilterDropdown";
+export {
   HUB_FILTER_DROPDOWN_PANEL_CLASS,
   HUB_FILTER_DROPDOWN_PANEL_PORTAL_CLASS,
   HUB_FILTER_DROPDOWN_ROW_CLASS,
@@ -125,10 +129,16 @@ export {
   type TabTitleMenuItem,
 } from "./shell/AppTabHeader";
 export { HubListChromeHeader, type HubListChromeHeaderProps } from "./shell/HubListChromeHeader";
-export { KpiStrip, type KpiTileData } from "./shell/KpiStrip";
+export { KpiStrip, type KpiStripTone, type KpiTileData } from "./shell/KpiStrip";
 export { MiniBarChart, type BarItem } from "./shell/MiniBarChart";
 export { MiniDonut, type DonutItem } from "./shell/MiniDonut";
 export { MetricBadge, RegistryMetricBadge, type MetricBadgeProps, type MetricBadgeTone } from "./shell/MetricBadge";
+export {
+  HubDirectoryMetricBadge,
+  HubDirectoryMetricStrip,
+  type HubDirectoryMetricItem,
+  type HubDirectoryMetricTone,
+} from "./shell/HubDirectoryMetricStrip";
 export { HubCopyBadge, type HubCopyBadgeProps } from "./shell/HubCopyBadge";
 export { CopyMetaChip, MetaChip, HUB_EMAIL_COPY_CHIP_CLASS, type MetaTone } from "./shell/CopyMetaChip";
 export { HubResultCount } from "./shell/HubResultCount";
@@ -183,6 +193,10 @@ export {
   type HubRouteAccessDirectoryTableProps,
 } from "./table/HubRouteAccessDirectoryTable";
 export {
+  hubRouteAccessFilterDefs,
+  type HubRouteAccessFilterScope,
+} from "./table/hub-route-access-filter-defs";
+export {
   HubUserToolsDirectoryTable,
   type HubUserToolsDirectoryTableProps,
 } from "./table/HubUserToolsDirectoryTable";
@@ -222,6 +236,63 @@ export {
   HUB_SIDEBAR_FOOTER_BTN_CLASS,
   type HubSidebarFooterButtonProps,
 } from "./shell/HubSidebarFooterButton";
+export {
+  HubSidebarNavGroup,
+  HubSidebarNavGroupHeader,
+  NavGroupSubNav,
+} from "./shell/HubSidebarNavGroup";
+export type {
+  HubSidebarNavGroupHeaderProps,
+  HubSidebarNavGroupProps,
+  NavGroupSubNavItem,
+  NavGroupSubNavProps,
+} from "./shell/HubSidebarNavGroup";
+export {
+  HubSidebarNavList,
+} from "./shell/HubSidebarNavList";
+export type { HubSidebarNavListProps } from "./shell/HubSidebarNavList";
+export {
+  HubSidebarNavScreenButton,
+} from "./shell/HubSidebarNavScreenButton";
+export type { HubSidebarNavScreenButtonProps } from "./shell/HubSidebarNavScreenButton";
+export { useNavGroupOpenState } from "./shell/useNavGroupOpenState";
+export {
+  flatMapNavScreenItems,
+  isNavGroupActive,
+  isNavScreenGroup,
+  isNavViewGroup,
+  navGroupSubnavOpenKey,
+  navScreenGroupSubNavItems,
+  navViewGroupSubNavItems,
+} from "./shell/nav-sidebar-structure";
+export type {
+  NavGroupBase,
+  NavGroupChildBase,
+  NavGroupConfig,
+  NavScreenGroupChild,
+  NavScreenGroupConfig,
+  NavScreenNavItem,
+  NavStructureEntry,
+  NavViewGroupChild,
+  NavViewGroupConfig,
+} from "./shell/nav-sidebar-structure";
+export {
+  NAV_ICON_TONES,
+  navActiveBarClass,
+  navActiveBgClass,
+  navActiveTextClass,
+  navBadgeIconClass,
+  navBadgeVariantClass,
+  navChartColor,
+  navDotClass,
+  navIconClass,
+  navKpiTone,
+  navMetaTextClass,
+  navRailClass,
+  navToneStyle,
+  type NavIconTone,
+  type NavToneStyle,
+} from "./shell/sidebar-nav-tones";
 export { HubToolAvatar, type HubToolAvatarProps, type HubToolAvatarSize } from "./shell/HubToolAvatar";
 export { HubDesignTemplateEmpty, type HubDesignTemplateEmptyProps } from "./content/HubDesignTemplateEmpty";
 export {
@@ -251,6 +322,14 @@ export {
 } from "./table/hub-table-column-meta";
 export { HubPanel } from "./content/HubPanel";
 export { HubDirectoryCard } from "./content/HubDirectoryCard";
+export {
+  HubDirectoryCardShell,
+  HubDirectoryInteractiveCard,
+  HubDirectoryCardCheckbox,
+  type HubDirectoryCardShellProps,
+  type HubDirectoryInteractiveCardProps,
+  type HubDirectoryCardCheckboxProps,
+} from "./content/HubDirectoryCardShell";
 export { HubTabScreenBody } from "./content/HubTabScreenBody";
 export { HubDirectoryScreen, type HubDirectoryScreenProps } from "./templates/HubDirectoryScreen";
 export {
@@ -364,9 +443,20 @@ export {
 } from "./shell/HubAppLogProvider";
 export { HubLogButton, type HubLogButtonProps, type HubLogButtonVariant } from "./shell/HubLogButton";
 export { HubAuthGate, type HubAuthGateProps } from "./auth/HubAuthGate";
+export { HubAuthGateOverlay, type HubAuthGateOverlayProps } from "./auth/HubAuthGateOverlay";
 export { HubAuthGateModal, type HubAuthGateModalProps } from "./auth/HubAuthGateModal";
+export { HubAuthPrompt, type HubAuthPromptProps } from "./auth/HubAuthPrompt";
+export { HubAuthLogoutChip, type HubAuthLogoutChipProps } from "./auth/HubAuthLogoutChip";
+export {
+  HubAuthSessionBadge,
+  type HubAuthSessionBadgeProps,
+  type HubAuthSessionMode,
+} from "./auth/HubAuthSessionBadge";
+export { HubAuthGateGoldenPreview } from "./auth/HubAuthGateGoldenPreview";
+export { formatHubAuthToolInfo, type HubAuthToolInfo } from "./auth/hub-auth-tool-info";
 export {
   HubWorkspaceUserModal,
+  HUB_WORKSPACE_USER_ACCOUNT_TOC,
   type HubWorkspaceUserModalProps,
   type HubWorkspaceUserProfileRow,
 } from "./auth/HubWorkspaceUserModal";

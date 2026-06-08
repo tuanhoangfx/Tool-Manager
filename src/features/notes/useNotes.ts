@@ -41,7 +41,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
         setRows(offlineRows);
         writeNotesListClientCache(userId, offlineRows);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Offline notes load failed");
+        setError(err instanceof Error ? err.message : "Anonymous notes load failed");
         setRows([]);
       } finally {
         if (!silent) setLoading(false);

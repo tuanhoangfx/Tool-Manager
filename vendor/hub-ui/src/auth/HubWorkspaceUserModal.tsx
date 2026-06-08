@@ -1,11 +1,22 @@
 import type { LucideIcon } from "lucide-react";
-import { ExternalLink, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   HubToolDetailModal,
   HubToolDetailModalPrimaryAction,
+  HUB_TOOL_DETAIL_SCROLL_ROOT,
 } from "../shell/HubToolDetailModal";
+import {
+  HubToolDetailSection,
+  HUB_TOOL_DETAIL_SECTIONS_CLASS,
+} from "../shell/HubToolDetailSection";
+import { HubTocSectionNav } from "../shell/HubTocSectionNav";
 import { compactIconSize } from "../ui-scale";
+
+export const HUB_WORKSPACE_USER_ACCOUNT_TOC = [
+  { id: "hub-user-account", label: "Account", emoji: "👤" },
+  { id: "hub-user-session", label: "Session", emoji: "🔑" },
+] as const;
 
 export type HubWorkspaceUserProfileRow = {
   label: string;
@@ -20,8 +31,6 @@ export type HubWorkspaceUserModalProps = {
   headerLeading?: ReactNode;
   userId?: string | null;
   rows: HubWorkspaceUserProfileRow[];
-  toolHubUsersHref?: string;
-  toolHubUsersLabel?: string;
   workspaceNote?: string;
   signingOut?: boolean;
   sessionActive?: boolean;
@@ -45,7 +54,7 @@ function ProfileRow({ label, value, icon: Icon }: HubWorkspaceUserProfileRow) {
   );
 }
 
-/** Workspace user account modal — profile rows, Tool Hub Users link, sign out (P0020 / P0016). */
+/** Workspace user account modal — Header · TOC · Main · Footer (P0020 / P0016). */
 export function HubWorkspaceUserModal({
   open,
   onClose,
@@ -53,14 +62,15 @@ export function HubWorkspaceUserModal({
   headerLeading,
   userId,
   rows,
-  toolHubUsersHref,
-  toolHubUsersLabel = "Tool Hub — Users",
   workspaceNote,
   signingOut = false,
   sessionActive = true,
   onSignOut,
   children,
 }: HubWorkspaceUserModalProps) {
+  const tocItems = HUB_WORKSPACE_USER_ACCOUNT_TOC.map((item) => ({ ...item }));
+  const sectionIds = tocItems.map((item) => item.id);
+
   return (
     <HubToolDetailModal
       open={open}
@@ -70,6 +80,12 @@ export function HubWorkspaceUserModal({
       headerLeading={headerLeading}
       shellClassName="hub-header-panel-modal"
       ariaLabelledBy="hub-workspace-user-modal-title"
+      sectionIds={sectionIds}
+      toc={
+        <div className="hub-toc-nav">
+          <HubTocSectionNav items={tocItems} scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT} />
+        </div>
+      }
       footer={
         <HubToolDetailModalPrimaryAction
           label={signingOut ? "Signing out…" : "Sign Out"}
@@ -81,30 +97,23 @@ export function HubWorkspaceUserModal({
         />
       }
     >
-      <div className="space-y-3 px-1">
-        {userId ? (
-          <p className="font-mono text-[10px] text-[var(--muted)]">{userId}</p>
-        ) : (
-          <p className="text-xs text-[var(--muted)]">No active session</p>
-        )}
-        {workspaceNote ? <p className="text-xs text-[var(--muted)]">{workspaceNote}</p> : null}
-        <div className="grid gap-2 text-sm">
-          {rows.map((row) => (
-            <ProfileRow key={row.label} {...row} />
-          ))}
-        </div>
-        {toolHubUsersHref ? (
-          <a
-            href={toolHubUsersHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-sm text-indigo-300 hover:text-indigo-200"
-          >
-            <ExternalLink size={14} />
-            {toolHubUsersLabel}
-          </a>
-        ) : null}
-        {children}
+      <div className={HUB_TOOL_DETAIL_SECTIONS_CLASS}>
+        <HubToolDetailSection id="hub-user-account" title="Account">
+          <div className="grid gap-2 text-sm">
+            {rows.map((row) => (
+              <ProfileRow key={row.label} {...row} />
+            ))}
+          </div>
+          {children}
+        </HubToolDetailSection>
+        <HubToolDetailSection id="hub-user-session" title="Session">
+          {userId ? (
+            <p className="font-mono text-[10px] text-[var(--muted)]">{userId}</p>
+          ) : (
+            <p className="text-xs text-[var(--muted)]">No active session</p>
+          )}
+          {workspaceNote ? <p className="mt-2 text-xs text-[var(--muted)]">{workspaceNote}</p> : null}
+        </HubToolDetailSection>
       </div>
     </HubToolDetailModal>
   );

@@ -32,6 +32,12 @@ describe("twofaIdentityKey", () => {
   it("uses secret when service and account are empty", () => {
     expect(twofaIdentityKey("", "", SECRET)).toBe(`secret:${SECRET}`);
   });
+
+  it("includes browser when set", () => {
+    expect(twofaIdentityKey("Google", "user@gmail.com", SECRET, "0100")).not.toBe(
+      twofaIdentityKey("Google", "user@gmail.com", SECRET),
+    );
+  });
 });
 
 describe("upsertTwofaDraft", () => {
@@ -70,6 +76,18 @@ describe("upsertTwofaDraft", () => {
     expect(outcome?.accounts).toHaveLength(1);
     expect(outcome?.row.id).toBe("old-2");
     expect(outcome?.removedIds).toEqual(["old-1"]);
+  });
+
+  it("treats same service+account on different browsers as separate rows", () => {
+    const prev = [row("a", "Google", "user@gmail.com")];
+    const outcome = upsertTwofaDraft(
+      prev,
+      { service: "Google", account: "user@gmail.com", browser: "0100", secret: SECRET },
+      "2026-06-07T00:00:00.000Z",
+    );
+    expect(outcome?.replaced).toBe(false);
+    expect(outcome?.accounts).toHaveLength(2);
+    expect(outcome?.row.browser).toBe("0100");
   });
 
   it("dedupes within batch — last row wins", () => {

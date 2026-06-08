@@ -25,7 +25,7 @@ describe("resolveRouteSyncDisplay", () => {
     });
     expect(display.label).toBe("Synced");
     expect(display.tone).toBe("ok");
-    expect(display.filterStatus).toBe("pending");
+    expect(display.filterStatus).toBe("synced");
   });
 
   it("shows Awaiting sync when no vault and no sync time", () => {

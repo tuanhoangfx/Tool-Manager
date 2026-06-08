@@ -179,6 +179,22 @@ const LINK_STATUS_TONE: Record<string, MetricBadgeTone> = {
   na: "neutral",
 };
 
+/** Workspace auth session — not URL link ping (`LINK_STATUS.offline`). */
+const AUTH_SESSION: Record<string, FilterIconMeta> = {
+  anonymous: { icon: UserRound, className: "text-violet-400" },
+  signed_in: { icon: ShieldCheck, className: "text-emerald-400" },
+};
+
+const AUTH_SESSION_LABEL: Record<string, string> = {
+  anonymous: "Anonymous",
+  signed_in: "Signed in",
+};
+
+const AUTH_SESSION_TONE: Record<string, MetricBadgeTone> = {
+  anonymous: "warn",
+  signed_in: "ok",
+};
+
 const LINK_KIND: Record<string, FilterIconMeta> = {
   url: { icon: Link2, className: "text-cyan-400" },
   id: { icon: Tag, className: "text-slate-400" },
@@ -503,6 +519,12 @@ export function resolveLinkStatusBadge(status: string): BadgeSpec {
   return { label, iconMeta, tone: LINK_STATUS_TONE[status] ?? "neutral" };
 }
 
+export function resolveAuthSessionBadge(mode: string): BadgeSpec {
+  const label = AUTH_SESSION_LABEL[mode] ?? mode;
+  const iconMeta = AUTH_SESSION[mode] ?? AUTH_SESSION.anonymous;
+  return { label, iconMeta, tone: AUTH_SESSION_TONE[mode] ?? "neutral" };
+}
+
 export function resolveLinkKindBadge(kind: string): BadgeSpec {
   const label = LINK_KIND_LABEL[kind] ?? kind;
   const iconMeta = LINK_KIND[kind] ?? LINK_KIND.id;
@@ -527,6 +549,10 @@ export function badgeRegistryPreviewSections(): BadgePreviewSection[] {
     {
       title: "Link status",
       items: Object.keys(LINK_STATUS_LABEL).map(resolveLinkStatusBadge),
+    },
+    {
+      title: "Auth session",
+      items: Object.keys(AUTH_SESSION_LABEL).map(resolveAuthSessionBadge),
     },
     {
       title: "Link kind",

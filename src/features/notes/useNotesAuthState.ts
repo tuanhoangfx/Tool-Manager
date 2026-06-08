@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { cacheDataBoxSession, readDataBoxSession, sessionFromDataBoxSnapshot } from "../../lib/data-box-session";
 import { ensureDataBoxAuth } from "../../lib/ensure-data-box-auth";
-import { readHubIdentity } from "../../lib/hub-identity-session";
+import { ensureHubIdentityStubFromDataSession, readHubIdentity } from "../../lib/hub-identity-session";
 import { promiseWithTimeout } from "../../lib/promise-timeout";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase";
 import { getOfflineMode, offlineSession } from "../../lib/offlineMode";
@@ -51,6 +51,7 @@ export function useNotesAuthState(): NotesAuthState {
   const [offline, setOffline] = useState(initial.offline);
   const adoptSession = useCallback((next: Session) => {
     cacheDataBoxSession(next);
+    ensureHubIdentityStubFromDataSession(next);
     setSession(next);
     setLoading(false);
   }, []);
@@ -108,7 +109,10 @@ export function useNotesAuthState(): NotesAuthState {
           if (prev?.user?.id === s.user?.id && prev.access_token === s.access_token) return prev;
           return s;
         });
-        if (s) cacheDataBoxSession(s);
+        if (s) {
+          cacheDataBoxSession(s);
+          ensureHubIdentityStubFromDataSession(s);
+        }
         setLoading(false);
       });
       dataUnsub = () => subscription.unsubscribe();

@@ -1,5 +1,6 @@
 export type TwofaTableColumnKey =
   | "service"
+  | "browser"
   | "account"
   | "password"
   | "secret"
@@ -16,6 +17,7 @@ export type TwofaTableColumnItem = {
 
 export const TWOFA_TABLE_COLUMN_ITEMS: TwofaTableColumnItem[] = [
   { key: "service", label: "Service", required: true },
+  { key: "browser", label: "Browser" },
   { key: "account", label: "Account" },
   { key: "password", label: "Password" },
   { key: "secret", label: "Secret" },

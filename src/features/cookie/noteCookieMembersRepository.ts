@@ -1,3 +1,4 @@
+import { normalizeGranteeEmail } from "./normalizeGranteeEmail";
 import { supabase } from "../../lib/supabase";
 import type { CookieCloudRouteRow } from "./cookieRoutesRepository";
 import { normalizeCookieDomain } from "./normalizeCookieDomain";
@@ -55,7 +56,7 @@ export async function upsertNoteCookieMember(opts: {
 }): Promise<RpcEnvelope<{ member: NoteCookieMemberRow }>> {
   const { data, error } = await supabase.rpc("note_cookie_member_upsert", {
     p_note_id: opts.noteId,
-    p_grantee_email: opts.email.trim(),
+    p_grantee_email: normalizeGranteeEmail(opts.email),
     p_can_apply: opts.canApply,
     p_can_publish: opts.canPublish,
     p_can_manage: opts.canManage,

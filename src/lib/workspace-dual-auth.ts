@@ -1,6 +1,11 @@
 import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
-import { resolveHubLogin } from "@tool-workspace/hub-identity";
+import {
+  hubAuthEmailFromLogin,
+  resolveHubLogin,
+  sanitizeHubLoginInput,
+  signInWithHubPassword,
+} from "@tool-workspace/hub-identity";
 import { HUB_SUPABASE_ANON_KEY, HUB_SUPABASE_URL, isHubSupabaseConfigured } from "./hub-supabase-env";
 import { cacheDataBoxSession } from "./data-box-session";
 import { cacheHubIdentity } from "./hub-identity-session";
@@ -28,7 +33,7 @@ const INVALID_LOGIN = /invalid login credentials/i;
  * After Hub validates the password, mirror the account here if missing (no extra sign-up UI).
  */
 async function authenticateDataBox(
-  authEmail: string,
+  loginInput: string,
   password: string,
   mode: "signin" | "signup",
 ): Promise<{ session: Session | null; error: string | null }> {
@@ -36,12 +41,11 @@ async function authenticateDataBox(
     return { session: null, error: "Data Box Supabase is not configured." };
   }
 
-  const trimmed = authEmail.trim();
-  const signIn = () => supabase.auth.signInWithPassword({ email: trimmed, password });
-  const signUp = () => supabase.auth.signUp({ email: trimmed, password });
+  const login = sanitizeHubLoginInput(loginInput);
+  const primaryEmail = hubAuthEmailFromLogin(login);
 
   if (mode === "signup") {
-    const { data, error } = await signUp();
+    const { data, error } = await supabase.auth.signUp({ email: primaryEmail, password });
     if (error) return { session: null, error: error.message };
     if (!data.session) {
       return {
@@ -53,14 +57,20 @@ async function authenticateDataBox(
     return { session: data.session, error: null };
   }
 
-  const first = await signIn();
-  if (!first.error && first.data.session) {
-    cacheDataBoxSession(first.data.session);
-    return { session: first.data.session, error: null };
+  const attempt = async (authEmail: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email: authEmail, password });
+    return { data: { session: data.session }, error };
+  };
+
+  const signIn = await signInWithHubPassword(login, attempt, "signin");
+  if (!signIn.error && signIn.data?.session) {
+    cacheDataBoxSession(signIn.data.session);
+    return { session: signIn.data.session, error: null };
   }
 
-  if (first.error && INVALID_LOGIN.test(first.error.message)) {
-    const mirror = await signUp();
+  const lastError = signIn.error?.message ?? null;
+  if (lastError && INVALID_LOGIN.test(lastError)) {
+    const mirror = await supabase.auth.signUp({ email: primaryEmail, password });
     if (!mirror.error && mirror.data.session) {
       cacheDataBoxSession(mirror.data.session);
       return { session: mirror.data.session, error: null };
@@ -68,7 +78,7 @@ async function authenticateDataBox(
     if (mirror.error) return { session: null, error: mirror.error.message };
   }
 
-  return { session: null, error: first.error?.message ?? "Data Box sign-in failed." };
+  return { session: null, error: lastError ?? "Data Box sign-in failed." };
 }
 
 /** Mirror 2FA vault after login — non-blocking to avoid auth rate limits on sign-in click. */
@@ -95,25 +105,28 @@ export async function signInWorkspaceDual(
     throw new Error("Tool Hub Supabase is not configured (VITE_HUB_SUPABASE_ANON_KEY).");
   }
 
-  const resolved = resolveHubLogin(loginInput);
-
-  const identityAction =
-    mode === "signup"
-      ? hub.auth.signUp({
-          email: resolved.authEmail,
-          password,
-          options: {
-            data: {
-              full_name: resolved.loginId ?? resolved.authEmail.split("@")[0],
-              login_id: resolved.loginId ?? undefined,
+  const login = sanitizeHubLoginInput(loginInput);
+  const resolved = resolveHubLogin(login);
+  const identityAttempt = async (authEmail: string) => {
+    const result =
+      mode === "signup"
+        ? await hub.auth.signUp({
+            email: authEmail,
+            password,
+            options: {
+              data: {
+                full_name: resolved.loginId ?? authEmail.split("@")[0],
+                login_id: resolved.loginId ?? undefined,
+              },
             },
-          },
-        })
-      : hub.auth.signInWithPassword({ email: resolved.authEmail, password });
+          })
+        : await hub.auth.signInWithPassword({ email: authEmail, password });
+    return { data: { session: result.data.session }, error: result.error };
+  };
 
-  const { data: identityData, error: identityError } = await identityAction;
-  if (identityError) throw identityError;
-  const identitySession = identityData.session;
+  const identityResult = await signInWithHubPassword(login, identityAttempt, mode);
+  if (identityResult.error) throw identityResult.error;
+  const identitySession = identityResult.data?.session as Session | null | undefined;
   if (!identitySession) {
     throw new Error(
       mode === "signup" ? "Check your email to confirm sign-up on Tool Hub." : "No Hub session returned.",
@@ -130,7 +143,7 @@ export async function signInWorkspaceDual(
       .eq("id", identitySession.user.id);
   }
 
-  const mirrorEmail = identitySession.user?.email ?? resolved.authEmail;
+  const mirrorEmail = identitySession.user?.email ?? identityResult.authEmail ?? resolved.authEmail;
 
   cacheHubIdentity({
     access_token: identitySession.access_token,
@@ -142,11 +155,7 @@ export async function signInWorkspaceDual(
     supabase_anon_key: HUB_SUPABASE_ANON_KEY,
   });
 
-  const { session: dataSession, error: dataError } = await authenticateDataBox(
-    mirrorEmail,
-    password,
-    mode,
-  );
+  const { session: dataSession, error: dataError } = await authenticateDataBox(login, password, mode);
 
   mirrorTwofaVaultInBackground(mirrorEmail, password, mode);
 

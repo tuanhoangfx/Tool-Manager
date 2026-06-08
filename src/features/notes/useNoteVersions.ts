@@ -67,7 +67,7 @@ export function useNoteVersions(noteId: string | null, options: Options | boolea
 
   const checkpoint = useCallback(
     async (label?: string) => {
-      if (!noteId || getOfflineMode()) throw new Error("History unavailable offline");
+      if (!noteId || getOfflineMode()) throw new Error("History unavailable in anonymous mode");
       return snapshot("manual", noteId, label);
     },
     [noteId, snapshot],

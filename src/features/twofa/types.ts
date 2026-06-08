@@ -1,6 +1,8 @@
 export type TwofaAccount = {
   id: string;
   service: string;
+  /** Optional 4-digit browser profile code (e.g. 0100, 0101). */
+  browser?: string;
   account: string;
   /** Optional login password (stored locally). */
   password?: string;
@@ -13,6 +15,7 @@ export type TwofaAccount = {
 
 export type TwofaDraft = {
   service: string;
+  browser?: string;
   account: string;
   password?: string;
   secret: string;

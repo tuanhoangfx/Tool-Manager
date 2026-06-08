@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Boxes, FileSpreadsheet, KeyRound, LockKeyhole, Upload, User } from "lucide-react";
+import { Boxes, FileSpreadsheet, Globe, KeyRound, LockKeyhole, Upload, User } from "lucide-react";
 import {
   HubFormFieldLabel,
   HubToolDetailModal,
@@ -17,8 +17,10 @@ import {
   formatTwofaBulkLine,
   parseTwofaBulkFile,
   parseTwofaBulkText,
+  TWOFA_BULK_FORMAT_HINT,
   validateTwofaBulkRows,
 } from "./parse-twofa-bulk";
+import { isBrowserCode, normalizeBrowserCode } from "./twofa-browser-code";
 import { TWOFA_ADD_TABS, TWOFA_BULK_SECTIONS, twofaBulkSectionTitle } from "./twofa-add-toc";
 import type { TwofaAddManyResult } from "./useTwofaAccounts";
 import "./twofa-add-form.css";
@@ -111,6 +113,7 @@ export function TwofaAddForm({
   const fileRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>("single");
   const [service, setService] = useState("");
+  const [browser, setBrowser] = useState("");
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [secret, setSecret] = useState("");
@@ -126,12 +129,14 @@ export function TwofaAddForm({
     setTab("single");
     if (mode === "edit" && initial) {
       setService(initial.service);
+      setBrowser(initial.browser ?? "");
       setAccount(initial.account);
       setPassword(initial.password ?? "");
       setSecret(initial.secret);
       setBulkText("");
     } else {
       setService(initialDraft?.service ?? "");
+      setBrowser(initialDraft?.browser ?? "");
       setAccount(initialDraft?.account ?? "");
       setPassword(initialDraft?.password ?? "");
       setSecret(initialDraft?.secret ?? "");
@@ -143,10 +148,12 @@ export function TwofaAddForm({
     mode,
     initial?.id,
     initial?.service,
+    initial?.browser,
     initial?.account,
     initial?.password,
     initial?.secret,
     initialDraft?.service,
+    initialDraft?.browser,
     initialDraft?.account,
     initialDraft?.password,
     initialDraft?.secret,
@@ -174,7 +181,18 @@ export function TwofaAddForm({
       setError("2FA secret is required.");
       return;
     }
-    const draft = { service, account, password: password.trim() || undefined, secret };
+    const browserRaw = browser.trim();
+    if (browserRaw && !isBrowserCode(browserRaw)) {
+      setError("Browser code must be 4 digits (e.g. 0100).");
+      return;
+    }
+    const draft = {
+      service,
+      browser: browserRaw ? normalizeBrowserCode(browserRaw) : undefined,
+      account,
+      password: password.trim() || undefined,
+      secret,
+    };
     if (!generateCode(draft.service, draft.account, draft.secret)) {
       setError("Invalid Base32 secret.");
       return;
@@ -265,6 +283,21 @@ export function TwofaAddForm({
         />
       </label>
       <label className="block min-w-0">
+        <HubFormFieldLabel icon={Globe} iconClassName="text-cyan-300">
+          Browser
+        </HubFormFieldLabel>
+        <input
+          className="field auth-gate-field w-full font-mono"
+          name="twofa-browser"
+          autoComplete="off"
+          inputMode="numeric"
+          placeholder="0100 — optional"
+          maxLength={4}
+          value={browser}
+          onChange={(e) => setBrowser(e.target.value.replace(/\D/g, "").slice(0, 4))}
+        />
+      </label>
+      <label className="block min-w-0">
         <HubFormFieldLabel icon={User} iconClassName="text-indigo-300">
           ID / account
         </HubFormFieldLabel>
@@ -331,7 +364,7 @@ export function TwofaAddForm({
       >
         <textarea
           className="field auth-gate-field w-full min-h-[120px] font-mono text-[11px] leading-relaxed"
-          placeholder="Platform|ID|secret or secret only"
+          placeholder={TWOFA_BULK_FORMAT_HINT}
           value={bulkText}
           onChange={(e) => {
             setBulkText(e.target.value);

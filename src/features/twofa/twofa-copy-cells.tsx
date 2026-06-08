@@ -66,6 +66,22 @@ function TwofaCopyControl({
   );
 }
 
+export function TwofaBrowserCell({ account }: { account: TwofaAccount }) {
+  const value = account.browser?.trim();
+  if (!value) return <span className="hub-users-cell-muted">—</span>;
+
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <TwofaCopyControl
+        value={value}
+        display={<span className="twofa-browser-badge tabular-nums">{value}</span>}
+        className="twofa-copy-control--browser"
+        title="Copy browser code"
+      />
+    </div>
+  );
+}
+
 export function TwofaAccountCell({ account }: { account: TwofaAccount }) {
   const value = account.account.trim();
   if (!value) return <span className="hub-users-cell-muted">—</span>;

@@ -10,6 +10,7 @@ describe("parseTwofaBulkLine", () => {
   it("parses Platform|ID|2FA (3 fields)", () => {
     const row = parseTwofaBulkLine(["Google", "user@gmail.com", "JBSWY3DPEHPK3PXP"]);
     expect(row).toEqual({
+      browser: undefined,
       service: "Google",
       account: "user@gmail.com",
       password: "",
@@ -19,6 +20,7 @@ describe("parseTwofaBulkLine", () => {
 
   it("parses secret-only line (1 field)", () => {
     expect(parseTwofaBulkLine(["JBSWY3DPEHPK3PXP"])).toEqual({
+      browser: undefined,
       service: "",
       account: "",
       password: "",
@@ -28,6 +30,7 @@ describe("parseTwofaBulkLine", () => {
 
   it("parses Platform|2FA without account (2 fields)", () => {
     expect(parseTwofaBulkLine(["Google", "JBSWY3DPEHPK3PXP"])).toEqual({
+      browser: undefined,
       service: "Google",
       account: "",
       password: "",
@@ -38,6 +41,29 @@ describe("parseTwofaBulkLine", () => {
   it("parses Platform|ID|Pass|2FA (4 fields)", () => {
     const row = parseTwofaBulkLine(["GitHub", "dev", "mypass", "JBSWY3DPEHPK3PXP"]);
     expect(row).toEqual({
+      browser: undefined,
+      service: "GitHub",
+      account: "dev",
+      password: "mypass",
+      secret: "JBSWY3DPEHPK3PXP",
+    });
+  });
+
+  it("parses Browser|Platform|ID|2FA (4 fields with browser prefix)", () => {
+    const row = parseTwofaBulkLine(["0100", "Google", "user@gmail.com", "JBSWY3DPEHPK3PXP"]);
+    expect(row).toEqual({
+      browser: "0100",
+      service: "Google",
+      account: "user@gmail.com",
+      password: "",
+      secret: "JBSWY3DPEHPK3PXP",
+    });
+  });
+
+  it("parses Browser|Platform|ID|Pass|2FA (5 fields)", () => {
+    const row = parseTwofaBulkLine(["0101", "GitHub", "dev", "mypass", "JBSWY3DPEHPK3PXP"]);
+    expect(row).toEqual({
+      browser: "0101",
       service: "GitHub",
       account: "dev",
       password: "mypass",
@@ -68,6 +94,26 @@ GitHub|dev|secret123|JBSWY3DPEHPK3PXP`;
     expect(rows[0]?.secret).toBe("JBSWY3DPEHPK3PXP");
   });
 
+  it("parses mixed legacy and browser-prefixed rows", () => {
+    const text = `Google|user@gmail.com|JBSWY3DPEHPK3PXP
+0100|Facebook|fb-user|mypass|JBSWY3DPEHPK3PXP`;
+    const { rows, errors } = parseTwofaBulkText(text);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.browser).toBeUndefined();
+    expect(rows[1]?.browser).toBe("0100");
+    expect(rows[1]?.password).toBe("mypass");
+  });
+
+  it("skips browser-prefixed header row", () => {
+    const text = `Browser|Platform|ID|Pass|2FA
+0101|GitHub|dev|pw|JBSWY3DPEHPK3PXP`;
+    const { rows, errors } = parseTwofaBulkText(text);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.browser).toBe("0101");
+  });
+
   it("accepts secret-only line without separators", () => {
     const { rows, errors } = parseTwofaBulkText("JBSWY3DPEHPK3PXP");
     expect(errors).toHaveLength(0);
@@ -92,6 +138,12 @@ describe("formatTwofaBulkLine", () => {
     expect(
       formatTwofaBulkLine({ service: "A", account: "b", password: "p", secret: "SEC" }),
     ).toBe("A|b|p|SEC");
+  });
+
+  it("prefixes browser code when set", () => {
+    expect(
+      formatTwofaBulkLine({ service: "A", account: "b", browser: "0100", secret: "SEC" }),
+    ).toBe("0100|A|b|SEC");
   });
 });
 
@@ -123,5 +175,32 @@ describe("validateTwofaBulkRows", () => {
       },
     ]);
     expect(valid[0]?.password).toBe("pw");
+  });
+
+  it("rejects invalid browser code", () => {
+    const { valid, invalid } = validateTwofaBulkRows([
+      {
+        line: 2,
+        service: "GitHub",
+        browser: "chrome",
+        account: "dev",
+        secret: "JBSWY3DPEHPK3PXP",
+      },
+    ]);
+    expect(valid).toHaveLength(0);
+    expect(invalid[0]?.message).toMatch(/4 digits/);
+  });
+
+  it("keeps browser on valid rows", () => {
+    const { valid } = validateTwofaBulkRows([
+      {
+        line: 2,
+        service: "GitHub",
+        browser: "0100",
+        account: "dev",
+        secret: "JBSWY3DPEHPK3PXP",
+      },
+    ]);
+    expect(valid[0]?.browser).toBe("0100");
   });
 });

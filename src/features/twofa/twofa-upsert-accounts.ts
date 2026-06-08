@@ -12,10 +12,11 @@ export type TwofaUpsertOutcome = {
 
 function draftToFields(draft: TwofaDraft) {
   const service = draft.service.trim();
+  const browser = draft.browser?.trim();
   const account = draft.account.trim();
   const secret = normalizeSecret(draft.secret);
   const password = draft.password?.trim();
-  return { service, account, secret, password };
+  return { service, browser, account, secret, password };
 }
 
 /** Upsert one draft: replace existing same identity (delete older duplicates), or append new row. */
@@ -24,12 +25,12 @@ export function upsertTwofaDraft(
   draft: TwofaDraft,
   now: string,
 ): TwofaUpsertOutcome | null {
-  const { service, account, secret, password } = draftToFields(draft);
+  const { service, browser, account, secret, password } = draftToFields(draft);
   if (!secret) return null;
 
-  const key = twofaIdentityKey(service, account, secret);
+  const key = twofaIdentityKey(service, account, secret, browser);
   const matches = prev.filter(
-    (row) => twofaIdentityKey(row.service, row.account, row.secret) === key,
+    (row) => twofaIdentityKey(row.service, row.account, row.secret, row.browser) === key,
   );
 
   if (matches.length > 0) {
@@ -43,8 +44,10 @@ export function upsertTwofaDraft(
       account,
       secret,
       updatedAt: now,
+      ...(browser ? { browser } : {}),
       ...(password ? { password } : {}),
     };
+    if (!browser) delete updated.browser;
     if (!password) delete updated.password;
 
     const accounts = prev
@@ -56,6 +59,7 @@ export function upsertTwofaDraft(
   const row: TwofaAccount = {
     id: newId(),
     service,
+    ...(browser ? { browser } : {}),
     account,
     ...(password ? { password } : {}),
     secret,
@@ -72,15 +76,16 @@ export function updateTwofaDraft(
   draft: TwofaDraft,
   now: string,
 ): TwofaUpsertOutcome | null {
-  const { service, account, secret, password } = draftToFields(draft);
+  const { service, browser, account, secret, password } = draftToFields(draft);
   if (!secret) return null;
 
   const current = prev.find((row) => row.id === id);
   if (!current) return null;
 
-  const key = twofaIdentityKey(service, account, secret);
+  const key = twofaIdentityKey(service, account, secret, browser);
   const duplicates = prev.filter(
-    (row) => row.id !== id && twofaIdentityKey(row.service, row.account, row.secret) === key,
+    (row) =>
+      row.id !== id && twofaIdentityKey(row.service, row.account, row.secret, row.browser) === key,
   );
   const updated: TwofaAccount = {
     ...current,
@@ -88,8 +93,10 @@ export function updateTwofaDraft(
     account,
     secret,
     updatedAt: now,
+    ...(browser ? { browser } : {}),
     ...(password ? { password } : {}),
   };
+  if (!browser) delete updated.browser;
   if (!password) delete updated.password;
 
   const accounts = prev
@@ -110,12 +117,13 @@ export function findTwofaDraftConflict(
   draft: TwofaDraft,
   excludeId?: string,
 ): TwofaAccount | null {
-  const { service, account, secret } = draftToFields(draft);
+  const { service, browser, account, secret } = draftToFields(draft);
   if (!secret) return null;
-  const key = twofaIdentityKey(service, account, secret);
+  const key = twofaIdentityKey(service, account, secret, browser);
   const match = accounts.find(
     (row) =>
-      row.id !== excludeId && twofaIdentityKey(row.service, row.account, row.secret) === key,
+      row.id !== excludeId &&
+      twofaIdentityKey(row.service, row.account, row.secret, row.browser) === key,
   );
   return match ?? null;
 }
@@ -129,7 +137,7 @@ export type TwofaDedupeResult = {
 export function dedupeTwofaAccounts(accounts: TwofaAccount[]): TwofaDedupeResult {
   const groups = new Map<string, TwofaAccount[]>();
   for (const row of accounts) {
-    const key = twofaIdentityKey(row.service, row.account, row.secret);
+    const key = twofaIdentityKey(row.service, row.account, row.secret, row.browser);
     const list = groups.get(key) ?? [];
     list.push(row);
     groups.set(key, list);

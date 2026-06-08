@@ -12,6 +12,7 @@ export type TwofaCloudSyncState = "off" | "idle" | "syncing" | "ok" | "error";
 type DbRow = {
   id: string;
   service: string;
+  browser: string | null;
   account: string;
   password: string | null;
   secret: string;
@@ -24,6 +25,7 @@ function rowToAccount(row: DbRow): TwofaAccount {
   return {
     id: row.id,
     service: row.service,
+    ...(row.browser?.trim() ? { browser: row.browser.trim() } : {}),
     account: row.account,
     ...(row.password?.trim() ? { password: row.password.trim() } : {}),
     secret: row.secret,
@@ -38,6 +40,7 @@ function accountToPayload(account: TwofaAccount, userId: string) {
     id: account.id,
     user_id: userId,
     service: account.service,
+    browser: account.browser?.trim() || null,
     account: account.account,
     password: account.password?.trim() || null,
     secret: account.secret,
@@ -52,6 +55,7 @@ function draftToPayload(id: string, draft: TwofaDraft, userId: string, now: stri
     id,
     user_id: userId,
     service: draft.service.trim(),
+    browser: draft.browser?.trim() || null,
     account: draft.account.trim(),
     password: draft.password?.trim() || null,
     secret: draft.secret,
@@ -111,7 +115,7 @@ export async function pullTwofaCloudDelta(local: TwofaAccount[]): Promise<{
     const to = from + PAGE_SIZE - 1;
     let q = client
       .from("twofa_accounts")
-      .select("id,service,account,password,secret,created_at,updated_at,last_used_at")
+      .select("id,service,browser,account,password,secret,created_at,updated_at,last_used_at")
       .eq("user_id", session.user.id)
       .order("updated_at", { ascending: true })
       .order("id", { ascending: true })

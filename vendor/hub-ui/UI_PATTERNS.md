@@ -16,11 +16,41 @@
 | `document-toc` | screen | P0004/overview-toc |
 | `system-panels` | screen | P0004/system |
 | `workspace-composer` | screen | P0020/notes |
-| `auth-gate` | modal | P0004/auth |
+| `auth-gate` | modal | hub-ui/auth (V2) |
 | `user-access-modal` | modal | P0004/users |
 
 **Directory** = card + table via **ViewToggle** (one pattern).  
 **System** = Agent table + Quota table inside `panels[]` (not separate rows).
+
+---
+
+## Auth gate (golden V2 — hub-ui)
+
+**Canonical source:** `packages/hub-ui/src/auth/` + `hub-auth-gate.css` → fan-out via `node Tool/scripts/sync-hub-ui-vendor.cjs`.
+
+| Component | When to use |
+|-----------|-------------|
+| `HubAuthGate` | App gate wrapper — opens modal on mount |
+| `HubAuthGateModal` | Sign In / Sign Up / Anonymous tabs (Anonymous optional via `onAnonymous`) |
+| `HubAuthLogoutChip` | Header / sidebar User row — email + LogOut icon |
+| `HubAuthSessionBadge` | Anonymous / Signed in pill on User row (P0020 anonymous mode) |
+| `HubAuthGateGoldenPreview` | Design Template · onboarding examples |
+
+**Rules**
+
+- **No prompt overlay** — modal-only (removed `HubAuthPrompt` / `auth-waiting`).
+- P0020: tab **Anonymous** → `onAnonymous` (local session); × / backdrop dismiss same path.
+- P0004: **no Anonymous tab** — modal non-dismissible until sign-in.
+- Panel **30rem**; backdrop `rgba(8,12,28,0.52)` + `blur(8px)`.
+- Settings toggle label: **Anonymous mode** (not Offline).
+- **Do not** import `theme/hub-auth.css` in tools — overrides golden `hub-auth-gate.css` (blur 14px / 26rem).
+
+**Golden refs**
+
+- Package — `HubAuthGateGoldenPreview` · `examples/GoldenAuthGateScreen.tsx`
+- P0004 — `HubAuthGate.tsx` · Design Template tab
+- P0020 — `NotesAuthGate.tsx` (+ Anonymous)
+- E0001 — `popup.html` / `popup-theme.css` (parity script)
 
 ---
 
@@ -47,6 +77,45 @@
 - **P0008** — `app/src/components/table/FilterBar.tsx` fork for Next.js RSC (icon keys as strings). Align visually with golden tokens; do not copy into Vite tools.
 
 **Removed legacy:** `ToolFilterBar` + `.filter-toolbar` / `.chip` CSS (P0004, P0020).
+
+---
+
+## Sidebar nav tones (golden — hub-ui)
+
+**Canonical source:** `packages/hub-ui/src/shell/sidebar-nav-tones.ts` → fan-out via `node Tool/scripts/sync-hub-ui-vendor.cjs`.
+
+| API | When to use |
+|-----|-------------|
+| `NavIconTone` | Per menu item — assign once in nav registry (`items[]`, `NAV_STRUCTURE`, `SYSTEM_TAB_ITEMS`) |
+| `navIconClass(tone, active)` | Icon color (idle 75% · hover · active) |
+| `navDotClass` / `navRailClass` | System-style subnav dot + vertical connector |
+| `HubSidebarNavGroup` / `NavGroupSubNav` | Expandable group header + dot/rail subnav list |
+| `NavScreenGroupConfig` / `NavViewGroupConfig` | Sidebar nav registry — screen children vs URL sub-view children |
+| `navGroupSubnavOpenKey` / `flatMapNavScreenItems` | SessionStorage keys + flat nav for tab headers |
+| `navActiveBarClass` / `navActiveBgClass` / `navActiveTextClass` | Main nav active row (left bar · gradient · label) |
+
+**Tone palette:** `sky` · `indigo` · `emerald` · `amber` · `cyan` · `violet` · `rose` · `fuchsia` · `blue` — one distinct tone per sidebar item; reuse across Dashboard cards, tab headers, and subnav.
+
+**Rules**
+
+- Import helpers from `@tool-workspace/hub-ui` only — no per-tool `sidebar-nav-tones.ts` copies.
+- Every primary nav item **must** declare `iconTone`; subnav items inherit the same contract.
+- Footer rows keep fixed tones: User `violet`, Refresh `emerald`, Log `cyan`, Settings `amber`.
+- Tab group badges (`HUB_APP_TAB_GROUP_META`) and template badges (`HUB_UI_TEMPLATE_META`) use `iconTone` → `navBadgeIconClass` / `navBadgeVariantClass`.
+- Dashboard KPI tiles use `navKpiTone(meta.iconTone)` — `KpiStripTone` matches full `NavIconTone` palette.
+- Dashboard header stats use `navBadgeIconClass(meta.iconTone)`; filter **group** / **template** All-icons and options delegate to tab-group / template meta.
+- Chart bars/donuts use `navChartColor(meta.iconTone)`; card/table meta lines use `navMetaTextClass(entry.iconTone)`.
+- Do **not** hardcode `text-indigo-300` / `from-indigo-500/20` on active sidebar rows when `iconTone` is available.
+
+**Golden refs**
+
+- P0004 — `SalesSidebar.tsx`, `SystemTabSubNav.tsx`, `dashboard-tab-registry.ts` (`iconTone` on `DashboardTabEntry`)
+- P0020 — `WorkspaceSidebar.tsx`
+- P0016 — `nav-structure.ts`, `HubShellSidebar.tsx` (`HubSidebarNavGroup` + `NavGroupSubNav`)
+- P0008 — `layout/Sidebar.tsx`, `system/SystemTabs.tsx`
+- P0021 — `workspace/WorkspaceShell.tsx`
+
+**Verify:** `node Tool/scripts/hub-ui-duplication-check.mjs`
 
 ---
 
@@ -203,6 +272,7 @@ HubToolDetailModal
 - Pick table primitive by column complexity (see Table pager section above); both sit inside the same `HubModalDirectorySection`.
 - Route About: `HubRouteAboutSummary` — chips + TM sync id + Note ID; publish/share live in About (not access table Route column).
 - Import route-access column meta from hub-ui — no copy `hub-route-access-col--*` in tools.
+- Access filters: `hubRouteAccessFilterDefs("single-route")` — P0020 Cookie modal (Access + Permission only). `hubRouteAccessFilterDefs("multi-route")` — future P0004 user route directory (+ Publish filter).
 
 **Golden refs**
 

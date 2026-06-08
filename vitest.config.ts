@@ -1,7 +1,8 @@
-import { defineConfig } from "vitest/config";
+import viteConfig from "./vite.config";
 
-export default defineConfig({
+export default {
+  ...viteConfig,
   test: {
     exclude: ["vendor/**", "node_modules/**", "dist/**"],
   },
-});
+};

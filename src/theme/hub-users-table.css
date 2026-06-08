@@ -69,10 +69,11 @@ table.hub-users-table--twofa .hub-users-th-text {
   box-shadow: inset 3px 0 0 rgba(129, 140, 248, 0.55);
 }
 
-.hub-users-col--twofa-service { width: 11%; text-align: left; }
-.hub-users-col--twofa-account { width: 17%; text-align: left; }
-.hub-users-col--twofa-password { width: 11%; text-align: left; }
-.hub-users-col--twofa-secret { width: 14%; text-align: left; }
+.hub-users-col--twofa-service { width: 10%; text-align: left; }
+.hub-users-col--twofa-browser { width: 7%; text-align: center; }
+.hub-users-col--twofa-account { width: 15%; text-align: left; }
+.hub-users-col--twofa-password { width: 10%; text-align: left; }
+.hub-users-col--twofa-secret { width: 13%; text-align: left; }
 .hub-users-col--twofa-code { width: 9%; text-align: left; }
 .hub-users-col--twofa-period { width: 7%; text-align: center; }
 .hub-users-col--twofa-created { width: 12%; text-align: center; }
@@ -95,6 +96,11 @@ table.hub-users-table--twofa th.hub-users-col--twofa-password,
 table.hub-users-table--twofa th.hub-users-col--twofa-secret,
 table.hub-users-table--twofa th.hub-users-col--twofa-code {
   text-align: left;
+}
+
+table.hub-users-table--twofa th.hub-users-col--twofa-browser,
+table.hub-users-table--twofa td.hub-users-col--twofa-browser {
+  text-align: center;
 }
 
 table.hub-users-table--twofa th.hub-users-col--twofa-created,

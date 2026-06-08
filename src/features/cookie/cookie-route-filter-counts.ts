@@ -5,6 +5,8 @@ import type { CookieBinding } from "./cookieBridge";
 import { routeMatchesTimeRange } from "./cookie-route-activity";
 import { buildCookiePlatformOptions, routePlatformKey } from "./cookie-route-platform";
 import { COOKIE_ROUTE_FILTER_DEFS } from "./cookie-route-filters";
+import { resolveRouteFilterStatus } from "./route-sync-display";
+import { lookupVaultRow, type CookieVaultRow } from "./useCookieVaultMap";
 import type { NoteListItem } from "../notes/types";
 
 export type CookieRouteRow = {
@@ -34,19 +36,32 @@ function rowHaystack({ binding, note }: CookieRouteRow) {
     .toLowerCase();
 }
 
+function routeFilterStatus(
+  row: CookieRouteRow,
+  vaultByKey: Record<string, CookieVaultRow>,
+): string {
+  const vault = lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain);
+  return resolveRouteFilterStatus({
+    syncStatus: row.note?.sync_status,
+    noteSyncedAt: row.note?.synced_at,
+    vaultCookieCount: vault?.cookie_count,
+  });
+}
+
 function matchesCookieRouteRow(
   row: CookieRouteRow,
   query: string,
   filterValues: FilterValues,
   range: TimeRange,
+  vaultByKey: Record<string, CookieVaultRow>,
 ): boolean {
   const normalizedQuery = query.trim().toLowerCase();
   const activeStatuses = filterValues.status ?? [];
   const activePlatforms = filterValues.platform ?? [];
   const activeTypes = filterValues.type ?? [];
   const activeSources = filterValues.source ?? [];
-  const { binding, note } = row;
-  const status = note?.sync_status ?? "pending";
+  const { binding } = row;
+  const status = routeFilterStatus(row, vaultByKey);
   const platform = routePlatformKey(binding.domain);
   const type = routeType(binding.domain);
   const source = routeSource(binding);
@@ -57,15 +72,20 @@ function matchesCookieRouteRow(
     (activePlatforms.length === 0 || activePlatforms.includes(platform)) &&
     (activeTypes.length === 0 || activeTypes.includes(type)) &&
     (activeSources.length === 0 || activeSources.includes(source)) &&
-    routeMatchesTimeRange(binding, note, range)
+    routeMatchesTimeRange(binding, row.note, range)
   );
 }
 
-function matchesCookieRouteOption(row: CookieRouteRow, filterKey: string, optionValue: string): boolean {
-  const { binding, note } = row;
+function matchesCookieRouteOption(
+  row: CookieRouteRow,
+  filterKey: string,
+  optionValue: string,
+  vaultByKey: Record<string, CookieVaultRow>,
+): boolean {
+  const { binding } = row;
   switch (filterKey) {
     case "status":
-      return (note?.sync_status ?? "pending") === optionValue;
+      return routeFilterStatus(row, vaultByKey) === optionValue;
     case "platform":
       return routePlatformKey(binding.domain) === optionValue;
     case "type":
@@ -82,8 +102,9 @@ export function filterCookieRows<T extends CookieRouteRow>(
   query: string,
   filterValues: FilterValues,
   range: TimeRange,
+  vaultByKey: Record<string, CookieVaultRow> = {},
 ): T[] {
-  return rows.filter((row) => matchesCookieRouteRow(row, query, filterValues, range));
+  return rows.filter((row) => matchesCookieRouteRow(row, query, filterValues, range, vaultByKey));
 }
 
 export function cookieRouteFiltersWithCounts(
@@ -91,6 +112,7 @@ export function cookieRouteFiltersWithCounts(
   query: string,
   values: FilterValues,
   range: TimeRange,
+  vaultByKey: Record<string, CookieVaultRow> = {},
 ): FilterDef[] {
   const platformOptions = buildCookiePlatformOptions(rows);
   const defs = COOKIE_ROUTE_FILTER_DEFS.map((def) =>
@@ -102,7 +124,7 @@ export function cookieRouteFiltersWithCounts(
     defs,
     query,
     values,
-    (row, q, filters) => matchesCookieRouteRow(row, q, filters, range),
-    matchesCookieRouteOption,
+    (row, q, filters) => matchesCookieRouteRow(row, q, filters, range, vaultByKey),
+    (row, key, opt) => matchesCookieRouteOption(row, key, opt, vaultByKey),
   );
 }

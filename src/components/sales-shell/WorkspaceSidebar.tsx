@@ -1,17 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  Cookie,
-  ExternalLink,
-  FileText,
-  KeyRound,
-  LogOut,
   Mail,
   RefreshCcw,
-  Settings2,
   ShieldCheck,
   User,
+  KeyRound,
 } from "lucide-react";
-import { toolHubUsersUrl } from "../../lib/hub-identity-urls";
 import { APP_VERSION } from "../../lib/app-meta";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
 import { ToolAvatar } from "../ToolAvatar";
@@ -28,22 +22,17 @@ import {
   WORKSPACE_LIST_REFRESHING,
 } from "../../lib/workspace-refresh-bus";
 import { useAppToast } from "../toast";
-import { compactIconSize } from "../../lib/ui-scale";
 import {
-  HUB_SIDEBAR_FOOTER_BTN_CLASS,
   HubLogButton,
   HubSidebarFooterButton,
-  HubToolDetailModal,
-  HubToolDetailModalPrimaryAction,
+  HubSidebarNavList,
   HubUiZoomControl,
+  HubWorkspaceUserModal,
+  useNavGroupOpenState,
 } from "@tool-workspace/hub-ui";
+import { NAV_STRUCTURE, NAV_SUBNAV_PREFIX } from "../../lib/nav-structure";
 
-const items: { screen: WorkspaceNavScreen; label: string; icon: typeof FileText }[] = [
-  { screen: "notes", label: "Notes", icon: FileText },
-  { screen: "twofa", label: "2FA", icon: KeyRound },
-  { screen: "cookie", label: "Cookie Auto", icon: Cookie },
-  { screen: "system", label: "System", icon: Settings2 },
-];
+const EMPTY_GROUP_IDS: readonly string[] = [];
 
 type Props = {
   screen: WorkspaceNavScreen;
@@ -60,11 +49,12 @@ function userDisplay(email: string | null | undefined) {
 }
 
 export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
-  const { session } = useNotesAuth();
+  const { session, offline } = useNotesAuth();
   const { pushToast } = useAppToast();
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [listRefreshing, setListRefreshing] = useState(false);
+  const { groupOpen, setGroupSubnavOpen } = useNavGroupOpenState(NAV_SUBNAV_PREFIX, EMPTY_GROUP_IDS);
 
   useEffect(() => {
     const onRefreshing = (event: Event) => {
@@ -75,7 +65,9 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
   }, []);
   const user = session?.user ?? null;
   const email = user?.email ?? null;
-  const footerUserLabel = email || shortId(user?.id) || "guest";
+  const footerUserLabel = offline
+    ? "Anonymous"
+    : email || shortId(user?.id) || "guest";
   const role = String(user?.app_metadata?.role ?? user?.user_metadata?.role ?? "authenticated");
   const provider = String(user?.app_metadata?.provider ?? "email");
   const createdAt = user?.created_at ? new Date(user.created_at).toLocaleString("vi-VN") : "—";
@@ -124,27 +116,15 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
       </div>
 
       <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
-        {items.map(({ screen: id, label, icon: Icon }) => {
-          const active = screen === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onNavigate(id)}
-              className={`group relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-all ${
-                active
-                  ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/5 text-indigo-100"
-                  : "text-[var(--muted)] hover:bg-white/5 hover:text-[var(--text)]"
-              }`}
-            >
-              {active ? (
-                <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r bg-indigo-400" />
-              ) : null}
-              <Icon size={compactIconSize(16)} className={active ? "text-indigo-300" : ""} />
-              <span className="flex-1 text-left">{label}</span>
-            </button>
-          );
-        })}
+        <HubSidebarNavList
+          structure={NAV_STRUCTURE}
+          activeScreen={screen}
+          groupOpen={groupOpen}
+          setGroupSubnavOpen={setGroupSubnavOpen}
+          showToggleIcon={false}
+          onNavigateScreen={onNavigate}
+          onSelectView={() => {}}
+        />
       </nav>
 
       <footer className="mt-2 shrink-0 space-y-0.5 overflow-visible border-t border-white/5 pt-2.5">
@@ -160,19 +140,9 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
             </span>
           }
         />
-        <a
-          href={toolHubUsersUrl()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={HUB_SIDEBAR_FOOTER_BTN_CLASS}
-          title="Workspace users & roles (Tool Hub P0004)"
-        >
-          <ExternalLink size={compactIconSize(15)} className="shrink-0 text-indigo-300" />
-          <span className="flex-1 text-left">Tool Hub — Users</span>
-        </a>
         <HubSidebarFooterButton
           icon={RefreshCcw}
-          iconClass={`text-indigo-300 ${listRefreshing ? "animate-spin" : ""}`}
+          iconClass={`text-emerald-300 ${listRefreshing ? "animate-spin" : ""}`}
           label={listRefreshing ? "Updating…" : "Refresh"}
           onClick={() => requestWorkspaceDataRefresh()}
           title={listRefreshing ? "Updating notes in background" : "Refresh notes list"}
@@ -181,11 +151,10 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
         {displayPrefs}
         <HubUiZoomControl />
       </footer>
-      <HubToolDetailModal
+      <HubWorkspaceUserModal
         open={userModalOpen}
         onClose={() => setUserModalOpen(false)}
         title={userDisplay(email)}
-        titleId="workspace-user-modal-title"
         headerLeading={
           <span
             className="user-access-modal__avatar grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-indigo-300/25 bg-indigo-500/20 text-xs font-bold text-indigo-100"
@@ -194,50 +163,23 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
             {initials}
           </span>
         }
-        shellClassName="hub-header-panel-modal hub-tool-detail-modal--fit"
-        ariaLabelledBy="workspace-user-modal-title"
-        footer={
-          <HubToolDetailModalPrimaryAction
-            label={signingOut ? "Signing out…" : "Sign Out"}
-            onClick={signOut}
-            disabled={!session || signingOut}
-            busy={signingOut}
-            danger
-            icon={LogOut}
-          />
+        userId={user?.id ?? null}
+        sessionActive={Boolean(session)}
+        signingOut={signingOut}
+        onSignOut={signOut}
+        workspaceNote={
+          offline
+            ? "Anonymous mode — cloud vault sync requires sign-in."
+            : "Workspace data syncs per signed-in user on Data Box Supabase."
         }
-      >
-        <div className="space-y-3 px-1">
-          <p className="font-mono text-[10px] text-[var(--muted)]">{user?.id ?? "No active session"}</p>
-          <div className="grid gap-2 text-sm">
-            {[
-              { label: "Email", value: userDisplay(email), icon: Mail },
-              { label: "Role", value: role, icon: ShieldCheck },
-              { label: "Provider", value: provider, icon: KeyRound },
-              { label: "Created", value: createdAt, icon: User },
-              { label: "Last sign in", value: lastSignIn, icon: RefreshCcw },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[.025] px-3 py-2.5"
-                >
-                  <div className="grid h-8 w-8 place-items-center rounded-lg bg-white/[.04] text-indigo-200">
-                    <Icon size={compactIconSize(14)} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">{item.label}</div>
-                    <div className="mt-0.5 truncate font-medium text-[var(--text)]" title={item.value}>
-                      {item.value}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </HubToolDetailModal>
+        rows={[
+          { label: "Email", value: userDisplay(email), icon: Mail },
+          { label: "Role", value: role, icon: ShieldCheck },
+          { label: "Provider", value: provider, icon: KeyRound },
+          { label: "Created", value: createdAt, icon: User },
+          { label: "Last sign in", value: lastSignIn, icon: RefreshCcw },
+        ]}
+      />
     </aside>
   );
 }

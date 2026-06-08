@@ -3,7 +3,13 @@ import { HubPaginatedTableShell, HubTableColumnHeader, type HubTableColumnRole }
 import { TwofaPlatformIcon } from "./TwofaPlatformIcon";
 import "./twofa-platform-icon.css";
 import "./twofa-table-cells.css";
-import { TwofaAccountCell, TwofaCodeCell, TwofaPasswordCell, TwofaSecretCell } from "./twofa-copy-cells";
+import {
+  TwofaAccountCell,
+  TwofaBrowserCell,
+  TwofaCodeCell,
+  TwofaPasswordCell,
+  TwofaSecretCell,
+} from "./twofa-copy-cells";
 import type { TwofaAccount } from "./types";
 import { secondsRemaining } from "./totp";
 import { fmtHubDate, twofaActivityAt } from "./twofa-time";
@@ -23,6 +29,7 @@ type ColumnDef = {
 
 const COLUMNS: ColumnDef[] = [
   { key: "service", label: "Service", colClass: "hub-users-col--twofa-service", align: "left", role: "service" },
+  { key: "browser", label: "Browser", colClass: "hub-users-col--twofa-browser", align: "center", role: "id" },
   { key: "account", label: "Account", colClass: "hub-users-col--twofa-account", align: "left", role: "email" },
   { key: "password", label: "Password", colClass: "hub-users-col--twofa-password", align: "left", role: "password" },
   { key: "secret", label: "Secret", colClass: "hub-users-col--twofa-secret", align: "left", role: "id" },
@@ -69,6 +76,12 @@ function renderBodyCell(
               {row.service}
             </span>
           </div>
+        </td>
+      );
+    case "browser":
+      return (
+        <td key={key} className="hub-users-col--twofa-browser">
+          <TwofaBrowserCell account={row} />
         </td>
       );
     case "account":

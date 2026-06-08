@@ -199,7 +199,7 @@ function CookieSyncMain({
     async (opts?: { silent?: boolean }) => {
       const showToast = opts?.silent !== true;
       if (offline) {
-        if (showToast) pushToast("Offline mode: extension bridge requires Supabase.", "warn");
+        if (showToast) pushToast("Anonymous mode: extension bridge requires sign-in.", "warn");
         return;
       }
       const {
@@ -347,7 +347,7 @@ function CookieSyncMain({
         <>
           {offline ? (
             <p className="mb-3 rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
-              Offline mode is enabled. Cloud routes, sharing, and vault status are disabled.
+              Anonymous mode is enabled. Cloud routes, sharing, and vault status are disabled.
             </p>
           ) : null}
           <PageHeader
@@ -382,7 +382,7 @@ function CookieSyncMain({
             ];
             if (offline) {
               pushToExtension(nextBindings);
-              pushToast("Route saved locally (offline).", "info");
+              pushToast("Route saved locally (anonymous).", "info");
               return;
             }
             void publishRouteToCloud(row, { silent: true }).then((ok) => {
@@ -403,7 +403,7 @@ function CookieSyncMain({
             updateBinding(id, patch);
             if (offline) {
               pushToExtension(bindings.map((binding) => (binding.id === id ? nextRoute : binding)));
-              pushToast("Route updated locally (offline).", "info");
+              pushToast("Route updated locally (anonymous).", "info");
               return;
             }
             void publishRouteToCloud(nextRoute, { silent: true }).then((ok) => {
@@ -420,7 +420,7 @@ function CookieSyncMain({
               removeBinding(id);
               if (selectedBindingId === id) setSelectedBindingId(null);
               pushToExtension(bindings.filter((binding) => binding.id !== id));
-              pushToast("Route removed locally (offline).", "info");
+              pushToast("Route removed locally (anonymous).", "info");
               return;
             }
             void disableCookieRouteInCloud(session, current).then((res) => {
@@ -445,7 +445,7 @@ function CookieSyncMain({
 
       {shellMode && offline ? (
         <p className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100">
-          Offline mode is enabled. Cloud routes, sharing, and vault status are disabled.
+          Anonymous mode is enabled. Cloud routes, sharing, and vault status are disabled.
         </p>
       ) : null}
 

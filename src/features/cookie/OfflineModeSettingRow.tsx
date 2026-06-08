@@ -18,8 +18,8 @@ export function OfflineModeSettingRow({ onChanged }: Props) {
 
   return (
     <SettingRow
-      label="Offline mode"
-      desc="Bypass Supabase auth gates when the backend is restricted. Cloud features will be limited."
+      label="Anonymous mode"
+      desc="Browse without sign-in when the backend is restricted. Cloud sync and sharing are limited."
     >
       <label className="flex items-center gap-2 text-[12px]">
         <input

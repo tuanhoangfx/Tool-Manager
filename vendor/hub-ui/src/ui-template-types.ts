@@ -102,9 +102,16 @@ export const GOLDEN_SOURCES: Record<
     ],
   },
   "auth-gate": {
-    primary: "Tool/P0004-Tool-Hub/src/features/identity/HubAuthGate.tsx",
-    css: ["p0008-globals.css"],
-    packageExports: [],
+    primary: "packages/hub-ui/src/auth/HubAuthGate.tsx",
+    css: ["hub-auth-gate.css"],
+    packageExports: [
+      "HubAuthGate",
+      "HubAuthGateModal",
+      "HubAuthLogoutChip",
+      "HubAuthSessionBadge",
+      "HubAuthGateGoldenPreview",
+      "formatHubAuthToolInfo",
+    ],
   },
 };
 

@@ -2,6 +2,7 @@ import { prepareChartItems } from "@tool-workspace/hub-ui";
 import type { BarItem } from "../../components/sales-shell";
 import { resolveCookieSiteIcon } from "./cookieSiteIcon";
 import type { CookieRouteRow } from "./cookie-route-filter-counts";
+import { resolveRouteFilterStatus } from "./route-sync-display";
 import { lookupVaultRow, type CookieVaultRow } from "./useCookieVaultMap";
 
 const STATUS_ORDER = ["synced", "pending", "error", "manual"] as const;
@@ -38,7 +39,16 @@ export function buildCookieChartItems(
   vaultByKey: Record<string, CookieVaultRow>,
   shareCounts: Record<string, number> = {},
 ) {
-  const statusCounts = countBy(rows.map((row) => row.note?.sync_status ?? "pending"));
+  const statusCounts = countBy(
+    rows.map((row) => {
+      const vault = lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain);
+      return resolveRouteFilterStatus({
+        syncStatus: row.note?.sync_status,
+        noteSyncedAt: row.note?.synced_at,
+        vaultCookieCount: vault?.cookie_count,
+      });
+    }),
+  );
   const statusItems: BarItem[] = prepareChartItems(
     STATUS_ORDER.map((key) => ({
       label: STATUS_LABEL[key],

@@ -18,38 +18,29 @@ type Props = {
   variant?: "notes" | "cookie-auto" | "twofa" | "system";
 };
 
-const INLINE_TITLE: Record<NonNullable<Props["variant"]>, string> = {
-  notes: "Sign in to manage your notes.",
-  "cookie-auto": "Sign in to enable cloud-first cookie sync.",
-  twofa: "Sign in to manage 2FA codes.",
-  system: "Sign in to access system tools.",
+const ANONYMOUS_HINT: Record<NonNullable<Props["variant"]>, string> = {
+  notes: "Browse notes locally. Cloud sync requires sign-in.",
+  "cookie-auto": "Use local cookie jar only. Cloud vault sync requires sign-in.",
+  twofa: "Limited 2FA access. Full vault requires sign-in.",
+  system: "Browse system tools locally. Admin features require sign-in.",
 };
 
-/** Data Box sign-in gate — shared HubAuthGate shell + dual workspace auth. */
+/** Data Box sign-in gate — golden modal with Sign In / Sign Up / Anonymous. */
 export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
   const { adoptSession } = useNotesAuth();
 
   return (
     <HubAuthGate
-      inlineTitle={INLINE_TITLE[variant]}
-      loginButtonLabel="Sign in"
       onAuthed={onAuthed}
-      extraInlineActions={
-        <button
-          type="button"
-          className="auth-inline-btn auth-inline-btn--ghost"
-          onClick={() => {
-            setOfflineMode(true);
-            onAuthed?.();
-          }}
-          title="Use offline mode (limited features)"
-        >
-          Offline mode
-        </button>
-      }
+      onAnonymous={() => setOfflineMode(true)}
       modal={{
         title: "Welcome to Data Box",
-        submitPlacement: "footer",
+        toolInfo: {
+          code: "P0020",
+          name: "Data Box",
+          tagline: "Notes, cookies & 2FA vault",
+        },
+        anonymousHint: ANONYMOUS_HINT[variant],
         errorOptions: { toolHubHint: true, dualWorkspace: true },
         headerLeading: (
           <ToolAvatar

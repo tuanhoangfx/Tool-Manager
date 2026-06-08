@@ -10,6 +10,14 @@ export function resolveRouteSyncedDisplayIso(opts: {
   return opts.noteSyncedAt?.trim() || null;
 }
 
+export function resolveRouteFilterStatus(opts: {
+  syncStatus?: string | null;
+  noteSyncedAt?: string | null;
+  vaultCookieCount?: number | null;
+}): string {
+  return resolveRouteSyncDisplay(opts).filterStatus;
+}
+
 export type RouteSyncDisplay = {
   label: string;
   tone: RouteStatChipTone;
@@ -66,7 +74,7 @@ export function resolveRouteSyncDisplay(opts: {
     return {
       label: "Synced",
       tone: "ok",
-      filterStatus: "pending",
+      filterStatus: "synced",
       title,
     };
   }

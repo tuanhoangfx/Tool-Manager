@@ -667,8 +667,8 @@ export function CookieAutoSyncTable({
     [detailBinding, rows],
   );
   const filteredRows = useMemo(
-    () => filterCookieRows(rows, routeQuery, filterValues, prefs.range),
-    [filterValues, prefs.range, routeQuery, rows],
+    () => filterCookieRows(rows, routeQuery, filterValues, prefs.range, vaultByKey),
+    [filterValues, prefs.range, routeQuery, rows, vaultByKey],
   );
   const sortedFilteredRows = useMemo(
     () => sortCookieAutoRows(filteredRows, listPrefs.sort),
@@ -676,8 +676,8 @@ export function CookieAutoSyncTable({
   );
 
   const routeFiltersWithCounts = useMemo(
-    () => cookieRouteFiltersWithCounts(rows, routeQuery, filterValues, prefs.range),
-    [filterValues, prefs.range, routeQuery, rows],
+    () => cookieRouteFiltersWithCounts(rows, routeQuery, filterValues, prefs.range, vaultByKey),
+    [filterValues, prefs.range, routeQuery, rows, vaultByKey],
   );
 
   const allVisibleSelected =
@@ -1179,15 +1179,15 @@ export function CookieAutoSyncTable({
             title={cookieRouteSectionTitle(COOKIE_ROUTE_SHARE_TOC, "grant")}
           >
             <p className="cookie-route-modal__note">
-              Grant Load or Sync access by email. Manage stays with route owner only.
+              Grant Load or Sync by Hub User ID (e.g. CS00761) or email. Manage stays with route owner only.
             </p>
             <div className={HUB_TOOL_DETAIL_FORM_GRID_3_CLASS}>
               <label className="block min-w-0">
-                <HubFormFieldLabel icon={Mail}>User email</HubFormFieldLabel>
+                <HubFormFieldLabel icon={Mail}>User ID or email</HubFormFieldLabel>
                 <input
                   className="field auth-gate-field w-full"
                   value={shareEmail}
-                  placeholder="user@example.com"
+                  placeholder="CS00761 or user@example.com"
                   onChange={(event) => setShareEmail(event.target.value)}
                 />
               </label>

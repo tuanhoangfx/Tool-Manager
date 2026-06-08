@@ -17,7 +17,6 @@ import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
 import type { CookieVaultRow } from "./useCookieVaultMap";
 import { useNotesAuth } from "../notes/useNotesAuth";
 import type { CookieBinding } from "./cookieBridge";
-import { getCookieRoutePublishStatus } from "./cookieRoutesRepository";
 import {
   listNoteCookieMembers,
   revokeNoteCookieMember,
@@ -56,11 +55,6 @@ type Props = {
   onShared?: () => void;
 };
 
-type PublishedState = {
-  published: boolean;
-  updatedAt: string | null;
-};
-
 type ShareAccess = "load" | "sync";
 
 function memberUser(member: NoteCookieMemberRow) {
@@ -94,7 +88,6 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
     return hit?.ok ? hit.members : [];
   });
   const [accessReady, setAccessReady] = useState(() => Boolean(getCachedNoteCookieMembers(binding.noteId)?.ok));
-  const [publishedState, setPublishedState] = useState<PublishedState | null>(null);
   const loadSeqRef = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -116,20 +109,6 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
 
   const routeManualSyncAt = noteSyncedAt?.trim() || null;
   const canShare = binding.accessRole !== "member" && binding.canManage !== false;
-
-  const loadPublishStatus = useCallback(async () => {
-    if (binding.accessRole === "member" || getOfflineMode()) {
-      setPublishedState({ published: false, updatedAt: null });
-      return;
-    }
-    const res = await getCookieRoutePublishStatus(session, binding);
-    if (!res.ok) {
-      setPublishedState(null);
-      if (!getOfflineMode()) setError(res.error);
-      return;
-    }
-    setPublishedState({ published: res.published, updatedAt: res.updatedAt });
-  }, [binding, session]);
 
   const loadActivity = useCallback(async () => {
     if (!binding.noteId?.trim() || !binding.domain?.trim()) {
@@ -183,14 +162,13 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
     }
     setAccessReady(true);
 
-    void Promise.all([loadPublishStatus(), loadActivity()]);
-  }, [binding.accessRole, binding.noteId, loadActivity, loadPublishStatus]);
+    void loadActivity();
+  }, [binding.accessRole, binding.noteId, loadActivity]);
 
   useEffect(() => {
     const hit = getCachedNoteCookieMembers(binding.noteId);
     setMembers(hit?.ok ? hit.members : []);
     setAccessReady(Boolean(hit?.ok));
-    setPublishedState(null);
     setLoadByUserId({});
     setLoadByEmail({});
     setSyncByUserId({});
@@ -245,11 +223,8 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
     };
   }, [accessReady, binding.domain, binding.noteId, loadActivity]);
 
-  const routeStatusReady = publishedState !== null;
-  const routePublished = publishedState?.published === true;
   const ownerUserId = binding.ownerUserId ?? null;
   const ownerEmail = (binding.ownerUserEmail ?? "").trim().toLowerCase();
-  const publishedLabel = !routeStatusReady ? "—" : routePublished ? "Published" : "Missing";
 
   const activityForRow = useCallback(
     (
@@ -331,14 +306,11 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
     const q = query.trim().toLowerCase();
     const roleFilters = filterValues.role ?? [];
     const permissionFilters = filterValues.permission ?? [];
-    const routeFilters = filterValues.status ?? [];
-    const routeState = routePublished ? "published" : "missing";
 
     return accessRows.filter((row) => {
-      const haystack = [row.user, row.role, routeState].join(" ").toLowerCase();
+      const haystack = [row.user, row.role].join(" ").toLowerCase();
       if (q && !haystack.includes(q)) return false;
       if (roleFilters.length && !roleFilters.includes(normalizedRole(row.role))) return false;
-      if (routeFilters.length && !routeFilters.includes(routeState)) return false;
       if (permissionFilters.length) {
         const permissions = [
           row.canApply ? "load" : null,
@@ -348,11 +320,11 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
       }
       return true;
     });
-  }, [accessRows, filterValues, query, routePublished]);
+  }, [accessRows, filterValues, query]);
 
   const accessFilters = useMemo(
-    () => accessFiltersWithCounts(accessRows, query, filterValues, routePublished),
-    [accessRows, filterValues, query, routePublished],
+    () => accessFiltersWithCounts(accessRows, query, filterValues),
+    [accessRows, filterValues, query],
   );
 
   const selectableFiltered = useMemo(
@@ -504,7 +476,7 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
         filterBar={
           <FilterBar
             layout="inline"
-            placeholder="Search access by user, role, route..."
+            placeholder="Search access by user, role…"
             filters={accessFilters}
             query={query}
             onQueryChange={setQuery}
@@ -592,15 +564,15 @@ export function CookieRouteMembers({ binding, noteSyncedAt, onToast, onShared }:
             title={cookieRouteSectionTitle(COOKIE_ROUTE_SHARE_TOC, "grant")}
           >
             <p className="cookie-route-modal__note">
-              Grant Load or Sync access by email. Manage stays with route owner only.
+              Grant Load or Sync by Hub User ID (e.g. CS00761) or email. Manage stays with route owner only.
             </p>
             <div className={HUB_TOOL_DETAIL_FORM_GRID_2_CLASS}>
               <label className="block min-w-0">
-                <HubFormFieldLabel icon={Mail}>User email</HubFormFieldLabel>
+                <HubFormFieldLabel icon={Mail}>User ID or email</HubFormFieldLabel>
                 <input
                   className="field auth-gate-field w-full"
                   value={shareEmail}
-                  placeholder="user@example.com"
+                  placeholder="CS00761 or user@example.com"
                   onChange={(event) => setShareEmail(event.target.value)}
                 />
               </label>

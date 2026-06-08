@@ -1,4 +1,5 @@
 import type { TwofaDraft } from "./types";
+import { isBrowserCode, normalizeBrowserCode } from "./twofa-browser-code";
 import { generateCode, normalizeSecret } from "./totp";
 
 export type TwofaBulkRow = TwofaDraft & { line: number };
@@ -8,8 +9,13 @@ export type TwofaBulkParseResult = {
   errors: { line: number; message: string }[];
 };
 
+export const TWOFA_BULK_FORMAT_HINT =
+  "Browser|Platform|ID|Pass|2FA · Platform|ID|2FA · secret only";
+
 const HEADER_3_RE = /^platform\s*[|:]\s*id\s*[|:]\s*2fa\s*$/i;
 const HEADER_4_RE = /^platform\s*[|:]\s*id\s*[|:]\s*pass\s*[|:]\s*2fa\s*$/i;
+const HEADER_BROWSER_3_RE = /^browser\s*[|:]\s*platform\s*[|:]\s*id\s*[|:]\s*2fa\s*$/i;
+const HEADER_BROWSER_4_RE = /^browser\s*[|:]\s*platform\s*[|:]\s*id\s*[|:]\s*pass\s*[|:]\s*2fa\s*$/i;
 
 function splitFields(line: string): string[] {
   const sep = line.includes("|") ? "|" : line.includes(":") ? ":" : null;
@@ -19,19 +25,25 @@ function splitFields(line: string): string[] {
 
 function isHeaderLine(raw: string): boolean {
   const compact = raw.replace(/\s+/g, "");
-  return HEADER_3_RE.test(compact) || HEADER_4_RE.test(compact);
+  return (
+    HEADER_3_RE.test(compact) ||
+    HEADER_4_RE.test(compact) ||
+    HEADER_BROWSER_3_RE.test(compact) ||
+    HEADER_BROWSER_4_RE.test(compact)
+  );
 }
 
-/** Parse line as secret-only, `Platform|2FA`, `Platform|ID|2FA`, or `Platform|ID|Pass|2FA`. */
-export function parseTwofaBulkLine(parts: string[]): Pick<TwofaDraft, "service" | "account" | "password" | "secret"> | null {
+type ParsedFields = Pick<TwofaDraft, "browser" | "service" | "account" | "password" | "secret">;
+
+function parseCoreFields(parts: string[]): ParsedFields | null {
   if (parts.length === 0) return null;
 
   if (parts.length === 1) {
-    return { service: "", account: "", password: "", secret: parts[0] ?? "" };
+    return { browser: undefined, service: "", account: "", password: "", secret: parts[0] ?? "" };
   }
 
   if (parts.length === 2) {
-    return { service: parts[0] ?? "", account: "", password: "", secret: parts[1] ?? "" };
+    return { browser: undefined, service: parts[0] ?? "", account: "", password: "", secret: parts[1] ?? "" };
   }
 
   const service = parts[0] ?? "";
@@ -39,6 +51,7 @@ export function parseTwofaBulkLine(parts: string[]): Pick<TwofaDraft, "service" 
 
   if (parts.length === 3) {
     return {
+      browser: undefined,
       service,
       account,
       password: "",
@@ -47,6 +60,7 @@ export function parseTwofaBulkLine(parts: string[]): Pick<TwofaDraft, "service" 
   }
 
   return {
+    browser: undefined,
     service,
     account,
     password: parts[2] ?? "",
@@ -54,7 +68,31 @@ export function parseTwofaBulkLine(parts: string[]): Pick<TwofaDraft, "service" 
   };
 }
 
-/** Parse bulk text: `Platform|ID|2FA` or `Platform|ID|Pass|2FA` per line. */
+function parseBrowserPrefixedFields(parts: string[]): ParsedFields | null {
+  const browser = normalizeBrowserCode(parts[0] ?? "");
+  const rest = parts.slice(1);
+  if (!rest.length) return null;
+
+  const core = parseCoreFields(rest);
+  if (!core) return null;
+  return { ...core, browser: browser || undefined };
+}
+
+/**
+ * Parse line as secret-only, `Platform|2FA`, `Platform|ID|2FA`, `Platform|ID|Pass|2FA`,
+ * or browser-prefixed variants (`Browser|Platform|ID|2FA`, `Browser|Platform|ID|Pass|2FA`).
+ */
+export function parseTwofaBulkLine(parts: string[]): ParsedFields | null {
+  if (parts.length === 0) return null;
+
+  if (parts.length > 1 && isBrowserCode(parts[0] ?? "")) {
+    return parseBrowserPrefixedFields(parts);
+  }
+
+  return parseCoreFields(parts);
+}
+
+/** Parse bulk text — supports legacy and browser-prefixed rows per line. */
 export function parseTwofaBulkText(text: string): TwofaBulkParseResult {
   const rows: TwofaBulkRow[] = [];
   const errors: { line: number; message: string }[] = [];
@@ -76,7 +114,7 @@ export function parseTwofaBulkText(text: string): TwofaBulkParseResult {
       continue;
     }
 
-    const { service, account, password, secret } = parsed;
+    const { browser, service, account, password, secret } = parsed;
     if (!secret.trim()) {
       errors.push({ line: lineNo, message: "Missing 2FA secret" });
       continue;
@@ -85,6 +123,7 @@ export function parseTwofaBulkText(text: string): TwofaBulkParseResult {
     rows.push({
       line: lineNo,
       service,
+      browser: browser || undefined,
       account,
       password: password || undefined,
       secret,
@@ -102,8 +141,15 @@ export function validateTwofaBulkRows(rows: TwofaBulkRow[]): {
   const invalid: { line: number; message: string }[] = [];
 
   for (const row of rows) {
+    const browserRaw = row.browser?.trim();
+    if (browserRaw && !isBrowserCode(browserRaw)) {
+      invalid.push({ line: row.line, message: "Browser code must be 4 digits (e.g. 0100)" });
+      continue;
+    }
+
     const draft: TwofaDraft = {
       service: row.service.trim(),
+      browser: browserRaw ? normalizeBrowserCode(browserRaw) : undefined,
       account: row.account.trim(),
       password: row.password?.trim() || undefined,
       secret: normalizeSecret(row.secret),
@@ -123,9 +169,12 @@ export function validateTwofaBulkRows(rows: TwofaBulkRow[]): {
 }
 
 export function formatTwofaBulkLine(draft: TwofaDraft): string {
+  const browser = draft.browser?.trim();
   const pass = draft.password?.trim();
-  if (pass) return `${draft.service}|${draft.account}|${pass}|${draft.secret}`;
-  return `${draft.service}|${draft.account}|${draft.secret}`;
+  const core = pass
+    ? `${draft.service}|${draft.account}|${pass}|${draft.secret}`
+    : `${draft.service}|${draft.account}|${draft.secret}`;
+  return browser ? `${browser}|${core}` : core;
 }
 
 export async function parseTwofaBulkFile(file: File): Promise<TwofaBulkParseResult> {
