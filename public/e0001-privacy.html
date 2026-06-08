@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>E0001 Cookie Bridge — Privacy Policy</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #0f172a; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    th, td { border: 1px solid #e2e8f0; padding: 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #f8fafc; }
+    a { color: #0369a1; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy — E0001 Cookie Bridge</h1>
+  <p><strong>Last updated:</strong> 2026-06-09<br />
+  <strong>Extension:</strong> E0001 Cookie Bridge (Chrome MV3)<br />
+  <strong>Publisher:</strong> Infi / Data Box workspace tools<br />
+  <strong>Contact:</strong> <a href="https://databox.infi.io.vn/cookie">Data Box Cookie Auto</a></p>
+
+  <h2>Summary</h2>
+  <p>E0001 Cookie Bridge is a companion extension for <strong>Data Box (P0020) Cookie Auto</strong>. It reads and writes browser cookies <strong>only when you explicitly choose Sync or Load</strong> on a configured route. We do not sell data, run ads, or track browsing for marketing.</p>
+
+  <h2>What we collect</h2>
+  <table>
+    <thead><tr><th>Data</th><th>When</th><th>Where stored</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Browser cookies</td><td>You click Sync now</td><td>AES-GCM vault on Supabase</td><td>Cross-browser session on Load cookies</td></tr>
+      <tr><td>Masked cookie snapshot</td><td>Sync</td><td>Supabase note metadata</td><td>Audit in Data Box</td></tr>
+      <tr><td>Supabase auth tokens</td><td>Sign in / Link extension</td><td>chrome.storage.local</td><td>Authenticate vault RPC</td></tr>
+      <tr><td>Route bindings</td><td>Link extension</td><td>chrome.storage.local</td><td>Route sync/load targets</td></tr>
+      <tr><td>Browser profile UUID</td><td>First run</td><td>chrome.storage.local</td><td>Per-profile activity</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What we do not do</h2>
+  <ul>
+    <li>No analytics or advertising SDKs</li>
+    <li>No background cookie harvesting — sync is manual per route</li>
+    <li>No sharing cookie data with third parties except your Data Box Supabase backend</li>
+    <li>No sale of personal data</li>
+  </ul>
+
+  <h2>Permissions</h2>
+  <ul>
+    <li><strong>cookies</strong> — read/write on explicit Sync or Load for configured domains</li>
+    <li><strong>storage</strong> — local auth, bindings, preferences</li>
+    <li><strong>tabs</strong> — open target site after Load (optional)</li>
+    <li><strong>&lt;all_urls&gt;</strong> — required by chrome.cookies API for user-configured domains</li>
+  </ul>
+
+  <h2>Data retention &amp; deletion</h2>
+  <p>Vault data follows your Data Box note lifecycle. Uninstalling the extension removes local storage for that Chrome profile.</p>
+
+  <h2>Security</h2>
+  <p>Full cookie jars are encrypted client-side (AES-GCM) before upload. Transport uses HTTPS.</p>
+
+  <p><a href="https://databox.infi.io.vn/cookie">Return to Cookie Auto</a></p>
+</body>
+</html>

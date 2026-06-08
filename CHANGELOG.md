@@ -4,6 +4,42 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-09 - E0001 Chrome Web Store install + privacy page
+
+- Version: `4.3.16`
+- Type: Patch
+- Product: P0020
+- Prompt: Chrome Web Store link kaaadageakdandpobcofplmfbjfjabdk; Cookie Auto Store install UI.
+- Timestamp: 2026-06-09 14:00 (UTC+7)
+- Status: Committed
+
+### Changes
+
+- Cookie extension: `EXTENSION_CHROME_WEB_STORE_URL`, 2-step Store install + unpacked fallback.
+- Header/modal CTA opens Chrome Web Store when published.
+- Public privacy page `public/e0001-privacy.html`.
+
+Version: 4.3.15 → 4.3.16
+
+## 2026-06-09 - 2FA Browser code + bulk dual-format deploy
+
+- Version: `4.3.15`
+- Type: Patch
+- Product: P0020
+- Prompt: Browser field 0100/0101; bulk form mới/cũ; post-deploy manifest + smoke contract.
+- Timestamp: 2026-06-09 09:00 (UTC+7)
+- Status: Verified
+- Release: https://databox.infi.io.vn
+
+### Changes
+
+- 2FA: optional `browser` field (4-digit code), table column, cloud sync + Supabase migration.
+- Bulk parser: `Browser|Platform|ID|Pass|2FA` alongside legacy `Platform|ID|2FA` formats.
+- `post-deploy-manifest.mjs` stamps `latestPublished` v4.3.15 after production verify.
+- Browser smoke: `p0020-twofa-bulk-browser` step (paste → preview → Import enabled).
+
+Version: 4.3.14 → 4.3.15
+
 ## 2026-06-08 - Deploy manifest sync, CHANGELOG Timestamp gate, zoom default 90%
 
 - Version: `4.3.14`

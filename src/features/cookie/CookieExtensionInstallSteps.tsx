@@ -4,13 +4,20 @@ import {
   FolderOpen,
   Link2,
   Puzzle,
+  ShoppingBag,
   ToggleRight,
   type LucideIcon,
 } from "lucide-react";
 import { compactIconSize } from "../../lib/ui-scale";
-import { EXTENSION_INSTALL_STEPS, type ExtensionInstallStepId } from "./extensionInstall";
+import {
+  EXTENSION_INSTALL_STEPS,
+  EXTENSION_UNPACKED_INSTALL_STEPS,
+  hasChromeWebStoreInstall,
+  type ExtensionInstallStepId,
+} from "./extensionInstall";
 
 const STEP_ICONS: Record<ExtensionInstallStepId, LucideIcon> = {
+  store: ShoppingBag,
   download: Download,
   extract: Archive,
   chrome: Puzzle,
@@ -29,8 +36,10 @@ function ThLabel({ icon: Icon, tone, children }: { icon: LucideIcon; tone: strin
 }
 
 export function CookieExtensionInstallSteps() {
+  const steps = EXTENSION_INSTALL_STEPS;
   return (
-    <div className="overflow-x-auto rounded-lg border border-white/5 bg-black/10">
+    <div className="space-y-3">
+      <div className="overflow-x-auto rounded-lg border border-white/5 bg-black/10">
       <table className="w-full min-w-[420px] border-collapse text-left text-[12px]">
         <thead>
           <tr className="border-b border-white/5 bg-white/[.02] text-[10px] font-medium text-[var(--muted)]">
@@ -48,7 +57,7 @@ export function CookieExtensionInstallSteps() {
           </tr>
         </thead>
         <tbody>
-          {EXTENSION_INSTALL_STEPS.map((step, index) => {
+          {steps.map((step, index) => {
             const Icon = STEP_ICONS[step.id];
             return (
               <tr
@@ -73,6 +82,21 @@ export function CookieExtensionInstallSteps() {
           })}
         </tbody>
       </table>
+      </div>
+      {hasChromeWebStoreInstall() ? (
+        <details className="rounded-lg border border-white/5 bg-white/[.02] px-3 py-2 text-[11px] text-[var(--muted)]">
+          <summary className="cursor-pointer font-medium text-[var(--text)]">Fallback: Load unpacked (GitHub ZIP)</summary>
+          <ol className="mt-2 list-decimal space-y-1 pl-4">
+            {EXTENSION_UNPACKED_INSTALL_STEPS.map((step) => (
+              <li key={step.id}>
+                <span className="text-[var(--text)]">{step.title}</span>
+                {" — "}
+                {step.hint}
+              </li>
+            ))}
+          </ol>
+        </details>
+      ) : null}
     </div>
   );
 }

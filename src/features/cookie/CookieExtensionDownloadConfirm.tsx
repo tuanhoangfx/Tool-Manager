@@ -4,6 +4,7 @@ import {
   ExternalLink,
   FolderOpen,
   Package,
+  ShoppingBag,
   Tag,
 } from "lucide-react";
 import {
@@ -17,7 +18,13 @@ import { compactIconSize } from "../../lib/ui-scale";
 import { TocSectionNav } from "../overview/TocSectionNav";
 import { EXTENSION_BUILD } from "./extensionBuildInfo";
 import { E0001_ICON_URL } from "./extensionBrand";
-import { EXTENSION_HEADER_LABEL, EXTENSION_INSTALL_LABEL } from "./extensionInstall";
+import {
+  EXTENSION_CHROME_WEB_STORE_LABEL,
+  EXTENSION_CHROME_WEB_STORE_URL,
+  EXTENSION_HEADER_LABEL,
+  EXTENSION_INSTALL_LABEL,
+  hasChromeWebStoreInstall,
+} from "./extensionInstall";
 import { CookieExtensionInstallSteps } from "./CookieExtensionInstallSteps";
 import { EXTENSION_DOWNLOAD_TOC, extensionDownloadSectionTitle } from "./extension-download-toc";
 import { fetchLatestExtensionRelease, type ExtensionReleaseInfo } from "./extensionReleaseApi";
@@ -85,6 +92,11 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
 
   const onConfirm = () => {
     if (busy) return;
+    if (hasChromeWebStoreInstall() && EXTENSION_CHROME_WEB_STORE_URL) {
+      window.open(EXTENSION_CHROME_WEB_STORE_URL, "_blank", "noopener,noreferrer");
+      onClose();
+      return;
+    }
     setBusy(true);
     void (async () => {
       try {
@@ -110,7 +122,7 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
       scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
       footer={
         <HubToolDetailModalPrimaryAction
-          label="Confirm download"
+          label={hasChromeWebStoreInstall() ? EXTENSION_CHROME_WEB_STORE_LABEL : "Confirm download"}
           onClick={onConfirm}
           disabled={busy}
           busy={busy}
@@ -153,6 +165,19 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
               <FieldRow icon={FolderOpen} iconClass="text-emerald-300" label="Install">
                 {EXTENSION_INSTALL_LABEL}
               </FieldRow>
+              {hasChromeWebStoreInstall() && EXTENSION_CHROME_WEB_STORE_URL ? (
+                <FieldRow icon={ShoppingBag} iconClass="text-emerald-300" label="Chrome Store">
+                  <a
+                    href={EXTENSION_CHROME_WEB_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cookie-dl-modal__latest-link"
+                  >
+                    <ExternalLink size={13} aria-hidden />
+                    <span className="font-mono text-[11px]">{EXTENSION_CHROME_WEB_STORE_URL}</span>
+                  </a>
+                </FieldRow>
+              ) : null}
             </tbody>
           </table>
         </HubToolDetailSection>
