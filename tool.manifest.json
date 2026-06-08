@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "4.3.14",
+    "version": "4.3.16",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -49,9 +49,9 @@
       "cookie-bridge"
     ],
     "latestPublished": {
-      "tag": "v4.3.14",
+      "tag": "v4.3.15",
       "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.1.5",
-      "publishedAt": "2026-06-08T09:04:46.584Z"
+      "publishedAt": "2026-06-08T18:54:13.992Z"
     }
   },
   "urls": {
@@ -146,5 +146,5 @@
       "golden": "P0020/auth"
     }
   ],
-  "manifestUpdatedAt": "2026-06-08T09:04:46.584Z"
+  "manifestUpdatedAt": "2026-06-08T18:54:13.992Z"
 }
