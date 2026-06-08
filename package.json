@@ -1,7 +1,7 @@
 {
   "name": "p0020-data-box",
   "private": true,
-  "version": "4.3.11",
+  "version": "4.3.12",
   "packageManager": "pnpm@9.15.9",
   "type": "module",
   "description": "P0020-Data-Box — unified data workspace for Notes, 2FA, secure cookie vault, and browser agents.",
@@ -61,8 +61,8 @@
   "dependencies": {
     "@dev/hub-load": "file:./vendor/hub-load",
     "@supabase/supabase-js": "^2.106.1",
-    "@tool-workspace/hub-identity": "workspace:*",
-    "@tool-workspace/hub-ui": "workspace:*",
+    "@tool-workspace/hub-identity": "file:./vendor/hub-identity",
+    "@tool-workspace/hub-ui": "file:./vendor/hub-ui",
     "@vitejs/plugin-react": "^5.1.1",
     "lucide-react": "^0.561.0",
     "otpauth": "^9.5.1",

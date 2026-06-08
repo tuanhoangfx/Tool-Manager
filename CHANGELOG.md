@@ -4,6 +4,21 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-08 - Vercel deploy: vendor hub-ui + lockfile sync
+
+- Version: `4.3.12`
+- Type: Patch
+- Product: P0020
+- Prompt: Fix production deploy — restore vendor/hub-ui for standalone Vercel build; sync pnpm-lock.yaml.
+
+### Changes
+
+- `package.json`: `file:./vendor/hub-ui` + `file:./vendor/hub-identity` (replace `workspace:*`).
+- `vite.config.ts`: resolve aliases to `vendor/` paths for CI.
+- Full `packages/hub-ui` fan-out to `vendor/hub-ui`; lockfile aligned for frozen install.
+
+Version: 4.3.11 → 4.3.12
+
 ## 2026-06-07 - Hub header: Log label + center-stats scrollbar
 
 - Version: `4.3.11`
