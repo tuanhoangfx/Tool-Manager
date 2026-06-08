@@ -4,6 +4,22 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-08 - Deploy manifest sync, CHANGELOG Timestamp gate, zoom default 90%
+
+- Version: `4.3.14`
+- Type: Patch
+- Product: P0020
+- Prompt: latestPublished on Deploy; Timestamp validate; Size default 90% all tools.
+- Timestamp: 2026-06-08 15:30 (UTC+7)
+
+### Changes
+
+- Workspace ship: `post-deploy-manifest.mjs` stamps `latestPublished` after smoke pass.
+- `check-version-sync` + `auto-commit`: require/stamp CHANGELOG `- Timestamp:` (P0004 golden).
+- Hub UI default zoom 90% (`HUB_USER_ZOOM_DEFAULT`, `--hub-user-zoom-pct`).
+
+Version: 4.3.13 → 4.3.14
+
 ## 2026-06-08 - Header timestamp parity + viewport fill (P0004 golden)
 
 - Version: `4.3.13`

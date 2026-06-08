@@ -5,8 +5,8 @@ export const HUB_USER_ZOOM_STEPS = [90, 100, 110, 120] as const;
 
 export type HubUserZoomPct = (typeof HUB_USER_ZOOM_STEPS)[number];
 
-/** 100% = 16px root; 90% = legacy compact hub density before user zoom. */
-export const HUB_USER_ZOOM_DEFAULT: HubUserZoomPct = 100;
+/** 90% = golden default hub density (P0004); 100% = standard 16px root. */
+export const HUB_USER_ZOOM_DEFAULT: HubUserZoomPct = 90;
 
 export const HUB_USER_ZOOM_MIN = HUB_USER_ZOOM_STEPS[0];
 export const HUB_USER_ZOOM_MAX = HUB_USER_ZOOM_STEPS[HUB_USER_ZOOM_STEPS.length - 1];
