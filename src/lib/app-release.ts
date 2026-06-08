@@ -1,18 +1,25 @@
+import changelogRaw from "../../CHANGELOG.md?raw";
 import { APP_VERSION } from "./app-meta";
+import { formatTabHeaderTimestamp } from "./hub-tab-header-meta";
 import toolManifest from "../../tool.manifest.json";
-
-function formatHubHeaderDate(value?: string) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yy = String(d.getFullYear()).slice(-2);
-  return `${dd}/${mm}/${yy}`;
-}
 
 function normalizeVersion(value?: string) {
   return value?.replace(/^v/i, "") ?? "";
+}
+
+function parseChangelogTimestamp(version: string, changelog = changelogRaw): string | undefined {
+  const escaped = version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const entry = changelog.match(
+    new RegExp(`- Version:\\s*\`${escaped}\`[\\s\\S]*?- Timestamp:\\s*([^\\n]+)`, "i"),
+  );
+  const raw = entry?.[1]?.trim();
+  if (!raw) return undefined;
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+\(UTC([+-]\d{1,2})\)$/i);
+  if (!match) return raw;
+  const [, date, time, offset] = match;
+  const sign = offset.startsWith("-") ? "-" : "+";
+  const hour = offset.replace(/^[+-]/, "").padStart(2, "0");
+  return `${date}T${time}:00${sign}${hour}:00`;
 }
 
 type ManifestRelease = {
@@ -20,20 +27,42 @@ type ManifestRelease = {
     tag?: string;
     publishedAt?: string;
   };
+  manifestUpdatedAt?: string;
 };
 
-/** Build / GitHub release date for Hub-style tab headers. */
+/** Build / deploy timestamp for Hub-style tab headers (P0004 golden). */
 export function resolveAppVersionReleaseMeta(): {
   shortLabel: string;
   live: boolean;
+  publishedAt?: string;
 } {
   const currentVersion = normalizeVersion(APP_VERSION);
-  const latest = (toolManifest as { release?: ManifestRelease }).release?.latestPublished;
+  const manifest = toolManifest as { release?: ManifestRelease; manifestUpdatedAt?: string };
+  const latest = manifest.release?.latestPublished;
 
   if (normalizeVersion(latest?.tag) === currentVersion && latest?.publishedAt) {
     return {
-      shortLabel: formatHubHeaderDate(latest.publishedAt),
+      shortLabel: formatTabHeaderTimestamp(latest.publishedAt),
       live: true,
+      publishedAt: latest.publishedAt,
+    };
+  }
+
+  const changelogTimestamp = parseChangelogTimestamp(currentVersion);
+  if (changelogTimestamp) {
+    return {
+      shortLabel: formatTabHeaderTimestamp(changelogTimestamp),
+      live: false,
+      publishedAt: changelogTimestamp,
+    };
+  }
+
+  const manifestUpdatedAt = manifest.manifestUpdatedAt;
+  if (manifestUpdatedAt) {
+    return {
+      shortLabel: formatTabHeaderTimestamp(manifestUpdatedAt),
+      live: false,
+      publishedAt: manifestUpdatedAt,
     };
   }
 

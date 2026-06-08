@@ -5,8 +5,13 @@ body,
 #root {
   height: 100%;
   min-height: 100%;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
+}
+
+.hub-app {
+  min-height: 100dvh;
 }
 
 /* Notes: split pane — no main scroll (Hub tab chrome + body flex) */

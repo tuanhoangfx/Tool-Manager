@@ -4,12 +4,28 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-08 - Header timestamp parity + viewport fill (P0004 golden)
+
+- Version: `4.3.13`
+- Type: Patch
+- Product: P0020
+- Prompt: Tab header missing `hh:mm dd/mm/yy`; Notes shell gap vs local on production.
+- Timestamp: 2026-06-08 15:05 (UTC+7)
+
+### Changes
+
+- `app-release.ts`: CHANGELOG Timestamp + `manifestUpdatedAt` fallback; `formatTabHeaderTimestamp` (`hh:mm dd/mm/yy`) like P0004.
+- `data-box-layout.css` + `WorkspaceApp`: `100dvh` min-height so shell fills viewport after deploy.
+
+Version: 4.3.12 → 4.3.13
+
 ## 2026-06-08 - Vercel deploy: vendor hub-ui + lockfile sync
 
 - Version: `4.3.12`
 - Type: Patch
 - Product: P0020
 - Prompt: Fix production deploy — restore vendor/hub-ui for standalone Vercel build; sync pnpm-lock.yaml.
+- Timestamp: 2026-06-08 14:30 (UTC+7)
 
 ### Changes
 

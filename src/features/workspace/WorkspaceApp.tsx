@@ -102,7 +102,7 @@ function WorkspaceAppInner() {
       activeScreen={activeScreenId}
       bootLog={{ scope: "P0020", message: "Data-Box workspace started", screen: activeScreenId }}
     >
-    <div className="hub-app theme-hub flex h-full min-h-0 w-full overflow-hidden">
+    <div className="hub-app theme-hub flex h-full min-h-0 min-h-dvh w-full overflow-hidden">
       <WorkspaceSidebar
         screen={activeNav}
         onNavigate={onNav}
