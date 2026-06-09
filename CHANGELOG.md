@@ -4,6 +4,20 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-09 - Cookie FAB one-click latest extension download
+
+- Version: `4.3.16`
+- Type: Patch
+- Product: P0020
+- Prompt: Push Cookie Auto + E0001 — Download FAB auto-download latest GitHub ZIP.
+- Timestamp: 2026-06-09 18:15 (UTC+7)
+- Status: Verified
+
+### Changes
+
+- `CookieExtensionFab`: one click → `fetchLatestExtensionRelease` + ZIP download (aligned with header CTA; no confirm modal).
+- `extensionBuildInfo` synced to E0001 **v1.1.2** (`downloadVersion` matches GitHub `releases/latest`).
+
 ## 2026-06-09 - E0001 Chrome Web Store install + privacy page
 
 - Version: `4.3.16`

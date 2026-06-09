@@ -5,6 +5,6 @@
  */
 export const EXTENSION_BUILD = {
   version: "1.1.2",
-  downloadVersion: "1.1.1",
+  downloadVersion: "1.1.2",
   updated: "2026-06-08",
 };
