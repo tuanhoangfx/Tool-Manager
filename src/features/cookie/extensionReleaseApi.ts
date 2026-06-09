@@ -4,12 +4,11 @@ import {
   EXTENSION_GITHUB_REPO,
   EXTENSION_RELEASE_PAGE,
   extensionReleaseZipUrl,
+  getExtensionDownloadVersion,
 } from "./extensionInstall";
 
 const RELEASE_API = `https://api.github.com/repos/${EXTENSION_GITHUB_REPO}/releases/latest`;
 const RELEASES_API = `https://api.github.com/repos/${EXTENSION_GITHUB_REPO}/releases?per_page=10`;
-// Keep this small: extension ZIP assets can be uploaded/replaced frequently,
-// and we want the modal to reflect the updated release quickly.
 const CACHE_TTL_MS = 60 * 1000;
 
 export type ExtensionReleaseInfo = {
@@ -21,8 +20,12 @@ export type ExtensionReleaseInfo = {
 
 let cache: { at: number; data: ExtensionReleaseInfo } | null = null;
 
+export function clearExtensionReleaseCache() {
+  cache = null;
+}
+
 function parseVersionFromTag(tag?: string): string {
-  if (!tag?.trim()) return EXTENSION_BUILD.version;
+  if (!tag?.trim()) return getExtensionDownloadVersion();
   return tag.replace(/^v/i, "").trim();
 }
 
@@ -43,7 +46,7 @@ function toInfo(release: GitHubRelease): ExtensionReleaseInfo {
 }
 
 function staticFallback(): ExtensionReleaseInfo {
-  const version = EXTENSION_BUILD.version;
+  const version = getExtensionDownloadVersion();
   const zipName = `E0001-cookie-bridge-v${version}.zip`;
   return {
     version,
@@ -53,44 +56,46 @@ function staticFallback(): ExtensionReleaseInfo {
   };
 }
 
-/** Latest extension release from GitHub (cached). Falls back to bundled extensionBuildInfo. */
+async function fetchNearestReleaseWithZip(): Promise<ExtensionReleaseInfo | null> {
+  const listRes = await fetch(RELEASES_API, {
+    headers: { Accept: "application/vnd.github+json", "User-Agent": "p0020-extension-release" },
+  });
+  if (!listRes.ok) return null;
+  const releases = (await listRes.json()) as GitHubRelease[];
+  if (!Array.isArray(releases)) return null;
+  const nearest = releases.find((r) => Boolean(pickZipAsset(r)));
+  return nearest ? toInfo(nearest) : null;
+}
+
+/** Latest extension release from GitHub (cached). Falls back to bundled downloadVersion. */
 export async function fetchLatestExtensionRelease(): Promise<ExtensionReleaseInfo> {
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.data;
 
   try {
     const res = await fetch(RELEASE_API, {
-      headers: { Accept: "application/vnd.github+json" },
+      headers: { Accept: "application/vnd.github+json", "User-Agent": "p0020-extension-release" },
     });
-    if (!res.ok) throw new Error(`GitHub releases/latest: ${res.status}`);
-    const release = (await res.json()) as GitHubRelease;
-
-    // If "latest" has no uploaded ZIP asset yet, fall back to the nearest
-    // prior release that *does* have a ZIP (common when a tag is published
-    // before the distribution asset is uploaded).
-    const latestZip = pickZipAsset(release);
-    if (!latestZip) {
-      const listRes = await fetch(RELEASES_API, {
-        headers: { Accept: "application/vnd.github+json" },
-      });
-      if (listRes.ok) {
-        const releases = (await listRes.json()) as GitHubRelease[];
-        const nearestWithZip = releases.find((r) => Boolean(pickZipAsset(r)));
-        if (nearestWithZip) {
-          const data = toInfo(nearestWithZip);
-          cache = { at: Date.now(), data };
-          return data;
-        }
+    if (res.ok) {
+      const release = (await res.json()) as GitHubRelease;
+      if (pickZipAsset(release)) {
+        const data = toInfo(release);
+        cache = { at: Date.now(), data };
+        return data;
       }
     }
 
-    const data = toInfo(release);
-    cache = { at: Date.now(), data };
-    return data;
+    const nearest = await fetchNearestReleaseWithZip();
+    if (nearest) {
+      cache = { at: Date.now(), data: nearest };
+      return nearest;
+    }
   } catch {
-    const data = staticFallback();
-    cache = { at: Date.now(), data };
-    return data;
+    /* fall through */
   }
+
+  const data = staticFallback();
+  cache = { at: Date.now(), data };
+  return data;
 }
 
 export function getCachedExtensionRelease(): ExtensionReleaseInfo | null {

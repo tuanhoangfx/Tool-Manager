@@ -18,12 +18,14 @@ import { compactIconSize } from "../../lib/ui-scale";
 import { TocSectionNav } from "../overview/TocSectionNav";
 import { EXTENSION_BUILD } from "./extensionBuildInfo";
 import { E0001_ICON_URL } from "./extensionBrand";
+import { EXTENSION_CWS_LISTING_STATUS, type ExtensionCwsListingStatus } from "./extensionCwsBuildInfo";
 import {
   EXTENSION_CHROME_WEB_STORE_LABEL,
   EXTENSION_CHROME_WEB_STORE_URL,
   EXTENSION_HEADER_LABEL,
-  EXTENSION_INSTALL_LABEL,
+  getExtensionInstallLabel,
   hasChromeWebStoreInstall,
+  isChromeWebStoreLive,
 } from "./extensionInstall";
 import { CookieExtensionInstallSteps } from "./CookieExtensionInstallSteps";
 import { EXTENSION_DOWNLOAD_TOC, extensionDownloadSectionTitle } from "./extension-download-toc";
@@ -62,6 +64,32 @@ function FieldRow({
   );
 }
 
+function CwsListingChip({ status }: { status: ExtensionCwsListingStatus }) {
+  if (status === "in_review") {
+    return (
+      <span
+        className="cookie-dl-modal__cws-chip cookie-dl-modal__cws-chip--review"
+        title="Chrome Web Store listing is pending review"
+      >
+        <span className="cookie-dl-modal__cws-chip-dot" aria-hidden />
+        In review
+      </span>
+    );
+  }
+  if (status === "published") {
+    return (
+      <span
+        className="cookie-dl-modal__cws-chip cookie-dl-modal__cws-chip--live"
+        title="Extension is live on Chrome Web Store"
+      >
+        <span className="cookie-dl-modal__cws-chip-dot" aria-hidden />
+        Published
+      </span>
+    );
+  }
+  return null;
+}
+
 export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
   const bundled = useExtensionRelease();
   const [preview, setPreview] = useState<ExtensionReleaseInfo>(bundled);
@@ -92,7 +120,7 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
 
   const onConfirm = () => {
     if (busy) return;
-    if (hasChromeWebStoreInstall() && EXTENSION_CHROME_WEB_STORE_URL) {
+    if (isChromeWebStoreLive() && EXTENSION_CHROME_WEB_STORE_URL) {
       window.open(EXTENSION_CHROME_WEB_STORE_URL, "_blank", "noopener,noreferrer");
       onClose();
       return;
@@ -122,7 +150,7 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
       scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
       footer={
         <HubToolDetailModalPrimaryAction
-          label={hasChromeWebStoreInstall() ? EXTENSION_CHROME_WEB_STORE_LABEL : "Confirm download"}
+          label={isChromeWebStoreLive() ? EXTENSION_CHROME_WEB_STORE_LABEL : "Confirm download"}
           onClick={onConfirm}
           disabled={busy}
           busy={busy}
@@ -163,19 +191,22 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
                 <span className="font-mono text-[11px] break-all">{preview.zipName}</span>
               </FieldRow>
               <FieldRow icon={FolderOpen} iconClass="text-emerald-300" label="Install">
-                {EXTENSION_INSTALL_LABEL}
+                {getExtensionInstallLabel()}
               </FieldRow>
               {hasChromeWebStoreInstall() && EXTENSION_CHROME_WEB_STORE_URL ? (
                 <FieldRow icon={ShoppingBag} iconClass="text-emerald-300" label="Chrome Store">
-                  <a
-                    href={EXTENSION_CHROME_WEB_STORE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="cookie-dl-modal__latest-link"
-                  >
-                    <ExternalLink size={13} aria-hidden />
-                    <span className="font-mono text-[11px]">{EXTENSION_CHROME_WEB_STORE_URL}</span>
-                  </a>
+                  <span className="cookie-dl-modal__store-cell">
+                    <CwsListingChip status={EXTENSION_CWS_LISTING_STATUS} />
+                    <a
+                      href={EXTENSION_CHROME_WEB_STORE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="cookie-dl-modal__latest-link cookie-dl-modal__store-link"
+                    >
+                      <ExternalLink size={13} aria-hidden />
+                      <span className="font-mono text-[11px] break-all">{EXTENSION_CHROME_WEB_STORE_URL}</span>
+                    </a>
+                  </span>
                 </FieldRow>
               ) : null}
             </tbody>

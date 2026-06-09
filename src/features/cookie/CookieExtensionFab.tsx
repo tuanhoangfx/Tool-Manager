@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Download } from "lucide-react";
-import { EXTENSION_HEADER_LABEL } from "./extensionInstall";
+import { EXTENSION_HEADER_LABEL, isChromeWebStoreLive } from "./extensionInstall";
 import { useExtensionRelease } from "./useExtensionRelease";
 import { CookieExtensionDownloadConfirm } from "./CookieExtensionDownloadConfirm";
 import "./cookie-extension-fab.css";
@@ -18,6 +18,11 @@ export function CookieExtensionFab({ active = true }: Props) {
 
   if (typeof document === "undefined") return null;
 
+  const storeLive = isChromeWebStoreLive();
+  const fabTitle = storeLive
+    ? `${EXTENSION_HEADER_LABEL} v${release.version} — Install from Chrome Web Store`
+    : `Download ${EXTENSION_HEADER_LABEL} v${release.version} (GitHub ZIP)`;
+
   return (
     <>
       {active
@@ -26,8 +31,8 @@ export function CookieExtensionFab({ active = true }: Props) {
               <button
                 type="button"
                 className="workspace-fab workspace-fab--download workspace-fab--pulse"
-                title={`${EXTENSION_HEADER_LABEL} v${release.version} — review before download`}
-                aria-label={`Download ${EXTENSION_HEADER_LABEL} v${release.version}`}
+                title={fabTitle}
+                aria-label={fabTitle}
                 onClick={() => setConfirmOpen(true)}
               >
                 <Download size={16} strokeWidth={2.35} aria-hidden />

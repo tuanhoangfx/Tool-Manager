@@ -131,6 +131,8 @@ export {
 export { HubListChromeHeader, type HubListChromeHeaderProps } from "./shell/HubListChromeHeader";
 export { KpiStrip, type KpiStripTone, type KpiTileData } from "./shell/KpiStrip";
 export { MiniBarChart, type BarItem } from "./shell/MiniBarChart";
+export { MiniSparkline } from "./shell/MiniSparkline";
+export { EntityRankMiniChart, type EntityRankRow } from "./shell/EntityRankMiniChart";
 export { MiniDonut, type DonutItem } from "./shell/MiniDonut";
 export { MetricBadge, RegistryMetricBadge, type MetricBadgeProps, type MetricBadgeTone } from "./shell/MetricBadge";
 export {
@@ -333,6 +335,10 @@ export {
 export { HubTabScreenBody } from "./content/HubTabScreenBody";
 export { HubDirectoryScreen, type HubDirectoryScreenProps } from "./templates/HubDirectoryScreen";
 export {
+  HubWorkspaceDirectoryScreen,
+  type HubWorkspaceDirectoryScreenProps,
+} from "./templates/HubWorkspaceDirectoryScreen";
+export {
   HubSplitWorkspaceScreen,
   type HubSplitWorkspaceScreenProps,
 } from "./templates/HubSplitWorkspaceScreen";
@@ -351,6 +357,17 @@ export {
   type FilterIconMeta,
   type FilterIconResolver,
 } from "./shell/filter-icons";
+export {
+  AGENT_KIND_SEMANTIC,
+  AGENT_SCOPE_SEMANTIC,
+  buildSemanticTocIcon,
+  configureSemanticIcons,
+  resolveSemanticIcon,
+  semanticFilterMeta,
+  semanticHeaderStat,
+  semanticKpiIcon,
+} from "./lib/semantic-icon-registry";
+export type { SemanticIconKey, SemanticIconMeta } from "./types/semantic-icon";
 export {
   CHART_OTHERS_LABEL,
   configureChartLegend,
@@ -461,13 +478,59 @@ export {
   type HubWorkspaceUserProfileRow,
 } from "./auth/HubWorkspaceUserModal";
 export {
+  HubUserModalFieldRow,
+  HubUserModalFieldTable,
+  type HubUserModalFieldRowProps,
+} from "./auth/HubUserModalFieldTable";
+export {
   HubFullUserAccountModal,
   HUB_FULL_USER_ACCOUNT_TOC,
   type HubFullUserAccountModalProps,
   type HubFullUserAccountResult,
   type HubFullUserAccountTocId,
 } from "./auth/HubFullUserAccountModal";
+export { HubUserChangeEmailModal, type HubUserChangeEmailModalProps } from "./auth/HubUserChangeEmailModal";
+export {
+  HubUserChangePasswordModal,
+  type HubUserChangePasswordModalProps,
+} from "./auth/HubUserChangePasswordModal";
+export {
+  HUB_CHANGE_EMAIL_TOC,
+  HUB_CHANGE_PASSWORD_TOC,
+  hubUserChangeSectionIcon,
+  hubUserChangeTocItems,
+  type HubUserChangeTocEntry,
+} from "./auth/hub-user-change-toc";
+export { HubUserFieldActionButton, type HubUserFieldActionButtonProps } from "./auth/HubUserFieldActionButton";
+export {
+  resolveWorkspaceRoleIcon,
+  resolveWorkspaceRoleKey,
+  type HubWorkspaceRoleIconMeta,
+} from "./auth/hub-workspace-role-icon";
 export {
   normalizeHubAuthError,
   type NormalizeHubAuthErrorOptions,
 } from "./auth/normalize-hub-auth-error";
+export {
+  WorkspaceAuthGate,
+  createWorkspaceAuthGate,
+  createWorkspaceAuthGateConfig,
+  type CreateWorkspaceAuthGateOptions,
+  type WorkspaceAuthGateConfig,
+  type WorkspaceAuthGateProps,
+} from "./auth/WorkspaceAuthGate";
+export {
+  HubWorkspaceUserShell,
+  type HubWorkspaceUserModalRenderContext,
+  type HubWorkspaceUserShellProps,
+} from "./auth/HubWorkspaceUserShell";
+export { HubAccessDeniedPanel, type HubAccessDeniedPanelProps } from "./auth/HubAccessDeniedPanel";
+export { HubSidebarUserFooter, type HubSidebarUserFooterProps } from "./auth/HubSidebarUserFooter";
+export { HubWorkspaceUserAvatar, type HubWorkspaceUserAvatarProps } from "./auth/HubWorkspaceUserAvatar";
+export {
+  buildWorkspaceUserProfileRows,
+  resolveHubAuthSessionMode,
+  workspaceUserFooterLabel,
+  workspaceUserInitials,
+  type BuildWorkspaceUserProfileRowsOptions,
+} from "./auth/workspace-user-session";

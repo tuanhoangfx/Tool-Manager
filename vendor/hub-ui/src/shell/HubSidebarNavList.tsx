@@ -24,6 +24,8 @@ export type HubSidebarNavListProps<TScreen extends string, TView extends string 
   onSelectView: (view: TView, parentScreen: TScreen) => void;
   onPrefetchScreen?: (screen: TScreen) => void;
   onPrefetchView?: (view: TView) => void;
+  /** Screen id → badge count merged into screen-group subnav items. */
+  navBadges?: Partial<Record<TScreen, number>>;
   /** Optional slot for groups that need custom subnav (e.g. P0004 System tabs). */
   renderGroupSubnav?: (entry: NavGroupConfig<string, TScreen, TView>, groupActive: boolean) => ReactNode;
 };
@@ -39,6 +41,7 @@ export function HubSidebarNavList<TScreen extends string, TView extends string =
   onSelectView,
   onPrefetchScreen,
   onPrefetchView,
+  navBadges,
   renderGroupSubnav,
 }: HubSidebarNavListProps<TScreen, TView>) {
   return (
@@ -46,6 +49,7 @@ export function HubSidebarNavList<TScreen extends string, TView extends string =
       {structure.map((entry) => {
         if (entry.kind === "screen") {
           const active = activeScreen === entry.screen;
+          const badge = navBadges?.[entry.screen];
           return (
             <HubSidebarNavScreenButton
               key={entry.screen}
@@ -53,6 +57,7 @@ export function HubSidebarNavList<TScreen extends string, TView extends string =
               icon={entry.icon}
               iconTone={entry.iconTone}
               active={active}
+              badge={badge}
               onClick={() => onNavigateScreen(entry.screen)}
               onMouseEnter={() => onPrefetchScreen?.(entry.screen)}
               onFocus={() => onPrefetchScreen?.(entry.screen)}
@@ -96,7 +101,10 @@ export function HubSidebarNavList<TScreen extends string, TView extends string =
         ) : isNavScreenGroup(entry) ? (
           <NavGroupSubNav
             activeId={groupActive && entry.children.some((c) => c.screen === activeScreen) ? activeScreen : null}
-            items={navScreenGroupSubNavItems(entry.children)}
+            items={navScreenGroupSubNavItems(entry.children).map((item) => ({
+              ...item,
+              badge: item.badge ?? navBadges?.[item.id as TScreen],
+            }))}
             onSelect={onNavigateScreen}
             onPrefetch={onPrefetchScreen}
           />

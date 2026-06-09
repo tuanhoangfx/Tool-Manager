@@ -1,6 +1,6 @@
 import { normalizeSecret } from "./totp";
 
-/** Stable identity for dedup — matches DB unique (user_id, service, account, browser); secret-only rows use secret. */
+/** Stable identity for dedup — matches DB unique (user_id, service, account, coalesce(browser,'')); secret-only rows use secret. */
 export function twofaIdentityKey(
   service: string,
   account: string,

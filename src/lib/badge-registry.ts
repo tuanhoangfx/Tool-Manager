@@ -53,7 +53,7 @@ import {
 import type { FilterOption } from "@tool-workspace/hub-ui";
 import type { LinkGroup } from "../features/overview/tool-link-filters";
 import type { Mode } from "./hub-schema-spec";
-import { deployLabel } from "./tooling";
+import { deployLabel } from "./deploy-label";
 import type { MetricBadgeTone } from "@tool-workspace/hub-ui";
 
 export type FilterIconMeta = {

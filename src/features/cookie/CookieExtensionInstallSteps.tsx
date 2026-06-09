@@ -10,9 +10,10 @@ import {
 } from "lucide-react";
 import { compactIconSize } from "../../lib/ui-scale";
 import {
-  EXTENSION_INSTALL_STEPS,
   EXTENSION_UNPACKED_INSTALL_STEPS,
+  getExtensionInstallSteps,
   hasChromeWebStoreInstall,
+  isChromeWebStoreLive,
   type ExtensionInstallStepId,
 } from "./extensionInstall";
 
@@ -36,7 +37,7 @@ function ThLabel({ icon: Icon, tone, children }: { icon: LucideIcon; tone: strin
 }
 
 export function CookieExtensionInstallSteps() {
-  const steps = EXTENSION_INSTALL_STEPS;
+  const steps = getExtensionInstallSteps();
   return (
     <div className="space-y-3">
       <div className="overflow-x-auto rounded-lg border border-white/5 bg-black/10">
@@ -83,7 +84,7 @@ export function CookieExtensionInstallSteps() {
         </tbody>
       </table>
       </div>
-      {hasChromeWebStoreInstall() ? (
+      {isChromeWebStoreLive() ? (
         <details className="rounded-lg border border-white/5 bg-white/[.02] px-3 py-2 text-[11px] text-[var(--muted)]">
           <summary className="cursor-pointer font-medium text-[var(--text)]">Fallback: Load unpacked (GitHub ZIP)</summary>
           <ol className="mt-2 list-decimal space-y-1 pl-4">

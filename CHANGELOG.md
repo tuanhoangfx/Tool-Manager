@@ -12,6 +12,7 @@
 - Prompt: Chrome Web Store link kaaadageakdandpobcofplmfbjfjabdk; Cookie Auto Store install UI.
 - Timestamp: 2026-06-09 14:00 (UTC+7)
 - Status: Committed
+- Release: https://databox.infi.io.vn
 
 ### Changes
 

@@ -1,50 +1,22 @@
+import { createKeyedClientCache } from "@dev/hub-load";
 import type { NoteRow } from "../features/notes/types";
 
-const CACHE_KEY = "p0020:note:details:v1";
-const MAX_ENTRIES = 48;
-
-type Entry = { at: number; row: NoteRow };
-
-function readMap(): Record<string, Entry> {
-  if (typeof sessionStorage === "undefined") return {};
-  try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, Entry>;
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeMap(map: Record<string, Entry>) {
-  if (typeof sessionStorage === "undefined") return;
-  const keys = Object.keys(map).sort((a, b) => map[b]!.at - map[a]!.at);
-  const trimmed: Record<string, Entry> = {};
-  for (const key of keys.slice(0, MAX_ENTRIES)) {
-    trimmed[key] = map[key]!;
-  }
-  try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(trimmed));
-  } catch {
-    /* quota */
-  }
-}
+const cache = createKeyedClientCache<NoteRow>({
+  keyPrefix: "p0020:note:detail:v2",
+  maxEntries: 48,
+  ttlMs: 3 * 60_000,
+  validate: (data): data is NoteRow =>
+    typeof data === "object" && data != null && "id" in data && typeof (data as NoteRow).id === "string",
+});
 
 export function readNoteDetailStale(noteId: string): NoteRow | null {
-  const entry = readMap()[noteId];
-  return entry?.row ?? null;
+  return cache.readStale(noteId);
 }
 
 export function writeNoteDetailCache(noteId: string, row: NoteRow) {
-  const map = readMap();
-  map[noteId] = { at: Date.now(), row };
-  writeMap(map);
+  cache.write(noteId, row);
 }
 
 export function removeNoteDetailCache(noteId: string) {
-  const map = readMap();
-  if (!map[noteId]) return;
-  delete map[noteId];
-  writeMap(map);
+  cache.remove(noteId);
 }

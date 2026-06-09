@@ -13,6 +13,7 @@ export type HubSidebarNavScreenButtonProps = {
   icon: LucideIcon;
   iconTone: NavIconTone;
   active: boolean;
+  badge?: number;
   onClick: () => void;
   onMouseEnter?: () => void;
   onFocus?: () => void;
@@ -24,6 +25,7 @@ export function HubSidebarNavScreenButton({
   icon: Icon,
   iconTone,
   active,
+  badge,
   onClick,
   onMouseEnter,
   onFocus,
@@ -47,6 +49,11 @@ export function HubSidebarNavScreenButton({
       ) : null}
       <Icon size={compactIconSize(16)} className={`shrink-0 ${navIconClass(iconTone, active)}`} />
       <span className="flex-1 text-left">{label}</span>
+      {badge != null && badge > 0 ? (
+        <span className="min-w-[1.125rem] rounded-full bg-amber-500/25 px-1.5 py-0.5 text-center text-[10px] font-semibold tabular-nums text-amber-200">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
     </button>
   );
 }

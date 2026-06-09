@@ -81,20 +81,7 @@ async function authenticateDataBox(
   return { session: null, error: lastError ?? "Data Box sign-in failed." };
 }
 
-/** Mirror 2FA vault after login — non-blocking to avoid auth rate limits on sign-in click. */
-function mirrorTwofaVaultInBackground(
-  authEmail: string,
-  password: string,
-  mode: "signin" | "signup",
-): void {
-  if (!isTwofaSupabaseConfigured) return;
-  void authenticateTwofaVault(authEmail, password, mode).then(({ session, error }) => {
-    if (error) console.warn("[P0020] 2FA vault mirror (background):", error);
-    else if (!session) console.warn("[P0020] 2FA vault mirror (background): no session");
-  });
-}
-
-/** Sign in / sign up on Tool Hub (identity), then Data Box; 2FA vault mirrors in background. */
+/** Sign in / sign up on Tool Hub (identity), then Data Box and 2FA vault. */
 export async function signInWorkspaceDual(
   loginInput: string,
   password: string,
@@ -157,13 +144,17 @@ export async function signInWorkspaceDual(
 
   const { session: dataSession, error: dataError } = await authenticateDataBox(login, password, mode);
 
-  mirrorTwofaVaultInBackground(mirrorEmail, password, mode);
+  const { session: twofaSession, error: twofaError } = isTwofaSupabaseConfigured
+    ? await authenticateTwofaVault(mirrorEmail, password, mode)
+    : { session: null, error: null };
+
+  if (twofaError) console.warn("[P0020] 2FA vault mirror:", twofaError);
 
   return {
     identitySession,
     dataSession,
     dataError,
-    twofaSession: null,
-    twofaError: null,
+    twofaSession,
+    twofaError,
   };
 }

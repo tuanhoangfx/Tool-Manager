@@ -1,8 +1,7 @@
 import { TOTP } from "otpauth";
+import { normalizeSecret } from "./twofa-secret-normalize";
 
-export function normalizeSecret(raw: string): string {
-  return raw.replace(/\s+/g, "").replace(/=+$/, "").toUpperCase();
-}
+export { normalizeSecret } from "./twofa-secret-normalize";
 
 export function createTotp(service: string, account: string, secret: string) {
   const clean = normalizeSecret(secret);

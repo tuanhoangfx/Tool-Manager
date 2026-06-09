@@ -4,7 +4,7 @@ import {
   EXTENSION_CHROME_WEB_STORE_URL,
   EXTENSION_HEADER_LABEL,
   EXTENSION_INSTALL_HINT,
-  hasChromeWebStoreInstall,
+  isChromeWebStoreLive,
 } from "./extensionInstall";
 import { fetchLatestExtensionRelease } from "./extensionReleaseApi";
 import { triggerExtensionZipDownload } from "./extensionDownload";
@@ -22,7 +22,7 @@ export function CookieExtensionHeaderLink({ className = "" }: Props) {
 
   const onDownload = () => {
     if (busy) return;
-    if (hasChromeWebStoreInstall() && EXTENSION_CHROME_WEB_STORE_URL) {
+    if (isChromeWebStoreLive() && EXTENSION_CHROME_WEB_STORE_URL) {
       window.open(EXTENSION_CHROME_WEB_STORE_URL, "_blank", "noopener,noreferrer");
       return;
     }
@@ -43,7 +43,7 @@ export function CookieExtensionHeaderLink({ className = "" }: Props) {
       className={`cookie-extension-header-cta group ${className}`.trim()}
       title={`${EXTENSION_INSTALL_HINT} (v${release.version})`}
       aria-label={
-        hasChromeWebStoreInstall()
+        isChromeWebStoreLive()
           ? `Install ${EXTENSION_HEADER_LABEL} from Chrome Web Store v${release.version}`
           : `Download ${EXTENSION_HEADER_LABEL} v${release.version}`
       }

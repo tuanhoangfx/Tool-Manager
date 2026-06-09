@@ -94,7 +94,19 @@ function TwofaManagerScreenBody({
   shellMode?: boolean;
   query?: string;
 } = {}) {
-  const { accounts, tick, add, addMany, update, remove, touchLastUsed, dedupeNow } = useTwofaAccounts();
+  const {
+    accounts,
+    tick,
+    add,
+    addMany,
+    update,
+    remove,
+    touchLastUsed,
+    dedupeNow,
+    cloudState,
+    cloudError,
+    syncFromCloud,
+  } = useTwofaAccounts();
   const { pushToast } = useAppToast();
   const {
     query: wsQuery,
@@ -402,6 +414,9 @@ function TwofaManagerScreenBody({
         tableShown={tableRows.length}
         filteredTotal={displayedAccounts.length}
         total={accounts.length}
+        cloudState={cloudState}
+        cloudError={cloudError}
+        onCloudSync={() => void syncFromCloud()}
         onDedupe={handleDedupeNow}
       />,
     );
@@ -427,9 +442,12 @@ function TwofaManagerScreenBody({
     };
   }, [
     accounts.length,
+    cloudError,
+    cloudState,
     displayedAccounts.length,
     handleBulkEdit,
     handleDedupeNow,
+    syncFromCloud,
     hasSelection,
     hubPrefs.limit,
     hubPrefs.range,

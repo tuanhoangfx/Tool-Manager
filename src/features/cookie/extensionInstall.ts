@@ -1,4 +1,5 @@
 import { EXTENSION_BUILD } from "./extensionBuildInfo";
+import { EXTENSION_CWS_LISTING_STATUS } from "./extensionCwsBuildInfo";
 
 export const EXTENSION_GITHUB_REPO = "tuanhoangfx/E0001-cookie-bridge";
 
@@ -17,8 +18,13 @@ export const EXTENSION_CHROME_WEB_STORE_LABEL = "Install from Chrome Web Store";
 /** Public privacy policy (hosted on Data Box). */
 export const EXTENSION_PRIVACY_POLICY_URL = "https://databox.infi.io.vn/e0001-privacy.html";
 
+/** GitHub release ZIP version (may trail manifest during CWS review). */
+export function getExtensionDownloadVersion(): string {
+  return EXTENSION_BUILD.downloadVersion ?? EXTENSION_BUILD.version;
+}
+
 /** Direct ZIP for a specific release tag (offline fallback; not “latest” redirect). */
-export function extensionReleaseZipUrl(version: string = EXTENSION_BUILD.version): string {
+export function extensionReleaseZipUrl(version: string = getExtensionDownloadVersion()): string {
   const v = version.replace(/^v/i, "").trim();
   const tag = `v${v}`;
   const zipName = `E0001-cookie-bridge-v${v}.zip`;
@@ -44,6 +50,19 @@ export const EXTENSION_INSTALL_HINT = EXTENSION_CHROME_WEB_STORE_URL
 
 export function hasChromeWebStoreInstall(): boolean {
   return Boolean(EXTENSION_CHROME_WEB_STORE_URL);
+}
+
+/** Store listing approved and installable from Chrome Web Store. */
+export function isChromeWebStoreLive(): boolean {
+  return hasChromeWebStoreInstall() && EXTENSION_CWS_LISTING_STATUS === "published";
+}
+
+export function getExtensionInstallLabel(): string {
+  return isChromeWebStoreLive() ? EXTENSION_CHROME_WEB_STORE_LABEL : "Load unpacked";
+}
+
+export function getExtensionInstallSteps(): ExtensionInstallStep[] {
+  return isChromeWebStoreLive() ? EXTENSION_STORE_INSTALL_STEPS : EXTENSION_UNPACKED_INSTALL_STEPS;
 }
 
 export type ExtensionInstallStepId =
@@ -83,6 +102,4 @@ export const EXTENSION_UNPACKED_INSTALL_STEPS: ExtensionInstallStep[] = [
 ];
 
 /** Primary install steps — Store when published, else Load unpacked. */
-export const EXTENSION_INSTALL_STEPS: ExtensionInstallStep[] = EXTENSION_CHROME_WEB_STORE_URL
-  ? EXTENSION_STORE_INSTALL_STEPS
-  : EXTENSION_UNPACKED_INSTALL_STEPS;
+export const EXTENSION_INSTALL_STEPS: ExtensionInstallStep[] = getExtensionInstallSteps();

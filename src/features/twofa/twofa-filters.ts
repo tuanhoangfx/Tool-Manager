@@ -1,30 +1,12 @@
-import type { FilterDef, FilterOption, FilterValues } from "../../components/sales-shell";
+import type { FilterOption, FilterValues } from "../../components/sales-shell";
 import { resolveTwofaPlatformIcon } from "./twofa-platform-icon";
 import type { TwofaAccount } from "./types";
 import { matchesTimeRange } from "../notes/notes-filters";
 import type { TimeRange } from "../../lib/url-prefs";
-import { normalizeSecret } from "./totp";
+import { normalizeSecret } from "./twofa-secret-normalize";
 import { twofaActivityAt } from "./twofa-time";
 
-export const TWOFA_FILTER_DEFS: FilterDef[] = [
-  {
-    key: "service",
-    label: "Service",
-    options: [],
-    showAllLabel: true,
-  },
-  {
-    key: "usage",
-    label: "Usage",
-    options: [
-      { value: "recent", label: "Used (7d)" },
-      { value: "never", label: "Never used" },
-    ],
-    showAllLabel: true,
-  },
-];
-
-export const DEFAULT_TWOFA_FILTER_KEYS = new Set(TWOFA_FILTER_DEFS.map((f) => f.key));
+export { DEFAULT_TWOFA_FILTER_KEYS, TWOFA_FILTER_DEFS } from "./twofa-filter-defs";
 
 export function buildTwofaServiceFilterOptions(accounts: TwofaAccount[]): FilterOption[] {
   const counts = new Map<string, number>();

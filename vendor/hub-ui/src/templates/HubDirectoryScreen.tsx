@@ -15,6 +15,8 @@ export type HubDirectoryScreenProps = {
   chartCount?: number;
   sectionRuleLabel?: string;
   reserveAnalyticsBand?: boolean;
+  bandOrder?: "kpis-first" | "charts-first";
+  kpiZoneClassName?: string;
   filters?: FilterDef[];
   query?: string;
   onQueryChange?: (q: string) => void;
@@ -45,6 +47,8 @@ export function HubDirectoryScreen({
   chartCount,
   sectionRuleLabel,
   reserveAnalyticsBand = false,
+  bandOrder,
+  kpiZoneClassName,
   filters = [],
   query = "",
   onQueryChange,
@@ -97,6 +101,8 @@ export function HubDirectoryScreen({
         chartCount={chartCount}
         sectionRuleLabel={sectionRuleLabel}
         reserveAnalyticsBand={reserveAnalyticsBand}
+        bandOrder={bandOrder}
+        kpiZoneClassName={kpiZoneClassName}
         bodyFlex={bodyFlex}
       >
         {children}

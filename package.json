@@ -9,7 +9,7 @@
   "scripts": {
     "predev": "node scripts/sync-extension-version.mjs",
     "dev": "node scripts/ensure-dev.cjs --open",
-    "dev:recover": "node scripts/dev-recover.cjs",
+    "dev:recover": "node ../scripts/verify-hub-ui-exports.cjs P0020 && node scripts/dev-recover.cjs",
     "dev:recover:open": "node scripts/dev-recover.cjs --open",
     "dev:vite": "vite --host 127.0.0.1 --port 5177",
     "daemon:start": "node scripts/ensure-dev.cjs",
@@ -50,7 +50,7 @@
     "apply:route-activity-load-null:api": "node scripts/apply-route-activity-load-null-api.mjs",
     "db:url:clipboard": "node scripts/set-db-url-from-clipboard.mjs",
     "sync:extension": "node scripts/sync-extension-version.mjs",
-    "lint": "eslint . && node ../scripts/hub-ui-import-check.mjs --code P0020 && node ../scripts/hub-ui-parity-check.mjs --code P0020",
+    "lint": "eslint . && node ../scripts/hub-ui-import-check.mjs --code P0020 && node ../scripts/hub-ui-parity-check.mjs --code P0020 && node ../scripts/hub-vendor-hash-check.mjs --code P0020 && node ../scripts/hub-load-vendor-hash-check.mjs --code P0020 && node ../scripts/hub-cache-duplication-check.mjs",
     "parity:modal": "node ../scripts/hub-ui-parity-check.mjs --code P0020",
     "smoke:tabs": "node scripts/tab-smoke.cjs",
     "test": "vitest run",

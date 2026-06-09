@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { loadAccounts, saveAccounts } from "./storage";
 import type { TwofaAccount, TwofaDraft } from "./types";
 import {
@@ -14,6 +14,9 @@ import {
   upsertTwofaDraft,
   type TwofaUpsertOutcome,
 } from "./twofa-upsert-accounts";
+import { useTwofaRealtime } from "./useTwofaRealtime";
+
+export type TwofaCloudSyncOpts = { /** Skip syncing badge — use for realtime refresh */ silent?: boolean };
 
 export type TwofaAddManyResult = {
   added: number;
@@ -35,6 +38,7 @@ export function useTwofaAccounts() {
     isTwofaCloudAvailable() ? "idle" : "off",
   );
   const [cloudError, setCloudError] = useState<string | null>(null);
+  const syncInFlight = useRef(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => saveAccounts(accounts), 280);
@@ -46,21 +50,35 @@ export function useTwofaAccounts() {
     return () => window.clearInterval(id);
   }, []);
 
-  const syncFromCloud = useCallback(async () => {
-    if (!isTwofaCloudAvailable()) return;
-    setCloudState("syncing");
-    setCloudError(null);
-    const local = loadAccounts();
-    const { accounts: merged, error } = await runTwofaCloudSync(local);
-    if (error) {
-      setCloudState("error");
-      setCloudError(error);
-      return;
+  const syncFromCloud = useCallback(async (opts?: TwofaCloudSyncOpts) => {
+    if (!isTwofaCloudAvailable() || syncInFlight.current) return;
+    syncInFlight.current = true;
+    const silent = opts?.silent ?? false;
+    if (!silent) {
+      setCloudState("syncing");
+      setCloudError(null);
     }
-    const { accounts: deduped } = dedupeTwofaAccounts(merged);
-    setAccounts(deduped);
-    setCloudState("ok");
+    try {
+      const local = loadAccounts();
+      const { accounts: merged, error } = await runTwofaCloudSync(local);
+      if (error) {
+        setCloudState("error");
+        setCloudError(error);
+        return;
+      }
+      const { accounts: deduped } = dedupeTwofaAccounts(merged);
+      setAccounts(deduped);
+      setCloudState("ok");
+    } finally {
+      syncInFlight.current = false;
+    }
   }, []);
+
+  const syncFromRealtime = useCallback(() => {
+    void syncFromCloud({ silent: true });
+  }, [syncFromCloud]);
+
+  useTwofaRealtime(syncFromRealtime, isTwofaCloudAvailable());
 
   useEffect(() => {
     if (!isTwofaCloudAvailable()) return;
@@ -78,14 +96,24 @@ export function useTwofaAccounts() {
     };
   }, [syncFromCloud]);
 
-  const cloudUpsert = useCallback(async (account: TwofaAccount) => {
-    if (!isTwofaCloudAvailable()) return;
-    const err = await upsertTwofaCloud(account);
-    if (err) {
-      setCloudState("error");
-      setCloudError(err);
-    }
+  const remapLocalId = useCallback((localId: string, cloudId: string) => {
+    if (localId === cloudId) return;
+    setAccounts((prev) => prev.map((row) => (row.id === localId ? { ...row, id: cloudId } : row)));
   }, []);
+
+  const cloudUpsert = useCallback(
+    async (account: TwofaAccount) => {
+      if (!isTwofaCloudAvailable()) return;
+      const { error, cloudId } = await upsertTwofaCloud(account);
+      if (error) {
+        setCloudState("error");
+        setCloudError(error);
+        return;
+      }
+      if (cloudId && cloudId !== account.id) remapLocalId(account.id, cloudId);
+    },
+    [remapLocalId],
+  );
 
   const cloudDelete = useCallback(async (id: string) => {
     if (!isTwofaCloudAvailable()) return;

@@ -12,8 +12,6 @@ export { FileListBlock } from "./FileListBlock";
 export { InfoItem } from "./InfoItem";
 export { Metric } from "./Metric";
 export { SideNavButton } from "./SideNavButton";
-export { ActivityDots } from "./ActivityDots";
-export { RunningBadge } from "./RunningBadge";
 export { AppSettingsButton } from "./AppSettingsButton";
 export { AppSettingsBack } from "./AppSettingsBack";
 export { SettingRow } from "./SettingRow";

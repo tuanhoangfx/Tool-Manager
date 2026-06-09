@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { EXTENSION_BUILD } from "./extensionBuildInfo";
-import { EXTENSION_RELEASE_PAGE, extensionReleaseZipUrl } from "./extensionInstall";
+import { EXTENSION_RELEASE_PAGE, extensionReleaseZipUrl, getExtensionDownloadVersion } from "./extensionInstall";
 import {
   fetchLatestExtensionRelease,
   getCachedExtensionRelease,
@@ -8,7 +8,7 @@ import {
 } from "./extensionReleaseApi";
 
 function bundledFallback(): ExtensionReleaseInfo {
-  const version = EXTENSION_BUILD.version;
+  const version = getExtensionDownloadVersion();
   const zipName = `E0001-cookie-bridge-v${version}.zip`;
   return {
     version,
@@ -35,4 +35,11 @@ export function useExtensionRelease(): ExtensionReleaseInfo {
   }, []);
 
   return info;
+}
+
+export function useExtensionDisplayVersion(): string {
+  const release = useExtensionRelease();
+  const dev = EXTENSION_BUILD.version;
+  if (release.version && release.version !== dev) return `${release.version} (dev ${dev})`;
+  return release.version || dev;
 }

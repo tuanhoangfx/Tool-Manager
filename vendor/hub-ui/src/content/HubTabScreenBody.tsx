@@ -10,13 +10,12 @@ import { HubTabSectionRule } from "../shell/HubTabSectionRule";
 export function HubTabScreenBody({
   kpis,
   charts,
-  /** Override auto-count of chart band slots (facet charts in a fragment). */
   chartCount,
   sectionRuleLabel,
   bodyFlex = false,
-  /** Keep KPI/charts slot height before band data arrives (directory tabs). */
   reserveAnalyticsBand = false,
-  /** Inside `hub-tab-content-zone` (System tabs) — skip outer zone wrapper. */
+  bandOrder = "kpis-first",
+  kpiZoneClassName,
   embedded = false,
   children,
 }: {
@@ -26,6 +25,8 @@ export function HubTabScreenBody({
   sectionRuleLabel?: string;
   bodyFlex?: boolean;
   reserveAnalyticsBand?: boolean;
+  bandOrder?: "kpis-first" | "charts-first";
+  kpiZoneClassName?: string;
   embedded?: boolean;
   children: ReactNode;
 }) {
@@ -36,22 +37,41 @@ export function HubTabScreenBody({
     ? "hub-tab-body-zone hub-tab-body-zone--split space-y-3"
     : "hub-tab-body-zone space-y-3";
 
+  const kpiBand = kpis?.length ? (
+    <KpiStrip items={kpis} />
+  ) : reserveAnalyticsBand ? (
+    <div className="hub-kpi-strip hub-kpi-strip--reserve" aria-hidden />
+  ) : null;
+
+  const chartsBand = charts ? (
+    <ChartsBand count={chartCount}>{charts}</ChartsBand>
+  ) : reserveAnalyticsBand ? (
+    <ChartsBand reserve />
+  ) : null;
+
   const inner = (
     <>
       {showAnalyticsZone ? (
         <div
-          className={`hub-tab-kpi-zone flex flex-col${!hasAnalytics && reserveAnalyticsBand ? " hub-tab-kpi-zone--reserved" : ""}`}
+          className={[
+            "hub-tab-kpi-zone flex flex-col",
+            !hasAnalytics && reserveAnalyticsBand ? "hub-tab-kpi-zone--reserved" : "",
+            kpiZoneClassName ?? "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
         >
-          {kpis?.length ? (
-            <KpiStrip items={kpis} />
-          ) : reserveAnalyticsBand ? (
-            <div className="hub-kpi-strip hub-kpi-strip--reserve" aria-hidden />
-          ) : null}
-          {charts ? (
-            <ChartsBand count={chartCount}>{charts}</ChartsBand>
-          ) : reserveAnalyticsBand ? (
-            <ChartsBand reserve />
-          ) : null}
+          {bandOrder === "charts-first" ? (
+            <>
+              {chartsBand}
+              {kpiBand}
+            </>
+          ) : (
+            <>
+              {kpiBand}
+              {chartsBand}
+            </>
+          )}
         </div>
       ) : null}
       {showSectionRule ? <HubTabSectionRule label={sectionRuleLabel!} /> : null}

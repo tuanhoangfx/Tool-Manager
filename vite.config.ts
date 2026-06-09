@@ -2,10 +2,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+// @ts-expect-error shared chunk helper (JS module)
+import { createHubManualChunks } from "../scripts/vite-hub-chunks.mjs";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
-const hubUiRoot = path.resolve(rootDir, "vendor/hub-ui/src");
-const hubIdentityRoot = path.resolve(rootDir, "vendor/hub-identity/src");
+const hubUiSrc = path.resolve(rootDir, "vendor/hub-ui/src");
+const hubIdentitySrc = path.resolve(rootDir, "vendor/hub-identity/src");
 const devRoot = path.resolve(rootDir, "../..");
 
 export default defineConfig({
@@ -13,12 +15,14 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-          if (id.includes("@supabase")) return "vendor-supabase";
-          if (id.includes("lucide-react")) return "vendor-icons";
-          if (id.includes("react-dom") || id.includes("react/")) return "vendor-react";
-        },
+        manualChunks: createHubManualChunks({
+          features: {
+            inbox: "feature-notes",
+            "features/twofa": "feature-twofa",
+            "features/cookie": "feature-cookie",
+            "features/system": "feature-system",
+          },
+        }),
       },
     },
   },
@@ -36,16 +40,18 @@ export default defineConfig({
     strictPort: true,
     open: false,
     fs: {
-      allow: [rootDir, hubUiRoot, devRoot],
+      allow: [rootDir, hubUiSrc, hubIdentitySrc, devRoot],
     },
   },
   resolve: {
     dedupe: ["react", "react-dom"],
-    alias: {
-      "@p0020/bridge": path.resolve(rootDir, "packages/p0020-bridge/src"),
-      "@dev/hub-load": path.resolve(rootDir, "vendor/hub-load/src"),
-      "@tool-workspace/hub-ui": hubUiRoot,
-      "@tool-workspace/hub-identity": hubIdentityRoot,
-    },
+    alias: [
+      { find: "@tool-workspace/hub-ui", replacement: path.join(hubUiSrc, "index.ts") },
+      { find: /^@tool-workspace\/hub-ui\/(.+)$/, replacement: `${hubUiSrc}/$1` },
+      { find: "@tool-workspace/hub-identity", replacement: path.join(hubIdentitySrc, "index.ts") },
+      { find: /^@tool-workspace\/hub-identity\/(.+)$/, replacement: `${hubIdentitySrc}/$1` },
+      { find: "@p0020/bridge", replacement: path.resolve(rootDir, "packages/p0020-bridge/src") },
+      { find: "@dev/hub-load", replacement: path.resolve(rootDir, "vendor/hub-load/src") },
+    ],
   },
 });

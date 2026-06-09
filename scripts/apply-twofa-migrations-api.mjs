@@ -11,9 +11,16 @@ import { runMgmtDbQuery } from "../../scripts/lib/supabase-mgmt-query.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const projectRef = process.argv[2] || "zurfouqanjcubgneuctp";
-const sqlFile = path.join(root, "supabase-twofa/migrations/20260603100000_twofa_accounts.sql");
+const migrationsDir = path.join(root, "supabase-twofa/migrations");
+const files = fs
+  .readdirSync(migrationsDir)
+  .filter((name) => name.endsWith(".sql"))
+  .sort();
 
-const sql = fs.readFileSync(sqlFile, "utf8");
-console.log(`Applying 2FA migration to ${projectRef}…`);
-await runMgmtDbQuery(projectRef, sql);
-console.log("OK — twofa_accounts + RLS");
+console.log(`Applying ${files.length} 2FA migration(s) to ${projectRef}…`);
+for (const name of files) {
+  const sql = fs.readFileSync(path.join(migrationsDir, name), "utf8");
+  console.log(`  → ${name}`);
+  await runMgmtDbQuery(projectRef, sql);
+}
+console.log("OK — twofa_accounts schema + RLS");

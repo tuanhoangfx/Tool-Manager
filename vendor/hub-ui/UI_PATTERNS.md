@@ -30,10 +30,16 @@
 
 | Component | When to use |
 |-----------|-------------|
-| `HubAuthGate` | App gate wrapper — opens modal on mount |
+| `WorkspaceAuthGate` | **Preferred** — tool login adapter + shared forgot-password (`createHubForgotPasswordHandler`) |
+| `HubAuthGate` | Low-level gate wrapper — opens modal on mount |
 | `HubAuthGateModal` | Sign In / Sign Up / Anonymous tabs (Anonymous optional via `onAnonymous`) |
-| `HubAuthLogoutChip` | Header / sidebar User row — email + LogOut icon |
-| `HubAuthSessionBadge` | Anonymous / Signed in pill on User row (P0020 anonymous mode) |
+| `HubWorkspaceUserShell` | **Preferred** — `HubSidebarUserFooter` + `HubWorkspaceUserModal` + sign-out state |
+| `HubSidebarUserFooter` | Sidebar User row + `HubAuthSessionBadge` + email label |
+| `HubWorkspaceUserModal` | Workspace logout / profile modal (P0020 / P0016) |
+| `HubFullUserAccountModal` | Hub admin account modal (P0004) |
+| `HubAuthLogoutChip` | Extension header (E0001) — email + LogOut icon |
+| `HubAuthSessionBadge` | Anonymous / Signed in pill on User row |
+| `HubAccessDeniedPanel` | Access denied card (replaces inline `auth-inline` in tool src) |
 | `HubAuthGateGoldenPreview` | Design Template · onboarding examples |
 
 **Rules**
@@ -49,7 +55,9 @@
 
 - Package — `HubAuthGateGoldenPreview` · `examples/GoldenAuthGateScreen.tsx`
 - P0004 — `HubAuthGate.tsx` · Design Template tab
-- P0020 — `NotesAuthGate.tsx` (+ Anonymous)
+- P0020 — `NotesAuthGate.tsx` → `WorkspaceAuthGate` (+ Anonymous)
+- P0016 — `ChatCenterAuthGate.tsx` → `WorkspaceAuthGate`
+- CI — `node Tool/scripts/hub-auth-migration-check.mjs`
 - E0001 — `popup.html` / `popup-theme.css` (parity script)
 
 ---
@@ -77,6 +85,63 @@
 - **P0008** — `app/src/components/table/FilterBar.tsx` fork for Next.js RSC (icon keys as strings). Align visually with golden tokens; do not copy into Vite tools.
 
 **Removed legacy:** `ToolFilterBar` + `.filter-toolbar` / `.chip` CSS (P0004, P0020).
+
+---
+
+## Tab header (golden — AppTabHeader)
+
+**Canonical source:** `packages/hub-ui/src/shell/AppTabHeader.tsx` + `app-tab-header.css` → fan-out via `node Tool/scripts/sync-hub-ui-vendor.cjs`.
+
+**Layout contract (P0004 Hub / all directory tabs):**
+
+```
+[start]  title · session · version/meta     [center]  centerStats (KPI strip)     [end]  actions only
+```
+
+| Column | CSS class | Content | Rules |
+|--------|-----------|---------|-------|
+| Start | `.app-tab-header__start` | Tab title (icon + h1) · **Session** timer · version meta (`Tag` + `vX · hh:mm dd/mm/yy`) | Session **before** version meta; never in end rail |
+| Center | `.app-tab-header-center-stats` | `centerStats` from app (`buildHubHeaderStats`, `buildDashboardHeaderStats`, …) | Always `flex` (not `hidden xl:flex`); `justify-self-center` |
+| End | `.app-tab-header__end` | `actions` slot — **Log** + **Settings** only | No Session, no KPI stats |
+
+**Grid:** `grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)` — symmetric columns so center stats stay viewport-centered.
+
+**App wiring**
+
+| Tool | Header wrapper | Version meta |
+|------|----------------|--------------|
+| P0004 Dashboard | `DashboardChromeHeader` | `buildVersionMetaItems` + `resolveVersionReleaseMeta` |
+| P0004 Hub | `HubStickyHeader` / `HubListChromeHeader` | same |
+| P0004 Users | `UserListChromeHeader` | same |
+| P0004 System | `SystemTabHeader` | same |
+| P0020 workspace | `WorkspaceTabHeader` | `buildVersionMetaItems(versionLine)` in hub-ui |
+
+**Version timestamp sources** (`resolveVersionReleaseMeta`): GitHub release → manifest `latestPublished` → CHANGELOG exact semver → CHANGELOG latest block (dev fallback).
+
+**Version triple** (`package.json` · `tool.manifest.json release.version` · CHANGELOG top `- Version:`): kept in sync by `bumpAndSyncDocs` (pre-commit), `ensure-changelog-version-block.mjs --write` (pre-push), and `syncToolManifestReleaseVersion` in `version-sync-lib.cjs`.
+
+**Do not**
+
+- Put Session in `__end` or mix KPI stats into `actions`.
+- Fork `AppTabHeader` per tool — re-export from `@tool-workspace/hub-ui` only.
+- Use asymmetric grid (`max-content` right column) — breaks center alignment.
+
+**CI**
+
+```bash
+node Tool/scripts/hub-ui-parity-check.mjs --code P0004 --screen dashboard
+node Tool/scripts/hub-ui-parity-check.mjs --app-tab-header-only
+node Tool/scripts/ensure-changelog-version-block.mjs --code P0004 --check
+```
+
+Checks: `session-in-start-rail`, `center-stats-always-visible`, `grid-three-column-centered`, vendor byte-sync for `AppTabHeader.tsx` + `app-tab-header.css` across P0004 · P0016 · P0008 · P0020 · P0021.
+
+**CI / hooks:** `Tool/.github/workflows/hub-ui-governance.yml` runs `--app-tab-header-only` + `ensure-changelog-version-block.mjs --all --check`. Pre-push (via `install-product-git-hooks.cjs --all`) runs CHANGELOG ensure `--write` then header check.
+
+**Golden refs**
+
+- Package — `AppTabHeader.tsx`, `WorkspaceTabHeader.tsx` (docstring)
+- P0004 — `DashboardChromeHeader.tsx`, `HubStickyHeader.tsx`, `src/lib/app-release.ts`
 
 ---
 
@@ -116,6 +181,50 @@
 - P0021 — `workspace/WorkspaceShell.tsx`
 
 **Verify:** `node Tool/scripts/hub-ui-duplication-check.mjs`
+
+---
+
+## Semantic icon registry (golden)
+
+**Canonical:** `packages/hub-ui/src/lib/semantic-icon-registry.ts`  
+**Types:** `packages/hub-ui/src/types/semantic-icon.ts`
+
+One semantic key maps icon + tone across **badge**, **KPI strip**, **tab header stat**, and **modal TOC** surfaces.
+
+| Helper | Surface | Example |
+|--------|---------|---------|
+| `semanticFilterMeta(key)` | Filter chips / MetricBadge | `skill` → Puzzle |
+| `semanticKpiIcon(key)` | `KpiStrip` tiles | `{ ...semanticKpiIcon("kpi.inbox.unread") }` |
+| `semanticHeaderStat(key)` | Tab header stat line | `{ ...semanticHeaderStat("kpi.fanpages.pages") }` |
+| `buildSemanticTocIcon(key)` | Settings / User / Log TOC + section header | `icon={buildSemanticTocIcon("user.account")}` |
+| `resolveSemanticIcon(key)` | Raw `{ icon, className, tone }` | Custom wrappers |
+
+**Key namespaces (add new keys here — never hardcode Lucide in screens):**
+
+| Prefix | Use |
+|--------|-----|
+| `agent.*` | Agent context kind / scope / apply mode |
+| `settings.*` | Display prefs modal TOC sections |
+| `user.*` | Workspace / full user account modals |
+| `log.*` | Usage log panel TOC + trigger |
+| `personality.*` | Personality edit modal sections |
+| `kpi.*` | Hub / User tab KPI tiles (`kpi.inbox.*`, `kpi.schema.*`, …) |
+| `template.*` | Design template KPI |
+| `field.custom` | JSONB custom fields |
+
+**Rules**
+
+- Hub / User `*Screen.tsx` and directory `*Page.tsx` KPI tiles **must** spread `semanticKpiIcon("…")` — enforced by `node Tool/scripts/hub-ui-icon-parity-check.mjs`.
+- Modal TOC sections use `buildSemanticTocIcon` on **both** TOC rail and `HubToolDetailSection` `icon` prop (Settings golden).
+- Dynamic per-row icons (e.g. `createBotAccountKpiIcon`) are allowed; static Lucide in KPI objects is not.
+- Fan-out: `node Tool/scripts/sync-hub-ui-vendor.cjs` copies registry to all vendor `hub-ui`.
+
+**Golden refs**
+
+- Settings TOC — `HubDisplayPrefs.tsx` (`settings.*` keys)
+- User modal — shell V5 · labels L1 `HubUserModalFieldTable` · `HubFullUserAccountModal` / `HubWorkspaceUserModal` (Cookie FAB FieldRow)
+- Log panel — `HubUsageLogPanel.tsx` (`log.*` keys)
+- P0016 directory KPIs — `InboxScreen.tsx`, `FanpagesScreen.tsx`, …
 
 ---
 

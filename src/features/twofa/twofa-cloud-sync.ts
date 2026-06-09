@@ -157,30 +157,38 @@ export async function pushTwofaLocalOnly(local: TwofaAccount[]): Promise<string 
   if (!pending.length) return null;
 
   for (const row of pending) {
-    const err = await upsertTwofaCloud(row);
-    if (err) return err;
+    const { error } = await upsertTwofaCloud(row);
+    if (error) return error;
   }
   return null;
 }
 
-export async function upsertTwofaCloud(account: TwofaAccount): Promise<string | null> {
+export type TwofaCloudUpsertResult = {
+  error: string | null;
+  /** Cloud row id — differs from local when identity already existed under another uuid. */
+  cloudId?: string;
+};
+
+export async function upsertTwofaCloud(account: TwofaAccount): Promise<TwofaCloudUpsertResult> {
   const session = await ensureTwofaAuth();
   const client = getTwofaSupabase();
-  if (!session?.user?.id || !client) return null;
+  if (!session?.user?.id || !client) return { error: null };
   const payload = accountToPayload(account, session.user.id);
   const { error } = await client.from("twofa_accounts").upsert(payload, { onConflict: "id" });
-  if (!error) return null;
+  if (!error) return { error: null, cloudId: account.id };
 
-  if (error.code !== "23505") return error.message;
+  if (error.code !== "23505") return { error: error.message };
 
-  const { data: existing, error: findError } = await client
+  let existingQ = client
     .from("twofa_accounts")
     .select("id")
     .eq("user_id", session.user.id)
     .eq("service", account.service)
-    .eq("account", account.account)
-    .maybeSingle();
-  if (findError || !existing?.id) return error.message;
+    .eq("account", account.account);
+  const browser = account.browser?.trim() || "";
+  existingQ = browser ? existingQ.eq("browser", browser) : existingQ.or("browser.is.null,browser.eq.");
+  const { data: existing, error: findError } = await existingQ.maybeSingle();
+  if (findError || !existing?.id) return { error: error.message };
 
   if (existing.id !== account.id) {
     await client.from("twofa_accounts").delete().eq("user_id", session.user.id).eq("id", account.id);
@@ -188,7 +196,7 @@ export async function upsertTwofaCloud(account: TwofaAccount): Promise<string | 
   const { error: retryError } = await client
     .from("twofa_accounts")
     .upsert({ ...payload, id: existing.id as string }, { onConflict: "id" });
-  return retryError?.message ?? null;
+  return { error: retryError?.message ?? null, cloudId: existing.id as string };
 }
 
 export async function upsertTwofaCloudDraft(id: string, draft: TwofaDraft, now: string): Promise<string | null> {

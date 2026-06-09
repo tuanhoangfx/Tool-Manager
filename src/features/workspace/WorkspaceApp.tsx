@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { HubAppLogProvider, resolveHubActiveScreenId, useHubActiveScreenSync } from "@tool-workspace/hub-ui";
 import { DisplayPrefs, HubLoaderRoot } from "../../components/sales-shell";
 import { hideBootLoader } from "../../lib/hide-boot-loader";
@@ -13,10 +13,13 @@ import { AuthSessionProvider } from "../notes/AuthSessionProvider";
 import { useNotesAuth } from "../notes/useNotesAuth";
 import { useExtensionSessionRelay } from "../notes/useExtensionSessionRelay";
 import { NotesWorkspaceScreen } from "../notes/NotesWorkspaceScreen";
-import { TwofaManagerScreen } from "../twofa/TwofaManagerScreen";
-import { CookieSyncScreen } from "../cookie/CookieSyncScreen";
-import { SystemDesignTemplateScreen } from "../system/SystemDesignTemplateScreen";
+import {
+  CookieSyncScreen,
+  SystemDesignTemplateScreen,
+  TwofaManagerScreen,
+} from "./workspace-lazy-screens";
 import { prefetchNotesListBackground } from "../../lib/hub-background-prefetch";
+import { setupHubUiFilterIcons } from "../../lib/hub-ui-setup";
 import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
 import { WorkspaceShellTabFrame } from "./WorkspaceShellTabFrame";
 import { WorkspaceVisitedTabPanel } from "./WorkspaceVisitedTabPanel";
@@ -64,11 +67,16 @@ function WorkspaceAppInner() {
   }, [activeNav]);
 
   useEffect(() => {
+    if (activeNav === "twofa" || activeNav === "cookie") setupHubUiFilterIcons();
+  }, [activeNav]);
+
+  useEffect(() => {
     hideBootLoader();
     prefetchNotesListBackground();
-    const idle = window.requestIdleCallback?.(() => prefetchNotesListBackground(), { timeout: 2000 });
+    const warm = () => prefetchNotesListBackground();
+    const idle = window.requestIdleCallback?.(warm, { timeout: 2000 });
     if (idle == null) {
-      const t = window.setTimeout(() => prefetchNotesListBackground(), 400);
+      const t = window.setTimeout(warm, 400);
       return () => window.clearTimeout(t);
     }
     return () => window.cancelIdleCallback(idle);
@@ -76,7 +84,6 @@ function WorkspaceAppInner() {
 
   useEffect(() => {
     document.documentElement.classList.add("theme-hub");
-    document.documentElement.classList.add("fonts-loaded");
     document.body.style.margin = "0";
     document.body.style.overflow = "hidden";
     document.body.style.background = "var(--bg)";
@@ -121,19 +128,25 @@ function WorkspaceAppInner() {
 
           <WorkspaceVisitedTabPanel tabId="twofa" active={screen === "twofa"} visited={visited}>
             <WorkspaceShellTabFrame screen="twofa" active={screen === "twofa"}>
-              <TwofaManagerScreen shellMode />
+              <Suspense fallback={<TabChunkFallback label="2FA" />}>
+                <TwofaManagerScreen shellMode />
+              </Suspense>
             </WorkspaceShellTabFrame>
           </WorkspaceVisitedTabPanel>
 
           <WorkspaceVisitedTabPanel tabId="cookie" active={screen === "cookie"} visited={visited}>
             <WorkspaceShellTabFrame screen="cookie" active={screen === "cookie"}>
-              <CookieSyncScreen shellMode tabActive={screen === "cookie"} />
+              <Suspense fallback={<TabChunkFallback label="Cookie" />}>
+                <CookieSyncScreen shellMode tabActive={screen === "cookie"} />
+              </Suspense>
             </WorkspaceShellTabFrame>
           </WorkspaceVisitedTabPanel>
 
           <WorkspaceVisitedTabPanel tabId="system" active={screen === "system"} visited={visited}>
             <WorkspaceShellTabFrame screen="system" active={screen === "system"}>
-              <SystemDesignTemplateScreen />
+              <Suspense fallback={<TabChunkFallback label="System" />}>
+                <SystemDesignTemplateScreen />
+              </Suspense>
             </WorkspaceShellTabFrame>
           </WorkspaceVisitedTabPanel>
         </div>
@@ -141,6 +154,14 @@ function WorkspaceAppInner() {
       <ToastContainer />
     </div>
     </HubAppLogProvider>
+  );
+}
+
+function TabChunkFallback({ label }: { label: string }) {
+  return (
+    <div className="flex min-h-[12rem] items-center justify-center text-sm text-[var(--muted)]">
+      Loading {label}…
+    </div>
   );
 }
 

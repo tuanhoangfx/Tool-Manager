@@ -35,7 +35,7 @@ import {
   TWOFA_KPI_DEFS,
 } from "../twofa/twofa-display-prefs";
 import { patchTwofaHubPrefs, readTwofaHubPrefs } from "../twofa/twofa-tab-prefs";
-import { DEFAULT_TWOFA_FILTER_KEYS, TWOFA_FILTER_DEFS } from "../twofa/twofa-filters";
+import { DEFAULT_TWOFA_FILTER_KEYS, TWOFA_FILTER_DEFS } from "../twofa/twofa-filter-defs";
 import {
   countHiddenTwofaTableColumns,
   TwofaTableColumnsSettings,

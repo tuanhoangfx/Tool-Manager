@@ -8,6 +8,7 @@ import { setupHubUi } from "./lib/hub-ui-setup";
 initHubUserZoom();
 import { isPublicShareEntry, migratePublicShareUrl } from "./features/notes/shareUtils";
 import { prefetchDataBoxAuth } from "./lib/prefetch-data-box-auth";
+import { prefetchTwofaAuth } from "./lib/prefetch-twofa-auth";
 import "./theme/hub-boot.css";
 import "./theme/p0008-globals.css";
 import "./theme/hub-appearance.css";
@@ -20,6 +21,7 @@ if (typeof window !== "undefined" && isPublicShareEntry()) {
   migratePublicShareUrl();
 } else {
   prefetchDataBoxAuth();
+  prefetchTwofaAuth();
 }
 
 const rootEl = document.getElementById("root");

@@ -160,6 +160,16 @@ function StatLine({ icon: Icon, dotClass, value, label, toneClass }: TabHeaderSt
   );
 }
 
+function SessionLine({ sessionMmSs }: { sessionMmSs: string }) {
+  return (
+    <div className="inline-flex items-center gap-1.5 text-[13px] leading-none text-[var(--muted)]">
+      <Clock size={14} className="shrink-0 text-indigo-400/90" aria-hidden />
+      <span className="hidden xl:inline">Session</span>
+      <span className="tabular-nums text-[var(--text)]/90">{sessionMmSs}</span>
+    </div>
+  );
+}
+
 export function AppTabHeader({
   ariaLabel,
   titleIcon: TitleIcon,
@@ -203,16 +213,20 @@ export function AppTabHeader({
             </h1>
           </>
         )}
+        <span className="inline-flex items-center gap-x-2.5">
+          <Rule visibleFrom="sm" />
+          <SessionLine sessionMmSs={sessionMmSs} />
+        </span>
         {metaItems.map((item, index) => (
           <span key={`${item.title ?? "meta"}-${index}`} className="inline-flex items-center gap-x-2.5">
-            <Rule visibleFrom={index === 0 ? "sm" : index === 1 ? "md" : "lg"} />
+            <Rule visibleFrom={index === 0 ? "md" : "lg"} />
             <MetaLine {...item} />
           </span>
         ))}
       </div>
 
       <div
-        className="app-tab-header-center-stats hidden min-w-0 items-center justify-center justify-self-center gap-x-2.5 overflow-x-auto xl:flex"
+        className="app-tab-header-center-stats flex min-w-0 items-center justify-center justify-self-center gap-x-2.5 overflow-x-auto"
         role="status"
         aria-label={`${title} summary`}
       >
@@ -225,11 +239,6 @@ export function AppTabHeader({
       </div>
 
       <div className="app-tab-header__end flex shrink-0 items-center justify-self-end gap-2 text-[13px] leading-none text-[var(--muted)]">
-        <div className="hidden items-center gap-1.5 lg:inline-flex">
-          <Clock size={14} className="shrink-0 text-indigo-400/90" aria-hidden />
-          <span className="hidden xl:inline">Session</span>
-          <span className="tabular-nums text-[var(--text)]/90">{sessionMmSs}</span>
-        </div>
         {actions}
       </div>
     </header>

@@ -6,6 +6,8 @@ export type NavGroupChildBase = {
   label: string;
   icon: LucideIcon;
   iconTone: NavIconTone;
+  /** Optional numeric badge (e.g. unread count). */
+  badge?: number;
 };
 
 /** Subnav item navigates via AppScreen (or tool screen id). */
@@ -131,6 +133,7 @@ export function navScreenGroupSubNavItems<TScreen extends string>(
     label: c.label,
     icon: c.icon,
     iconTone: c.iconTone,
+    badge: c.badge,
   }));
 }
 

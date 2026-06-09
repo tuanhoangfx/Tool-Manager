@@ -7,4 +7,5 @@ recoverHubDevServer({
   productCode: "P0020",
   port: 5177,
   root: path.resolve(__dirname, ".."),
+  ensureArgs: ["scripts/ensure-dev.cjs", "--recover"],
 });
