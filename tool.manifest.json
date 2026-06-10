@@ -51,7 +51,7 @@
     "latestPublished": {
       "tag": "v4.3.16",
       "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.1.5",
-      "publishedAt": "2026-06-09T09:00:30.794Z"
+      "publishedAt": "2026-06-10T07:48:18.025Z"
     }
   },
   "urls": {
@@ -220,5 +220,5 @@
       "authVariant": "anonymous-dual"
     }
   ],
-  "manifestUpdatedAt": "2026-06-09T09:00:30.794Z"
+  "manifestUpdatedAt": "2026-06-10T07:48:18.025Z"
 }

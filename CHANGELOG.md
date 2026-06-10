@@ -11,7 +11,8 @@
 - Product: P0020
 - Prompt: Push Cookie Auto + E0001 — Download FAB auto-download latest GitHub ZIP.
 - Timestamp: 2026-06-09 18:15 (UTC+7)
-- Status: Committed
+- Status: Verified
+- Release: https://databox.infi.io.vn
 
 ### Changes
 
