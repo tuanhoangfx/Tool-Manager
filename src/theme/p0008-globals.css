@@ -27,6 +27,12 @@
   --app-tab-header-px: 1.5rem;
   --app-tab-header-min-h: 2.75rem;
   --app-tab-header-gap-below: 0.75rem;
+  /* Hub scrollbar — global + hub-split-scroll panes */
+  --hub-split-scroll-size: 10px;
+  --hub-split-scroll-track: transparent;
+  --hub-split-scroll-thumb: #2a3158;
+  --hub-split-scroll-thumb-hover: #3a4178;
+  --hub-split-scroll-radius: 6px;
   /* Total block height (padding is inside min-height via box-border on .app-tab-header) */
   --app-tab-header-sticky-h: var(--app-tab-header-min-h);
   --hub-filter-pin-est-h: 6.75rem;
@@ -147,18 +153,18 @@ body,
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: var(--hub-split-scroll-size, 10px);
+  height: var(--hub-split-scroll-size, 10px);
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--hub-split-scroll-track, transparent);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2a3158;
-  border-radius: 6px;
+  background: var(--hub-split-scroll-thumb, #2a3158);
+  border-radius: var(--hub-split-scroll-radius, 6px);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a4178;
+  background: var(--hub-split-scroll-thumb-hover, #3a4178);
 }
 
 @keyframes fadeIn {

@@ -71,3 +71,20 @@ pnpm verify:note-version   # hoặc pnpm verify:cookie (gồm cả cookie + vers
 Storage ước lượng: ~4 KB/snapshot → 1 000 note × 30 version ≈ **120 MB** (thực tế thấp hơn nhờ session + hash dedup).
 
 **Auto interval:** Settings → General → **Version history** — `15` / `30` / `60` min (`localStorage` key `p0020:notes-version-interval-minutes`).
+
+## Todo / Tasks (Kanban)
+
+```bash
+pnpm db:migrate
+pnpm verify:todo
+```
+
+| Bảng | Mô tả |
+|------|--------|
+| `tasks` | Kanban 4 cột; cột `assignees` jsonb |
+| `projects`, `project_members` | Scope manager All Tasks |
+| `profiles` | Sync từ `auth.users` (trigger `on_auth_user_created`) |
+
+Demo seed: projects **General**, **Client Work** — mọi profile được gán project **General**.
+
+Health check: RPC `todo_schema_health()` (gọi qua `pnpm verify:todo`).

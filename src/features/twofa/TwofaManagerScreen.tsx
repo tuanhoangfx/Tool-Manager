@@ -35,6 +35,7 @@ import { findTwofaDraftConflict } from "./twofa-upsert-accounts";
 import {
   formatTwofaEntryLabel,
   twofaDedupeToast,
+  twofaFullResyncToast,
   twofaImportToast,
   twofaSingleAddToast,
   twofaUpdateToast,
@@ -67,7 +68,7 @@ export function TwofaManagerScreen({
   shellMode?: boolean;
   query?: string;
 } = {}) {
-  const { session, loading: authLoading } = useNotesAuth();
+  const { session, loading: authLoading, offline } = useNotesAuth();
 
   if (shellMode) {
     if (!session && authLoading) {
@@ -77,7 +78,7 @@ export function TwofaManagerScreen({
         </div>
       );
     }
-    if (!session) {
+    if (!session || offline) {
       return <NotesAuthGate variant="twofa" />;
     }
   }
@@ -105,9 +106,20 @@ function TwofaManagerScreenBody({
     dedupeNow,
     cloudState,
     cloudError,
+    fullSyncNotice,
+    ackFullSyncNotice,
     syncFromCloud,
   } = useTwofaAccounts();
   const { pushToast } = useAppToast();
+
+  useEffect(() => {
+    if (!fullSyncNotice) return;
+    pushToast(
+      twofaFullResyncToast(fullSyncNotice.count),
+      fullSyncNotice.count > 0 ? "success" : "info",
+    );
+    ackFullSyncNotice();
+  }, [ackFullSyncNotice, fullSyncNotice, pushToast]);
   const {
     query: wsQuery,
     setQuery: setWsQuery,
@@ -416,7 +428,7 @@ function TwofaManagerScreenBody({
         total={accounts.length}
         cloudState={cloudState}
         cloudError={cloudError}
-        onCloudSync={() => void syncFromCloud()}
+        onCloudSync={() => void syncFromCloud({ full: true })}
         onDedupe={handleDedupeNow}
       />,
     );

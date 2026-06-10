@@ -63,8 +63,6 @@
 .note-history-inspector-toc {
   height: 100%;
   min-height: 0;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 .note-history-compare-center {
@@ -89,10 +87,6 @@
 
 .note-history-diff-pane {
   height: 100%;
-}
-
-.note-history-diff-pane__scroll {
-  scrollbar-gutter: stable;
 }
 
 .note-history-compare-panes--loading .note-history-diff-pane {

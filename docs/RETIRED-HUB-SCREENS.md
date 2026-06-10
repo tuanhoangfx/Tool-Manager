@@ -2,6 +2,8 @@
 
 Removed when migrating to **P0004 Tool Hub shell** with tabs: Notes, Todo, 2FA, Cookie Auto only.
 
+**Note (2026-06):** Tab **Todo** revived — Kanban logic from P0019, Hub-UI shell. Old `TodoScreen.tsx` under design-preview remains deleted.
+
 ## Deleted source files
 
 - `src/features/hub/P0004LibraryScreen.tsx`

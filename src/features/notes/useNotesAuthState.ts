@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { cacheDataBoxSession, readDataBoxSession, sessionFromDataBoxSnapshot } from "../../lib/data-box-session";
+import { cacheDataBoxSession, clearDataBoxSession, readDataBoxSession, sessionFromDataBoxSnapshot } from "../../lib/data-box-session";
 import { ensureDataBoxAuth } from "../../lib/ensure-data-box-auth";
 import { ensureHubIdentityStubFromDataSession, readHubIdentity } from "../../lib/hub-identity-session";
 import { promiseWithTimeout } from "../../lib/promise-timeout";
@@ -38,7 +38,8 @@ function initialAuthState(): { session: Session | null; loading: boolean; offlin
   const cached = sessionFromDataBoxSnapshot(snap);
   return {
     session: cached,
-    loading: !cached && isSupabaseConfigured,
+    // Always wait for ensureDataBoxAuth before consumers query RLS tables (Todo profiles, etc.).
+    loading: isSupabaseConfigured,
     offline: false,
   };
 }
@@ -86,7 +87,8 @@ export function useNotesAuthState(): NotesAuthState {
         }
       }
 
-      if (opts?.boot && !sessionFromDataBoxSnapshot(readDataBoxSession())) {
+      if (opts?.boot) {
+        if (readDataBoxSession()) clearDataBoxSession();
         setSession(null);
       }
     } finally {

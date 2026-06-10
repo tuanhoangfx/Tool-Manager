@@ -1,6 +1,6 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { HubAppLogProvider, resolveHubActiveScreenId, useHubActiveScreenSync } from "@tool-workspace/hub-ui";
-import { DisplayPrefs, HubLoaderRoot } from "../../components/sales-shell";
+import { DisplayPrefs, HubLoaderRoot, WorkspaceLoadingView } from "../../components/sales-shell";
 import { hideBootLoader } from "../../lib/hide-boot-loader";
 import { WorkspaceSidebar } from "../../components/sales-shell/WorkspaceSidebar";
 import { ToastContainer, ToastProvider } from "../../components/toast";
@@ -16,6 +16,7 @@ import { NotesWorkspaceScreen } from "../notes/NotesWorkspaceScreen";
 import {
   CookieSyncScreen,
   SystemDesignTemplateScreen,
+  TodoScreen,
   TwofaManagerScreen,
 } from "./workspace-lazy-screens";
 import { prefetchNotesListBackground } from "../../lib/hub-background-prefetch";
@@ -126,9 +127,15 @@ function WorkspaceAppInner() {
             />
           </WorkspaceVisitedTabPanel>
 
+          <WorkspaceVisitedTabPanel tabId="todo" active={screen === "todo"} visited={visited}>
+            <Suspense fallback={<WorkspaceLoadingView screen="todo" variant="overlay" />}>
+              <TodoScreen tabActive={screen === "todo"} />
+            </Suspense>
+          </WorkspaceVisitedTabPanel>
+
           <WorkspaceVisitedTabPanel tabId="twofa" active={screen === "twofa"} visited={visited}>
             <WorkspaceShellTabFrame screen="twofa" active={screen === "twofa"}>
-              <Suspense fallback={<TabChunkFallback label="2FA" />}>
+              <Suspense fallback={<WorkspaceLoadingView screen="twofa" variant="overlay" />}>
                 <TwofaManagerScreen shellMode />
               </Suspense>
             </WorkspaceShellTabFrame>
@@ -136,7 +143,7 @@ function WorkspaceAppInner() {
 
           <WorkspaceVisitedTabPanel tabId="cookie" active={screen === "cookie"} visited={visited}>
             <WorkspaceShellTabFrame screen="cookie" active={screen === "cookie"}>
-              <Suspense fallback={<TabChunkFallback label="Cookie" />}>
+              <Suspense fallback={<WorkspaceLoadingView screen="cookie" variant="overlay" />}>
                 <CookieSyncScreen shellMode tabActive={screen === "cookie"} />
               </Suspense>
             </WorkspaceShellTabFrame>
@@ -144,7 +151,7 @@ function WorkspaceAppInner() {
 
           <WorkspaceVisitedTabPanel tabId="system" active={screen === "system"} visited={visited}>
             <WorkspaceShellTabFrame screen="system" active={screen === "system"}>
-              <Suspense fallback={<TabChunkFallback label="System" />}>
+              <Suspense fallback={<WorkspaceLoadingView screen="system" variant="overlay" />}>
                 <SystemDesignTemplateScreen />
               </Suspense>
             </WorkspaceShellTabFrame>
@@ -154,14 +161,6 @@ function WorkspaceAppInner() {
       <ToastContainer />
     </div>
     </HubAppLogProvider>
-  );
-}
-
-function TabChunkFallback({ label }: { label: string }) {
-  return (
-    <div className="flex min-h-[12rem] items-center justify-center text-sm text-[var(--muted)]">
-      Loading {label}…
-    </div>
   );
 }
 

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-22T09:57:54.087Z",
+  "generatedAt": "2026-06-09T11:21:34.909Z",
   "root": "E:\\Dev\\Tool",
   "repositories": [
     {
@@ -458,28 +458,29 @@
     {
       "id": "infi-work-performance",
       "code": "P0019",
-      "name": "Infi Work Performance",
+      "name": "Infi Work Performance (Legacy)",
       "repo": "tuanhoangfx/-Work-Performance",
       "branch": "main",
-      "remoteEnabled": true,
+      "remoteEnabled": false,
       "localVersion": "0.0.0",
       "category": "Web",
       "audience": "Tool maintainers",
-      "status": "Needs review",
-      "summary": "Internal Kanban task manager with Supabase auth, comments, and manager dashboard.",
+      "status": "Retired",
+      "summary": "Legacy Kanban repo — Todo migrated to P0020-Data-Box tab /todo. Keep folder until explicit decommission.",
       "localPath": "E:\\Dev\\Tool\\P0019-Work-Performance",
       "tags": [
         "React",
         "Vite",
-        "Supabase"
+        "Supabase",
+        "migrated-to-P0020/todo"
       ],
       "appUrl": "https://inptracker.vercel.app",
-      "localUrl": "http://127.0.0.1:5173",
+      "localUrl": "http://127.0.0.1:5177/todo",
+      "migratedTo": "P0020/todo",
       "deployTarget": "vercel",
       "usage": [
-        "Dev: npm run dev",
-        "Build: npm run build",
-        "App: https://inptracker.vercel.app"
+        "Use P0020-Data-Box Todo tab: http://127.0.0.1:5177/todo",
+        "Legacy dev (deprecated): npm run dev in P0019 folder"
       ],
       "downloadHint": "Use GitHub release asset when available, otherwise clone the repository.",
       "manifestPath": "tool.manifest.json",
@@ -491,6 +492,50 @@
         "RELEASE.md"
       ],
       "scriptFiles": []
+    },
+    {
+      "id": "p0020-data-box",
+      "code": "P0020",
+      "name": "P0020-Data-Box",
+      "repo": "tuanhoangfx/Tool-Manager",
+      "branch": "main",
+      "remoteEnabled": true,
+      "localVersion": "4.3.16",
+      "category": "Web",
+      "audience": "Tool maintainers",
+      "status": "Beta",
+      "summary": "Unified data workspace for notes, 2FA, secure cookie vault, and browser agents. Skin P0008.",
+      "localPath": "E:\\Dev\\Tool\\P0020-Data-Box",
+      "tags": [
+        "React",
+        "TypeScript",
+        "Vite",
+        "Supabase",
+        "Todo",
+        "Hub-UI"
+      ],
+      "appUrl": "https://databox.infi.io.vn",
+      "localUrl": "http://127.0.0.1:5177/todo",
+      "deployTarget": "vercel",
+      "usage": [
+        "Dev: corepack pnpm dev",
+        "Todo tab: http://127.0.0.1:5177/todo",
+        "Verify Todo: corepack pnpm verify:todo && corepack pnpm verify:todo:standalone",
+        "Build: corepack pnpm build"
+      ],
+      "downloadHint": "Use GitHub release asset when available, otherwise clone the repository.",
+      "manifestPath": "tool.manifest.json",
+      "trackedFiles": [
+        "tool.manifest.json",
+        "package.json",
+        "README.md",
+        "CHANGELOG.md",
+        "RELEASE.md"
+      ],
+      "scriptFiles": [
+        "scripts/verify-todo-standalone.mjs",
+        "scripts/decommission-p0019-check.mjs"
+      ]
     }
   ]
 }

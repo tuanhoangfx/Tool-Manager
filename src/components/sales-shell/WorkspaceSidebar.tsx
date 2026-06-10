@@ -5,6 +5,7 @@ import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
 import { ToolAvatar } from "../ToolAvatar";
 import { toolIconName, toolSvgIcon } from "../../lib/visual";
 import { clearDataBoxSession } from "../../lib/data-box-session";
+import { setOfflineMode } from "../../lib/offlineMode";
 import { clearTwofaSession } from "../../lib/twofa-session";
 import { getTwofaSupabase } from "../../lib/twofa-supabase";
 import { clearHubIdentity } from "../../lib/hub-identity-session";
@@ -89,6 +90,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
               : "Workspace data syncs per signed-in user on Data Box Supabase."
           }
           onSignOut={async () => {
+            setOfflineMode(false);
             clearHubIdentity();
             clearDataBoxSession();
             clearTwofaSession();

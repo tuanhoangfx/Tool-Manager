@@ -1,5 +1,5 @@
 import { cacheDataBoxSession, readDataBoxSession } from "./data-box-session";
-import { ensureDataBoxAuth } from "./ensure-data-box-auth";
+import { ensureWorkspaceAuthReady } from "./workspace-profile";
 import { isSupabaseConfigured } from "./supabase";
 
 let prefetchStarted = false;
@@ -11,11 +11,11 @@ export function prefetchDataBoxAuth() {
 
   const snap = readDataBoxSession();
   if (snap?.access_token) {
-    void ensureDataBoxAuth().then((session) => {
+    void ensureWorkspaceAuthReady().then((session) => {
       if (session) cacheDataBoxSession(session);
     });
     return;
   }
 
-  void ensureDataBoxAuth();
+  void ensureWorkspaceAuthReady();
 }

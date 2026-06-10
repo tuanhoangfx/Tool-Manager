@@ -57,14 +57,54 @@
   },
   "vercel": {
     "project": "tool-manager",
-    "projectId": "linked-via-cli",
+    "projectId": "prj_sYleHL1YghcKIi3JfB8P98TPOK5a",
     "productionUrl": "https://databox.infi.io.vn",
     "customDomains": [
       "databox.infi.io.vn"
     ],
     "productionBranch": "main",
     "team": "tuanhoangfxs-projects",
-    "notes": "Vite SPA. Set VITE_SUPABASE_* in Vercel env."
+    "teamId": "team_OJYy4qksQu1vUUw1xNQh9ZHj",
+    "notes": "Vite SPA. Set VITE_SUPABASE_* in Vercel env.",
+    "deployHookUrl": "https://api.vercel.com/v1/integrations/deploy/prj_sYleHL1YghcKIi3JfB8P98TPOK5a/tLGViGvCtX",
+    "deployHookName": "ship-production"
+  },
+  "vercelEnvValidation": {
+    "gateAfterDeploy": true,
+    "requiredKeys": [
+      "VITE_SUPABASE_URL",
+      "VITE_SUPABASE_ANON_KEY",
+      "VITE_HUB_SUPABASE_URL",
+      "VITE_HUB_SUPABASE_ANON_KEY",
+      "VITE_TWOFA_SUPABASE_URL",
+      "VITE_TWOFA_SUPABASE_ANON_KEY"
+    ],
+    "syncScript": "scripts/sync-p0020-vercel-env-api.mjs",
+    "shipScript": "scripts/vercel-env-ship.mjs",
+    "checks": [
+      {
+        "id": "twofa-anon-key",
+        "script": "scripts/check-prod-twofa-env.mjs",
+        "waitScript": "scripts/wait-prod-twofa-anon-key.mjs",
+        "origin": "https://databox.infi.io.vn",
+        "symptoms": [
+          "Badge 'Local only' on 2FA tab after login",
+          "0 accounts after login though cloud vault has rows",
+          "No network requests to zurfouqanjcubgneuctp.supabase.co after sign-in"
+        ]
+      }
+    ],
+    "symptomMap": {
+      "emptyAnonInBundle": "VITE_TWOFA_SUPABASE_ANON_KEY missing or empty in Vercel — bundle has zurfouqanjcubgneuctp URL but anon=''",
+      "localOnlyBadge": "isTwofaSupabaseConfigured=false — sync env then redeploy production",
+      "anonymousBypass": "User in offline/anonymous mode — disable Anonymous in Settings then sign in",
+      "staleBundle": "Production domain still serves old index-*.js — wait deploy or purge CDN cache"
+    },
+    "verifyCommands": [
+      "node scripts/check-prod-twofa-env.mjs",
+      "node scripts/wait-prod-twofa-anon-key.mjs",
+      "node scripts/smoke-twofa-vault.mjs"
+    ]
   },
   "supabase": {
     "projectRef": "bklxcjrkhrevdcqjscku",
@@ -95,6 +135,13 @@
   "health": {
     "status": "Beta",
     "note": "Notes Supabase CRUD; https://tool-manager-zeta.vercel.app"
+  },
+  "todo": {
+    "standalone": true,
+    "route": "/todo",
+    "entry": "src/features/todo/TodoScreen.tsx",
+    "golden": "P0020/todo",
+    "devUrl": "http://127.0.0.1:5177/todo"
   },
   "manifestUpdatedAt": "2026-05-27T09:11:00.000+07:00"
 }

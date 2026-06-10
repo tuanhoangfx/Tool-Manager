@@ -11,7 +11,7 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const toolScripts = path.resolve(root, "..", "scripts");
 const base = "http://127.0.0.1:5177";
-const routes = ["/notes", "/twofa", "/cookie", "/system"];
+const routes = ["/notes", "/todo", "/twofa", "/cookie", "/system"];
 
 function get(url) {
   return new Promise((resolve, reject) => {
@@ -70,7 +70,7 @@ function runStep(label, cmd, cwd) {
 }
 
 (async () => {
-  console.log("[P0020 smoke] Tab smoke — Notes · 2FA · Cookie · System");
+  console.log("[P0020 smoke] Tab smoke — Notes · Todo · 2FA · Cookie · System");
   let failed = 0;
   failed += await httpSmoke();
   failed += runStep(

@@ -1,0 +1,48 @@
+/**
+ * Hub modal/form class tokens for Todo — styles live in todo-hub-theme.css.
+ * Import these instead of duplicating Tailwind strings across modal components.
+ */
+export const TODO_HUB = {
+  field: "todo-hub-field",
+  fieldTitle: "todo-hub-field todo-hub-field--title",
+  fieldGrow: "todo-hub-field todo-hub-field--grow",
+  fieldOnPanel: "todo-hub-field todo-hub-field--on-panel",
+  label: "todo-hub-label",
+  labelSection: "todo-hub-label todo-hub-label--section",
+  labelHiddenMd: "todo-hub-label todo-hub-label--section todo-hub-label--hidden-md",
+  panel: "todo-hub-panel",
+  panelInset: "todo-hub-panel todo-hub-panel--inset",
+  btnSecondary: "todo-hub-btn-secondary",
+  btnGhost: "todo-hub-btn-ghost",
+  btnAttach: "todo-hub-btn-attach",
+  dropzone: "todo-hub-dropzone",
+  modalShell: "todo-hub-modal-shell",
+  modalHeader: "todo-hub-modal-header",
+  modalFooter: "todo-hub-modal-footer",
+  statusTrack: "todo-hub-status-track",
+  statusPill: "todo-hub-status-pill",
+  statusBtn: "todo-hub-status-btn",
+  statusBtnActive: "todo-hub-status-btn todo-hub-status-btn--active",
+  attachmentRow: "todo-hub-attachment-row",
+  attachmentThumb: "todo-hub-attachment-thumb",
+  iconBtn: "todo-hub-icon-btn",
+  filterPanel: "todo-hub-filter-panel",
+  filterRow: "todo-hub-filter-row",
+  badge: "todo-hub-badge",
+  badgePriorityLow: "todo-hub-badge todo-hub-badge--priority-low",
+  badgePriorityMedium: "todo-hub-badge todo-hub-badge--priority-medium",
+  badgePriorityHigh: "todo-hub-badge todo-hub-badge--priority-high",
+  badgeProject: "todo-hub-badge todo-hub-badge--project",
+  badgeMeta: "todo-hub-badge todo-hub-badge--meta",
+  badgeCount: "todo-hub-badge todo-hub-badge--count",
+  taskCard: "todo-hub-task-card",
+  taskCardArchived: "todo-hub-task-card todo-hub-task-card--archived",
+  taskCardHigh: "todo-hub-task-card todo-hub-task-card--high-priority",
+  taskColumn: "todo-hub-column",
+  statCard: "todo-hub-stat-card",
+  metaChip: "todo-hub-meta-chip",
+  idChip: "todo-hub-id-chip",
+  idChipCopied: "todo-hub-id-chip todo-hub-id-chip--copied",
+} as const;
+
+export type TodoHubClassKey = keyof typeof TODO_HUB;

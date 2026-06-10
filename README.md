@@ -1,13 +1,13 @@
 # P0020-Data-Box
 
-Unified data workspace: Notes, 2FA, Cookie Auto (+ System). Shell từ P0004 Tool Hub; skin P0008.
+Unified data workspace: Notes, Todo, 2FA, Cookie Auto (+ System). Shell từ P0004 Tool Hub; skin P0008.
 
 | Sản phẩm | Mã | Port | Vai trò |
 |----------|-----|------|---------|
 | Tool Hub | P0004 | 5176 | Catalog / GitHub sync |
 | **P0020-Data-Box** | P0020 | 5177 | Data workspace + apps |
 
-Todo/task board: tích hợp qua **P0021-AutoVideo-Studio** (project riêng).
+Todo/task board: tab **Todo** trong P0020 (standalone Kanban, Hub-UI shell, Supabase P0020).
 
 ## Chạy local
 

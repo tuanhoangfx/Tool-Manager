@@ -26,6 +26,15 @@ export default tseslint.config(
     },
   },
   {
+    files: ["src/features/todo/components/**/*.{ts,tsx}", "src/features/todo/hooks/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "no-case-declarations": "off",
+      "react-hooks/exhaustive-deps": "warn",
+    },
+  },
+  {
     files: ["scripts/**/*.cjs"],
     languageOptions: {
       ecmaVersion: 2022,

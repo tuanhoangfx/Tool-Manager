@@ -118,7 +118,7 @@ export function NoteEditorPanel({
       </div>
 
       <div
-        className="notes-editor__body min-h-0 flex-1 cursor-text overflow-y-auto"
+        className="notes-editor__body hub-split-scroll hub-split-scroll--panel min-h-0 flex-1 cursor-text"
         onMouseDown={(e) => {
           if (isEditorChromeTarget(e.target)) return;
           focusEditor();

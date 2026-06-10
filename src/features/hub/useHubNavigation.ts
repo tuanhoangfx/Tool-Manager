@@ -27,7 +27,6 @@ const RETIRED = new Set([
   "settings",
   "hub",
   "layouts",
-  "todo",
 ]);
 
 function redirectUsersPathToToolHub(): void {
@@ -46,7 +45,6 @@ export function readWorkspaceScreenFromLocation(): WorkspaceScreen {
 
   if (normalizedPath === PUBLIC_SHARE_PATH && readShareTokenFromUrl()) return "share";
   if (isPublicShareEntry(normalizedPath, window.location.search)) return "share";
-  if (normalizedPath === "/todo") return "notes";
 
   if (isUsersLegacyPath(window.location.pathname)) {
     redirectUsersPathToToolHub();
@@ -72,12 +70,6 @@ function migrateUrl(): WorkspaceScreen {
   const raw = p.get("screen");
 
   const normalizedPath = window.location.pathname.replace(/\/+$/, "") || "/";
-  if (normalizedPath === "/todo") {
-    p.delete("screen");
-    p.delete("tab");
-    window.history.replaceState(null, "", buildAppUrl("notes", p.toString()));
-    return "notes";
-  }
 
   if (raw && RETIRED.has(raw)) {
     p.delete("tab");

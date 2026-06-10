@@ -16,7 +16,25 @@
 |----------|----------|
 | `VITE_SUPABASE_URL` | Notes + (optional shared) |
 | `VITE_SUPABASE_ANON_KEY` | Notes |
+| `VITE_HUB_SUPABASE_URL` | Tool Hub identity |
+| `VITE_HUB_SUPABASE_ANON_KEY` | Tool Hub identity |
+| `VITE_TWOFA_SUPABASE_URL` | **2FA vault** (`zurfouqanjcubgneuctp`) — required for cloud sync |
+| `VITE_TWOFA_SUPABASE_ANON_KEY` | **2FA vault** anon key |
 | `VITE_GITHUB_TOKEN` | Library refresh (read-only) |
+
+Sync from `.env.local` (requires `VERCEL_TOKEN` in `E:\Dev\.env.shared`):
+
+```powershell
+cd E:\Dev\Tool\P0020-Data-Box
+pnpm sync:vercel-env              # API upsert all VITE_* keys
+pnpm deploy:vercel:env-ship       # sync → deploy hook → wait TWOFA anon in bundle
+pnpm verify:prod-twofa-env        # one-shot check (exit 1 if anon missing)
+```
+
+Legacy CLI: `node ../scripts/supabase-sync-vercel.mjs` (needs `vercel login`).
+
+`tool.manifest.json` → `vercelEnvValidation` documents required keys, verify scripts, and symptom map for AI ops.
+Post-deploy gate: `verify-production-smoke.mjs` runs `verify-vercel-env-bundle.mjs` when manifest has `vercelEnvValidation.checks`.
 
 ## CLI
 

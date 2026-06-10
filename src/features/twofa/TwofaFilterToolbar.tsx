@@ -56,7 +56,7 @@ export function TwofaFilterToolbar({
         <button
           type="button"
           className={`inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1 rounded-lg border bg-white/[.03] px-2.5 text-[10px] font-semibold transition-colors hover:bg-white/[.06] ${cloud.className}`}
-          title={cloud.title ?? "Sync 2FA vault with cloud"}
+          title={cloud.title ?? "Full resync 2FA vault with cloud"}
           onClick={onCloudSync}
           disabled={cloudState === "syncing"}
         >

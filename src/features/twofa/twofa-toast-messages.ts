@@ -29,3 +29,9 @@ export function twofaDedupeToast(removed: number): string {
 export function twofaUpdateToast(service: string, account: string): string {
   return `Updated ${formatTwofaEntryLabel(service, account)}`;
 }
+
+export function twofaFullResyncToast(count: number): string {
+  const label = count === 1 ? "account" : "accounts";
+  if (count === 0) return "Full resync complete — vault is empty (0 accounts)";
+  return `Full resync complete — ${count} ${label}`;
+}

@@ -117,7 +117,7 @@ export function SideDiffPane({
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="note-history-diff-pane__scroll min-h-0 flex-1 overflow-y-auto p-1.5 font-mono text-[11px] leading-[1.55]"
+        className="note-history-diff-pane__scroll hub-split-scroll hub-split-scroll--panel min-h-0 flex-1 p-1.5 font-mono text-[11px] leading-[1.55]"
       >
         {rows.map((row, i) => {
           const text = side === "left" ? row.left : row.right;

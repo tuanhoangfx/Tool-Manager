@@ -15,28 +15,95 @@ body,
 }
 
 /* Notes: split pane — no main scroll (Hub tab chrome + body flex) */
-.hub-main--notes {
+.hub-main.hub-main--notes {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  overscroll-behavior: none;
   padding-bottom: 0;
   scroll-padding-top: 0;
+  scrollbar-gutter: auto;
+}
+
+.hub-main.hub-main--notes > div {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Full-height flex chain: chrome → split panes (History-style internal scroll) */
+.hub-main--notes .hub-tab-chrome-stack,
+.hub-main--notes .notes-workspace > div {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hub-main--notes .hub-tab-content-zone {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hub-main--notes .hub-tab-body-zone--split {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .notes-workspace {
-  flex: 1;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
   min-height: 0;
   width: 100%;
+  overflow: hidden;
 }
 
 .hub-tab-body-zone--split > .notes-workspace__body {
+  display: flex;
+  flex: 1 1 0;
   flex-direction: row;
+  align-items: stretch;
   gap: var(--hub-chrome-content-gap, 0.75rem);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .notes-workspace__body {
   min-height: 0;
   flex: 1;
+}
+
+.hub-main--notes .notes-workspace__body > .notes-rail {
+  flex: 0 0 auto;
+  align-self: stretch;
+  min-height: 0;
+}
+
+.hub-main--notes .notes-workspace__body > .notes-editor {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.hub-main--notes .notes-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hub-main--notes .notes-editor__header {
+  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* Notes inbox list — wider rail for long titles (email routes, etc.) */
@@ -105,6 +172,8 @@ body,
   box-shadow: none !important;
   padding: 0;
   min-height: 14rem;
+  overflow: hidden;
+  resize: none;
 }
 
 .fm-cookie-panel {
@@ -146,8 +215,6 @@ body,
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  max-height: min(40vh, 16rem);
-  overflow-y: auto;
 }
 
 .notes-editor__textarea::placeholder {

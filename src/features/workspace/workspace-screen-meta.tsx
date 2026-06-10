@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { Cookie, FileText, KeyRound, Settings2 } from "lucide-react";
+import { ClipboardList, Cookie, FileText, KeyRound, Settings2 } from "lucide-react";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import type { TabHeaderMetaItem } from "../../components/sales-shell";
 
@@ -10,7 +10,7 @@ export type ScreenChromeConfig = {
   ariaLabel: string;
   searchPlaceholder: string;
   showSearch: boolean;
-  filterParam: "hfilt" | "nfilt" | "cfilt" | "afilt";
+  filterParam: "hfilt" | "nfilt" | "tfilt" | "cfilt" | "afilt";
   /** Directory tab with KPI/charts band (reserve slot on F5). */
   directoryBand?: boolean;
   /** Extra left meta after version · release (tab-specific). */
@@ -29,6 +29,16 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         searchPlaceholder: "Search notes, domain, slug…",
         showSearch: screen === "notes",
         filterParam: "nfilt",
+      };
+    case "todo":
+      return {
+        title: "Todo",
+        titleIcon: ClipboardList,
+        titleIconClass: "text-orange-400",
+        ariaLabel: "Todo header",
+        searchPlaceholder: "Search tasks…",
+        showSearch: false,
+        filterParam: "tfilt",
       };
     case "twofa":
       return {

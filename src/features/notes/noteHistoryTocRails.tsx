@@ -24,7 +24,7 @@ export function NoteHistorySnapshotRail({
   onPrefetch,
 }: SnapshotRailProps) {
   return (
-    <nav className="hub-toc-nav note-history-snapshot-toc" aria-label="Snapshots">
+    <nav className="hub-toc-nav note-history-snapshot-toc hub-split-scroll hub-split-scroll--rail" aria-label="Snapshots">
       <p className="note-history-toc-rail__title note-history-toc-rail__title--emoji">📋 Snapshots</p>
       <ul className="hub-toc-nav__list space-y-0.5">
         {versions.map((v) => {
@@ -104,7 +104,7 @@ export function NoteHistoryInspectorRail({
   partialHint,
 }: InspectorRailProps) {
   return (
-    <nav className="hub-toc-nav note-history-inspector-toc" aria-label="Inspector">
+    <nav className="hub-toc-nav note-history-inspector-toc hub-split-scroll hub-split-scroll--rail" aria-label="Inspector">
       <p className="note-history-toc-rail__title note-history-toc-rail__title--emoji">🔍 Inspector</p>
       <ul className="hub-toc-nav__list space-y-0.5">
         {source ? (

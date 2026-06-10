@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 // @ts-expect-error shared chunk helper (JS module)
-import { createHubManualChunks } from "../scripts/vite-hub-chunks.mjs";
+import { createHubManualChunks } from "./scripts/vite-hub-chunks.mjs";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const hubUiSrc = path.resolve(rootDir, "vendor/hub-ui/src");
@@ -20,6 +20,9 @@ export default defineConfig({
             inbox: "feature-notes",
             "features/twofa": "feature-twofa",
             "features/cookie": "feature-cookie",
+            "features/todo/components/CalendarView": "feature-todo-calendar",
+            "features/todo/components/UserGuide": "feature-todo-userguide",
+            "features/todo": "feature-todo",
             "features/system": "feature-system",
           },
         }),
@@ -46,6 +49,7 @@ export default defineConfig({
   resolve: {
     dedupe: ["react", "react-dom"],
     alias: [
+      { find: "@/todo", replacement: path.resolve(rootDir, "src/features/todo") },
       { find: "@tool-workspace/hub-ui", replacement: path.join(hubUiSrc, "index.ts") },
       { find: /^@tool-workspace\/hub-ui\/(.+)$/, replacement: `${hubUiSrc}/$1` },
       { find: "@tool-workspace/hub-identity", replacement: path.join(hubIdentitySrc, "index.ts") },

@@ -24,6 +24,8 @@ export {
   HubResultCount,
   HubLoadingView,
   type HubLoadingViewProps,
+  HubScreenChunkFallback,
+  type HubScreenChunkFallbackProps,
   HubLoaderRoot,
   HUB_TAB_LOADER_ROOT_ID,
   resolveVisibleKpiKeys,

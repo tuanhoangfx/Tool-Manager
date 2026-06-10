@@ -4,6 +4,7 @@ import { PUBLIC_SHARE_PATH } from "../features/notes/shareUtils";
 /** Path-first routes for P0020-Data-Box (e.g. /cookie). */
 export const NAV_SCREEN_PATH: Record<WorkspaceNavScreen, string> = {
   notes: "/notes",
+  todo: "/todo",
   twofa: "/twofa",
   cookie: "/cookie",
   system: "/system",

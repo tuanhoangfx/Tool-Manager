@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useLayoutEffect } from "react";
 import { Cookie, Pin } from "lucide-react";
 import { resolveCookieSiteIcon } from "../cookie/cookieSiteIcon";
 import type { NotesCookieRouteIndex } from "../cookie/useNotesCookieRouteIndex";
@@ -8,6 +8,7 @@ import type { NoteFolder } from "./noteFolders";
 import { noteEditorTocLabel } from "./noteUtils";
 import type { NoteListItem } from "./types";
 import type { NotesListDensity } from "./notes-list-prefs";
+import { NOTES_LIST_ROW_HEIGHT, useNotesListVirtualWindow } from "./useNotesListVirtualWindow";
 
 type Props = {
   notes: NoteListItem[];
@@ -36,11 +37,22 @@ export function NotesListRail({
   onSelect,
 }: Props) {
   const compact = density === "compact";
+  const rowHeight = NOTES_LIST_ROW_HEIGHT[compact ? "compact" : "comfortable"];
+  const { scrollRef, enabled, visible, totalHeight, offsetY, scrollNoteIntoView } =
+    useNotesListVirtualWindow(notes, rowHeight);
+
+  useLayoutEffect(() => {
+    if (!selectedId) return;
+    const index = notes.findIndex((n) => n.id === selectedId);
+    if (index < 0) return;
+    scrollNoteIntoView(selectedId, index);
+  }, [notes, scrollNoteIntoView, selectedId]);
 
   return (
     <aside className="notes-rail flex h-full min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[var(--panel)]/40">
       <div
-        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-1.5"
+        ref={scrollRef}
+        className="notes-rail__scroll hub-split-scroll hub-split-scroll--rail p-1.5"
       >
         {loading && notes.length === 0 ? (
           <p className="px-2 py-2 text-[11px] text-[var(--muted)]">Loading…</p>
@@ -48,79 +60,136 @@ export function NotesListRail({
         {!loading && notes.length === 0 ? (
           <p className="px-2 py-2 text-[11px] text-[var(--muted)]">No notes match filters.</p>
         ) : null}
-        <ul className="space-y-0.5">
-          {notes.map((n) => {
-            const active = n.id === selectedId;
-            const routeDomain = cookieRouteByNoteId?.get(n.id) ?? null;
-            const primaryFolder = getPrimaryFolderForListNote(
-              n.id,
-              n.created_at,
-              noteFolders,
-              cookieRouteNoteIds,
-              displayFolders,
-            );
-            const isCookieRoute = cookieRouteNoteIds.has(n.id);
-            const timeLabel = noteEditorTocLabel(n, isCookieRoute);
-            return (
-              <li key={n.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(n.id)}
-                  className={`flex w-full items-start gap-1.5 rounded-lg border text-left transition-all ${
-                    compact ? "px-1.5 py-1" : "px-2 py-1.5"
-                  } ${
-                    active
-                      ? "border-indigo-400/45 bg-indigo-500/15 ring-1 ring-indigo-400/25"
-                      : "border-transparent bg-white/[.02] hover:border-white/10 hover:bg-white/[.05]"
-                  }`}
-                >
-                  {primaryFolder ? (
-                    <NotesFolderListDot color={primaryFolder.color} title={primaryFolder.name} />
-                  ) : (
-                    <span
-                      className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
-                        n.syncTone === "emerald"
-                          ? "bg-emerald-400"
-                          : n.syncTone === "rose"
-                            ? "bg-rose-400"
-                            : "bg-amber-400"
-                      }`}
-                      title={n.syncLabel}
-                      aria-hidden
-                    />
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <span
-                      className={`block truncate font-medium text-[var(--text)] ${
-                        compact ? "text-[11px]" : "text-[12px]"
-                      }`}
-                    >
-                      {displayNoteTitle(n.title)}
-                    </span>
-                    {timeLabel ? (
-                      <span
-                        className={`notes-rail__time mt-0.5 block truncate font-medium text-violet-300/75 ${
-                          compact ? "text-[9px]" : "text-[10px]"
-                        }`}
-                        title={isCookieRoute ? n.synced_at ?? undefined : n.updated_at}
-                      >
-                        {timeLabel}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="flex shrink-0 items-center gap-1 pt-0.5">
-                    {routeDomain ? (
-                      <CookieRouteMark domain={routeDomain} compact={compact} />
-                    ) : null}
-                    {n.pinned ? <Pin size={11} className="text-violet-300" aria-label="Pinned" /> : null}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        {enabled && totalHeight != null ? (
+          <div className="relative w-full" style={{ height: totalHeight }}>
+            <ul
+              className="absolute left-0 right-0 top-0 space-y-0.5"
+              style={{ transform: `translateY(${offsetY}px)` }}
+            >
+              {visible.map(({ item: n }) => (
+                <NoteListRow
+                  key={n.id}
+                  note={n}
+                  active={n.id === selectedId}
+                  compact={compact}
+                  cookieRouteByNoteId={cookieRouteByNoteId}
+                  cookieRouteNoteIds={cookieRouteNoteIds}
+                  displayFolders={displayFolders}
+                  noteFolders={noteFolders}
+                  onSelect={onSelect}
+                />
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <ul className="space-y-0.5">
+            {notes.map((n) => (
+              <NoteListRow
+                key={n.id}
+                note={n}
+                active={n.id === selectedId}
+                compact={compact}
+                cookieRouteByNoteId={cookieRouteByNoteId}
+                cookieRouteNoteIds={cookieRouteNoteIds}
+                displayFolders={displayFolders}
+                noteFolders={noteFolders}
+                onSelect={onSelect}
+              />
+            ))}
+          </ul>
+        )}
+        {refreshing ? (
+          <p className="pointer-events-none px-2 py-1 text-[10px] text-[var(--muted)]">Refreshing…</p>
+        ) : null}
       </div>
     </aside>
+  );
+}
+
+function NoteListRow({
+  note: n,
+  active,
+  compact,
+  cookieRouteByNoteId,
+  cookieRouteNoteIds,
+  displayFolders,
+  noteFolders,
+  onSelect,
+}: {
+  note: NoteListItem;
+  active: boolean;
+  compact: boolean;
+  cookieRouteByNoteId?: NotesCookieRouteIndex;
+  cookieRouteNoteIds: ReadonlySet<string>;
+  displayFolders: NoteFolder[];
+  noteFolders: Record<string, string[]>;
+  onSelect: (id: string) => void;
+}) {
+  const routeDomain = cookieRouteByNoteId?.get(n.id) ?? null;
+  const primaryFolder = getPrimaryFolderForListNote(
+    n.id,
+    n.created_at,
+    noteFolders,
+    cookieRouteNoteIds,
+    displayFolders,
+  );
+  const isCookieRoute = cookieRouteNoteIds.has(n.id);
+  const timeLabel = noteEditorTocLabel(n, isCookieRoute);
+
+  return (
+    <li>
+      <button
+        type="button"
+        data-note-id={n.id}
+        onClick={() => onSelect(n.id)}
+        className={`flex w-full items-start gap-1.5 rounded-lg border text-left transition-all ${
+          compact ? "px-1.5 py-1" : "px-2 py-1.5"
+        } ${
+          active
+            ? "border-indigo-400/45 bg-indigo-500/15 ring-1 ring-indigo-400/25"
+            : "border-transparent bg-white/[.02] hover:border-white/10 hover:bg-white/[.05]"
+        }`}
+      >
+        {primaryFolder ? (
+          <NotesFolderListDot color={primaryFolder.color} title={primaryFolder.name} />
+        ) : (
+          <span
+            className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
+              n.syncTone === "emerald"
+                ? "bg-emerald-400"
+                : n.syncTone === "rose"
+                  ? "bg-rose-400"
+                  : "bg-amber-400"
+            }`}
+            title={n.syncLabel}
+            aria-hidden
+          />
+        )}
+        <span className="min-w-0 flex-1">
+          <span
+            className={`block truncate font-medium text-[var(--text)] ${
+              compact ? "text-[11px]" : "text-[12px]"
+            }`}
+          >
+            {displayNoteTitle(n.title)}
+          </span>
+          {timeLabel ? (
+            <span
+              className={`notes-rail__time mt-0.5 block truncate font-medium text-violet-300/75 ${
+                compact ? "text-[9px]" : "text-[10px]"
+              }`}
+              title={isCookieRoute ? n.synced_at ?? undefined : n.updated_at}
+            >
+              {timeLabel}
+            </span>
+          ) : null}
+        </span>
+        <span className="flex shrink-0 items-center gap-1 pt-0.5">
+          {routeDomain ? <CookieRouteMark domain={routeDomain} compact={compact} /> : null}
+          {n.pinned ? <Pin size={11} className="text-violet-300" aria-label="Pinned" /> : null}
+        </span>
+      </button>
+    </li>
   );
 }
 

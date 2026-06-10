@@ -2,38 +2,26 @@ import { ensureTwofaAuth } from "../../lib/ensure-twofa-auth";
 import { isTwofaSupabaseConfigured } from "../../lib/twofa-supabase-env";
 import { getTwofaSupabase } from "../../lib/twofa-supabase";
 import type { TwofaAccount, TwofaDraft } from "./types";
+import {
+  applyTwofaCloudDelta,
+  twofaDbRowToAccount,
+  type TwofaDbRow,
+} from "./twofa-cloud-delta";
+import { filterTwofaPendingDeletes } from "./twofa-sync-pending";
 import { dedupeTwofaAccounts } from "./twofa-upsert-accounts";
 
-const SYNC_WATERMARK_KEY = "p0020-twofa-cloud-sync-at-v1";
-const PAGE_SIZE = 200;
-
-export type TwofaCloudSyncState = "off" | "idle" | "syncing" | "ok" | "error";
-
-type DbRow = {
-  id: string;
-  service: string;
-  browser: string | null;
-  account: string;
-  password: string | null;
-  secret: string;
-  created_at: string;
-  updated_at: string;
-  last_used_at: string | null;
+type CloudRowSets = {
+  activeIds: Set<string>;
+  tombstoneIds: Set<string>;
 };
 
-function rowToAccount(row: DbRow): TwofaAccount {
-  return {
-    id: row.id,
-    service: row.service,
-    ...(row.browser?.trim() ? { browser: row.browser.trim() } : {}),
-    account: row.account,
-    ...(row.password?.trim() ? { password: row.password.trim() } : {}),
-    secret: row.secret,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    ...(row.last_used_at ? { lastUsedAt: row.last_used_at } : {}),
-  };
-}
+const LEGACY_SYNC_WATERMARK_KEY = "p0020-twofa-cloud-sync-at-v1";
+const SYNC_WATERMARK_PREFIX = "p0020-twofa-cloud-sync-at-v2";
+const PAGE_SIZE = 200;
+const SELECT_COLS =
+  "id,service,browser,account,password,secret,created_at,updated_at,last_used_at,deleted_at";
+
+export type TwofaCloudSyncState = "off" | "idle" | "syncing" | "ok" | "error";
 
 function accountToPayload(account: TwofaAccount, userId: string) {
   return {
@@ -47,6 +35,7 @@ function accountToPayload(account: TwofaAccount, userId: string) {
     created_at: account.createdAt,
     updated_at: account.updatedAt,
     last_used_at: account.lastUsedAt ?? null,
+    deleted_at: null,
   };
 }
 
@@ -62,6 +51,7 @@ function draftToPayload(id: string, draft: TwofaDraft, userId: string, now: stri
     created_at: now,
     updated_at: now,
     last_used_at: null,
+    deleted_at: null,
   };
 }
 
@@ -79,23 +69,163 @@ function mergeAccounts(local: TwofaAccount[], remote: TwofaAccount[]): TwofaAcco
   );
 }
 
-function readWatermark(): string | null {
+function watermarkKey(userId: string) {
+  return `${SYNC_WATERMARK_PREFIX}:${userId}`;
+}
+
+function readWatermark(userId: string): string | null {
   try {
-    return localStorage.getItem(SYNC_WATERMARK_KEY);
+    const scoped = localStorage.getItem(watermarkKey(userId));
+    if (scoped) return scoped;
+    const legacy = localStorage.getItem(LEGACY_SYNC_WATERMARK_KEY);
+    if (legacy) {
+      localStorage.removeItem(LEGACY_SYNC_WATERMARK_KEY);
+      return null;
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
-function writeWatermark(iso: string) {
-  localStorage.setItem(SYNC_WATERMARK_KEY, iso);
+function writeWatermark(userId: string, iso: string) {
+  localStorage.setItem(watermarkKey(userId), iso);
+}
+
+/** Force a full cloud pull on next sync (recovery). */
+export function clearTwofaSyncWatermark(userId?: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(LEGACY_SYNC_WATERMARK_KEY);
+    if (userId) localStorage.removeItem(watermarkKey(userId));
+  } catch {
+    /* private mode */
+  }
 }
 
 export function isTwofaCloudAvailable(): boolean {
   return isTwofaSupabaseConfigured;
 }
 
-/** Delta pull (paginated). Full import when watermark missing. */
+export type TwofaCloudRunOpts = {
+  /** Clear per-user watermark and pull the entire vault from cloud. */
+  full?: boolean;
+  /** Cloud snapshot reconcile without clearing watermark (realtime DELETE). */
+  reconcile?: boolean;
+};
+
+export function hasTwofaSyncWatermark(userId: string): boolean {
+  return readWatermark(userId) !== null;
+}
+
+async function fetchCloudRowSets(userId: string): Promise<{ sets: CloudRowSets; error: string | null }> {
+  const client = getTwofaSupabase();
+  if (!client) return { sets: { activeIds: new Set(), tombstoneIds: new Set() }, error: null };
+
+  const { data, error } = await client.from("twofa_accounts").select("id, deleted_at").eq("user_id", userId);
+  if (error) return { sets: { activeIds: new Set(), tombstoneIds: new Set() }, error: error.message };
+
+  const activeIds = new Set<string>();
+  const tombstoneIds = new Set<string>();
+  for (const row of data ?? []) {
+    const id = row.id as string;
+    if (row.deleted_at) tombstoneIds.add(id);
+    else activeIds.add(id);
+  }
+  return { sets: { activeIds, tombstoneIds }, error: null };
+}
+
+/** Rows only on device — never include tombstoned or in-flight delete ids. */
+function filterPendingUploads(local: TwofaAccount[], sets: CloudRowSets): TwofaAccount[] {
+  return local.filter(
+    (row) => !sets.activeIds.has(row.id) && !sets.tombstoneIds.has(row.id),
+  );
+}
+
+async function fetchTwofaCloudPage(
+  userId: string,
+  page: number,
+  since: string | null,
+  activeOnly: boolean,
+): Promise<{ rows: TwofaDbRow[]; error: string | null }> {
+  const client = getTwofaSupabase();
+  if (!client) return { rows: [], error: null };
+
+  const from = page * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+  let q = client
+    .from("twofa_accounts")
+    .select(SELECT_COLS)
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: true })
+    .order("id", { ascending: true })
+    .range(from, to);
+
+  if (activeOnly) q = q.is("deleted_at", null);
+  if (since) q = q.gt("updated_at", since);
+
+  const { data, error } = await q;
+  if (error) return { rows: [], error: error.message };
+  return { rows: (data ?? []) as TwofaDbRow[], error: null };
+}
+
+async function fetchAllTwofaDbRows(
+  userId: string,
+  since: string | null,
+  activeOnly: boolean,
+): Promise<{ rows: TwofaDbRow[]; error: string | null }> {
+  const rows: TwofaDbRow[] = [];
+  let page = 0;
+
+  for (;;) {
+    const pageResult = await fetchTwofaCloudPage(userId, page, since, activeOnly);
+    if (pageResult.error) return { rows, error: pageResult.error };
+    if (!pageResult.rows.length) break;
+    rows.push(...pageResult.rows);
+    page += 1;
+    if (pageResult.rows.length < PAGE_SIZE) break;
+  }
+
+  return { rows, error: null };
+}
+
+function writeWatermarkFromMax(userId: string, maxUpdated: string, since: string | null) {
+  if (maxUpdated && (!since || maxUpdated > since)) writeWatermark(userId, maxUpdated);
+}
+
+function writeWatermarkFromAccounts(userId: string, accounts: TwofaAccount[], since: string | null) {
+  const maxUpdated = accounts.reduce((max, a) => (a.updatedAt > max ? a.updatedAt : max), since ?? "");
+  writeWatermarkFromMax(userId, maxUpdated, since);
+}
+
+/** Cloud-authoritative reconcile (Cookie Auto pattern): active DB snapshot + genuine pending uploads. */
+export async function reconcileTwofaWithCloud(local: TwofaAccount[]): Promise<{
+  accounts: TwofaAccount[];
+  error: string | null;
+}> {
+  const session = await ensureTwofaAuth();
+  const client = getTwofaSupabase();
+  if (!session?.user?.id || !client) {
+    return { accounts: local, error: null };
+  }
+
+  const userId = session.user.id;
+  const since = readWatermark(userId);
+  const rowSets = await fetchCloudRowSets(userId);
+  if (rowSets.error) return { accounts: local, error: rowSets.error };
+
+  const remote = await fetchAllTwofaDbRows(userId, null, true);
+  if (remote.error) return { accounts: local, error: remote.error };
+
+  const remoteAccounts = remote.rows.map(twofaDbRowToAccount);
+  const pendingLocal = filterPendingUploads(local, rowSets.sets);
+  const merged = pendingLocal.length ? mergeAccounts(remoteAccounts, pendingLocal) : remoteAccounts;
+  const { accounts: deduped } = dedupeTwofaAccounts(filterTwofaPendingDeletes(merged));
+  writeWatermarkFromAccounts(userId, deduped, since);
+  return { accounts: deduped, error: null };
+}
+
+/** Delta pull (paginated). Tombstones remove local rows; full import when watermark missing. */
 export async function pullTwofaCloudDelta(local: TwofaAccount[]): Promise<{
   accounts: TwofaAccount[];
   error: string | null;
@@ -106,54 +236,50 @@ export async function pullTwofaCloudDelta(local: TwofaAccount[]): Promise<{
     return { accounts: local, error: null };
   }
 
-  const since = readWatermark();
-  const remote: TwofaAccount[] = [];
-  let page = 0;
+  const userId = session.user.id;
+  const since = readWatermark(userId);
+  const remote = await fetchAllTwofaDbRows(userId, since, !since);
+  if (remote.error) return { accounts: local, error: remote.error };
 
-  for (;;) {
-    const from = page * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-    let q = client
-      .from("twofa_accounts")
-      .select("id,service,browser,account,password,secret,created_at,updated_at,last_used_at")
-      .eq("user_id", session.user.id)
-      .order("updated_at", { ascending: true })
-      .order("id", { ascending: true })
-      .range(from, to);
-
-    if (since) q = q.gt("updated_at", since);
-
-    const { data, error } = await q;
-    if (error) return { accounts: local, error: error.message };
-    const rows = (data ?? []) as DbRow[];
-    if (!rows.length) break;
-    remote.push(...rows.map(rowToAccount));
-    page += 1;
-    if (rows.length < PAGE_SIZE) break;
+  let accounts = local;
+  if (since) {
+    const { accounts: next, maxUpdated } = applyTwofaCloudDelta(local, remote.rows);
+    accounts = next;
+    writeWatermarkFromMax(userId, maxUpdated, since);
+  } else {
+    const rowSets = await fetchCloudRowSets(userId);
+    if (rowSets.error) return { accounts: local, error: rowSets.error };
+    accounts = reconcileMergeFullPull(
+      local,
+      remote.rows.filter((row) => !row.deleted_at).map(twofaDbRowToAccount),
+      rowSets.sets,
+    );
+    writeWatermarkFromAccounts(userId, accounts, since);
   }
 
-  const merged = remote.length > 0 ? mergeAccounts(local, remote) : local;
-  const { accounts: deduped } = dedupeTwofaAccounts(merged);
-  const maxUpdated = deduped.reduce((max, a) => (a.updatedAt > max ? a.updatedAt : max), since ?? "");
-  if (maxUpdated) writeWatermark(maxUpdated);
-
+  const { accounts: deduped } = dedupeTwofaAccounts(filterTwofaPendingDeletes(accounts));
   return { accounts: deduped, error: null };
 }
 
-/** Push local-only rows (not on server) after delta pull. */
+/** Full vault pull: cloud snapshot + genuine pending uploads only. */
+function reconcileMergeFullPull(
+  local: TwofaAccount[],
+  remote: TwofaAccount[],
+  sets: CloudRowSets,
+): TwofaAccount[] {
+  const pendingLocal = filterPendingUploads(local, sets);
+  return pendingLocal.length ? [...remote, ...pendingLocal] : remote;
+}
+
+/** Push genuine local-only rows (never tombstoned / in-flight deletes). */
 export async function pushTwofaLocalOnly(local: TwofaAccount[]): Promise<string | null> {
   const session = await ensureTwofaAuth();
-  const client = getTwofaSupabase();
-  if (!session?.user?.id || !client) return null;
+  if (!session?.user?.id) return null;
 
-  const { data: ids, error: listError } = await client
-    .from("twofa_accounts")
-    .select("id")
-    .eq("user_id", session.user.id);
-  if (listError) return listError.message;
+  const rowSets = await fetchCloudRowSets(session.user.id);
+  if (rowSets.error) return rowSets.error;
 
-  const remoteIds = new Set((ids ?? []).map((r) => r.id as string));
-  const pending = local.filter((a) => !remoteIds.has(a.id));
+  const pending = filterPendingUploads(filterTwofaPendingDeletes(local), rowSets.sets);
   if (!pending.length) return null;
 
   for (const row of pending) {
@@ -184,14 +310,15 @@ export async function upsertTwofaCloud(account: TwofaAccount): Promise<TwofaClou
     .select("id")
     .eq("user_id", session.user.id)
     .eq("service", account.service)
-    .eq("account", account.account);
+    .eq("account", account.account)
+    .is("deleted_at", null);
   const browser = account.browser?.trim() || "";
   existingQ = browser ? existingQ.eq("browser", browser) : existingQ.or("browser.is.null,browser.eq.");
   const { data: existing, error: findError } = await existingQ.maybeSingle();
   if (findError || !existing?.id) return { error: error.message };
 
   if (existing.id !== account.id) {
-    await client.from("twofa_accounts").delete().eq("user_id", session.user.id).eq("id", account.id);
+    await tombstoneTwofaCloudRow(session.user.id, account.id);
   }
   const { error: retryError } = await client
     .from("twofa_accounts")
@@ -209,24 +336,68 @@ export async function upsertTwofaCloudDraft(id: string, draft: TwofaDraft, now: 
   return error?.message ?? null;
 }
 
-export async function deleteTwofaCloud(id: string): Promise<string | null> {
-  const session = await ensureTwofaAuth();
+async function tombstoneTwofaCloudRow(userId: string, id: string): Promise<string | null> {
   const client = getTwofaSupabase();
-  if (!session?.user?.id || !client) return null;
-  const { error } = await client.from("twofa_accounts").delete().eq("user_id", session.user.id).eq("id", id);
+  if (!client) return null;
+  const now = new Date().toISOString();
+  const { error } = await client
+    .from("twofa_accounts")
+    .update({ deleted_at: now })
+    .eq("user_id", userId)
+    .eq("id", id)
+    .is("deleted_at", null);
   return error?.message ?? null;
 }
 
-export async function runTwofaCloudSync(local: TwofaAccount[]): Promise<{
+/** Soft-delete (tombstone) — delta sync propagates via updated_at. */
+export async function deleteTwofaCloud(id: string): Promise<string | null> {
+  const session = await ensureTwofaAuth();
+  if (!session?.user?.id) return null;
+  return tombstoneTwofaCloudRow(session.user.id, id);
+}
+
+export async function runTwofaCloudSync(
+  getLocal: () => TwofaAccount[],
+  opts?: TwofaCloudRunOpts,
+): Promise<{
   accounts: TwofaAccount[];
   error: string | null;
 }> {
-  const pulled = await pullTwofaCloudDelta(local);
+  const session = await ensureTwofaAuth();
+  const userId = session?.user?.id;
+  if (opts?.full && userId) clearTwofaSyncWatermark(userId);
+
+  const hasWatermark = userId ? readWatermark(userId) !== null : false;
+  const useAuthoritative = opts?.full || opts?.reconcile || !hasWatermark;
+
+  const pulled = useAuthoritative
+    ? await reconcileTwofaWithCloud(getLocal())
+    : await pullTwofaCloudDelta(getLocal());
   if (pulled.error) return pulled;
-  const pushErr = await pushTwofaLocalOnly(pulled.accounts);
+
+  const pushErr = await pushTwofaLocalOnly(getLocal());
   if (pushErr) return { accounts: pulled.accounts, error: pushErr };
-  if (!readWatermark() && pulled.accounts.length) {
-    return pullTwofaCloudDelta(pulled.accounts);
+
+  if (useAuthoritative && userId) {
+    const refreshed = await reconcileTwofaWithCloud(getLocal());
+    return refreshed.error ? { accounts: pulled.accounts, error: refreshed.error } : refreshed;
   }
+
+  if (userId && !readWatermark(userId) && pulled.accounts.length) {
+    return reconcileTwofaWithCloud(getLocal());
+  }
+
+  const local = getLocal();
+  if (
+    !opts?.full &&
+    userId &&
+    readWatermark(userId) &&
+    pulled.accounts.length === 0 &&
+    local.length === 0
+  ) {
+    clearTwofaSyncWatermark(userId);
+    return runTwofaCloudSync(getLocal, { full: true });
+  }
+
   return pulled;
 }

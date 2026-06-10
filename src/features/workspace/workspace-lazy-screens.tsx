@@ -1,5 +1,9 @@
 import { lazy } from "react";
 
+export const TodoScreen = lazy(() =>
+  import("../todo/TodoScreen").then((m) => ({ default: m.TodoScreen })),
+);
+
 export const TwofaManagerScreen = lazy(() =>
   import("../twofa/TwofaManagerScreen").then((m) => ({ default: m.TwofaManagerScreen })),
 );

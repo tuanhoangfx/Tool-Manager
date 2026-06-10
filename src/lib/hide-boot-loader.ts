@@ -12,5 +12,6 @@ export function hideBootLoader() {
     window.dispatchEvent(new Event("hub-boot-ready"));
   }
   document.getElementById("hub-boot-loader")?.remove();
-  clearHubTabLoader();
+  // Do not call clearHubTabLoader here — Suspense fallbacks portal into hub-tab-loader-root
+  // and React will throw removeChild if we wipe that container during lazy chunk load.
 }

@@ -42,6 +42,17 @@ import {
 } from "../twofa/TwofaTableColumnsSettings";
 import { TwofaTableColumnsResetAction } from "../twofa/TwofaTableColumnsResetAction";
 import { TwofaMaskPasswordToggle } from "../twofa/TwofaMaskPasswordToggle";
+import {
+  DEFAULT_TODO_CHART_KEYS,
+  DEFAULT_TODO_FILTER_KEYS,
+  DEFAULT_TODO_HEADER_STAT_KEYS,
+  DEFAULT_TODO_KPI_KEYS,
+  TODO_CHART_DEFS,
+  TODO_FILTER_DEFS,
+  TODO_HEADER_STAT_DEFS,
+  TODO_KPI_DEFS,
+} from "../todo/todo-display-prefs";
+import { patchTodoHubPrefs, readTodoHubPrefs } from "../todo/todo-tab-prefs";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 
 function TwofaTabDisplayPrefs({ screenFilters }: { screenFilters: FilterDef[] }) {
@@ -173,6 +184,37 @@ export function WorkspaceTabDisplayPrefs({
 
   if (screen === "twofa") {
     return <TwofaTabDisplayPrefs screenFilters={screenFilters} />;
+  }
+
+  if (screen === "todo") {
+    const filters = screenFilters.length
+      ? screenFilters.map(({ key, label }) => ({ key, label }))
+      : TODO_FILTER_DEFS;
+    const defaultFilterKeys = screenFilters.length
+      ? new Set(screenFilters.map((f) => f.key))
+      : DEFAULT_TODO_FILTER_KEYS;
+
+    return (
+      <DisplayPrefs
+        kpis={TODO_KPI_DEFS}
+        charts={TODO_CHART_DEFS}
+        filters={filters}
+        defaultKpiKeys={DEFAULT_TODO_KPI_KEYS}
+        defaultChartKeys={DEFAULT_TODO_CHART_KEYS}
+        defaultFilterKeys={defaultFilterKeys}
+        filterParam="tfilt"
+        filtersFromUrl
+        headerStats={TODO_HEADER_STAT_DEFS}
+        defaultHeaderStatKeys={DEFAULT_TODO_HEADER_STAT_KEYS}
+        showRange={false}
+        showLimit={false}
+        showHeaderPin
+        headerStatLabel={() => "Todo header"}
+        scope="tab"
+        readPrefs={readTodoHubPrefs}
+        patchPrefs={patchTodoHubPrefs}
+      />
+    );
   }
 
   if (screen === "system") {

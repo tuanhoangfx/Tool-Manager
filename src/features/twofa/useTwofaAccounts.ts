@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { loadAccounts, saveAccounts } from "./storage";
+import { getTwofaStorageUserId, loadAccounts, saveAccounts } from "./storage";
 import type { TwofaAccount, TwofaDraft } from "./types";
 import {
   deleteTwofaCloud,
+  hasTwofaSyncWatermark,
   isTwofaCloudAvailable,
   runTwofaCloudSync,
   upsertTwofaCloud,
@@ -12,11 +13,21 @@ import {
   dedupeTwofaAccounts,
   updateTwofaDraft,
   upsertTwofaDraft,
-  type TwofaUpsertOutcome,
 } from "./twofa-upsert-accounts";
+import {
+  filterTwofaPendingDeletes,
+  markTwofaPendingDelete,
+} from "./twofa-sync-pending";
 import { useTwofaRealtime } from "./useTwofaRealtime";
 
-export type TwofaCloudSyncOpts = { /** Skip syncing badge — use for realtime refresh */ silent?: boolean };
+export type TwofaCloudSyncOpts = {
+  /** Skip syncing badge — use for realtime refresh */
+  silent?: boolean;
+  /** Pull entire vault (login, manual sync). Clears watermark. */
+  full?: boolean;
+  /** Cloud snapshot reconcile — propagates remote deletes (realtime). */
+  reconcile?: boolean;
+};
 
 export type TwofaAddManyResult = {
   added: number;
@@ -26,32 +37,62 @@ export type TwofaAddManyResult = {
 
 export type TwofaSaveResult = { ok: true; replaced: boolean } | { ok: false };
 
+export type TwofaFullSyncNotice = {
+  count: number;
+  id: number;
+};
+
+const FULL_SYNC_TOAST_DEBOUNCE_MS = 1500;
+
+function loadDedupedAccounts(): TwofaAccount[] {
+  const loaded = loadAccounts();
+  const { accounts: deduped, removedIds } = dedupeTwofaAccounts(loaded);
+  if (removedIds.length) saveAccounts(deduped);
+  return deduped;
+}
+
 export function useTwofaAccounts() {
-  const [accounts, setAccounts] = useState<TwofaAccount[]>(() => {
-    const loaded = loadAccounts();
-    const { accounts: deduped, removedIds } = dedupeTwofaAccounts(loaded);
-    if (removedIds.length) saveAccounts(deduped);
-    return deduped;
-  });
+  const [accounts, setAccounts] = useState<TwofaAccount[]>(loadDedupedAccounts);
+  const accountsRef = useRef(accounts);
+  accountsRef.current = accounts;
+
   const [tick, setTick] = useState(0);
   const [cloudState, setCloudState] = useState<TwofaCloudSyncState>(
     isTwofaCloudAvailable() ? "idle" : "off",
   );
   const [cloudError, setCloudError] = useState<string | null>(null);
+  const [fullSyncNotice, setFullSyncNotice] = useState<TwofaFullSyncNotice | null>(null);
   const syncInFlight = useRef(false);
+  const syncGeneration = useRef(0);
+  const vaultUserIdRef = useRef<string | null>(getTwofaStorageUserId());
+  const lastFullSyncEmitRef = useRef(0);
+
+  const persistAccounts = useCallback((next: TwofaAccount[]) => {
+    saveAccounts(next, vaultUserIdRef.current);
+  }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => saveAccounts(accounts), 280);
+    const timer = window.setTimeout(() => persistAccounts(accounts), 280);
     return () => window.clearTimeout(timer);
-  }, [accounts]);
+  }, [accounts, persistAccounts]);
 
   useEffect(() => {
     const id = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => window.clearInterval(id);
   }, []);
 
+  const applyAccounts = useCallback(
+    (next: TwofaAccount[]) => {
+      accountsRef.current = next;
+      setAccounts(next);
+      persistAccounts(next);
+    },
+    [persistAccounts],
+  );
+
   const syncFromCloud = useCallback(async (opts?: TwofaCloudSyncOpts) => {
     if (!isTwofaCloudAvailable() || syncInFlight.current) return;
+    const generation = ++syncGeneration.current;
     syncInFlight.current = true;
     const silent = opts?.silent ?? false;
     if (!silent) {
@@ -59,20 +100,45 @@ export function useTwofaAccounts() {
       setCloudError(null);
     }
     try {
-      const local = loadAccounts();
-      const { accounts: merged, error } = await runTwofaCloudSync(local);
+      const getLocal = () => accountsRef.current;
+      const { accounts: merged, error } = await runTwofaCloudSync(getLocal, {
+        full: opts?.full,
+        reconcile: opts?.reconcile,
+      });
+      if (generation !== syncGeneration.current) return;
       if (error) {
         setCloudState("error");
         setCloudError(error);
         return;
       }
       const { accounts: deduped } = dedupeTwofaAccounts(merged);
-      setAccounts(deduped);
+      const next = filterTwofaPendingDeletes(deduped);
+      if (generation !== syncGeneration.current) return;
+      applyAccounts(next);
       setCloudState("ok");
+      if (opts?.full && !silent) {
+        const now = Date.now();
+        if (now - lastFullSyncEmitRef.current >= FULL_SYNC_TOAST_DEBOUNCE_MS) {
+          lastFullSyncEmitRef.current = now;
+          setFullSyncNotice({ count: next.length, id: now });
+        }
+      }
     } finally {
-      syncInFlight.current = false;
+      if (generation === syncGeneration.current) syncInFlight.current = false;
     }
+  }, [applyAccounts]);
+
+  const ackFullSyncNotice = useCallback(() => {
+    setFullSyncNotice(null);
   }, []);
+
+  const reloadForVaultUser = useCallback((): boolean => {
+    const uid = getTwofaStorageUserId();
+    if (uid === vaultUserIdRef.current) return false;
+    vaultUserIdRef.current = uid;
+    applyAccounts(loadDedupedAccounts());
+    return true;
+  }, [applyAccounts]);
 
   const syncFromRealtime = useCallback(() => {
     void syncFromCloud({ silent: true });
@@ -83,23 +149,34 @@ export function useTwofaAccounts() {
   useEffect(() => {
     if (!isTwofaCloudAvailable()) return;
 
-    const onSession = () => {
-      void syncFromCloud();
+    const syncOnMount = (full: boolean) => {
+      void syncFromCloud({ silent: true, full });
     };
-    window.addEventListener("p0020:twofa-session", onSession);
-    window.addEventListener("p0020:databox-session", onSession);
-    void syncFromCloud();
+
+    const onTwofaSession = () => {
+      reloadForVaultUser();
+      syncOnMount(true);
+    };
+    const onDataBoxSession = () => {
+      const userChanged = reloadForVaultUser();
+      if (userChanged) syncOnMount(true);
+    };
+    window.addEventListener("p0020:twofa-session", onTwofaSession);
+    window.addEventListener("p0020:databox-session", onDataBoxSession);
+    reloadForVaultUser();
+    const uid = getTwofaStorageUserId();
+    syncOnMount(uid ? !hasTwofaSyncWatermark(uid) : true);
 
     return () => {
-      window.removeEventListener("p0020:twofa-session", onSession);
-      window.removeEventListener("p0020:databox-session", onSession);
+      window.removeEventListener("p0020:twofa-session", onTwofaSession);
+      window.removeEventListener("p0020:databox-session", onDataBoxSession);
     };
-  }, [syncFromCloud]);
+  }, [reloadForVaultUser, syncFromCloud]);
 
   const remapLocalId = useCallback((localId: string, cloudId: string) => {
     if (localId === cloudId) return;
-    setAccounts((prev) => prev.map((row) => (row.id === localId ? { ...row, id: cloudId } : row)));
-  }, []);
+    applyAccounts(accountsRef.current.map((row) => (row.id === localId ? { ...row, id: cloudId } : row)));
+  }, [applyAccounts]);
 
   const cloudUpsert = useCallback(
     async (account: TwofaAccount) => {
@@ -129,103 +206,94 @@ export function useTwofaAccounts() {
       const now = new Date().toISOString();
       const cloudRows: TwofaAccount[] = [];
       const cloudRemovals: string[] = [];
-      let result: TwofaAddManyResult = { added: 0, replaced: 0, total: 0 };
+      let next = accountsRef.current;
+      let added = 0;
+      let replaced = 0;
 
-      setAccounts((prev) => {
-        let next = prev;
-        let added = 0;
-        let replaced = 0;
-        for (const draft of drafts) {
-          const outcome = upsertTwofaDraft(next, draft, now);
-          if (!outcome) continue;
-          next = outcome.accounts;
-          if (outcome.replaced) replaced += 1;
-          else added += 1;
-          cloudRows.push(outcome.row);
-          cloudRemovals.push(...outcome.removedIds);
-        }
-        result = { added, replaced, total: added + replaced };
-        return next;
-      });
+      for (const draft of drafts) {
+        const outcome = upsertTwofaDraft(next, draft, now);
+        if (!outcome) continue;
+        next = outcome.accounts;
+        if (outcome.replaced) replaced += 1;
+        else added += 1;
+        cloudRows.push(outcome.row);
+        cloudRemovals.push(...outcome.removedIds);
+      }
 
+      applyAccounts(next);
       for (const row of cloudRows) void cloudUpsert(row);
       for (const removedId of cloudRemovals) void cloudDelete(removedId);
-      return result;
+      return { added, replaced, total: added + replaced };
     },
-    [cloudDelete, cloudUpsert],
+    [applyAccounts, cloudDelete, cloudUpsert],
   );
 
   const add = useCallback(
     (draft: TwofaDraft): TwofaSaveResult => {
       const now = new Date().toISOString();
-      const result: { outcome?: TwofaUpsertOutcome } = {};
-      setAccounts((prev) => {
-        const outcome = upsertTwofaDraft(prev, draft, now);
-        if (!outcome) return prev;
-        result.outcome = outcome;
-        return outcome.accounts;
-      });
-      if (!result.outcome) return { ok: false };
-      void cloudUpsert(result.outcome.row);
-      for (const removedId of result.outcome.removedIds) void cloudDelete(removedId);
-      return { ok: true, replaced: result.outcome.replaced };
+      const outcome = upsertTwofaDraft(accountsRef.current, draft, now);
+      if (!outcome) return { ok: false };
+      applyAccounts(outcome.accounts);
+      void cloudUpsert(outcome.row);
+      for (const removedId of outcome.removedIds) void cloudDelete(removedId);
+      return { ok: true, replaced: outcome.replaced };
     },
-    [cloudDelete, cloudUpsert],
+    [applyAccounts, cloudDelete, cloudUpsert],
   );
 
   const update = useCallback(
     (id: string, draft: TwofaDraft) => {
       const now = new Date().toISOString();
-      const result: { outcome?: TwofaUpsertOutcome } = {};
-      setAccounts((prev) => {
-        const outcome = updateTwofaDraft(prev, id, draft, now);
-        if (!outcome) return prev;
-        result.outcome = outcome;
-        return outcome.accounts;
-      });
-      if (!result.outcome) return false;
-      void cloudUpsert(result.outcome.row);
-      for (const removedId of result.outcome.removedIds) void cloudDelete(removedId);
+      const outcome = updateTwofaDraft(accountsRef.current, id, draft, now);
+      if (!outcome) return false;
+      applyAccounts(outcome.accounts);
+      void cloudUpsert(outcome.row);
+      for (const removedId of outcome.removedIds) void cloudDelete(removedId);
       return true;
     },
-    [cloudDelete, cloudUpsert],
+    [applyAccounts, cloudDelete, cloudUpsert],
   );
 
   const remove = useCallback(
     (id: string) => {
-      setAccounts((prev) => prev.filter((a) => a.id !== id));
-      void cloudDelete(id);
+      const run = async () => {
+        markTwofaPendingDelete(id);
+        syncGeneration.current += 1;
+        applyAccounts(accountsRef.current.filter((a) => a.id !== id));
+        if (isTwofaCloudAvailable()) {
+          const err = await deleteTwofaCloud(id);
+          if (err) {
+            setCloudState("error");
+            setCloudError(err);
+            return;
+          }
+        }
+      };
+      void run();
     },
-    [cloudDelete],
+    [applyAccounts],
   );
 
   const touchLastUsed = useCallback(
     (id: string) => {
       const now = new Date().toISOString();
-      setAccounts((prev) =>
-        prev.map((a) => {
-          if (a.id !== id) return a;
-          const next = { ...a, lastUsedAt: now, updatedAt: now };
-          void cloudUpsert(next);
-          return next;
-        }),
-      );
+      const next = accountsRef.current.map((a) => {
+        if (a.id !== id) return a;
+        const row = { ...a, lastUsedAt: now, updatedAt: now };
+        void cloudUpsert(row);
+        return row;
+      });
+      applyAccounts(next);
     },
-    [cloudUpsert],
+    [applyAccounts, cloudUpsert],
   );
 
   const dedupeNow = useCallback((): number => {
-    const cloudRemovals: string[] = [];
-    let removed = 0;
-    setAccounts((prev) => {
-      const { accounts: deduped, removedIds } = dedupeTwofaAccounts(prev);
-      removed = removedIds.length;
-      cloudRemovals.push(...removedIds);
-      return deduped;
-    });
-    for (const removedId of cloudRemovals) void cloudDelete(removedId);
-    return removed;
-  }, [cloudDelete]);
+    const { accounts: deduped, removedIds } = dedupeTwofaAccounts(accountsRef.current);
+    applyAccounts(deduped);
+    for (const removedId of removedIds) void cloudDelete(removedId);
+    return removedIds.length;
+  }, [applyAccounts, cloudDelete]);
 
   return {
     accounts,
@@ -238,6 +306,8 @@ export function useTwofaAccounts() {
     dedupeNow,
     cloudState,
     cloudError,
+    fullSyncNotice,
+    ackFullSyncNotice,
     syncFromCloud,
   };
 }

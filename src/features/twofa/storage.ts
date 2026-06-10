@@ -1,11 +1,21 @@
+import { readTwofaSession } from "../../lib/twofa-session";
 import type { TwofaAccount } from "./types";
 
-const STORAGE_KEY = "p0020-twofa-accounts-v1";
+const LEGACY_STORAGE_KEY = "p0020-twofa-accounts-v1";
+const STORAGE_KEY_PREFIX = "p0020-twofa-accounts-v2";
 
-export function loadAccounts(): TwofaAccount[] {
+function storageKey(userId: string | null | undefined): string {
+  return userId ? `${STORAGE_KEY_PREFIX}:${userId}` : LEGACY_STORAGE_KEY;
+}
+
+export function getTwofaStorageUserId(): string | null {
+  return readTwofaSession()?.user_id ?? null;
+}
+
+function readKey(key: string): TwofaAccount[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as TwofaAccount[];
     return Array.isArray(parsed) ? parsed : [];
@@ -14,8 +24,43 @@ export function loadAccounts(): TwofaAccount[] {
   }
 }
 
-export function saveAccounts(accounts: TwofaAccount[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+function writeKey(key: string, accounts: TwofaAccount[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(key, JSON.stringify(accounts));
+}
+
+const LEGACY_MIGRATED_TO_KEY = "p0020-twofa-legacy-migrated-to";
+
+/** Migrate pre-sync local vault into the first signed-in user's scoped cache (once). */
+function migrateLegacyAccounts(userId: string): TwofaAccount[] {
+  const legacy = readKey(LEGACY_STORAGE_KEY);
+  if (!legacy.length) return [];
+  const scoped = readKey(storageKey(userId));
+  if (scoped.length) return scoped;
+  try {
+    const claimed = localStorage.getItem(LEGACY_MIGRATED_TO_KEY);
+    if (claimed && claimed !== userId) return [];
+    writeKey(storageKey(userId), legacy);
+    localStorage.setItem(LEGACY_MIGRATED_TO_KEY, userId);
+    return legacy;
+  } catch {
+    return [];
+  }
+}
+
+export function loadAccounts(userId?: string | null): TwofaAccount[] {
+  const uid = userId ?? getTwofaStorageUserId();
+  if (uid) {
+    const scoped = readKey(storageKey(uid));
+    if (scoped.length) return scoped;
+    return migrateLegacyAccounts(uid);
+  }
+  return readKey(LEGACY_STORAGE_KEY);
+}
+
+export function saveAccounts(accounts: TwofaAccount[], userId?: string | null) {
+  const uid = userId ?? getTwofaStorageUserId();
+  writeKey(storageKey(uid), accounts);
 }
 
 export function newId() {

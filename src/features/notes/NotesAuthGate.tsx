@@ -49,6 +49,7 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
                 "Tool Hub sign-in succeeded but Data Box session failed. Check Data Box Supabase status or try again.",
             };
           }
+          setOfflineMode(false);
           adoptSession(dataSession);
           relaySessionsToExtension(identitySession, dataSession);
         },
