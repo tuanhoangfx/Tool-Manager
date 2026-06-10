@@ -1,20 +1,20 @@
 
-import React, { useState, useEffect } from 'react';
-import { Task, Profile } from "@/todo/types";
-import { useSettings } from "@/todo/context/SettingsContext";
-import { TrashIcon, EditIcon, ClockIcon, PlayIcon, CheckCircleIcon, XCircleIcon, CalendarIcon, PaperclipIcon, ArrowRightIcon, ChatBubbleIcon } from "@/todo/components/Icons";
-import PriorityIndicator from "@/todo/components/common/PriorityIndicator";
-import Avatar from "@/todo/components/common/Avatar";
-import { PROJECT_COLORS } from "@/todo/constants";
-import { DataChange } from "@/todo/app-types";
-import CopyIdButton from "@/todo/components/common/CopyIdButton";
-import { useTaskStyles } from "@/todo/hooks/useTaskStyles";
-import { useLiveDuration } from "@/todo/hooks/useLiveDuration";
-import { supabase } from "@/todo/lib/supabase";
-import { useToasts } from "@/todo/context/ToastContext";
-import { useTodoUsers } from "@/todo/TodoUsersContext";
-import { TodoHubBadge } from "@/todo/components/common/TodoHubBadge";
-import { TODO_HUB } from "@/todo/styles/todo-hub-classes";
+import React, { useState, useEffect, useRef } from 'react';
+import { Task, Profile } from "../types";
+import { useSettings } from "../context/SettingsContext";
+import { TrashIcon, ClockIcon, PlayIcon, CheckCircleIcon, XCircleIcon, CalendarIcon, PaperclipIcon, ArrowRightIcon, ChatBubbleIcon } from "./Icons";
+import PriorityIndicator from "./common/PriorityIndicator";
+import Avatar from "./common/Avatar";
+import { PROJECT_COLORS } from "../constants";
+import { DataChange } from "../app-types";
+import CopyIdButton from "./common/CopyIdButton";
+import { useTaskStyles } from "../hooks/useTaskStyles";
+import { useLiveDuration } from "../hooks/useLiveDuration";
+import { supabase } from "../lib/supabase";
+import { useToasts } from "../context/ToastContext";
+import { useTodoUsers } from "../TodoUsersContext";
+import { TodoHubBadge } from "./common/TodoHubBadge";
+import { TODO_HUB } from "../styles/todo-hub-classes";
 
 interface TaskCardProps {
     task: Task;
@@ -167,11 +167,49 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onUpdateSta
         }
     };
 
+    const dragState = useRef({ dragging: false, moved: false, x: 0, y: 0 });
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        dragState.current = { dragging: false, moved: false, x: e.clientX, y: e.clientY };
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (dragState.current.moved) return;
+        const dx = Math.abs(e.clientX - dragState.current.x);
+        const dy = Math.abs(e.clientY - dragState.current.y);
+        if (dx > 6 || dy > 6) dragState.current.moved = true;
+    };
+
+    const handleCardClick = () => {
+        if (dragState.current.moved || dragState.current.dragging) return;
+        onEdit(task);
+    };
+
     return (
         <div 
-            className={`${styles.containerClassName} ${isHighlighted ? 'todo-hub-task-card--highlight' : ''}`}
+            className={`${styles.containerClassName} todo-hub-task-card--clickable ${isHighlighted ? 'todo-hub-task-card--highlight' : ''}`}
             draggable={!styles.isArchived}
-            onDragStart={() => onDragStart(task.id)}
+            onDragStart={() => {
+                dragState.current.dragging = true;
+                onDragStart(task.id);
+            }}
+            onDragEnd={() => {
+                dragState.current.dragging = false;
+                window.setTimeout(() => {
+                    dragState.current.moved = false;
+                }, 0);
+            }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onClick={handleCardClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleCardClick();
+                }
+            }}
         >
             {/* Row 1: ID, Actions */}
             <div className="flex justify-between items-center gap-2">
@@ -180,28 +218,28 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onUpdateSta
                 <div 
                     className="flex items-center gap-0.5 flex-shrink-0"
                     draggable="false"
+                    onClick={(e) => e.stopPropagation()}
                 >
-                    <button type="button" onClick={(e) => { e.stopPropagation(); onEdit(task); }} className={TODO_HUB.iconBtn} title={t.editTask}><EditIcon size={14}/></button>
                     {!styles.isArchived && (
                         <>
-                            <button type="button" onClick={(e) => { e.stopPropagation(); onUpdateStatus(task, 'inprogress'); }} title={t.tasksInProgress} disabled={task.status === 'inprogress'} className={`${TODO_HUB.iconBtn} text-indigo-300 disabled:cursor-not-allowed disabled:opacity-40`}><PlayIcon size={14}/></button>
+                            <button type="button" onClick={(e) => { e.stopPropagation(); onUpdateStatus(task, 'inprogress'); }} title={t.tasksInProgress} disabled={task.status === 'inprogress'} className={`${TODO_HUB.iconBtnPlay} disabled:cursor-not-allowed disabled:opacity-40`}><PlayIcon size={14}/></button>
                             {isMultiAssignee ? (
                                 <button 
                                     type="button"
                                     onClick={handleMarkMyPartDone} 
                                     title={isMyPartDone ? "Mark incomplete" : "Mark done"}
                                     disabled={!myAssignment}
-                                    className={`${TODO_HUB.iconBtn} ${isMyPartDone ? 'text-amber-400' : ''}`}
+                                    className={`${isMyPartDone ? TODO_HUB.iconBtnDone : TODO_HUB.iconBtnPlay} disabled:cursor-not-allowed disabled:opacity-40`}
                                 >
                                     <CheckCircleIcon size={14}/>
                                 </button>
                             ) : (
-                                <button type="button" onClick={(e) => { e.stopPropagation(); onUpdateStatus(task, 'done'); }} title={t.tasksDone} className={`${TODO_HUB.iconBtn} text-green-400`}><CheckCircleIcon size={14}/></button>
+                                <button type="button" onClick={(e) => { e.stopPropagation(); onUpdateStatus(task, 'done'); }} title={t.tasksDone} className={TODO_HUB.iconBtnDone}><CheckCircleIcon size={14}/></button>
                             )}
-                            <button type="button" onClick={(e) => { e.stopPropagation(); onUpdateStatus(task, 'cancelled'); }} title={t.cancelTask} className={TODO_HUB.iconBtn}><XCircleIcon size={14}/></button>
+                            <button type="button" onClick={(e) => { e.stopPropagation(); onUpdateStatus(task, 'cancelled'); }} title={t.cancelTask} className={TODO_HUB.iconBtnCancel}><XCircleIcon size={14}/></button>
                         </>
                     )}
-                    <button type="button" onClick={handleDeleteClick} className={`${TODO_HUB.iconBtn} todo-hub-icon-btn--danger`} title={t.deleteTask}><TrashIcon size={14}/></button>
+                    <button type="button" onClick={handleDeleteClick} className={TODO_HUB.iconBtnDanger} title={t.deleteTask}><TrashIcon size={14}/></button>
                 </div>
             </div>
             

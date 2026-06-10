@@ -49,7 +49,6 @@ export default defineConfig({
   resolve: {
     dedupe: ["react", "react-dom"],
     alias: [
-      { find: "@/todo", replacement: path.resolve(rootDir, "src/features/todo") },
       { find: "@tool-workspace/hub-ui", replacement: path.join(hubUiSrc, "index.ts") },
       { find: /^@tool-workspace\/hub-ui\/(.+)$/, replacement: `${hubUiSrc}/$1` },
       { find: "@tool-workspace/hub-identity", replacement: path.join(hubIdentitySrc, "index.ts") },

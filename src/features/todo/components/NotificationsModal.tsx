@@ -1,16 +1,16 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { supabase } from "@/todo/lib/supabase";
-import { useSettings } from "@/todo/context/SettingsContext";
-import { SpinnerIcon, BellIcon } from "@/todo/components/Icons";
-import type { Notification } from "@/todo/types";
-import { formatAbsoluteDateTime } from "@/todo/lib/taskUtils";
-import Avatar from "@/todo/components/common/Avatar";
-import MultiSelectDropdown, { MultiSelectOption } from "@/todo/components/dashboard/admin/MultiSelectEmployeeDropdown";
-import CopyIdButton from "@/todo/components/common/CopyIdButton";
-import { TodoHubSearchInput } from "@/todo/components/common/TodoHubSearchInput";
-import GenericListModal from "@/todo/components/GenericListModal";
-import { useCachedSupabaseQuery } from "@/todo/hooks/useCachedSupabaseQuery";
+import { supabase } from "../lib/supabase";
+import { useSettings } from "../context/SettingsContext";
+import { SpinnerIcon, BellIcon } from "./Icons";
+import type { Notification } from "../types";
+import { formatAbsoluteDateTime } from "../lib/taskUtils";
+import Avatar from "./common/Avatar";
+import MultiSelectDropdown, { MultiSelectOption } from "./dashboard/admin/MultiSelectEmployeeDropdown";
+import CopyIdButton from "./common/CopyIdButton";
+import { TodoHubSearchInput } from "./common/TodoHubSearchInput";
+import GenericListModal from "./GenericListModal";
+import { useCachedSupabaseQuery } from "../hooks/useCachedSupabaseQuery";
 import type { Session } from '@supabase/supabase-js';
 
 interface NotificationsModalProps {

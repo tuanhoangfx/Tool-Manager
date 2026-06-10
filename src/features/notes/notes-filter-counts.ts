@@ -1,5 +1,5 @@
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
-import type { TimeRange } from "../../lib/url-prefs";
+import type { WorkspacePeriodPrefs } from "../../lib/hub-workspace-period";
 import { enrichFilterDefs } from "../../lib/filter-option-counts";
 import type { NoteFolder } from "./noteFolders";
 import { filterNotes, NOTES_FILTER_DEFS, notesFilterOptions } from "./notes-filters";
@@ -25,7 +25,7 @@ export function notesFiltersWithCounts(
   folders: NoteFolder[],
   query: string,
   values: FilterValues,
-  range: TimeRange,
+  period: WorkspacePeriodPrefs,
   cookieRouteNoteIds?: ReadonlySet<string>,
 ): FilterDef[] {
   const opts = notesFilterOptions(notes, folders);
@@ -41,7 +41,7 @@ export function notesFiltersWithCounts(
     defs,
     query,
     values,
-    (note, q, filters) => filterNotes([note], q, filters, range, cookieRouteNoteIds).length > 0,
+    (note, q, filters) => filterNotes([note], q, filters, period, cookieRouteNoteIds).length > 0,
     matchesNotesOption,
   );
 }

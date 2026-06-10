@@ -4,6 +4,31 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-10 - 2FA search UX + cross-browser vault sync
+
+- Version: `4.3.21`
+- Type: Patch
+- Product: P0020
+- Prompt: Deploy P0020 — bỏ auto Add khi search rỗng; fix realtime sync account giữa browsers (pattern Cookie Auto).
+- Timestamp: 2026-06-10 15:30 (UTC+7)
+- Status: Verified
+- Release: https://databox.infi.io.vn
+
+### Changes
+
+- `TwofaManagerScreen`: không tự mở inline Add khi search không có kết quả; chỉ Add thủ công.
+- `useTwofaAccounts`: full pull mỗi boot khi đã auth; reconcile realtime; debounce session sync; `loadDedupedAccounts` scoped đúng user.
+- `ensure-twofa-auth` / `prefetch-twofa-auth`: cache session khi restore từ Supabase persistence.
+- `TwofaFilterToolbar`: badge Vault idle → "Connecting vault…" + auto-retry full sync sau 10s.
+- `scripts/e2e-twofa-realtime.mjs`: E2E insert → count +1 → tombstone → restore.
+- `predev`: sync `vendor/hub-ui` qua `sync-hub-ui-vendor.cjs`.
+
+### Verification
+
+- `vitest` 2FA — 50/50 pass
+- `node scripts/e2e-twofa-realtime.mjs` — pass
+- Browser local: search không auto-add; bulk import OK
+
 ## 2026-06-09 - Cookie FAB one-click latest extension download
 
 - Version: `4.3.16`

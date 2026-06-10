@@ -16,6 +16,10 @@ import {
 import {
   HubModalFilterField,
   HubFormFieldLabel,
+  HubDirectoryCardCheckbox,
+  HubDirectoryCardMetaRow,
+  HubDirectoryInteractiveCard,
+  HubPaginatedCardGrid,
   HubPaginatedTableShell,
   HubToolDetailModal,
   HubToolDetailIdentityHeader,
@@ -61,7 +65,7 @@ import {
 } from "lucide-react";
 import {
   HubResultCount,
-  HubTimeRangeSelect,
+  HubWorkspacePeriodSelect,
   MetricBadge,
   MiniBarChart,
   ViewToggle,
@@ -81,6 +85,7 @@ import { readCookieDeepLink } from "./cookieDeepLink";
 import { resolveCookieSiteIcon } from "./cookieSiteIcon";
 import { buildAppUrl } from "../../lib/workspace-path";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
+import { readWorkspacePeriod, type WorkspacePeriodPrefs } from "../../lib/hub-workspace-period";
 import { readCookieHubPrefs } from "./cookie-tab-prefs";
 import { readCookieListPrefs } from "./cookie-list-prefs";
 import { sortCookieAutoRows } from "./cookie-route-sort";
@@ -207,23 +212,6 @@ function sharePermissions(role: ShareRole) {
   };
 }
 
-function RouteMetaRow({
-  icon: Icon,
-  tint,
-  children,
-}: {
-  icon: ElementType<{ size?: number; className?: string; strokeWidth?: number; style?: CSSProperties }>;
-  tint: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <Icon size={12} className="shrink-0" strokeWidth={2} style={{ color: tint, opacity: 0.72 }} />
-      <div className="min-w-0 flex-1 truncate">{children}</div>
-    </div>
-  );
-}
-
 function CookieRouteCard({
   row,
   vault,
@@ -250,17 +238,29 @@ function CookieRouteCard({
   const dot = sourceLocked ? "#22c55e" : status === "pending" ? "#f59e0b" : "#818cf8";
   const icon = siteIcon(binding.domain);
 
+  const title = binding.noteTitle ?? note?.title ?? "Untitled route";
+
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      onMouseEnter={() => prefetchNoteCookieMembers(binding.noteId)}
-      className={`group flex h-full min-h-[220px] w-full flex-col rounded-xl border bg-[var(--panel)] p-4 text-left transition-[border-color,box-shadow,background-color] duration-200 hover:border-indigo-500/40 hover:bg-white/[0.02] hover:shadow-[0_8px_24px_rgba(99,102,241,0.12)] ${
-        selected || checked ? "border-indigo-500/35 shadow-[0_0_18px_rgba(99,102,241,0.10)]" : "border-white/5"
-      }`}
+    <HubDirectoryInteractiveCard
+      selected={checked}
+      isDetail={selected}
+      ariaLabel={`Open ${title}`}
+      onActivate={onOpen}
+      className="group"
     >
-      <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <HubDirectoryCardCheckbox
+        checked={checked}
+        label={`Select ${title}`}
+        onChange={() => {
+          onCheck(!checked);
+          onSelect();
+        }}
+      />
+      <div
+        className="flex flex-1 flex-col p-4 pr-10"
+        onMouseEnter={() => prefetchNoteCookieMembers(binding.noteId)}
+      >
+        <div className="mb-3 flex shrink-0 items-start gap-2.5">
           <div className="relative shrink-0">
             <div className="relative grid h-9 w-9 place-items-center overflow-hidden rounded-xl border border-white/10 bg-white/[.04] text-indigo-200">
               {icon ? (
@@ -284,85 +284,53 @@ function CookieRouteCard({
               title={sourceLocked ? "Locked browser" : status}
             />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
               <span className="rounded border border-white/10 bg-white/[.04] px-1.5 py-0.5 text-[9px] font-medium text-indigo-200">
                 {icon?.label ?? "Cookie"}
               </span>
-              <span className="min-w-0 line-clamp-2 text-sm font-medium leading-snug text-[var(--text)]">
-                {binding.noteTitle ?? note?.title ?? "Untitled route"}
-              </span>
+              <span className="min-w-0 line-clamp-2 text-sm font-medium leading-snug text-[var(--text)]">{title}</span>
             </div>
           </div>
         </div>
-        <div className="flex shrink-0 items-center">
-          <span
-            role="checkbox"
-            aria-checked={checked}
-            tabIndex={0}
-            title="Select route"
-            className={`grid h-5 w-5 place-items-center rounded-full border transition-all duration-200 ${
-              checked
-                ? "border-emerald-300/80 bg-emerald-500/35 text-emerald-50 shadow-[0_0_0_2px_rgba(34,197,94,0.12)]"
-                : "border-white/20 bg-white/[.035] text-transparent hover:border-emerald-300/60 hover:bg-emerald-500/15"
-            }`}
-            onClick={(event) => {
-              event.stopPropagation();
-              onCheck(!checked);
-              onSelect();
-            }}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter" && event.key !== " ") return;
-              event.preventDefault();
-              event.stopPropagation();
-              onCheck(!checked);
-              onSelect();
-            }}
-          >
-            <Check size={10} strokeWidth={3} />
-          </span>
-        </div>
-      </div>
 
-      <div className="min-h-[5.8rem] shrink-0 space-y-1.5 text-xs text-[var(--muted)]">
-        <RouteMetaRow icon={Link2} tint="#38bdf8">
-          <span className="truncate font-mono text-indigo-300/90">{binding.domain}</span>
-        </RouteMetaRow>
-        <RouteMetaRow icon={FileText} tint="#a78bfa">
-          <span className="truncate">{binding.syncId || (binding.useNoteIdRpc ? "by UUID" : binding.noteId)}</span>
-        </RouteMetaRow>
-        <RouteMetaRow icon={Database} tint="#34d399">
-          <span className="font-medium text-[var(--text)]">
-            {vault ? `Cloud vault · ${vault.cookie_count} cookies` : "No cloud vault"}
-          </span>
-        </RouteMetaRow>
-        <RouteMetaRow icon={RefreshCw} tint="#818cf8">
-          {formatTimestampCompact(syncedIso) ? (
-            <span className="font-medium text-indigo-200/90" title={syncedIso ?? undefined}>
-              {formatTimestampCompact(syncedIso)}
+        <div className="min-h-[var(--hub-card-meta-min-h)] shrink-0 space-y-1.5 text-xs text-[var(--muted)]">
+          <HubDirectoryCardMetaRow icon={Link2} tint="#38bdf8">
+            <span className="truncate font-mono text-indigo-300/90">{binding.domain}</span>
+          </HubDirectoryCardMetaRow>
+          <HubDirectoryCardMetaRow icon={FileText} tint="#a78bfa">
+            <span className="truncate">{binding.syncId || (binding.useNoteIdRpc ? "by UUID" : binding.noteId)}</span>
+          </HubDirectoryCardMetaRow>
+          <HubDirectoryCardMetaRow icon={Database} tint="#34d399">
+            <span className="font-medium text-[var(--text)]">
+              {vault ? `Cloud vault · ${vault.cookie_count} cookies` : "No cloud vault"}
             </span>
-          ) : (
-            <span className="text-[var(--muted)]">—</span>
-          )}
-        </RouteMetaRow>
-      </div>
+          </HubDirectoryCardMetaRow>
+          <HubDirectoryCardMetaRow icon={RefreshCw} tint="#818cf8">
+            {formatTimestampCompact(syncedIso) ? (
+              <span className="font-medium text-indigo-200/90" title={syncedIso ?? undefined}>
+                {formatTimestampCompact(syncedIso)}
+              </span>
+            ) : (
+              <span className="text-[var(--muted)]">—</span>
+            )}
+          </HubDirectoryCardMetaRow>
+        </div>
 
-      <div className="mt-auto shrink-0 pt-3">
-        <div className="flex min-h-[22px] flex-wrap items-center gap-1.5">
-          <RouteSyncChip
-            status={status}
-            noteSyncedAt={note?.synced_at}
-            vaultCookieCount={vault?.cookie_count}
-          />
-          <RouteVaultChip cookieCount={vault?.cookie_count} />
-          <RouteShareChip binding={binding} shareCount={shareCount} />
-        </div>
-        <div className="mt-2 flex items-center justify-between text-[10px] text-[var(--muted)]">
-          <span>Open access detail</span>
-          <Pencil size={14} className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+        <div className="mt-auto shrink-0 pt-3">
+          <div className="flex min-h-[var(--hub-card-chip-row-min-h)] flex-wrap items-center gap-1.5">
+            <RouteSyncChip
+              status={status}
+              noteSyncedAt={note?.synced_at}
+              vaultCookieCount={vault?.cookie_count}
+            />
+            <RouteVaultChip cookieCount={vault?.cookie_count} />
+            <RouteShareChip binding={binding} shareCount={shareCount} />
+          </div>
+          <p className="mt-2 text-[10px] text-[var(--muted)]">Open access detail</p>
         </div>
       </div>
-    </button>
+    </HubDirectoryInteractiveCard>
   );
 }
 
@@ -620,6 +588,7 @@ export function CookieAutoSyncTable({
     setCenterStats,
   } = useWorkspaceSearch();
   const [prefs, setPrefs] = useState(readCookieHubPrefs);
+  const [period, setPeriod] = useState<WorkspacePeriodPrefs>(() => readWorkspacePeriod("cookie", "all"));
   const [listPrefs, setListPrefs] = useState(readCookieListPrefs);
   const visKpi = useResolvedVisibleKpiKeys(prefs.kpi, DEFAULT_COOKIE_KPI_KEYS, COOKIE_KPI_DEFS);
   const visCharts = useResolvedVisibleChartKeys(prefs.charts, DEFAULT_COOKIE_CHART_KEYS, COOKIE_CHART_DEFS);
@@ -667,8 +636,8 @@ export function CookieAutoSyncTable({
     [detailBinding, rows],
   );
   const filteredRows = useMemo(
-    () => filterCookieRows(rows, routeQuery, filterValues, prefs.range, vaultByKey),
-    [filterValues, prefs.range, routeQuery, rows, vaultByKey],
+    () => filterCookieRows(rows, routeQuery, filterValues, period, vaultByKey),
+    [filterValues, period, routeQuery, rows, vaultByKey],
   );
   const sortedFilteredRows = useMemo(
     () => sortCookieAutoRows(filteredRows, listPrefs.sort),
@@ -676,8 +645,8 @@ export function CookieAutoSyncTable({
   );
 
   const routeFiltersWithCounts = useMemo(
-    () => cookieRouteFiltersWithCounts(rows, routeQuery, filterValues, prefs.range, vaultByKey),
-    [filterValues, prefs.range, routeQuery, rows, vaultByKey],
+    () => cookieRouteFiltersWithCounts(rows, routeQuery, filterValues, period, vaultByKey),
+    [filterValues, period, routeQuery, rows, vaultByKey],
   );
 
   const allVisibleSelected =
@@ -790,6 +759,7 @@ export function CookieAutoSyncTable({
 
   useEffect(() => subscribeHubListPrefs(() => {
     setPrefs(readCookieHubPrefs());
+    setPeriod(readWorkspacePeriod("cookie", "all"));
     setListPrefs(readCookieListPrefs());
   }), []);
 
@@ -840,19 +810,30 @@ export function CookieAutoSyncTable({
       setShareCounts({});
       return;
     }
-    prefetchNoteCookieMembersBatch(uniqueNoteIds);
-    void Promise.all(
-      uniqueNoteIds.map(async (noteId) => {
-        const res = await listNoteCookieMembers(noteId);
-        rememberNoteCookieMembers(noteId, res);
-        return [noteId, res.ok ? res.members.length : 0] as const;
-      }),
-    ).then((entries) => {
-      if (cancelled) return;
-      setShareCounts(Object.fromEntries(entries));
-    });
+
+    const loadShareCounts = () => {
+      prefetchNoteCookieMembersBatch(uniqueNoteIds);
+      void Promise.all(
+        uniqueNoteIds.map(async (noteId) => {
+          const res = await listNoteCookieMembers(noteId);
+          rememberNoteCookieMembers(noteId, res);
+          return [noteId, res.ok ? res.members.length : 0] as const;
+        }),
+      ).then((entries) => {
+        if (cancelled) return;
+        setShareCounts(Object.fromEntries(entries));
+      });
+    };
+
+    const idleId =
+      typeof window.requestIdleCallback === "function"
+        ? window.requestIdleCallback(loadShareCounts, { timeout: 3000 })
+        : window.setTimeout(loadShareCounts, 200);
+
     return () => {
       cancelled = true;
+      if (typeof idleId === "number") window.clearTimeout(idleId);
+      else window.cancelIdleCallback(idleId);
     };
   }, [rows, shareCountKey]);
 
@@ -963,19 +944,19 @@ export function CookieAutoSyncTable({
     [selectedBindingId, selectedIds],
   );
 
-  const routeFilterResetKey = `${routeQuery}|${JSON.stringify(filterValues)}|${prefs.range}`;
-  const toolbarKey = `${viewMode}:${prefs.range}:${sortedFilteredRows.length}:${rows.length}`;
+  const routeFilterResetKey = `${routeQuery}|${JSON.stringify(filterValues)}|${period.range}|${period.customMonth}|${period.customStartDate}|${period.customEndDate}`;
+  const toolbarKey = `${viewMode}:${period.range}:${sortedFilteredRows.length}:${rows.length}`;
   useEffect(() => {
     if (toolbarKeyRef.current === toolbarKey) return;
     toolbarKeyRef.current = toolbarKey;
     setToolbar(
       <>
-        <HubTimeRangeSelect value={prefs.range} />
+        <HubWorkspacePeriodSelect scope="cookie" defaultRange="all" inactiveKeys={["all"]} />
         <ViewToggle value={viewMode} onChange={setViewMode} />
         <HubResultCount icon={Boxes} shown={sortedFilteredRows.length} total={rows.length} />
       </>,
     );
-  }, [sortedFilteredRows.length, prefs.range, rows.length, setToolbar, toolbarKey, viewMode]);
+  }, [sortedFilteredRows.length, period.range, rows.length, setToolbar, toolbarKey, viewMode]);
 
   const filterToolbarKey = [
     toolbarActionsKey,
@@ -1216,14 +1197,13 @@ export function CookieAutoSyncTable({
               {rows.length === 0 ? "No active routes — click Add route." : "No routes match search or filters."}
             </p>
           ) : (
-            <HubPaginatedTableShell
+            <HubPaginatedCardGrid
               items={sortedFilteredRows}
               resetKey={routeFilterResetKey}
               ariaLabel="Route cards pages"
             >
-              {(pageRows) => (
-            <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {pageRows.map((row) => {
+              {(pageRows) =>
+              pageRows.map((row) => {
                 const vault = row.binding.noteId ? lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain) : undefined;
                 const selected = selectedBindingId === row.binding.id;
                 const checked = selectedIds.includes(row.binding.id);
@@ -1244,10 +1224,9 @@ export function CookieAutoSyncTable({
                     onCheck={(next) => toggleSelected(row.binding.id, next)}
                   />
                 );
-              })}
-            </div>
-              )}
-            </HubPaginatedTableShell>
+              })
+              }
+            </HubPaginatedCardGrid>
           )
         ) : (
       <HubPaginatedTableShell

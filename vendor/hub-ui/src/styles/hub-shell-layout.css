@@ -360,6 +360,23 @@
   row-gap: 0.125rem;
 }
 
+/* Entity rank — wider value column + badges without bar overlap */
+.hub-chart-row--rank {
+  grid-template-columns: minmax(5.5rem, 7.5rem) minmax(0, 1fr) minmax(5rem, auto);
+  align-items: start;
+  row-gap: 0.25rem;
+}
+
+.hub-chart-card__body--rank {
+  min-height: 0;
+  overflow: visible;
+}
+
+.hub-chart-row--rank .hub-chart-row__value {
+  min-width: 0;
+  grid-column: 3;
+}
+
 .hub-chart-legend-label {
   display: flex;
   min-width: 0;

@@ -38,67 +38,66 @@ async function rpcProbe(name: string, body: Record<string, unknown>) {
 }
 
 export async function probeCookieSchemaHealth(): Promise<CookieSchemaHealth> {
-  const checks: CookieSchemaCheck[] = [];
   const fakeId = "00000000-0000-0000-0000-000000000000";
+  const url = import.meta.env.VITE_SUPABASE_URL as string;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-  const vaultProbe = await rpcProbe("note_vault_upsert", {
-    p_note_id: fakeId,
-    p_domain: ".test",
-    p_pass: null,
-    p_ciphertext: "dGVzdA==",
-    p_iv: "dGVzdA==",
-    p_cookie_count: 0,
-    p_source_browser: "schema-health",
-  });
+  const [vaultProbe, syncByNote, setPass, tableRes] = await Promise.all([
+    rpcProbe("note_vault_upsert", {
+      p_note_id: fakeId,
+      p_domain: ".test",
+      p_pass: null,
+      p_ciphertext: "dGVzdA==",
+      p_iv: "dGVzdA==",
+      p_cookie_count: 0,
+      p_source_browser: "schema-health",
+    }),
+    rpcProbe("note_sync_cookies_by_note_id", {
+      p_note_id: fakeId,
+      p_pass: null,
+      p_snapshot: [],
+      p_domain: ".test",
+    }),
+    rpcProbe("note_set_sync_pass", {
+      p_note_id: fakeId,
+      p_pass: null,
+    }),
+    fetch(`${url}/rest/v1/note_cookie_vault?select=note_id&limit=1`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    }),
+  ]);
+
   const staleVNote = /record\s+"v_note"\s+has\s+no\s+field/i.test(vaultProbe.body);
   const missingPassCol =
     /sync_pass_hash/i.test(vaultProbe.body) && !/note not found/i.test(vaultProbe.body);
-  const vaultRpcOk =
-    !staleVNote && !missingPassCol && !rpcMissing(vaultProbe.body);
-  checks.push({
-    name: "sync_pass_hash / note_verify_sync_pass",
-    ok: vaultRpcOk,
-    detail: staleVNote
-      ? "OLD DB functions — run supabase/APPLY_FIX_V_NOTE_DROP.sql"
-      : missingPassCol
-        ? vaultProbe.body.slice(0, 120)
-        : vaultProbe.body.slice(0, 60) || "ok",
-  });
+  const vaultRpcOk = !staleVNote && !missingPassCol && !rpcMissing(vaultProbe.body);
 
-  const syncByNote = await rpcProbe("note_sync_cookies_by_note_id", {
-    p_note_id: fakeId,
-    p_pass: null,
-    p_snapshot: [],
-    p_domain: ".test",
-  });
-  checks.push({
-    name: "note_sync_cookies_by_note_id",
-    ok: !rpcMissing(syncByNote.body),
-    detail: `${syncByNote.status} ${syncByNote.body.slice(0, 80)}`,
-  });
+  const checks: CookieSchemaCheck[] = [
+    {
+      name: "sync_pass_hash / note_verify_sync_pass",
+      ok: vaultRpcOk,
+      detail: staleVNote
+        ? "OLD DB functions — run supabase/APPLY_FIX_V_NOTE_DROP.sql"
+        : missingPassCol
+          ? vaultProbe.body.slice(0, 120)
+          : vaultProbe.body.slice(0, 60) || "ok",
+    },
+    {
+      name: "note_sync_cookies_by_note_id",
+      ok: !rpcMissing(syncByNote.body),
+      detail: `${syncByNote.status} ${syncByNote.body.slice(0, 80)}`,
+    },
+    {
+      name: "note_set_sync_pass",
+      ok: !rpcMissing(setPass.body),
+      detail: `${setPass.status} ${setPass.body.slice(0, 80)}`,
+    },
+    {
+      name: "note_cookie_vault",
+      ok: tableRes.ok,
+      detail: String(tableRes.status),
+    },
+  ];
 
-  const setPass = await rpcProbe("note_set_sync_pass", {
-    p_note_id: fakeId,
-    p_pass: null,
-  });
-  // Function exists if anon gets "not authenticated" / note not found — not PGRST202
-  checks.push({
-    name: "note_set_sync_pass",
-    ok: !rpcMissing(setPass.body),
-    detail: `${setPass.status} ${setPass.body.slice(0, 80)}`,
-  });
-
-  const url = import.meta.env.VITE_SUPABASE_URL as string;
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-  const tableRes = await fetch(`${url}/rest/v1/note_cookie_vault?select=note_id&limit=1`, {
-    headers: { apikey: key, Authorization: `Bearer ${key}` },
-  });
-  checks.push({
-    name: "note_cookie_vault",
-    ok: tableRes.ok,
-    detail: String(tableRes.status),
-  });
-
-  const ok = checks.every((c) => c.ok);
-  return { ok, checks, fixHint: FIX_HINT };
+  return { ok: checks.every((c) => c.ok), checks, fixHint: FIX_HINT };
 }

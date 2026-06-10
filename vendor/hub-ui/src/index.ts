@@ -1,6 +1,7 @@
 export { HubDisplayPrefs } from "./display-prefs/HubDisplayPrefs";
 export { HubSettingsExtras, type HubSettingsExtrasProps } from "./display-prefs/HubSettingsExtras";
 export { Section, SectionIcon, SettingsSubsection, TabButton, ToggleRow } from "./display-prefs/primitives";
+export { SettingsOptionFilter, type SettingsOptionFilterProps } from "./display-prefs/SettingsOptionFilter";
 export { LIMIT_OPTIONS, TIME_RANGES, type TimeRange } from "./display-prefs/constants";
 export {
   CHART_KEY_MIGRATION,
@@ -66,6 +67,12 @@ export {
 } from "./loading/hub-loader-dom";
 export { mountHubApp } from "./loading/mount-hub-app";
 export { HubLoaderRoot } from "./shell/HubLoaderRoot";
+export {
+  HubMainChromeInsetSync,
+  HubMainChromeStack,
+} from "./shell/HubMainChromeInset";
+export { useHubMainChromeInset } from "./shell/useHubMainChromeInset";
+export { syncHubMainChromeInset, HUB_MAIN_CHROME_TOP_VAR } from "./loading/hub-main-chrome-inset";
 export { HubLoadingView, type HubLoadingViewProps } from "./shell/HubLoadingView";
 export {
   HubScreenChunkFallback,
@@ -102,6 +109,12 @@ export {
 } from "./shell/filter-dropdown-primitives";
 export { enrichFilterDefs } from "./lib/filter-option-counts";
 export {
+  fetchWorkspaceUserDirectoryRows,
+  workspaceDirectoryRowToProfile,
+  type WorkspaceDirectoryProfile,
+  type WorkspaceUserDirectoryRow,
+} from "./lib/workspace-user-directory";
+export {
   configureHubUrlPrefs,
   getHubUrlPrefsDefaults,
   HUB_LIST_PREFS_CHANGE_EVENT,
@@ -123,6 +136,29 @@ export {
 export { ChartsBand, resolveChartsBandCount } from "./shell/ChartsBand";
 export { resolveKpiStripCount } from "./shell/KpiStrip";
 export { HubTimeRangeSelect } from "./shell/HubTimeRangeSelect";
+export {
+  HubPeriodSelect,
+  HubMonthPickerPanel,
+  type HubPeriodSelectProps,
+  type HubPeriodOption,
+} from "./shell/HubPeriodSelect";
+export {
+  HubWorkspacePeriodSelect,
+  type HubWorkspacePeriodSelectProps,
+} from "./shell/HubWorkspacePeriodSelect";
+export {
+  matchesWorkspacePeriod,
+  normalizeWorkspacePeriodKey,
+  patchWorkspacePeriod,
+  readWorkspacePeriod,
+  workspacePeriodOptions,
+  WORKSPACE_PERIOD_LABELS,
+  type WorkspacePeriodKey,
+  type WorkspacePeriodPrefs,
+  type WorkspacePeriodScope,
+} from "./lib/hub-workspace-period";
+export { useWorkspacePeriod } from "./hooks/useWorkspacePeriod";
+export { useDebouncedValue } from "./hooks/useDebouncedValue";
 export { HubRowLimitSelect } from "./shell/HubRowLimitSelect";
 export { HubTablePageSizeSelect } from "./shell/HubTablePageSizeSelect";
 export { HubFilterSelect, type HubFilterSelectOption } from "./shell/HubFilterSelect";
@@ -332,10 +368,21 @@ export {
   HubDirectoryCardShell,
   HubDirectoryInteractiveCard,
   HubDirectoryCardCheckbox,
+  HUB_DIRECTORY_CARD_SURFACE,
+  HUB_DIRECTORY_CARD_SELECTED,
+  type HubDirectoryCardShellVariant,
   type HubDirectoryCardShellProps,
   type HubDirectoryInteractiveCardProps,
   type HubDirectoryCardCheckboxProps,
 } from "./content/HubDirectoryCardShell";
+export {
+  HubDirectoryCardMetaRow,
+  type HubDirectoryCardMetaRowProps,
+} from "./content/HubDirectoryCardMetaRow";
+export {
+  HubDirectoryCardHeader,
+  type HubDirectoryCardHeaderProps,
+} from "./content/HubDirectoryCardHeader";
 export { HubTabScreenBody } from "./content/HubTabScreenBody";
 export { HubDirectoryScreen, type HubDirectoryScreenProps } from "./templates/HubDirectoryScreen";
 export {
@@ -461,7 +508,7 @@ export { resolveActiveTocSection, useHubTocSectionSpy } from "./shell/hub-toc-se
 export { HubTocSectionNav, type HubTocNavItem } from "./shell/HubTocSectionNav";
 export { HubHintTooltip } from "./shell/HubHintTooltip";
 export { HubHeaderPanelButton, type HubHeaderPanelButtonProps } from "./shell/HubHeaderPanelButton";
-export { HubUsageLogPanel, type HubLogEntry, type HubUsageLogPanelProps } from "./shell/HubUsageLogPanel";
+export { HubUsageLogPanel, type HubLogEntry, type HubLogQuickAction, type HubUsageLogPanelProps } from "./shell/HubUsageLogPanel";
 export {
   HubAppLogProvider,
   useHubAppLog,
@@ -469,7 +516,21 @@ export {
   type HubAppLogEventDetail,
   type HubAppLogProviderProps,
 } from "./shell/HubAppLogProvider";
-export { HubLogButton, type HubLogButtonProps, type HubLogButtonVariant } from "./shell/HubLogButton";
+export { HubLogButton, type HubLogButtonProps, type HubLogButtonVariant, type HubLogExtraSection } from "./shell/HubLogButton";
+export { HubNotifyButton, type HubNotifyButtonProps } from "./shell/HubNotifyButton";
+export { HubFilterRowButton, type HubFilterRowButtonProps, type HubFilterRowTone } from "./shell/HubFilterRowButton";
+export {
+  HubBulkActionButton,
+  HubBulkActionCountBadge,
+  HUB_BULK_ACTION_BTN_CLASS,
+  type HubBulkActionButtonProps,
+  type HubBulkActionCountBadgeProps,
+  type HubBulkActionTone,
+} from "./shell/HubBulkActionButton";
+export {
+  HubDirectorySelectAllChip,
+  type HubDirectorySelectAllChipProps,
+} from "./shell/HubDirectorySelectAllChip";
 export { HubAuthGate, type HubAuthGateProps } from "./auth/HubAuthGate";
 export { HubAuthGateOverlay, type HubAuthGateOverlayProps } from "./auth/HubAuthGateOverlay";
 export { HubAuthGateModal, type HubAuthGateModalProps } from "./auth/HubAuthGateModal";
@@ -514,10 +575,25 @@ export {
 } from "./auth/hub-user-change-toc";
 export { HubUserFieldActionButton, type HubUserFieldActionButtonProps } from "./auth/HubUserFieldActionButton";
 export {
+  HUB_WORKSPACE_ROLE_ICON,
+  normalizeWorkspaceRoleKey,
   resolveWorkspaceRoleIcon,
   resolveWorkspaceRoleKey,
+  workspaceRoleLabel,
   type HubWorkspaceRoleIconMeta,
+  type HubWorkspaceRoleKey,
 } from "./auth/hub-workspace-role-icon";
+export {
+  useWorkspaceRoleKey,
+  type UseWorkspaceRoleKeyOptions,
+  type WorkspaceRoleState,
+} from "./auth/useWorkspaceRoleKey";
+export {
+  cacheWorkspaceProfileRole,
+  fetchWorkspaceProfileRole,
+  readCachedWorkspaceProfileRole,
+  subscribeWorkspaceProfileRole,
+} from "./lib/workspace-profile-role";
 export {
   normalizeHubAuthError,
   type NormalizeHubAuthErrorOptions,

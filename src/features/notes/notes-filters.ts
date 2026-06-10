@@ -1,4 +1,8 @@
-import type { TimeRange } from "../../lib/url-prefs";
+import {
+  matchesWorkspacePeriod,
+  type WorkspacePeriodKey,
+  type WorkspacePeriodPrefs,
+} from "../../lib/hub-workspace-period";
 import type { NoteFolder } from "./noteFolders";
 import type { NoteListItem } from "./types";
 
@@ -17,34 +21,12 @@ export function buildNotesFolderFilterOptions(folders: NoteFolder[]) {
   }));
 }
 
-function dayBounds(offsetDays = 0) {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() + offsetDays);
-  const end = new Date(start);
-  end.setHours(23, 59, 59, 999);
-  return { start: start.getTime(), end: end.getTime() };
-}
-
-export function matchesTimeRange(updatedAt: string | undefined, range: TimeRange): boolean {
-  if (range === "all") return true;
-  if (!updatedAt?.trim()) return false;
-  const at = new Date(updatedAt).getTime();
-  if (Number.isNaN(at)) return false;
-
-  const now = Date.now();
-  if (range === "today") {
-    const { start, end } = dayBounds(0);
-    return at >= start && at <= end;
-  }
-  if (range === "yesterday") {
-    const { start, end } = dayBounds(-1);
-    return at >= start && at <= end;
-  }
-  const days: Record<string, number> = { "7d": 7, "30d": 30, "90d": 90, "1y": 365 };
-  const d = days[range];
-  if (d) return at >= now - d * 86400000;
-  return true;
+/** @deprecated Use matchesWorkspacePeriod — kept for cookie/2FA imports during migration. */
+export function matchesTimeRange(
+  updatedAt: string | undefined,
+  period: WorkspacePeriodPrefs | WorkspacePeriodKey,
+): boolean {
+  return matchesWorkspacePeriod(updatedAt, period);
 }
 
 export function notesFilterOptions(_notes: NoteListItem[], folders: NoteFolder[] = []) {
@@ -99,13 +81,13 @@ export function filterNotes(
   notes: NoteListItem[],
   q: string,
   filters: Record<string, string[]>,
-  range: TimeRange,
+  period: WorkspacePeriodPrefs | WorkspacePeriodKey,
   cookieRouteNoteIds?: ReadonlySet<string>,
 ): NoteListItem[] {
   return notes.filter((n) => {
     if (!matchesNoteFilters(n, q, filters)) return false;
     const activityAt =
       cookieRouteNoteIds?.has(n.id) && n.synced_at?.trim() ? n.synced_at : n.updated_at;
-    return matchesTimeRange(activityAt, range);
+    return matchesWorkspacePeriod(activityAt, period);
   });
 }

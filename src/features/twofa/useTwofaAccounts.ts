@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getTwofaStorageUserId, loadAccounts, saveAccounts } from "./storage";
 import type { TwofaAccount, TwofaDraft } from "./types";
+import { ensureTwofaAuth } from "../../lib/ensure-twofa-auth";
 import {
   deleteTwofaCloud,
-  hasTwofaSyncWatermark,
   isTwofaCloudAvailable,
   runTwofaCloudSync,
   upsertTwofaCloud,
@@ -44,10 +44,10 @@ export type TwofaFullSyncNotice = {
 
 const FULL_SYNC_TOAST_DEBOUNCE_MS = 1500;
 
-function loadDedupedAccounts(): TwofaAccount[] {
-  const loaded = loadAccounts();
+function loadDedupedAccounts(userId?: string | null): TwofaAccount[] {
+  const loaded = loadAccounts(userId);
   const { accounts: deduped, removedIds } = dedupeTwofaAccounts(loaded);
-  if (removedIds.length) saveAccounts(deduped);
+  if (removedIds.length) saveAccounts(deduped, userId);
   return deduped;
 }
 
@@ -64,6 +64,8 @@ export function useTwofaAccounts() {
   const [fullSyncNotice, setFullSyncNotice] = useState<TwofaFullSyncNotice | null>(null);
   const syncInFlight = useRef(false);
   const syncGeneration = useRef(0);
+  const pendingSilentSync = useRef(false);
+  const pendingFullSync = useRef(false);
   const vaultUserIdRef = useRef<string | null>(getTwofaStorageUserId());
   const lastFullSyncEmitRef = useRef(0);
 
@@ -91,10 +93,15 @@ export function useTwofaAccounts() {
   );
 
   const syncFromCloud = useCallback(async (opts?: TwofaCloudSyncOpts) => {
-    if (!isTwofaCloudAvailable() || syncInFlight.current) return;
+    if (!isTwofaCloudAvailable()) return;
+    const silent = opts?.silent ?? false;
+    if (syncInFlight.current) {
+      if (silent) pendingSilentSync.current = true;
+      else if (opts?.full) pendingFullSync.current = true;
+      return;
+    }
     const generation = ++syncGeneration.current;
     syncInFlight.current = true;
-    const silent = opts?.silent ?? false;
     if (!silent) {
       setCloudState("syncing");
       setCloudError(null);
@@ -125,6 +132,13 @@ export function useTwofaAccounts() {
       }
     } finally {
       if (generation === syncGeneration.current) syncInFlight.current = false;
+      if (pendingFullSync.current) {
+        pendingFullSync.current = false;
+        void syncFromCloud({ full: true });
+      } else if (pendingSilentSync.current) {
+        pendingSilentSync.current = false;
+        void syncFromCloud({ silent: true, reconcile: true });
+      }
     }
   }, [applyAccounts]);
 
@@ -136,12 +150,17 @@ export function useTwofaAccounts() {
     const uid = getTwofaStorageUserId();
     if (uid === vaultUserIdRef.current) return false;
     vaultUserIdRef.current = uid;
-    applyAccounts(loadDedupedAccounts());
+    applyAccounts(loadDedupedAccounts(uid));
     return true;
   }, [applyAccounts]);
 
+  const resolveVaultUserId = useCallback(async (): Promise<string | null> => {
+    const session = await ensureTwofaAuth();
+    return session?.user?.id ?? getTwofaStorageUserId();
+  }, []);
+
   const syncFromRealtime = useCallback(() => {
-    void syncFromCloud({ silent: true });
+    void syncFromCloud({ silent: true, reconcile: true });
   }, [syncFromCloud]);
 
   useTwofaRealtime(syncFromRealtime, isTwofaCloudAvailable());
@@ -149,29 +168,73 @@ export function useTwofaAccounts() {
   useEffect(() => {
     if (!isTwofaCloudAvailable()) return;
 
-    const syncOnMount = (full: boolean) => {
-      void syncFromCloud({ silent: true, full });
+    let sessionSyncTimer = 0;
+
+    const scheduleSessionSync = (full: boolean) => {
+      window.clearTimeout(sessionSyncTimer);
+      sessionSyncTimer = window.setTimeout(() => {
+        void syncFromCloud({ silent: true, full, reconcile: !full });
+      }, 200);
     };
 
     const onTwofaSession = () => {
-      reloadForVaultUser();
-      syncOnMount(true);
+      void resolveVaultUserId().then((uid) => {
+        if (uid && uid !== vaultUserIdRef.current) {
+          vaultUserIdRef.current = uid;
+          applyAccounts(loadDedupedAccounts(uid));
+        } else {
+          reloadForVaultUser();
+        }
+        scheduleSessionSync(true);
+      });
     };
     const onDataBoxSession = () => {
-      const userChanged = reloadForVaultUser();
-      if (userChanged) syncOnMount(true);
+      void resolveVaultUserId().then((uid) => {
+        if (uid && uid !== vaultUserIdRef.current) {
+          vaultUserIdRef.current = uid;
+          applyAccounts(loadDedupedAccounts(uid));
+          scheduleSessionSync(true);
+          return;
+        }
+        const userChanged = reloadForVaultUser();
+        scheduleSessionSync(userChanged || Boolean(uid));
+      });
     };
     window.addEventListener("p0020:twofa-session", onTwofaSession);
     window.addEventListener("p0020:databox-session", onDataBoxSession);
-    reloadForVaultUser();
-    const uid = getTwofaStorageUserId();
-    syncOnMount(uid ? !hasTwofaSyncWatermark(uid) : true);
+
+    const onFocus = () => void syncFromCloud({ silent: true, reconcile: true });
+    window.addEventListener("focus", onFocus);
+
+    const boot = async () => {
+      const uid = await resolveVaultUserId();
+      if (uid) {
+        if (uid !== vaultUserIdRef.current) {
+          vaultUserIdRef.current = uid;
+          applyAccounts(loadDedupedAccounts(uid));
+        } else {
+          reloadForVaultUser();
+        }
+        // Full cloud pull on every browser boot — localStorage is per-browser.
+        scheduleSessionSync(true);
+      } else {
+        reloadForVaultUser();
+      }
+    };
+    const idleId =
+      typeof window.requestIdleCallback === "function"
+        ? window.requestIdleCallback(() => void boot(), { timeout: 2500 })
+        : window.setTimeout(() => void boot(), 150);
 
     return () => {
       window.removeEventListener("p0020:twofa-session", onTwofaSession);
       window.removeEventListener("p0020:databox-session", onDataBoxSession);
+      window.removeEventListener("focus", onFocus);
+      window.clearTimeout(sessionSyncTimer);
+      if (typeof idleId === "number") window.clearTimeout(idleId);
+      else window.cancelIdleCallback(idleId);
     };
-  }, [reloadForVaultUser, syncFromCloud]);
+  }, [applyAccounts, reloadForVaultUser, resolveVaultUserId, syncFromCloud]);
 
   const remapLocalId = useCallback((localId: string, cloudId: string) => {
     if (localId === cloudId) return;

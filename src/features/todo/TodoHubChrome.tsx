@@ -1,42 +1,46 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Bell, ClipboardList, History, Plus } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import {
   FilterBar,
   HubTabChrome,
   HubTabScreenBody,
+  HubAlert,
   MiniBarChart,
+  buildSemanticTocIcon,
   useHubChromePrefs,
   useResolvedVisibleChartKeys,
   useResolvedVisibleKpiKeys,
   WorkspaceTabHeader,
 } from "@tool-workspace/hub-ui";
 import type { Session } from "@supabase/supabase-js";
-import { useSettings } from "@/todo/context/SettingsContext";
-import { supabase } from "@/todo/lib/supabase";
-import TaskPreviewPopover from "@/todo/components/dashboard/TaskPreviewPopover";
-import TimeRangeSelect from "@/todo/components/performance-summary/TimeRangeSelect";
-import { TodoFilterDateExtensions } from "@/todo/components/TodoFilterDateExtensions";
-import { useTodoChrome } from "@/todo/TodoChromeContext";
+import { useSettings } from "./context/SettingsContext";
+import { supabase } from "./lib/supabase";
+import TaskPreviewPopover from "./components/dashboard/TaskPreviewPopover";
+import { TodoGlobalActivityLog, fetchTaskForActivityLog } from "./components/TodoGlobalActivityLog";
+import { useTodoChrome } from "./TodoChromeContext";
 import {
   DEFAULT_TODO_CHART_KEYS,
   DEFAULT_TODO_HEADER_STAT_KEYS,
   DEFAULT_TODO_KPI_KEYS,
   TODO_CHART_DEFS,
   TODO_KPI_DEFS,
-} from "@/todo/todo-display-prefs";
-import { buildTodoHeaderStats } from "@/todo/todo-header-stats";
+} from "./todo-display-prefs";
+import { buildTodoHeaderStats } from "./todo-header-stats";
 import {
   filterValuesToTodoFilters,
   todoFiltersToFilterValues,
-} from "@/todo/todo-filters";
-import { readTodoHubPrefs } from "@/todo/todo-tab-prefs";
-import type { TaskCounts, TodoAdminView } from "@/todo/app-types";
-import type { Profile, Task } from "@/todo/types";
+} from "./todo-filters";
+import {
+  TodoFilterRowActions,
+  TodoSearchToolbar,
+} from "./todo-filter-toolbar";
+import { readTodoHubPrefs } from "./todo-tab-prefs";
+import type { TaskCounts, TodoAdminView } from "./app-types";
+import type { Profile, Task } from "./types";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
 import { WorkspaceHeaderActions } from "../workspace/WorkspaceHeaderActions";
 import { workspaceVersionLine } from "../workspace/workspace-tab-header-meta";
 import { TodoViewToggle } from "./TodoViewToggle";
-import type { TimeRange } from "@/todo/components/PerformanceSummary";
 
 export type TodoBoardActions = {
   onDeleteTask: (task: Task) => void;
@@ -53,9 +57,10 @@ type Props = {
   unreadCount: number;
   boardActions: TodoBoardActions;
   onAddTask: () => void;
-  onOpenActivityLog: () => void;
   onOpenNotifications: () => void;
-  onEditTask: (task: Task | Partial<Task> | null) => void;
+  onEditTask: (task: Task | Partial<Task> | null, from?: string | null) => void;
+  /** Active task id — enables "This task" tab in Log → Activity. */
+  activityLogTaskId?: number | null;
   children: ReactNode;
 };
 
@@ -69,9 +74,9 @@ export function TodoHubChrome({
   unreadCount,
   boardActions,
   onAddTask,
-  onOpenActivityLog,
   onOpenNotifications,
   onEditTask,
+  activityLogTaskId = null,
   children,
 }: Props) {
   const { t } = useSettings();
@@ -85,12 +90,35 @@ export function TodoHubChrome({
 
   const chrome = useTodoChrome();
   const [hubPrefs, setHubPrefs] = useState(readTodoHubPrefs);
+  const usersDirectoryWarning = chrome.usersDirectoryWarning;
 
   useEffect(() => subscribeHubListPrefs(() => setHubPrefs(readTodoHubPrefs())), []);
 
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_TODO_HEADER_STAT_KEYS;
   const visKpi = useResolvedVisibleKpiKeys(hubPrefs.kpi, DEFAULT_TODO_KPI_KEYS, TODO_KPI_DEFS);
   const visCharts = useResolvedVisibleChartKeys(hubPrefs.charts, DEFAULT_TODO_CHART_KEYS, TODO_CHART_DEFS);
+
+  const logExtraSections = useMemo(() => {
+    if (!session) return undefined;
+    return [
+      {
+        id: "log-todo-activity",
+        label: "Activity log",
+        icon: buildSemanticTocIcon("log.session"),
+        content: (
+          <TodoGlobalActivityLog
+            session={session}
+            taskIdFilter={activityLogTaskId}
+            onLogClick={async (log) => {
+              if (!log.task_id) return;
+              const task = await fetchTaskForActivityLog(log.task_id);
+              if (task) onEditTask(task, t.activityLog);
+            }}
+          />
+        ),
+      },
+    ];
+  }, [session, activityLogTaskId, onEditTask, t.activityLog]);
 
   const filteredKpis = useMemo(
     () => chrome.kpis?.filter((k) => k.prefKey && visKpi.has(k.prefKey)),
@@ -169,51 +197,10 @@ export function TodoHubChrome({
         ? t.tasksInProgress
         : t.tasksDone;
 
-  const trailing = (
-    <div className="flex items-center gap-1">
-      {session && profile && (
-        <>
-          <TodoViewToggle
-            activeView={adminView}
-            onViewChange={onAdminViewChange}
-            showAdminViews={showAdminViews}
-          />
-          <button
-            type="button"
-            onClick={onAddTask}
-            className="hub-icon-btn text-[var(--accent)]"
-            title="Add task"
-            aria-label="Add task"
-          >
-            <Plus size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={onOpenActivityLog}
-            className="hub-icon-btn"
-            title="Activity log"
-            aria-label="Activity log"
-          >
-            <History size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={onOpenNotifications}
-            className="relative hub-icon-btn"
-            title="Notifications"
-            aria-label="Notifications"
-          >
-            <Bell size={16} />
-            {unreadCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </button>
-        </>
-      )}
-    </div>
-  );
+  const headerTrailing =
+    session && profile && showAdminViews ? (
+      <TodoViewToggle activeView={adminView} onViewChange={onAdminViewChange} showAdminViews={showAdminViews} />
+    ) : null;
 
   const header = (
     <WorkspaceTabHeader
@@ -233,26 +220,21 @@ export function TodoHubChrome({
         <WorkspaceHeaderActions
           screen="todo"
           screenFilters={chrome.filterDefs}
-          trailing={trailing}
+          trailing={headerTrailing}
+          logExtraSections={session ? logExtraSections : undefined}
+          todoSettingsExtras={chrome.settingsExtras ?? undefined}
+          todoSettingsFooterActions={chrome.settingsFooterActions ?? undefined}
+          notify={
+            session
+              ? { unreadCount, onClick: onOpenNotifications }
+              : undefined
+          }
         />
       }
       pinSticky={stackChrome ? false : headerPin}
       dividerBelow={stackChrome ? false : !searchPin}
       embedded={stackChrome}
     />
-  );
-
-  const timeRangeOptions = useMemo(
-    () =>
-      [
-        { value: "today" as TimeRange, label: t.today },
-        { value: "thisWeek" as TimeRange, label: t.thisWeek },
-        { value: "last30Days" as TimeRange, label: t.last30Days },
-        { value: "thisMonth" as TimeRange, label: t.thisMonth },
-        { value: "customMonth" as TimeRange, label: t.customMonth },
-        { value: "customRange" as TimeRange, label: t.customRange },
-      ] as const,
-    [t],
   );
 
   const filterBar =
@@ -272,17 +254,18 @@ export function TodoHubChrome({
           onValuesChange={(next) =>
             chrome.setFilters((prev) => filterValuesToTodoFilters(next, prev, chrome.filterDefs))
           }
-          toolbar={chrome.directoryToolbar ?? undefined}
-          row2Leading={chrome.filterRowLeading ?? undefined}
-          row2Actions={
-            <TimeRangeSelect
-              value={chrome.timeRange}
-              onChange={chrome.setTimeRange}
-              options={[...timeRangeOptions]}
-            />
+          toolbar={
+            <>
+              {chrome.filterToolbarLeading}
+              <TodoSearchToolbar t={t} />
+            </>
           }
+          row2Leading={chrome.filterRowLeading ?? undefined}
+          row2Actions={<TodoFilterRowActions onAddTask={onAddTask} />}
         />
-        <TodoFilterDateExtensions />
+        {usersDirectoryWarning ? (
+          <HubAlert tone="warn">{usersDirectoryWarning}</HubAlert>
+        ) : null}
       </div>
     ) : undefined;
 

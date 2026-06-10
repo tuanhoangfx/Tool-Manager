@@ -12,6 +12,7 @@ import { useCachedSupabaseQuery } from '../../../hooks/useCachedSupabaseQuery';
 import { useTaskFilter } from '../../../hooks/useTaskFilter';
 import { useSyncTodoChrome } from '../../../hooks/useSyncTodoChrome';
 import { useTodoChrome } from '../../../TodoChromeContext';
+import { matchesWorkspacePeriod } from '../../../../../lib/hub-workspace-period';
 import { TaskBoardSkeleton } from '../../Skeleton';
 import TaskColumn from '../../TaskColumn';
 import DashboardViewToggle from '../DashboardViewToggle';
@@ -104,71 +105,9 @@ const EmployeeDashboard: React.FC<TaskDashboardProps> = ({
     const tasks_safe = tasks ?? EMPTY_TASKS;
 
     const timeFilteredTasks = useMemo(() => {
-        const now = new Date();
-        let startDate: Date;
-        let endDate: Date;
-
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        
-        const todayEnd = new Date();
-        todayEnd.setHours(23, 59, 59, 999);
-
-        switch (timeRange) {
-            case 'today':
-                startDate = todayStart;
-                endDate = todayEnd;
-                break;
-            case 'thisWeek':
-                const firstDayOfWeek = new Date(todayStart);
-                firstDayOfWeek.setDate(todayStart.getDate() - todayStart.getDay());
-                startDate = firstDayOfWeek;
-                endDate = todayEnd;
-                break;
-            case 'thisMonth':
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                endDate = todayEnd;
-                break;
-            case 'lastWeek':
-                const lastWeekStart = new Date(todayStart);
-                lastWeekStart.setDate(todayStart.getDate() - todayStart.getDay() - 7);
-                startDate = lastWeekStart;
-                
-                const lastWeekEnd = new Date(lastWeekStart);
-                lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
-                lastWeekEnd.setHours(23, 59, 59, 999);
-                endDate = lastWeekEnd;
-                break;
-            case 'last30Days':
-                startDate = new Date(todayStart);
-                startDate.setDate(todayStart.getDate() - 30);
-                endDate = todayEnd;
-                break;
-            case 'customMonth':
-                if (!customMonth) return tasks_safe;
-                const [year, month] = customMonth.split('-').map(Number);
-                startDate = new Date(year, month - 1, 1);
-                endDate = new Date(year, month, 0);
-                endDate.setHours(23, 59, 59, 999);
-                break;
-            case 'customRange':
-                if (!customStartDate) return tasks_safe;
-                startDate = new Date(customStartDate);
-                startDate.setHours(0, 0, 0, 0);
-                endDate = customEndDate ? new Date(customEndDate) : new Date(customStartDate);
-                endDate.setHours(23, 59, 59, 999);
-                break;
-            default:
-                // Default to last 30 days if somehow undefined
-                startDate = new Date(todayStart);
-                startDate.setDate(todayStart.getDate() - 30);
-                endDate = todayEnd;
-        }
-
-        return tasks_safe.filter(task => {
-            const taskDate = new Date(task.created_at);
-            return taskDate >= startDate && taskDate <= endDate;
-        });
+        if (timeRange === 'all') return tasks_safe;
+        const period = { range: timeRange, customMonth, customStartDate, customEndDate };
+        return tasks_safe.filter((task) => matchesWorkspacePeriod(task.created_at, period));
     }, [tasks_safe, timeRange, customMonth, customStartDate, customEndDate]);
 
 
@@ -263,7 +202,7 @@ const EmployeeDashboard: React.FC<TaskDashboardProps> = ({
         projects: projectsForFilter,
         allUsers,
         timeFilteredTasks: session ? timeFilteredTasks : [],
-        directoryToolbar: session ? <DashboardViewToggle view={view} setView={setView} /> : null,
+        filterToolbarLeading: session ? <DashboardViewToggle view={view} setView={setView} /> : null,
     });
 
     if (!session) {

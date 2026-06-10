@@ -1,6 +1,6 @@
 import { Briefcase, ClipboardList } from "lucide-react";
-import type { TodoAdminView } from "@/todo/app-types";
-import { useSettings } from "@/todo/context/SettingsContext";
+import type { TodoAdminView } from "./app-types";
+import { useSettings } from "./context/SettingsContext";
 
 type Props = {
   activeView: TodoAdminView;

@@ -8,7 +8,7 @@ import TaskCard from './TaskCard';
 import { TrashIcon } from './Icons';
 import VirtualItem from './common/VirtualItem';
 import { TaskCardSkeleton } from './Skeleton';
-import { DataChange } from "@/todo/app-types";
+import { DataChange } from "../app-types";
 import { TODO_HUB } from '../styles/todo-hub-classes';
 
 interface TaskColumnProps {

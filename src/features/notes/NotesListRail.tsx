@@ -49,10 +49,10 @@ export function NotesListRail({
   }, [notes, scrollNoteIntoView, selectedId]);
 
   return (
-    <aside className="notes-rail flex h-full min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[var(--panel)]/40">
+    <aside className="notes-rail flex min-h-0 shrink-0 flex-col self-stretch overflow-hidden rounded-xl border border-white/10 bg-[var(--panel)]/40">
       <div
         ref={scrollRef}
-        className="notes-rail__scroll hub-split-scroll hub-split-scroll--rail p-1.5"
+        className="notes-rail__scroll hub-split-scroll hub-split-scroll--rail relative p-1.5"
       >
         {loading && notes.length === 0 ? (
           <p className="px-2 py-2 text-[11px] text-[var(--muted)]">Loading…</p>
@@ -99,7 +99,9 @@ export function NotesListRail({
           </ul>
         )}
         {refreshing ? (
-          <p className="pointer-events-none px-2 py-1 text-[10px] text-[var(--muted)]">Refreshing…</p>
+          <p className="pointer-events-none absolute bottom-1 left-0 right-0 z-[1] px-2 py-0.5 text-[10px] text-[var(--muted)]">
+            Refreshing…
+          </p>
         ) : null}
       </div>
     </aside>

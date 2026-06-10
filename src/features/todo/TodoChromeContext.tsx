@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { FilterDef, KpiTileData } from "@tool-workspace/hub-ui";
-import type { TimeRange } from "@/todo/components/PerformanceSummary";
-import type { TodoChartData } from "@/todo/todo-charts";
-import type { TodoFilters } from "@/todo/todo-filters";
+import type { TimeRange } from "./components/PerformanceSummary";
+import type { TodoChartData } from "./todo-charts";
+import type { TodoFilters } from "./todo-filters";
+import { useWorkspacePeriod } from "../../lib/use-workspace-period";
 
 type Ctx = {
   filters: TodoFilters;
@@ -19,6 +20,8 @@ type Ctx = {
   setCustomEndDate: (d: string) => void;
   directoryToolbar: ReactNode;
   setDirectoryToolbar: (node: ReactNode) => void;
+  filterToolbarLeading: ReactNode;
+  setFilterToolbarLeading: (node: ReactNode) => void;
   filterRowLeading: ReactNode;
   setFilterRowLeading: (node: ReactNode) => void;
   kpis: KpiTileData[] | undefined;
@@ -27,6 +30,12 @@ type Ctx = {
   setChartData: (data: TodoChartData | null) => void;
   sectionRuleLabel: string | undefined;
   setSectionRuleLabel: (label: string | undefined) => void;
+  usersDirectoryWarning: string | null;
+  setUsersDirectoryWarning: (message: string | null) => void;
+  settingsExtras: ReactNode;
+  setSettingsExtras: (node: ReactNode) => void;
+  settingsFooterActions: ReactNode;
+  setSettingsFooterActions: (node: ReactNode) => void;
 };
 
 const TodoChromeContext = createContext<Ctx | null>(null);
@@ -40,17 +49,18 @@ const defaultFilters: TodoFilters = {
 };
 
 export function TodoChromeProvider({ children }: { children: ReactNode }) {
+  const period = useWorkspacePeriod("todo", "last30Days");
   const [filters, setFilters] = useState<TodoFilters>(defaultFilters);
   const [filterDefs, setFilterDefs] = useState<FilterDef[]>([]);
-  const [timeRange, setTimeRange] = useState<TimeRange>("last30Days");
-  const [customMonth, setCustomMonth] = useState(() => new Date().toISOString().slice(0, 7));
-  const [customStartDate, setCustomStartDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [customEndDate, setCustomEndDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [directoryToolbar, setDirectoryToolbar] = useState<ReactNode>(null);
+  const [filterToolbarLeading, setFilterToolbarLeading] = useState<ReactNode>(null);
   const [filterRowLeading, setFilterRowLeading] = useState<ReactNode>(null);
   const [kpis, setKpis] = useState<KpiTileData[] | undefined>(undefined);
   const [chartData, setChartData] = useState<TodoChartData | null>(null);
   const [sectionRuleLabel, setSectionRuleLabel] = useState<string | undefined>("Board");
+  const [usersDirectoryWarning, setUsersDirectoryWarning] = useState<string | null>(null);
+  const [settingsExtras, setSettingsExtras] = useState<ReactNode>(null);
+  const [settingsFooterActions, setSettingsFooterActions] = useState<ReactNode>(null);
 
   return (
     <TodoChromeContext.Provider
@@ -59,16 +69,18 @@ export function TodoChromeProvider({ children }: { children: ReactNode }) {
         setFilters,
         filterDefs,
         setFilterDefs,
-        timeRange,
-        setTimeRange,
-        customMonth,
-        setCustomMonth,
-        customStartDate,
-        setCustomStartDate,
-        customEndDate,
-        setCustomEndDate,
+        timeRange: period.range as TimeRange,
+        setTimeRange: (r) => period.patch({ range: r }),
+        customMonth: period.customMonth,
+        setCustomMonth: period.setCustomMonth,
+        customStartDate: period.customStartDate,
+        setCustomStartDate: period.setCustomStartDate,
+        customEndDate: period.customEndDate,
+        setCustomEndDate: period.setCustomEndDate,
         directoryToolbar,
         setDirectoryToolbar,
+        filterToolbarLeading,
+        setFilterToolbarLeading,
         filterRowLeading,
         setFilterRowLeading,
         kpis,
@@ -77,6 +89,12 @@ export function TodoChromeProvider({ children }: { children: ReactNode }) {
         setChartData,
         sectionRuleLabel,
         setSectionRuleLabel,
+        usersDirectoryWarning,
+        setUsersDirectoryWarning,
+        settingsExtras,
+        setSettingsExtras,
+        settingsFooterActions,
+        setSettingsFooterActions,
       }}
     >
       {children}
@@ -99,6 +117,8 @@ const noop: Ctx = {
   setCustomEndDate: () => {},
   directoryToolbar: null,
   setDirectoryToolbar: () => {},
+  filterToolbarLeading: null,
+  setFilterToolbarLeading: () => {},
   filterRowLeading: null,
   setFilterRowLeading: () => {},
   kpis: undefined,
@@ -107,6 +127,12 @@ const noop: Ctx = {
   setChartData: () => {},
   sectionRuleLabel: undefined,
   setSectionRuleLabel: () => {},
+  usersDirectoryWarning: null,
+  setUsersDirectoryWarning: () => {},
+  settingsExtras: null,
+  setSettingsExtras: () => {},
+  settingsFooterActions: null,
+  setSettingsFooterActions: () => {},
 };
 
 export function useTodoChrome() {

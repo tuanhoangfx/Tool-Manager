@@ -1,1 +1,1 @@
-export { DesignSection, Glass, GLOW, StatusBadge } from "./glass";
+export { Glass } from "./glass";

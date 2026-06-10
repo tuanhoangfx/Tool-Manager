@@ -1,5 +1,5 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { supabase } from "@/todo/lib/supabase";
+import { supabase } from "./lib/supabase";
 
 type Listener = () => void;
 

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useSettings } from '../../context/SettingsContext';
 import { TaskComment, Profile } from '../../types';
 import { formatAbsoluteDateTime } from '../../lib/taskUtils';
+import { resolveTodoProfile } from '../../todo-resolve-profile';
 import { ChatBubbleIcon, SendIcon, SpinnerIcon } from '../../components/Icons';
 import Avatar from '../common/Avatar';
 import { TODO_HUB } from '../../styles/todo-hub-classes';
@@ -21,9 +22,10 @@ interface CommentSectionProps {
     comments: (TaskComment | TempComment)[];
     onPostComment: (comment: string) => Promise<void>;
     isPostingComment: boolean;
+    allUsers: Profile[];
 }
 
-const CommentSection: React.FC<CommentSectionProps> = ({ comments, onPostComment, isPostingComment }) => {
+const CommentSection: React.FC<CommentSectionProps> = ({ comments, onPostComment, isPostingComment, allUsers }) => {
     const { t, language, timezone } = useSettings();
     const [newComment, setNewComment] = useState('');
     const [isCommentInputVisible, setCommentInputVisible] = useState(false);
@@ -47,14 +49,16 @@ const CommentSection: React.FC<CommentSectionProps> = ({ comments, onPostComment
                     </div>
                 ) : (
                     <div className="space-y-3">
-                    {comments.map(comment => (
+                    {comments.map(comment => {
+                        const author = resolveTodoProfile(comment.user_id, comment.profiles, allUsers);
+                        return (
                         <div key={comment.id} className={`flex items-start gap-2.5 transition-opacity ${'isSending' in comment && comment.isSending ? 'opacity-60' : ''}`}>
                             <div className="flex-shrink-0">
-                                <Avatar user={comment.profiles} title={comment.profiles.full_name || ''} size={28} />
+                                <Avatar user={author} title={author.full_name || ''} size={28} />
                             </div>
                             <div className="flex-grow">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm font-semibold text-[var(--text)]">{comment.profiles?.full_name}</span>
+                                    <span className="text-sm font-semibold text-[var(--text)]">{author.full_name || author.email || 'Unknown'}</span>
                                     <time className="text-xs tabular-nums text-[var(--muted)]">
                                         {'isSending' in comment && comment.isSending ? 'Sending...' : formatAbsoluteDateTime(comment.created_at, language, timezone)}
                                     </time>
@@ -62,7 +66,8 @@ const CommentSection: React.FC<CommentSectionProps> = ({ comments, onPostComment
                                 <p className="whitespace-pre-wrap break-words text-sm text-[var(--muted)]">{comment.content}</p>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                     </div>
                 )}
             </div>

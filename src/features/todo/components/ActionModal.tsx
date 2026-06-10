@@ -1,7 +1,6 @@
-
-import React, { useEffect, useCallback } from 'react';
-import { useSettings } from '../context/SettingsContext';
-import { TODO_HUB } from '../styles/todo-hub-classes';
+import { useEffect, useCallback, type ReactNode } from "react";
+import { HubDetailModal } from "@tool-workspace/hub-ui";
+import { useSettings } from "../context/SettingsContext";
 
 export interface ActionModalProps {
   isOpen: boolean;
@@ -12,11 +11,12 @@ export interface ActionModalProps {
   confirmText?: string;
   cancelText?: string;
   confirmButtonClass?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
   maxWidth?: string;
-};
+}
 
-const ActionModal: React.FC<ActionModalProps> = ({
+/** Confirm / alert dialog — golden HubDetailModal shell. */
+const ActionModal = ({
   isOpen,
   onClose,
   onConfirm,
@@ -24,10 +24,10 @@ const ActionModal: React.FC<ActionModalProps> = ({
   message,
   confirmText,
   cancelText,
-  confirmButtonClass = 'bg-gradient-to-r from-[var(--gradient-from)] to-[var(--gradient-to)]',
+  confirmButtonClass = "",
   children,
-  maxWidth = 'max-w-md',
-}) => {
+  maxWidth = "max-w-md",
+}: ActionModalProps) => {
   const { t } = useSettings();
 
   const handleConfirm = useCallback(() => {
@@ -39,60 +39,61 @@ const ActionModal: React.FC<ActionModalProps> = ({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && onConfirm && !children) {
+      if (event.key === "Enter" && onConfirm && !children) {
         event.preventDefault();
         handleConfirm();
       }
     };
-
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    if (isOpen) window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onConfirm, children, handleConfirm]);
 
-  if (!isOpen) return null;
+  const confirmClass = [
+    "hub-tool-detail-modal__confirm min-w-[6rem]",
+    confirmButtonClass.includes("rose") || confirmButtonClass.includes("red")
+      ? "hub-tool-detail-modal__confirm--danger"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div
-      className="fixed inset-0 z-[1020] flex animate-fadeIn justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="action-modal-title"
-    >
-      <div
-        className={`${TODO_HUB.modalShell} w-full ${maxWidth} transform transition-all duration-300 ease-out animate-fadeInUp`}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="relative p-6">
-          <h2 id="action-modal-title" className="text-xl font-bold text-[var(--text)]">{title}</h2>
-          {message ? (
-            <p className="mt-2 whitespace-pre-line text-sm text-[var(--muted)]">{message}</p>
-          ) : null}
-        </div>
-        {children}
-        {!children && (
-          <div className={TODO_HUB.modalFooter}>
-            {onConfirm && (
-              <button type="button" onClick={onClose} className={TODO_HUB.btnSecondary}>
-                {cancelText || t.cancel}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onConfirm ? handleConfirm : onClose}
-              className={`rounded-md px-4 py-2 text-sm font-semibold text-white shadow-md transition-transform duration-200 hover:scale-[1.02] focus:outline-none ${confirmButtonClass}`}
-            >
-              {onConfirm ? (confirmText || t.save) : t.close}
-            </button>
+    <HubDetailModal
+      open={isOpen}
+      onClose={onClose}
+      ariaLabelledBy="action-modal-title"
+      shellClassName={`hub-tool-detail-modal--fit w-full ${maxWidth}`}
+      header={
+        <div className="user-access-modal__header">
+          <div className="user-access-modal__header-main min-w-0">
+            <h2 id="action-modal-title" className="truncate text-lg font-bold text-[var(--text)]">
+              {title}
+            </h2>
           </div>
-        )}
+        </div>
+      }
+      footer={
+        !children ? (
+          <div className="hub-tool-detail-modal__footer">
+            <div className="hub-tool-detail-modal__footer-inner !justify-end">
+              {onConfirm ? (
+                <button type="button" onClick={onClose} className="hub-tool-detail-modal__secondary">
+                  {cancelText || t.cancel}
+                </button>
+              ) : null}
+              <button type="button" onClick={onConfirm ? handleConfirm : onClose} className={confirmClass}>
+                {onConfirm ? confirmText || t.save : t.close}
+              </button>
+            </div>
+          </div>
+        ) : undefined
+      }
+    >
+      <div className="modal-shell__scroll px-6 py-4">
+        {message ? <p className="whitespace-pre-line text-sm text-[var(--muted)]">{message}</p> : null}
+        {children}
       </div>
-    </div>
+    </HubDetailModal>
   );
 };
 

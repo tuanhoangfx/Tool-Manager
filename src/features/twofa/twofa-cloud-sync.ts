@@ -378,11 +378,6 @@ export async function runTwofaCloudSync(
   const pushErr = await pushTwofaLocalOnly(getLocal());
   if (pushErr) return { accounts: pulled.accounts, error: pushErr };
 
-  if (useAuthoritative && userId) {
-    const refreshed = await reconcileTwofaWithCloud(getLocal());
-    return refreshed.error ? { accounts: pulled.accounts, error: refreshed.error } : refreshed;
-  }
-
   if (userId && !readWatermark(userId) && pulled.accounts.length) {
     return reconcileTwofaWithCloud(getLocal());
   }

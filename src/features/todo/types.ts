@@ -281,6 +281,7 @@ export type Translation = {
   thisMonth: string;
   lastWeek: string;
   last30Days: string; // Added
+  periodAll: string;
   avgCompletionTime: string;
   allTasksBoard: string;
   customMonth: string;
@@ -290,6 +291,7 @@ export type Translation = {
   management: string;
   searchUsers: string;
   lastUpdated: string;
+  lastEditedBy: string;
   actions: string;
   editUser: string;
   deleteUser: string;

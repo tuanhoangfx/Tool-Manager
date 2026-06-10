@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { useMemo } from "react";
-import { translations } from "@/todo/translations";
-import type { ColorScheme } from "@/todo/context/SettingsContext";
-import { SettingsContext } from "@/todo/context/SettingsContext";
-import type { Task } from "@/todo/types";
-import { useLocalStorage } from "@/todo/hooks/useLocalStorage";
+import { translations } from "./translations";
+import type { ColorScheme } from "./context/SettingsContext";
+import { SettingsContext } from "./context/SettingsContext";
+import type { Task } from "./types";
+import { useLocalStorage } from "./hooks/useLocalStorage";
 
 type Props = { children: ReactNode };
 

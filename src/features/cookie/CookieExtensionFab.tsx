@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Download } from "lucide-react";
-import { EXTENSION_HEADER_LABEL, EXTENSION_CHROME_WEB_STORE_URL, isChromeWebStoreLive } from "./extensionInstall";
-import { fetchLatestExtensionRelease } from "./extensionReleaseApi";
-import { triggerExtensionZipDownload } from "./extensionDownload";
+import { EXTENSION_HEADER_LABEL, isChromeWebStoreLive } from "./extensionInstall";
 import { useExtensionRelease } from "./useExtensionRelease";
+import { CookieExtensionDownloadConfirm } from "./CookieExtensionDownloadConfirm";
 import "./cookie-extension-fab.css";
 
 type Props = {
@@ -12,51 +11,37 @@ type Props = {
   active?: boolean;
 };
 
-/** Floating extension download — one click fetches GitHub latest and downloads ZIP (or opens CWS when live). */
+/** Floating extension download — opens detail modal; confirm CTA triggers ZIP or Chrome Web Store. */
 export function CookieExtensionFab({ active = true }: Props) {
   const release = useExtensionRelease();
-  const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (typeof document === "undefined") return null;
 
   const storeLive = isChromeWebStoreLive();
   const fabTitle = storeLive
     ? `${EXTENSION_HEADER_LABEL} v${release.version} — Install from Chrome Web Store`
-    : `Download ${EXTENSION_HEADER_LABEL} v${release.version} (latest GitHub ZIP)`;
+    : `Download ${EXTENSION_HEADER_LABEL} v${release.version} (GitHub ZIP)`;
 
-  const onDownload = () => {
-    if (busy) return;
-    if (storeLive && EXTENSION_CHROME_WEB_STORE_URL) {
-      window.open(EXTENSION_CHROME_WEB_STORE_URL, "_blank", "noopener,noreferrer");
-      return;
-    }
-    setBusy(true);
-    void (async () => {
-      try {
-        const latest = await fetchLatestExtensionRelease();
-        await triggerExtensionZipDownload(latest);
-      } finally {
-        setBusy(false);
-      }
-    })();
-  };
-
-  return active
-    ? createPortal(
-        <div className="workspace-fab-stack--cookie" aria-label="Cookie extension download">
-          <button
-            type="button"
-            className="workspace-fab workspace-fab--download workspace-fab--pulse"
-            title={fabTitle}
-            aria-label={fabTitle}
-            aria-busy={busy}
-            disabled={busy}
-            onClick={onDownload}
-          >
-            <Download size={16} strokeWidth={2.35} aria-hidden />
-          </button>
-        </div>,
-        document.body,
-      )
-    : null;
+  return (
+    <>
+      {active
+        ? createPortal(
+            <div className="workspace-fab-stack--cookie" aria-label="Cookie extension download">
+              <button
+                type="button"
+                className="workspace-fab workspace-fab--download workspace-fab--pulse"
+                title={fabTitle}
+                aria-label={fabTitle}
+                onClick={() => setConfirmOpen(true)}
+              >
+                <Download size={16} strokeWidth={2.35} aria-hidden />
+              </button>
+            </div>,
+            document.body,
+          )
+        : null}
+      <CookieExtensionDownloadConfirm open={confirmOpen} onClose={() => setConfirmOpen(false)} />
+    </>
+  );
 }

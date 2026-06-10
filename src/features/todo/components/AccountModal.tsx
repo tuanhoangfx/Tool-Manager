@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from "@/todo/lib/supabase";
-import { XIcon, UserIcon, SpinnerIcon } from "@/todo/components/Icons";
+import { HubDetailModal } from "@tool-workspace/hub-ui";
+import { supabase } from "../lib/supabase";
+import { UserIcon, SpinnerIcon } from "./Icons";
 import type { Session } from '@supabase/supabase-js';
-import { useSettings } from "@/todo/context/SettingsContext";
-import { useToasts } from "@/todo/context/ToastContext";
-import { TODO_HUB } from "@/todo/styles/todo-hub-classes";
+import { useSettings } from "../context/SettingsContext";
+import { useToasts } from "../context/ToastContext";
+import { TODO_HUB } from "../styles/todo-hub-classes";
 
 interface AccountModalProps {
   isOpen: boolean;
@@ -155,34 +156,37 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, session })
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div 
-            className="fixed inset-0 z-[1010] flex animate-fadeIn justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm"
-            onClick={onClose}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="account-modal-title"
-        >
-            <div 
-                className={`${TODO_HUB.modalShell} max-w-md max-h-[90vh] transform transition-all duration-300 ease-out animate-fadeInUp`}
-                onClick={e => e.stopPropagation()}
-            >
-                <form onSubmit={handleUpdate} className="flex h-full flex-col">
-                    <div className="relative flex-shrink-0 border-b border-white/5 p-6">
-                        <button 
-                            type="button"
-                            onClick={onClose} 
-                            className="absolute right-4 top-4 text-[var(--muted)] transition-colors hover:text-[var(--text)]"
-                            aria-label={t.close}
-                        >
-                            <XIcon size={24} />
-                        </button>
-                        <h2 id="account-modal-title" className="text-2xl font-bold text-[var(--text)]">{t.accountSettings}</h2>
-                        <p className="mt-1 truncate text-sm text-[var(--muted)]">{session?.user?.email}</p>
+        <HubDetailModal
+            open={isOpen}
+            onClose={onClose}
+            ariaLabelledBy="account-modal-title"
+            shellClassName="hub-tool-detail-modal--fit w-full max-w-md"
+            header={
+                <div className="user-access-modal__header">
+                    <div className="user-access-modal__header-main min-w-0 flex-col !items-start gap-0.5">
+                        <h2 id="account-modal-title" className="truncate text-lg font-bold text-[var(--text)]">{t.accountSettings}</h2>
+                        <p className="truncate text-xs text-[var(--muted)]">{session?.user?.email}</p>
                     </div>
-
+                </div>
+            }
+            footer={
+                <div className="hub-tool-detail-modal__footer">
+                    <div className="hub-tool-detail-modal__footer-inner !justify-end">
+                        <button type="button" onClick={onClose} className="hub-tool-detail-modal__secondary">{t.cancel}</button>
+                        <button
+                            type="submit"
+                            form="todo-account-form"
+                            disabled={loading}
+                            className="hub-tool-detail-modal__confirm min-w-[7rem]"
+                        >
+                            {loading ? <SpinnerIcon size={18} className="hub-tool-detail-modal__confirm-icon--busy" /> : t.update}
+                        </button>
+                    </div>
+                </div>
+            }
+        >
+            <form id="todo-account-form" onSubmit={handleUpdate} className="modal-shell__scroll flex flex-col">
                     <div className="flex-grow space-y-8 overflow-y-auto p-6">
                         {/* Profile Section */}
                         <section>
@@ -250,21 +254,8 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, session })
                             </div>
                         </section>
                     </div>
-
-                    <div className={TODO_HUB.modalFooter}>
-                        <button type="button" onClick={onClose} className={TODO_HUB.btnSecondary}>{t.cancel}</button>
-                        <button 
-                            type="submit" 
-                            disabled={loading} 
-                            className="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[var(--gradient-from)] to-[var(--gradient-to)] rounded-md shadow-md transform transition-all duration-300 hover:scale-105 hover:shadow-xl focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                            {loading && <SpinnerIcon size={16} className="animate-spin" />}
-                            {loading ? t.updating : t.update}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+            </form>
+        </HubDetailModal>
     );
 };
 

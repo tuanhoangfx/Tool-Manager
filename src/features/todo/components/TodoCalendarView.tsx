@@ -1,9 +1,9 @@
 import { lazy, Suspense } from "react";
-import type { Task } from "@/todo/types";
-import type { CalendarSortState } from "@/todo/lib/calendar-types";
-import { TaskBoardSkeleton } from "@/todo/components/Skeleton";
+import type { Task } from "../types";
+import type { CalendarSortState } from "../lib/calendar-types";
+import { TaskBoardSkeleton } from "./Skeleton";
 
-const CalendarViewLazy = lazy(() => import("@/todo/components/CalendarView"));
+const CalendarViewLazy = lazy(() => import("./CalendarView"));
 
 type Props = {
   tasks: Task[];

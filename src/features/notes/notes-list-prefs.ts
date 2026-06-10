@@ -1,4 +1,5 @@
-import { parseHubPrefSet, readHubListPrefs, patchHubListPrefs, type TimeRange } from "../../lib/url-prefs";
+import { parseHubPrefSet, patchHubListPrefs } from "../../lib/url-prefs";
+import { readWorkspacePeriod, type WorkspacePeriodPrefs } from "../../lib/hub-workspace-period";
 import { NOTES_FILTER_DEFS } from "./notes-filters";
 
 export type NotesListDensity = "comfort" | "compact";
@@ -40,22 +41,21 @@ export function notesSortSettingLabel(sort: NotesListSort): string {
   }
 }
 
-export type NotesListPrefs = {
-  range: TimeRange;
+export type NotesListPrefs = WorkspacePeriodPrefs & {
   density: NotesListDensity;
   sort: NotesListSort;
   noteFilters: Set<string> | null;
 };
 
 export function readNotesListPrefs(): NotesListPrefs {
-  const hub = readHubListPrefs();
+  const period = readWorkspacePeriod("notes", "all");
   if (typeof window === "undefined") {
-    return { range: hub.range, density: "comfort", sort: DEFAULT_NOTES_LIST_SORT, noteFilters: null };
+    return { ...period, density: "comfort", sort: DEFAULT_NOTES_LIST_SORT, noteFilters: null };
   }
   const sp = new URLSearchParams(window.location.search);
   const density = sp.get("ndens") === "compact" ? "compact" : "comfort";
   return {
-    range: hub.range,
+    ...period,
     density,
     sort: parseNotesListSort(sp.get("nsort")),
     noteFilters: parseHubPrefSet(sp.get("nfilt")),

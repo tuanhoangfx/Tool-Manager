@@ -37,7 +37,7 @@ export function EntityRankMiniChart({ title, rows, footer, emptyLabel = "—" }:
   return (
     <div className="hub-chart-card rounded-2xl border border-white/5 bg-[var(--panel)] p-4">
       <div className="mb-2 flex shrink-0 items-center justify-between gap-2">{title}</div>
-      <ul className="hub-chart-card__body space-y-2">
+      <ul className="hub-chart-card__body hub-chart-card__body--rank space-y-2.5">
         {rows.length === 0 ? (
           <li className="py-3 text-center text-xs text-[var(--muted)]">{emptyLabel}</li>
         ) : (
@@ -46,7 +46,7 @@ export function EntityRankMiniChart({ title, rows, footer, emptyLabel = "—" }:
             const color = row.color ?? defaultColor(i);
             const LabelTag = row.onClick ? "button" : "span";
             return (
-              <li key={row.id} className="hub-chart-row anim-slide text-xs">
+              <li key={row.id} className="hub-chart-row hub-chart-row--rank anim-slide text-xs">
                 <LabelTag
                   type={row.onClick ? "button" : undefined}
                   className={
@@ -65,14 +65,14 @@ export function EntityRankMiniChart({ title, rows, footer, emptyLabel = "—" }:
                     style={{ width: `${pct}%`, background: color, boxShadow: `0 0 12px ${color}55` }}
                   />
                 </div>
-                <div className="flex min-w-[4.5rem] flex-col items-end gap-0.5">
+                <div className="hub-chart-row__value flex flex-col items-end gap-0.5">
                   <span className="font-mono text-[10px] tabular-nums text-[var(--text)]">
                     {fmtInt(row.value)}
                     {row.total != null ? (
                       <span className="text-[var(--muted)]"> / {fmtInt(row.total)}</span>
                     ) : null}
                   </span>
-                  <div className="flex flex-wrap justify-end gap-1">
+                  <div className="flex max-w-full flex-wrap justify-end gap-1">
                     {row.statusLabel ? (
                       <MetricBadge label={row.statusLabel} tone={row.statusTone ?? "neutral"} />
                     ) : null}

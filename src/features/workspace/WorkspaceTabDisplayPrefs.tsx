@@ -104,6 +104,8 @@ type Props = {
   cookieSort?: CookieListSort;
   onCookieSortChange?: (sort: CookieListSort) => void;
   notesFolderSettings?: ReactNode;
+  todoSettingsExtras?: ReactNode;
+  todoSettingsFooterActions?: ReactNode;
 };
 
 /** Per-tab header Settings — same contract as P0004 Hub `AppDisplayPrefs`. */
@@ -117,6 +119,8 @@ export function WorkspaceTabDisplayPrefs({
   cookieSort = readCookieListPrefs().sort,
   onCookieSortChange,
   notesFolderSettings,
+  todoSettingsExtras,
+  todoSettingsFooterActions,
 }: Props) {
   if (screen === "cookie") {
     const filters = screenFilters.length
@@ -213,6 +217,8 @@ export function WorkspaceTabDisplayPrefs({
         scope="tab"
         readPrefs={readTodoHubPrefs}
         patchPrefs={patchTodoHubPrefs}
+        displayExtras={todoSettingsExtras}
+        footerActions={todoSettingsFooterActions}
       />
     );
   }

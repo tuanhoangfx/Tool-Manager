@@ -1,9 +1,9 @@
 
 import { useEffect, MutableRefObject } from 'react';
 import type { RealtimeChannel, Session } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from "@/todo/lib/supabase";
-import type { Profile } from "@/todo/types";
-import type { DataChange } from "@/todo/app-types";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import type { Profile } from "../types";
+import type { DataChange } from "../app-types";
 
 interface UseRealtimeProps {
     session: Session | null;

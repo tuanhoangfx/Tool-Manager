@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { XIcon, SearchIcon, PlayIcon, ClipboardListIcon, UsersIcon, SettingsIcon, KeyboardIcon } from "@/todo/components/Icons";
-import { useSettings } from "@/todo/context/SettingsContext";
-import type { Translation } from "@/todo/types";
+import { XIcon, SearchIcon, PlayIcon, ClipboardListIcon, UsersIcon, SettingsIcon, KeyboardIcon } from "./Icons";
+import { useSettings } from "../context/SettingsContext";
+import type { Translation } from "../types";
 
 // FIX: Add IconProps to strongly type icon components.
 interface IconProps {

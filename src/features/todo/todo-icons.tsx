@@ -1,4 +1,4 @@
-import { SpinnerIcon } from "@/todo/components/Icons";
+import { SpinnerIcon } from "./components/Icons";
 
 type IconProps = { size?: number; className?: string };
 
@@ -7,7 +7,7 @@ export function TodoInProgressIcon({ size = 18, className = "" }: IconProps) {
   return (
     <SpinnerIcon
       size={size}
-      className={`todo-inprogress-icon text-indigo-500 ${className}`.trim()}
+      className={`todo-inprogress-icon animate-spin text-indigo-500 ${className}`.trim()}
     />
   );
 }

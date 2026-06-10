@@ -1,24 +1,26 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { ClipboardListIcon, CheckCircleIcon, SpinnerIcon } from "@/todo/components/Icons";
-import { useSettings } from "@/todo/context/SettingsContext";
-import { isSupabaseConfigured, supabase } from "@/todo/lib/supabase";
-import type { Task, Notification } from "@/todo/types";
-import type { DataChange, TaskCounts, TodoAdminView } from "@/todo/app-types";
-import type { useModalManager } from "@/todo/hooks/useModalManager";
-import { useProfileAndUsers } from "@/todo/hooks/useProfileAndUsers";
-import { useAppActions } from "@/todo/hooks/useAppActions";
-import useIdleTimer from "@/todo/hooks/useIdleTimer";
-import { useProjects } from "@/todo/hooks/useProjects";
-import { useRealtime } from "@/todo/hooks/useRealtime";
-import { useGlobalShortcuts } from "@/todo/hooks/useGlobalShortcuts";
-import { TaskBoardSkeleton } from "@/todo/components/Skeleton";
-import { useToasts } from "@/todo/context/ToastContext";
-import AppModals from "@/todo/components/AppModals";
-import ScrollToTopButton from "@/todo/components/ScrollToTopButton";
-import EmployeeDashboard from "@/todo/components/dashboard/employee/EmployeeDashboard";
-import AdminTaskDashboard from "@/todo/components/dashboard/admin/AdminTaskDashboard";
-import { TodoUsersProvider } from "@/todo/TodoUsersContext";
+import { ClipboardListIcon, CheckCircleIcon, SpinnerIcon } from "./components/Icons";
+import { useSettings } from "./context/SettingsContext";
+import { isSupabaseConfigured, supabase } from "./lib/supabase";
+import type { Task, Notification } from "./types";
+import type { DataChange, TaskCounts, TodoAdminView } from "./app-types";
+import type { useModalManager } from "./hooks/useModalManager";
+import { useProfileAndUsers } from "./hooks/useProfileAndUsers";
+import { useAppActions } from "./hooks/useAppActions";
+import useIdleTimer from "./hooks/useIdleTimer";
+import { useProjects } from "./hooks/useProjects";
+import { useRealtime } from "./hooks/useRealtime";
+import { useGlobalShortcuts } from "./hooks/useGlobalShortcuts";
+import { TaskBoardSkeleton } from "./components/Skeleton";
+import { useToasts } from "./context/ToastContext";
+import AppModals from "./components/AppModals";
+import ScrollToTopButton from "./components/ScrollToTopButton";
+import EmployeeDashboard from "./components/dashboard/employee/EmployeeDashboard";
+import AdminTaskDashboard from "./components/dashboard/admin/AdminTaskDashboard";
+import { TodoUsersProvider } from "./TodoUsersContext";
+import { useTodoChrome } from "./TodoChromeContext";
+import { TodoTaskDefaultsSettings } from "./TodoTaskDefaultsSettings";
 
 type Props = {
   session: Session | null;
@@ -55,7 +57,12 @@ export function TodoAppCore({
     setLastDataChange({ ...change, timestamp: Date.now() });
   }, []);
 
-  const { profile, allUsers, loadingProfile, profileError, getProfile } = useProfileAndUsers(session, lastDataChange);
+  const { profile, allUsers, usersWarning, loadingProfile, profileError, getProfile } = useProfileAndUsers(session, lastDataChange);
+  const chrome = useTodoChrome();
+
+  useEffect(() => {
+    chrome.setUsersDirectoryWarning(usersWarning);
+  }, [usersWarning, chrome.setUsersDirectoryWarning]);
 
   const { userProjects } = useProjects({
     session,
@@ -64,6 +71,22 @@ export function TodoAppCore({
     notifyDataChange,
     closeProjectModal: modals.editProject.close,
   });
+
+  useEffect(() => {
+    if (!profile) {
+      chrome.setSettingsExtras(null);
+      return;
+    }
+    chrome.setSettingsExtras(
+      <TodoTaskDefaultsSettings
+        profile={profile}
+        userProjects={userProjects}
+        onProfileRefresh={() => {
+          if (session?.user) void getProfile(session.user);
+        }}
+      />,
+    );
+  }, [profile, userProjects, session?.user, getProfile, chrome.setSettingsExtras]);
 
   const { activeTimer, taskActions, timerActions } = useAppActions({
     session,

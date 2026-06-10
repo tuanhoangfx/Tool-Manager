@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { Profile } from "@/todo/types";
+import type { Profile } from "./types";
 
 type Ctx = {
   allUsers: Profile[];

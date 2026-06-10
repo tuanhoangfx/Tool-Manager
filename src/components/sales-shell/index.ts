@@ -22,8 +22,6 @@ export {
   ViewToggle,
   type HubViewMode,
   HubResultCount,
-  HubLoadingView,
-  type HubLoadingViewProps,
   HubScreenChunkFallback,
   type HubScreenChunkFallbackProps,
   HubLoaderRoot,
@@ -35,6 +33,8 @@ export {
   HubTimeRangeSelect,
   HubRowLimitSelect,
 } from "@tool-workspace/hub-ui";
+
+export { HubWorkspacePeriodSelect } from "./HubWorkspacePeriodSelect";
 
 export { DisplayPrefs, type PrefItem } from "./DisplayPrefs";
 export { WorkspaceSidebar } from "./WorkspaceSidebar";

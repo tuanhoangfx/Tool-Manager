@@ -1,10 +1,15 @@
+import { useEffect, useRef, useState } from "react";
 import { CloudOff, CloudUpload, GitMerge, RefreshCw, Shield } from "lucide-react";
-import { HubResultCount, HubRowLimitSelect, HubTimeRangeSelect } from "../../components/sales-shell";
-import type { TimeRange } from "../../lib/url-prefs";
+import {
+  HubResultCount,
+  HubRowLimitSelect,
+  HubWorkspacePeriodSelect,
+} from "../../components/sales-shell";
 import type { TwofaCloudSyncState } from "./twofa-cloud-sync";
 
+const VAULT_IDLE_RETRY_MS = 10_000;
+
 type Props = {
-  range: TimeRange;
   limit: number;
   /** Rows rendered in the table (after row limit). */
   tableShown: number;
@@ -18,7 +23,11 @@ type Props = {
   onDedupe?: () => void;
 };
 
-function cloudSyncMeta(state: TwofaCloudSyncState, error: string | null | undefined) {
+function cloudSyncMeta(
+  state: TwofaCloudSyncState,
+  error: string | null | undefined,
+  staleIdle: boolean,
+) {
   if (state === "off") return { label: "Local only", className: "border-white/10 text-[var(--muted)]", icon: CloudOff };
   if (state === "syncing") return { label: "Syncing…", className: "border-sky-400/25 text-sky-200", icon: RefreshCw };
   if (state === "error") {
@@ -30,11 +39,18 @@ function cloudSyncMeta(state: TwofaCloudSyncState, error: string | null | undefi
     };
   }
   if (state === "ok") return { label: "Vault synced", className: "border-emerald-400/25 text-emerald-200", icon: CloudUpload };
+  if (staleIdle) {
+    return {
+      label: "Connecting vault…",
+      className: "border-amber-400/25 text-amber-200",
+      icon: RefreshCw,
+      title: "Retrying full sync with cloud vault",
+    };
+  }
   return { label: "Vault idle", className: "border-white/10 text-[var(--muted)]", icon: CloudUpload };
 }
 
 export function TwofaFilterToolbar({
-  range,
   limit,
   tableShown,
   filteredTotal,
@@ -44,12 +60,34 @@ export function TwofaFilterToolbar({
   onCloudSync,
   onDedupe,
 }: Props) {
-  const cloud = cloudSyncMeta(cloudState, cloudError);
+  const [staleIdle, setStaleIdle] = useState(false);
+  const retriedRef = useRef(false);
+
+  useEffect(() => {
+    if (cloudState !== "idle") {
+      setStaleIdle(false);
+      retriedRef.current = false;
+      return;
+    }
+    const showTimer = window.setTimeout(() => setStaleIdle(true), VAULT_IDLE_RETRY_MS);
+    const retryTimer = window.setTimeout(() => {
+      if (!retriedRef.current && onCloudSync) {
+        retriedRef.current = true;
+        onCloudSync();
+      }
+    }, VAULT_IDLE_RETRY_MS);
+    return () => {
+      window.clearTimeout(showTimer);
+      window.clearTimeout(retryTimer);
+    };
+  }, [cloudState, onCloudSync]);
+
+  const cloud = cloudSyncMeta(cloudState, cloudError, staleIdle);
   const CloudIcon = cloud.icon;
 
   return (
     <>
-      <HubTimeRangeSelect value={range} />
+      <HubWorkspacePeriodSelect scope="twofa" defaultRange="all" inactiveKeys={["all"]} />
       <HubRowLimitSelect value={limit} />
       <HubResultCount icon={Shield} shown={tableShown} total={filteredTotal} />
       {cloudState !== "off" ? (
@@ -60,7 +98,11 @@ export function TwofaFilterToolbar({
           onClick={onCloudSync}
           disabled={cloudState === "syncing"}
         >
-          <CloudIcon size={12} aria-hidden className={cloudState === "syncing" ? "animate-spin" : undefined} />
+          <CloudIcon
+            size={12}
+            aria-hidden
+            className={cloudState === "syncing" || staleIdle ? "animate-spin" : undefined}
+          />
           {cloud.label}
         </button>
       ) : null}

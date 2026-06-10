@@ -1,5 +1,5 @@
 
-import { Translation } from "@/todo/types";
+import { Translation } from "./types";
 
 const en: Translation = {
   // Header
@@ -157,6 +157,7 @@ const en: Translation = {
   thisMonth: "This Month",
   lastWeek: "Last Week",
   last30Days: "Last 30 Days",
+  periodAll: "All",
   avgCompletionTime: "Avg. Completion Time",
   allTasksBoard: "All Tasks Board",
   customMonth: "By Month",
@@ -166,6 +167,7 @@ const en: Translation = {
   management: "Management",
   searchUsers: "Search users by name...",
   lastUpdated: "Last Updated",
+  lastEditedBy: "Last edited by",
   actions: "Actions",
   editUser: "Edit User",
   deleteUser: "Delete User",
@@ -468,6 +470,7 @@ const vi: Translation = {
   thisMonth: "Tháng này",
   lastWeek: "Tuần trước",
   last30Days: "30 ngày gần nhất",
+  periodAll: "Tất cả",
   avgCompletionTime: "Thời gian hoàn thành TB",
   allTasksBoard: "Bảng công việc chung",
   customMonth: "Theo Tháng",
@@ -477,6 +480,7 @@ const vi: Translation = {
   management: "Quản lý",
   searchUsers: "Tìm người dùng theo tên...",
   lastUpdated: "Cập nhật lần cuối",
+  lastEditedBy: "Sửa bởi",
   actions: "Hành động",
   editUser: "Sửa người dùng",
   deleteUser: "Xóa người dùng",

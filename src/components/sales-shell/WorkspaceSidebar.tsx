@@ -82,6 +82,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
         <HubWorkspaceUserShell
           session={session}
           anonymous={offline}
+          profileRoleClient={getIdentitySupabase()}
           footerTitle="Open workspace user information"
           emptyEmailLabel="Not signed in"
           workspaceNote={

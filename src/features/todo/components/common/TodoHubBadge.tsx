@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { TODO_HUB } from "@/todo/styles/todo-hub-classes";
-import type { Task } from "@/todo/types";
+import { TODO_HUB } from "../../styles/todo-hub-classes";
+import type { Task } from "../../types";
 
 type PriorityVariant = Task["priority"];
 

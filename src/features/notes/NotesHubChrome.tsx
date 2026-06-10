@@ -3,6 +3,7 @@ import { CheckCircle2, Pin, StickyNote } from "lucide-react";
 import { HubSplitWorkspaceScreen, useHubChromePrefs, WorkspaceTabHeader } from "@tool-workspace/hub-ui";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
 import { readHubListPrefs, subscribeHubListPrefs } from "../../lib/url-prefs";
+import { readWorkspacePeriod, type WorkspacePeriodPrefs } from "../../lib/hub-workspace-period";
 import { DEFAULT_NOTES_HEADER_STAT_KEYS } from "./notes-display-prefs";
 import { NotesFilterToolbar } from "./NotesFilterToolbar";
 import {
@@ -56,12 +57,14 @@ export function NotesHubChrome({
 }: Props) {
   const [prefs, setPrefs] = useState(readNotesListPrefs);
   const [hubPrefs, setHubPrefs] = useState(readHubListPrefs);
+  const [period, setPeriod] = useState<WorkspacePeriodPrefs>(() => readWorkspacePeriod("notes", "all"));
   const { searchPin, headerPin, stackChrome } = useHubChromePrefs();
   const version = useMemo(() => workspaceVersionLine(), []);
 
   useEffect(() => subscribeHubListPrefs(() => {
     setPrefs(readNotesListPrefs());
     setHubPrefs(readHubListPrefs());
+    setPeriod(readWorkspacePeriod("notes", "all"));
   }), []);
 
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_NOTES_HEADER_STAT_KEYS;
@@ -75,11 +78,11 @@ export function NotesHubChrome({
       mergeDisplayFolders(noteFolders),
       query,
       filterValues,
-      hubPrefs.range,
+      period,
       cookieRouteNoteIds,
     );
     return withCounts.filter((d) => visFilterKeys.has(d.key));
-  }, [cookieRouteNoteIds, filterValues, hubPrefs.range, noteFolders, notes, query, visFilterKeys]);
+  }, [cookieRouteNoteIds, filterValues, noteFolders, notes, period, query, visFilterKeys]);
 
   return (
     <HubSplitWorkspaceScreen
@@ -144,7 +147,7 @@ export function NotesHubChrome({
       filterPlaceholder="Search notes, domain, slug, sync ID…"
       filterShortcutScope="notes"
       directoryToolbar={
-        <NotesFilterToolbar range={hubPrefs.range} shown={shown} total={notes.length} />
+        <NotesFilterToolbar shown={shown} total={notes.length} />
       }
       filterRowActions={filterToolbar}
     >

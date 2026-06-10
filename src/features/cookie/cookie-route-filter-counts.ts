@@ -1,5 +1,5 @@
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
-import type { TimeRange } from "../../lib/url-prefs";
+import type { WorkspacePeriodPrefs } from "../../lib/hub-workspace-period";
 import { enrichFilterDefs } from "../../lib/filter-option-counts";
 import type { CookieBinding } from "./cookieBridge";
 import { routeMatchesTimeRange } from "./cookie-route-activity";
@@ -52,7 +52,7 @@ function matchesCookieRouteRow(
   row: CookieRouteRow,
   query: string,
   filterValues: FilterValues,
-  range: TimeRange,
+  period: WorkspacePeriodPrefs,
   vaultByKey: Record<string, CookieVaultRow>,
 ): boolean {
   const normalizedQuery = query.trim().toLowerCase();
@@ -72,7 +72,7 @@ function matchesCookieRouteRow(
     (activePlatforms.length === 0 || activePlatforms.includes(platform)) &&
     (activeTypes.length === 0 || activeTypes.includes(type)) &&
     (activeSources.length === 0 || activeSources.includes(source)) &&
-    routeMatchesTimeRange(binding, row.note, range)
+    routeMatchesTimeRange(binding, row.note, period)
   );
 }
 
@@ -101,17 +101,17 @@ export function filterCookieRows<T extends CookieRouteRow>(
   rows: T[],
   query: string,
   filterValues: FilterValues,
-  range: TimeRange,
+  period: WorkspacePeriodPrefs,
   vaultByKey: Record<string, CookieVaultRow> = {},
 ): T[] {
-  return rows.filter((row) => matchesCookieRouteRow(row, query, filterValues, range, vaultByKey));
+  return rows.filter((row) => matchesCookieRouteRow(row, query, filterValues, period, vaultByKey));
 }
 
 export function cookieRouteFiltersWithCounts(
   rows: CookieRouteRow[],
   query: string,
   values: FilterValues,
-  range: TimeRange,
+  period: WorkspacePeriodPrefs,
   vaultByKey: Record<string, CookieVaultRow> = {},
 ): FilterDef[] {
   const platformOptions = buildCookiePlatformOptions(rows);
@@ -124,7 +124,7 @@ export function cookieRouteFiltersWithCounts(
     defs,
     query,
     values,
-    (row, q, filters) => matchesCookieRouteRow(row, q, filters, range, vaultByKey),
+    (row, q, filters) => matchesCookieRouteRow(row, q, filters, period, vaultByKey),
     (row, key, opt) => matchesCookieRouteOption(row, key, opt, vaultByKey),
   );
 }

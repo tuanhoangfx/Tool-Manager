@@ -1,8 +1,7 @@
 import type { FilterOption, FilterValues } from "../../components/sales-shell";
 import { resolveTwofaPlatformIcon } from "./twofa-platform-icon";
 import type { TwofaAccount } from "./types";
-import { matchesTimeRange } from "../notes/notes-filters";
-import type { TimeRange } from "../../lib/url-prefs";
+import { matchesWorkspacePeriod, type WorkspacePeriodPrefs } from "../../lib/hub-workspace-period";
 import { normalizeSecret } from "./twofa-secret-normalize";
 import { twofaActivityAt } from "./twofa-time";
 
@@ -26,7 +25,7 @@ export function filterTwofaAccounts(
   accounts: TwofaAccount[],
   query: string,
   filterValues: FilterValues,
-  range: TimeRange,
+  period: WorkspacePeriodPrefs,
 ): TwofaAccount[] {
   const q = query.trim().toLowerCase();
   const serviceFilters = filterValues.service ?? [];
@@ -57,6 +56,6 @@ export function filterTwofaAccounts(
       if (!ok) return false;
     }
 
-    return matchesTimeRange(twofaActivityAt(row), range);
+    return matchesWorkspacePeriod(twofaActivityAt(row), period);
   });
 }

@@ -1,18 +1,18 @@
 
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Task } from "@/todo/types";
-import { useSettings } from "@/todo/context/SettingsContext";
-import { ChevronLeftIcon, ChevronRightIcon } from "@/todo/components/Icons";
-import { type SortConfig, sortTasks } from "@/todo/lib/taskUtils";
-import type { CalendarSortState } from "@/todo/lib/calendar-types";
-import CalendarSortDropdown from "@/todo/components/CalendarSortDropdown";
+import { Task } from "../types";
+import { useSettings } from "../context/SettingsContext";
+import { ChevronLeftIcon, ChevronRightIcon } from "./Icons";
+import { type SortConfig, sortTasks } from "../lib/taskUtils";
+import type { CalendarSortState } from "../lib/calendar-types";
+import CalendarSortDropdown from "./CalendarSortDropdown";
 import {
   HUB_FILTER_DROPDOWN_PANEL_CLASS,
   HubFilterDropdownTrigger,
 } from "@tool-workspace/hub-ui";
 
-export type { CalendarSortState } from "@/todo/lib/calendar-types";
+export type { CalendarSortState } from "../lib/calendar-types";
 
 interface CalendarViewProps {
   tasks: Task[];

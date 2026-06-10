@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { HubLogButton } from "@tool-workspace/hub-ui";
+import { HubLogButton, type HubLogExtraSection, type HubLogQuickAction } from "@tool-workspace/hub-ui";
+import { HubNotifyButton } from "@tool-workspace/hub-ui";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import { WorkspaceTabDisplayPrefs } from "./WorkspaceTabDisplayPrefs";
 import type { FilterDef } from "../../components/sales-shell";
@@ -13,11 +14,25 @@ type Props = {
   notesSort?: NotesListSort;
   onNotesSortChange?: (sort: NotesListSort) => void;
   notesFolderSettings?: ReactNode;
-  /** Rare tab-specific actions before Log (avoid download CTAs — use FAB). */
+  /** Rare tab-specific actions before Log / Notify (e.g. Todo admin view toggle). */
   trailing?: ReactNode;
+  /** Optional Notify bell — Todo task notifications. */
+  notify?: {
+    unreadCount: number;
+    onClick: () => void;
+    disabled?: boolean;
+  };
+  /** Shortcuts inside Log modal. */
+  logQuickActions?: HubLogQuickAction[];
+  /** Embedded sections in Log modal (e.g. Todo activity log). */
+  logExtraSections?: HubLogExtraSection[];
+  /** Todo tab Settings extras (task defaults). */
+  todoSettingsExtras?: ReactNode;
+  /** Todo tab Settings footer actions (e.g. Save task defaults). */
+  todoSettingsFooterActions?: ReactNode;
 };
 
-/** P0004 Hub pattern: Log + Settings on the right of every tab header. */
+/** P0004 Hub pattern: Notify · Log + Settings on the right of every tab header. */
 export function WorkspaceHeaderActions({
   screen,
   screenFilters = [],
@@ -27,11 +42,23 @@ export function WorkspaceHeaderActions({
   onNotesSortChange,
   notesFolderSettings,
   trailing,
+  notify,
+  logQuickActions,
+  logExtraSections,
+  todoSettingsExtras,
+  todoSettingsFooterActions,
 }: Props) {
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       {trailing}
-      <HubLogButton variant="tab" />
+      {notify ? (
+        <HubNotifyButton
+          unreadCount={notify.unreadCount}
+          onClick={notify.onClick}
+          disabled={notify.disabled}
+        />
+      ) : null}
+      <HubLogButton variant="tab" quickActions={logQuickActions} extraSections={logExtraSections} />
       <WorkspaceTabDisplayPrefs
         screen={screen}
         screenFilters={screenFilters}
@@ -40,6 +67,8 @@ export function WorkspaceHeaderActions({
         notesSort={notesSort}
         onNotesSortChange={onNotesSortChange}
         notesFolderSettings={notesFolderSettings}
+        todoSettingsExtras={todoSettingsExtras}
+        todoSettingsFooterActions={todoSettingsFooterActions}
       />
     </div>
   );

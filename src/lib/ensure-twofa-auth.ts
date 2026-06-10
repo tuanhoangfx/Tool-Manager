@@ -9,7 +9,10 @@ export async function ensureTwofaAuth(): Promise<Session | null> {
   if (!twofa || !isTwofaSupabaseConfigured) return null;
 
   const { data: existing } = await twofa.auth.getSession();
-  if (existing.session) return existing.session;
+  if (existing.session) {
+    cacheTwofaSession(existing.session);
+    return existing.session;
+  }
 
   const snap = readTwofaSession();
   if (!snap?.access_token) return null;

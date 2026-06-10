@@ -33,6 +33,7 @@
   --hub-split-scroll-thumb: #2a3158;
   --hub-split-scroll-thumb-hover: #3a4178;
   --hub-split-scroll-radius: 6px;
+  --hub-split-scroll-end-padding: 0.75rem;
   /* Total block height (padding is inside min-height via box-border on .app-tab-header) */
   --app-tab-header-sticky-h: var(--app-tab-header-min-h);
   --hub-filter-pin-est-h: 6.75rem;

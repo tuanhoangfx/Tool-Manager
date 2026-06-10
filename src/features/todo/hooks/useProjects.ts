@@ -1,10 +1,10 @@
 import { useEffect, useCallback } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from "@/todo/lib/supabase";
-import { useLocalStorage } from "@/todo/hooks/useLocalStorage";
-import { useToasts } from "@/todo/context/ToastContext";
-import type { Project, ProjectMember, Profile, MemberDetails } from "@/todo/types";
-import type { DataChange } from "@/todo/app-types";
+import { supabase } from "../lib/supabase";
+import { useLocalStorage } from "./useLocalStorage";
+import { useToasts } from "../context/ToastContext";
+import type { Project, ProjectMember, Profile, MemberDetails } from "../types";
+import type { DataChange } from "../app-types";
 
 interface UseProjectsProps {
     session: Session | null;

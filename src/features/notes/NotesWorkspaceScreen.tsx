@@ -3,7 +3,7 @@ import { useHubPageShortcuts } from "@tool-workspace/hub-ui";
 import type { FilterValues } from "../../components/sales-shell";
 import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
 import { useAppToast } from "../../components/toast";
-import { readNoteIdFromUrl } from "../design-preview/design-nav";
+import { readNoteIdFromUrl } from "../../lib/note-url";
 import { useNoteCookieRouteLock } from "../cookie/useNoteCookieRouteLock";
 import { useNotesCookieRouteIndex } from "../cookie/useNotesCookieRouteIndex";
 import { NoteEditorPanel } from "./NoteEditorPanel";
@@ -309,9 +309,9 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
 
   const filtered = useMemo(() => {
     const folderIds = filterValues.folder ?? [];
-    const base = filterNotes(notes, query, filterValues, prefs.range, cookieRouteNoteIds);
+    const base = filterNotes(notes, query, filterValues, prefs, cookieRouteNoteIds);
     return base.filter((n) => noteMatchesFolderFilter(n, folders.noteFolders, folderIds, cookieRouteNoteIds));
-  }, [cookieRouteNoteIds, filterValues, folderTick, folders.noteFolders, notes, prefs.range, query]);
+  }, [cookieRouteNoteIds, filterValues, folderTick, folders.noteFolders, notes, prefs, query]);
 
   const sortedFiltered = useMemo(
     () => sortNoteRows(filtered, prefs.sort, cookieRouteNoteIds),

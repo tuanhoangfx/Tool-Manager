@@ -1,8 +1,8 @@
 import { CheckCircle2, ClipboardList } from "lucide-react";
 import type { TabHeaderStatItem } from "@tool-workspace/hub-ui";
-import { SpinnerIcon } from "@/todo/components/Icons";
-import type { TaskCounts } from "@/todo/app-types";
-import type { Task } from "@/todo/types";
+import { SpinnerIcon } from "./components/Icons";
+import type { TaskCounts } from "./app-types";
+import type { Task } from "./types";
 
 type Opts = {
   onStatClick?: (status: Task["status"]) => void;

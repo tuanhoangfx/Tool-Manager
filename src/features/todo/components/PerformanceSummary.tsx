@@ -2,13 +2,13 @@
 
 
 import React from 'react';
-import { Task } from "@/todo/types";
-import { useSettings } from "@/todo/context/SettingsContext";
-import { ClipboardListIcon, SpinnerIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from "@/todo/components/Icons";
-import StatCard from "@/todo/components/performance-summary/StatCard";
+import { Task } from "../types";
+import { useSettings } from "../context/SettingsContext";
+import { ClipboardListIcon, SpinnerIcon, CheckCircleIcon, XCircleIcon, ClockIcon } from "./Icons";
+import StatCard from "./performance-summary/StatCard";
 
 // FIX: Define and export the TimeRange type to resolve import errors.
-export type TimeRange = 'today' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'customMonth' | 'customRange' | 'last30Days';
+export type TimeRange = 'all' | 'today' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'customMonth' | 'customRange' | 'last30Days';
 
 interface PerformanceSummaryProps {
   title: string;

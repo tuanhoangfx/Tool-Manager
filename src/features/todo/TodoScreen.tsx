@@ -1,10 +1,10 @@
 import { useCallback, useState } from "react";
 import { useNotesAuth } from "../notes/useNotesAuth";
 import { NotesAuthGate } from "../notes/NotesAuthGate";
-import { useModalManager } from "@/todo/hooks/useModalManager";
-import { useNotifications } from "@/todo/hooks/useNotifications";
-import type { TaskCounts, TodoAdminView } from "@/todo/app-types";
-import type { Profile } from "@/todo/types";
+import { useModalManager } from "./hooks/useModalManager";
+import { useNotifications } from "./hooks/useNotifications";
+import type { TaskCounts, TodoAdminView } from "./app-types";
+import type { Profile } from "./types";
 import { TodoSettingsProvider } from "./TodoSettingsProvider";
 import { TodoChromeProvider } from "./TodoChromeContext";
 import { TodoHubChrome, type TodoBoardActions } from "./TodoHubChrome";
@@ -63,9 +63,12 @@ function TodoScreenInner({ tabActive }: Props) {
     unreadCount,
     boardActions,
     onAddTask: () => modals.task.open(null),
-    onOpenActivityLog: modals.activityLog.open,
     onOpenNotifications: modals.notifications.open,
     onEditTask: modals.task.open,
+    activityLogTaskId:
+      modals.task.editingTask && "id" in modals.task.editingTask
+        ? modals.task.editingTask.id ?? null
+        : null,
   };
 
   if (!session && !loading) {

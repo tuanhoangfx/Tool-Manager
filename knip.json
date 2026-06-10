@@ -1,0 +1,32 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/features/workspace/WorkspaceApp.tsx",
+    "src/features/notes/NotesWorkspaceScreen.tsx",
+    "src/features/notes/PublicShareScreen.tsx",
+    "src/features/todo/TodoScreen.tsx",
+    "src/features/todo/TodoAppCore.tsx",
+    "src/features/twofa/TwofaManagerScreen.tsx",
+    "src/features/cookie/CookieSyncScreen.tsx",
+    "src/features/system/SystemDesignTemplateScreen.tsx",
+    "src/lib/workspace-tab-prefetch.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": ["src/**/*.test.ts", "vendor/**"],
+  "ignoreBinaries": ["powershell", "supabase", "vercel", "pm2"],
+  "ignoreDependencies": [
+    "autoprefixer",
+    "postcss",
+    "tailwindcss",
+    "@vitest/ui",
+    "pg",
+    "@dev/hub-load",
+    "@tool-workspace/hub-identity",
+    "@tool-workspace/hub-ui",
+    "zod"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "exclude": ["exports", "types", "enumMembers", "duplicates"]
+}

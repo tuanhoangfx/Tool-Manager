@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { useModalManager } from "@/todo/hooks/useModalManager";
+import type { useModalManager } from "./useModalManager";
 
 interface UseGlobalShortcutsProps {
     modals: ReturnType<typeof useModalManager>['modals'];
@@ -20,8 +20,6 @@ export const useGlobalShortcuts = ({ modals, canAddTask, enabled = true }: UseGl
                 event.preventDefault();
                 if (modals.action.isOpen) {
                     modals.action.close();
-                } else if (modals.taskDefaults.isOpen) {
-                    modals.taskDefaults.close();
                 } else if (modals.task.isOpen) {
                     modals.task.close();
                 } else if (modals.editEmployee.isOpen) {
@@ -30,8 +28,6 @@ export const useGlobalShortcuts = ({ modals, canAddTask, enabled = true }: UseGl
                     modals.editProject.close();
                 } else if (modals.account.isOpen) {
                     modals.account.close();
-                } else if (modals.activityLog.isOpen) {
-                    modals.activityLog.close();
                 } else if (modals.notifications.isOpen) {
                     modals.notifications.close();
                 } else if (modals.userGuide.isOpen) {

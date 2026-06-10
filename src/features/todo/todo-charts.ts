@@ -1,5 +1,5 @@
 import type { BarItem } from "@tool-workspace/hub-ui";
-import type { Task } from "@/todo/types";
+import type { Task } from "./types";
 
 export type TodoChartData = {
   statusItems: BarItem[];

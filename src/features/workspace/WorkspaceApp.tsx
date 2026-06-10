@@ -6,7 +6,7 @@ import { WorkspaceSidebar } from "../../components/sales-shell/WorkspaceSidebar"
 import { ToastContainer, ToastProvider } from "../../components/toast";
 import type { WorkspaceNavScreen, WorkspaceScreen } from "../../lib/workspace-screen";
 import { NAV_SCREENS } from "../../lib/workspace-screen";
-import { readNoteIdFromUrl } from "../design-preview/design-nav";
+import { readNoteIdFromUrl } from "../../lib/note-url";
 import { useHubIdentityRelay } from "../hub/useHubIdentityRelay";
 import { useHubNavigation } from "../hub/useHubNavigation";
 import { AuthSessionProvider } from "../notes/AuthSessionProvider";
@@ -20,6 +20,7 @@ import {
   TwofaManagerScreen,
 } from "./workspace-lazy-screens";
 import { prefetchNotesListBackground } from "../../lib/hub-background-prefetch";
+import { prefetchWorkspaceTabIdle } from "../../lib/workspace-tab-prefetch";
 import { setupHubUiFilterIcons } from "../../lib/hub-ui-setup";
 import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
 import { WorkspaceShellTabFrame } from "./WorkspaceShellTabFrame";
@@ -74,7 +75,15 @@ function WorkspaceAppInner() {
   useEffect(() => {
     hideBootLoader();
     prefetchNotesListBackground();
-    const warm = () => prefetchNotesListBackground();
+    prefetchWorkspaceTabIdle("todo", 2500);
+    prefetchWorkspaceTabIdle("twofa", 3000);
+    prefetchWorkspaceTabIdle("cookie", 3500);
+    const warm = () => {
+      prefetchNotesListBackground();
+      prefetchWorkspaceTabIdle("todo", 2500);
+      prefetchWorkspaceTabIdle("twofa", 3000);
+      prefetchWorkspaceTabIdle("cookie", 3500);
+    };
     const idle = window.requestIdleCallback?.(warm, { timeout: 2000 });
     if (idle == null) {
       const t = window.setTimeout(warm, 400);

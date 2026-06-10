@@ -2,10 +2,12 @@
 import React, { useMemo } from 'react';
 import { useSettings } from '../../context/SettingsContext';
 import { Task, Profile, Project } from '../../types';
+import { resolveTodoProfile } from "../../todo-resolve-profile";
 import StatusPrioritySelect, { CustomSelectOption } from '../common/StatusPrioritySelect';
 import { PROJECT_COLORS } from '../../constants';
 import CustomDatePicker from '../common/CustomDatePicker';
 import MultiSelectDropdown from '../dashboard/admin/MultiSelectEmployeeDropdown';
+import Avatar from '../common/Avatar';
 import { ProjectIcon, UsersIcon } from '../../components/Icons';
 import { TODO_HUB } from '../../styles/todo-hub-classes';
 interface TaskDetailsFormProps {
@@ -35,11 +37,30 @@ const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({ taskData, onFieldChan
         }))
     ], [userProjects, t]);
 
-    const assigneeOptions = useMemo(() => allUsers.map(user => ({
-        id: user.id,
-        label: user.full_name || user.email || 'Unknown',
-        avatarUrl: user.avatar_url || undefined
-    })), [allUsers]);
+    const assigneeOptions = useMemo(() => allUsers.map((user) => {
+        const profile = resolveTodoProfile(user.id, user, allUsers);
+        return {
+            id: profile.id,
+            label: profile.full_name || profile.email || 'Unknown',
+            avatarUrl: profile.avatar_url || undefined,
+        };
+    }), [allUsers]);
+
+    const assigneeTriggerIcon = useMemo(() => {
+        if (taskData.assigneeIds.length === 1) {
+            const opt = assigneeOptions.find((u) => u.id === taskData.assigneeIds[0]);
+            if (opt) {
+                return (
+                    <Avatar
+                        user={{ full_name: opt.label, avatar_url: opt.avatarUrl ?? null }}
+                        title={opt.label}
+                        size={16}
+                    />
+                );
+            }
+        }
+        return <UsersIcon size={16} />;
+    }, [taskData.assigneeIds, assigneeOptions]);
 
     const priorityConfig: { [key in Task['priority']]: CustomSelectOption } = {
         low: { label: t.low, icon: '💤', color: 'text-green-400' },
@@ -119,7 +140,7 @@ const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({ taskData, onFieldChan
                         selectedIds={taskData.assigneeIds}
                         onChange={(ids) => onFieldChange('assigneeIds', ids)}
                         buttonLabel={getAssigneeLabel}
-                        buttonIcon={<UsersIcon size={16} />}
+                        buttonIcon={assigneeTriggerIcon}
                         searchPlaceholder={t.searchUsers}
                         allLabel={t.allEmployees}
                         widthClass="w-full"

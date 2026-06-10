@@ -14,11 +14,11 @@
 }
 
 .hub-split-scroll--rail {
-  /* Left TOC / snapshot rails */
+  scroll-padding-bottom: var(--hub-split-scroll-end-padding, 0.75rem);
 }
 
 .hub-split-scroll--panel {
-  /* Main editor / compare panes */
+  scroll-padding-bottom: var(--hub-split-scroll-end-padding, 0.75rem);
 }
 
 .hub-split-scroll::-webkit-scrollbar {

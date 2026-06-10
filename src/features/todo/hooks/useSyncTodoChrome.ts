@@ -1,19 +1,20 @@
 import { useEffect } from "react";
 import type { FilterDef } from "@tool-workspace/hub-ui";
 import type { ReactNode } from "react";
-import type { Task } from "@/todo/types";
-import type { Profile, Project } from "@/todo/types";
-import { useSettings } from "@/todo/context/SettingsContext";
-import { useTodoChrome } from "@/todo/TodoChromeContext";
-import { buildTodoFilterDefs } from "@/todo/todo-filters";
-import { buildTodoKpis } from "@/todo/todo-kpi";
-import { buildTodoChartItems } from "@/todo/todo-charts";
+import type { Task } from "../types";
+import type { Profile, Project } from "../types";
+import { useSettings } from "../context/SettingsContext";
+import { useTodoChrome } from "../TodoChromeContext";
+import { buildTodoFilterDefs } from "../todo-filters";
+import { buildTodoKpis } from "../todo-kpi";
+import { buildTodoChartItems } from "../todo-charts";
 
 type SyncArgs = {
   projects: Project[];
   allUsers: Profile[];
   timeFilteredTasks: Task[];
   directoryToolbar?: ReactNode;
+  filterToolbarLeading?: ReactNode;
   filterRowLeading?: ReactNode;
   sectionRuleLabel?: string;
 };
@@ -24,6 +25,7 @@ export function useSyncTodoChrome({
   allUsers,
   timeFilteredTasks,
   directoryToolbar,
+  filterToolbarLeading,
   filterRowLeading,
   sectionRuleLabel = "Board",
 }: SyncArgs) {
@@ -33,6 +35,10 @@ export function useSyncTodoChrome({
   useEffect(() => {
     chrome.setDirectoryToolbar(directoryToolbar ?? null);
   }, [directoryToolbar, chrome.setDirectoryToolbar]);
+
+  useEffect(() => {
+    chrome.setFilterToolbarLeading(filterToolbarLeading ?? null);
+  }, [filterToolbarLeading, chrome.setFilterToolbarLeading]);
 
   useEffect(() => {
     chrome.setFilterRowLeading(filterRowLeading ?? null);

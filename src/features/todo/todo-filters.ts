@@ -1,7 +1,7 @@
 import type { FilterDef, FilterValues } from "@tool-workspace/hub-ui";
-import { PROJECT_COLORS } from "@/todo/constants";
-import type { Profile, Project } from "@/todo/types";
-import type { Translation } from "@/todo/types";
+import { PROJECT_COLORS } from "./constants";
+import type { Profile, Project } from "./types";
+import type { Translation } from "./types";
 
 export interface TodoFilters {
   searchTerm: string;

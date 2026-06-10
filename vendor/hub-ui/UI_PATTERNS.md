@@ -16,14 +16,29 @@
 | `document-toc` | screen | P0004/overview-toc |
 | `system-panels` | screen | P0004/system |
 | `workspace-composer` | screen | P0020/notes |
-| `task-board` | screen | P0020/todo — `TodoHubChrome` + `HubDashboardScreen` |
 | `inbox-split` | screen | P0016/inbox |
 | `split-pane-scroll` | primitive | packages/hub-ui/split-pane-scroll |
 | `auth-gate` | modal | hub-ui/auth (V2) |
 | `user-access-modal` | modal | P0004/users |
+| `tab-loading` | shell-part | packages/hub-ui/tab-loading |
 
 **Directory** = card + table via **ViewToggle** (one pattern).  
 **System** = Agent table + Quota table inside `panels[]` (not separate rows).
+
+---
+
+## Tab loading (golden — hub-ui)
+
+**Contract:** [HubTabLoadingContract.md](./HubTabLoadingContract.md)
+
+| Piece | Rule |
+|-------|------|
+| Suspense / chunk | `HubScreenChunkFallback` · `portaled={true}` · `enabled={activeTab}` |
+| Directory fetch | Portaled overlay only when `loading && rows.length === 0` |
+| Modals | `portaled={false}` · parent `relative min-h-*` |
+| Chrome inset | `HubMainChromeStack` + `HubLoaderRoot mainRef={mainRef}` → `--hub-main-chrome-top` |
+
+P0016 wrappers: `ConsoleLoadingView`, `ConsolePaneLoading`. P0004: `AppScreenLoadingView`.
 
 ---
 
@@ -90,6 +105,35 @@
 - **P0008** — `app/src/components/table/FilterBar.tsx` fork for Next.js RSC (icon keys as strings). Align visually with golden tokens; do not copy into Vite tools.
 
 **Removed legacy:** `ToolFilterBar` + `.filter-toolbar` / `.chip` CSS (P0004, P0020).
+
+**FilterBar hub — two-row layout (P0020 Todo, Notes split)**
+
+| Row | Slot | Content |
+|-----|------|---------|
+| 1 | search + `toolbar` | Search field · view toggles (Board/Calendar) · **Period** (`HubFilterSelect` / `HubTimeRangeSelect`) |
+| 2 | `row2Leading` + filters + `row2Actions` | Admin-only leading filters · golden multi-select dropdowns · **Clear filters** when active · **New** (`HubFilterRowButton`) |
+
+**Do not** render a third “Active:” pill row under hub FilterBar — clearing is via **Clear filters** on row 2 only (golden Hub-UI).
+
+**Catalog:** `Tool/schemas/ui-patterns.catalog.json` → `filterBarHub` (Agent + parity scripts). Patterns with `"filterBarHub": true`: `directory`, `workspace-composer`, `inbox-split`.
+
+**Period dropdown rules**
+
+- Use `HubSingleFilterDropdown` / `HubFilterSelect` with default **`usePortal={true}`** — never `usePortal={false}` + `w-full` (misaligns panel).
+- Trigger: `className="shrink-0"` — same chrome as Notes `HubTimeRangeSelect`.
+
+**Header actions rail (P0020 workspace tabs)**
+
+| Component | Slot | Notes |
+|-----------|------|-------|
+| `HubNotifyButton` | Before Log | Bell + **Notify** label + unread badge |
+| `HubLogButton` | End rail | `quickActions[]` for tab shortcuts (e.g. Todo Activity log) |
+| `HubFilterRowButton` | FilterBar `row2Actions` | Primary CTA (New task / New note) |
+
+**List modals (Notify, Activity log)**
+
+- Shell: `HubDetailModal` + `HubModalFrame` + `HubModalCloseButton` (red edge ×, 2rem).
+- Do not use inline header × icons — breaks golden modal parity.
 
 ---
 
@@ -166,7 +210,7 @@
 |--------|-----------|---------|-------|
 | Start | `.app-tab-header__start` | Tab title (icon + h1) · **Session** timer · version meta (`Tag` + `vX · hh:mm dd/mm/yy`) | Session **before** version meta; never in end rail |
 | Center | `.app-tab-header-center-stats` | `centerStats` from app (`buildHubHeaderStats`, `buildDashboardHeaderStats`, …) | Always `flex` (not `hidden xl:flex`); `justify-self-center` |
-| End | `.app-tab-header__end` | `actions` slot — **Log** + **Settings** only | No Session, no KPI stats |
+| End | `.app-tab-header__end` | `actions` slot — **Notify** · **Log** + **Settings** | No Session, no KPI stats |
 
 **Grid:** `grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr)` — symmetric columns so center stats stay viewport-centered.
 
@@ -377,6 +421,79 @@ One semantic key maps icon + tone across **badge**, **KPI strip**, **tab header 
 - `HubCopyBadge` — `P0004/UserDirectoryTable.tsx` ID column
 - `CopyMetaChip` — `P0020/NoteEditorMetaStrip.tsx` note ID
 - `TwofaCopyControl` — `P0020/twofa-copy-cells.tsx` (Design V1 Platform Mirror)
+
+---
+
+## Directory card shell (golden — hub-ui)
+
+**Canonical source:** `packages/hub-ui/src/content/HubDirectoryCardShell.tsx` → fan-out via `node Tool/scripts/sync-hub-ui-vendor.cjs`.
+
+| Component | When to use |
+|-----------|-------------|
+| `HubDirectoryCardShell` | Card surface only — footer actions split from body click (Dashboard screens: Open / Preview / Pin) |
+| `HubDirectoryInteractiveCard` | Whole card opens detail on click/keyboard (Hub tools, Users) |
+| `HubDirectoryCardCheckbox` | Bulk-select — **top-right corner**; `stopPropagation` on label (never inside a `<button>`) |
+| `HubDirectoryCardMetaRow` | Meta line — tinted Lucide icon + truncated text (`min-h-[var(--hub-card-meta-min-h)]` stack) |
+| `HubDirectoryCardHeader` | Header block — `leading` avatar/icon + `badges` + `title` + optional `trailing` |
+| `HubDirectorySelectAllChip` | Filter row 2 — **Card view only**; toggles all visible rows on current page |
+| `HubBulkActionButton` | Filter row 2 bulk CTAs — Pin / Refresh / Edit / Sync (count badge + tooltip) |
+
+**Variants (`variant` prop)**
+
+| Variant | Surface | Hover | Golden clone |
+|---------|---------|-------|--------------|
+| `grid` (default) | `rounded-xl`, `HUB_DIRECTORY_CARD_SURFACE` | indigo border + shadow | P0004 Dashboard screens, Hub tools |
+| `panel` | `rounded-2xl`, padded, `pr-10` for checkbox | emerald ring lift | P0004 Users cards |
+
+**Selection ring (mandatory)**
+
+- Selected: `ring-2 ring-inset ring-indigo-400/35 bg-indigo-500/5` (`HUB_DIRECTORY_CARD_SELECTED`)
+- **Do not** change `border-color` on select — avoids white `currentColor` border artifact
+- Detail open: `isDetail` + `detailRingClass` (e.g. `ring-emerald-500/40` on Users)
+
+**Structure — interactive card (Hub / Users)**
+
+```
+HubDirectoryInteractiveCard variant="grid|panel" selected isDetail? onActivate
+  ├─ HubDirectoryCardCheckbox (corner)
+  └─ div.flex.flex-col.p-4.pr-10
+       ├─ avatar + title header
+       ├─ HubDirectoryCardMetaRow stack
+       └─ chip row + footer
+```
+
+**Structure — static shell + footer actions (Dashboard)**
+
+```
+HubDirectoryCardShell selected
+  ├─ HubDirectoryCardCheckbox (corner)
+  ├─ <button> preview body (outline-none focus-visible:ring-inset)
+  └─ <footer> Pin · Preview · Open
+```
+
+**Filter row 2 (directory tabs)**
+
+```
+HubDirectorySelectAllChip   ← card view only, when visibleCount > 0
+HubBulkActionButton(s)      ← bulk actions that cannot be done per-card
+```
+
+**Rules**
+
+- Import shell primitives from `@tool-workspace/hub-ui` only — no local `border-indigo-400/30` on cards.
+- Checkbox parent must be `relative` (built into shell surfaces).
+- Card grid: `HubPaginatedCardGrid` + per-item card component file (`*TabCard.tsx`, `*ToolCard.tsx`, `UserCard.tsx`).
+- Table view: keep `HubDirectoryTableShell` select column; bulk bar actions shared with card view.
+
+**Golden refs**
+
+| Screen | Card file | Shell |
+|--------|-----------|-------|
+| P0004 Dashboard | `DashboardTabCard.tsx` | `HubDirectoryCardShell` |
+| P0004 Hub | `HubToolCard.tsx` | `HubDirectoryInteractiveCard` `variant="grid"` |
+| P0004 Users | `UserCard.tsx` | `HubDirectoryInteractiveCard` `variant="panel"` |
+
+**Clone:** `node Tool/scripts/hub-ui-stack.cjs P00xx directory` then swap card body; keep shell + checkbox + bulk bar pattern.
 
 ---
 

@@ -17,6 +17,8 @@ export type DirectorySearchToolbarProps = {
   disabled?: boolean;
   showViewToggle?: boolean;
   showTablePageSize?: boolean;
+  /** When false, omit the Refresh button (e.g. Inbox uses a custom Sync menu). */
+  showRefresh?: boolean;
   trailing?: ReactNode;
 };
 
@@ -33,6 +35,7 @@ export function DirectorySearchToolbar({
   disabled = false,
   showViewToggle = true,
   showTablePageSize = false,
+  showRefresh = true,
   trailing,
 }: DirectorySearchToolbarProps) {
   return (
@@ -43,15 +46,17 @@ export function DirectorySearchToolbar({
       {showTablePageSize ? <HubTablePageSizeSelect /> : null}
       <HubResultCount icon={countIcon} shown={shown} total={total} label={countLabel} />
       {trailing}
-      <button
-        type="button"
-        onClick={onRefresh}
-        disabled={disabled}
-        className="inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 text-xs font-medium text-emerald-200 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-        {refreshing ? "Updating…" : "Refresh"}
-      </button>
+      {showRefresh ? (
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={disabled}
+          className="inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 text-xs font-medium text-emerald-200 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+          {refreshing ? "Updating…" : "Refresh"}
+        </button>
+      ) : null}
     </>
   );
 }

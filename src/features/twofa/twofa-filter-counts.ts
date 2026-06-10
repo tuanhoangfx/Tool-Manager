@@ -1,5 +1,5 @@
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
-import type { TimeRange } from "../../lib/url-prefs";
+import type { WorkspacePeriodPrefs } from "../../lib/hub-workspace-period";
 import { enrichFilterDefs } from "../../lib/filter-option-counts";
 import {
   buildTwofaServiceFilterOptions,
@@ -31,7 +31,7 @@ export function twofaFiltersWithCounts(
   accounts: TwofaAccount[],
   query: string,
   values: FilterValues,
-  range: TimeRange,
+  period: WorkspacePeriodPrefs,
 ): FilterDef[] {
   const serviceOptions = buildTwofaServiceFilterOptions(accounts);
   const baseDefs = TWOFA_FILTER_DEFS.map((def) =>
@@ -43,7 +43,7 @@ export function twofaFiltersWithCounts(
     baseDefs,
     query,
     values,
-    (row, q, filters) => filterTwofaAccounts([row], q, filters, range).length > 0,
+    (row, q, filters) => filterTwofaAccounts([row], q, filters, period).length > 0,
     matchesTwofaOption,
   );
 }

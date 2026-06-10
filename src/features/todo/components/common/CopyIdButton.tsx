@@ -1,8 +1,8 @@
 
 import React, { useCallback, useState } from 'react';
-import { useSettings } from "@/todo/context/SettingsContext";
-import { CheckIcon } from "@/todo/components/Icons";
-import { TODO_HUB } from "@/todo/styles/todo-hub-classes";
+import { useSettings } from "../../context/SettingsContext";
+import { CheckIcon } from "../Icons";
+import { TODO_HUB } from "../../styles/todo-hub-classes";
 
 interface CopyIdButtonProps {
   id: number;

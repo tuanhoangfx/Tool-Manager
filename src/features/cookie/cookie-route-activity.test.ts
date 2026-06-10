@@ -54,11 +54,11 @@ describe("routeActivityAt", () => {
 
 describe("routeMatchesTimeRange", () => {
   it("shows shared routes without a local note when cloud route is recent", () => {
-    expect(routeMatchesTimeRange(binding, undefined, "30d")).toBe(true);
+    expect(routeMatchesTimeRange(binding, undefined, "last30Days")).toBe(true);
   });
 
   it("includes routes with no activity timestamp in bounded ranges", () => {
     const noDates = { ...binding, routeUpdatedAt: undefined };
-    expect(routeMatchesTimeRange(noDates, undefined, "30d")).toBe(true);
+    expect(routeMatchesTimeRange(noDates, undefined, "last30Days")).toBe(true);
   });
 });
