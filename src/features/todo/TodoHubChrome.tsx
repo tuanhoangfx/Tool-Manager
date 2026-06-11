@@ -3,7 +3,7 @@ import { ClipboardList, Mail } from "lucide-react";
 import {
   HubAlert,
   HubDashboardScreen,
-  MiniBarChart,
+  directoryChartBandNode,
   buildSemanticTocIcon,
   useHubChromePrefs,
   useResolvedVisibleChartKeys,
@@ -119,21 +119,20 @@ export function TodoHubChrome({
     [chrome.kpis, visKpi],
   );
 
-  const chartsBand = useMemo(() => {
-    if (!chrome.chartData) return undefined;
-    const hasCharts = visCharts.has("status_bar") || visCharts.has("priority_bar");
-    if (!hasCharts) return undefined;
-    return (
-      <>
-        {visCharts.has("status_bar") ? (
-          <MiniBarChart title="Tasks by status" items={chrome.chartData.statusItems} />
-        ) : null}
-        {visCharts.has("priority_bar") ? (
-          <MiniBarChart title="Tasks by priority" items={chrome.chartData.priorityItems} />
-        ) : null}
-      </>
-    );
-  }, [chrome.chartData, visCharts]);
+  const chartsBand = useMemo(
+    () =>
+      chrome.chartData
+        ? directoryChartBandNode({
+            visCharts,
+            defs: TODO_CHART_DEFS,
+            data: {
+              status_bar: chrome.chartData.statusItems,
+              priority_bar: chrome.chartData.priorityItems,
+            },
+          })
+        : undefined,
+    [chrome.chartData, visCharts],
+  );
 
   const chartCount = useMemo(() => {
     let n = 0;

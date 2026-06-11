@@ -556,33 +556,37 @@
 
 /* ── Task card / column (Kanban) ── */
 
+/* Surface tokens — HUB_DIRECTORY_CARD_SURFACE in useTaskStyles (Cookie Auto golden). */
 .todo-hub-task-card {
-  position: relative;
   box-sizing: border-box;
-  display: flex;
   min-width: 0;
   max-width: 100%;
-  width: 100%;
-  flex-direction: column;
   gap: 0.5rem;
-  border-radius: 0.75rem;
-  border: 1px solid rgb(255 255 255 / 0.06);
-  background-color: rgb(255 255 255 / 0.03);
-  padding: 0.75rem;
-  box-shadow: none;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease,
-    opacity 0.2s ease;
+  min-height: 0;
+  padding: 1rem;
 }
 
 .todo-hub-task-card--clickable {
-  cursor: pointer;
+  cursor: grab;
 }
 
-.todo-hub-task-card:hover {
-  border-color: rgb(255 255 255 / 0.14);
+.todo-hub-task-card--clickable:active {
+  cursor: grabbing;
+}
+
+.todo-hub-task-card--drag-source {
+  opacity: 0.42;
+  transform: scale(0.985);
+  box-shadow: none !important;
+  transition: none !important;
+}
+
+.todo-kanban-board--dragging .todo-hub-task-card {
+  transition: none !important;
+}
+
+.todo-kanban-board--dragging .todo-hub-column {
+  transition: none !important;
 }
 
 .todo-hub-task-card--archived {
@@ -590,29 +594,7 @@
 }
 
 .todo-hub-task-card--high-priority {
-  border-color: color-mix(in srgb, var(--todo-priority-high) 45%, transparent);
-  animation: todo-hub-priority-glow 2.4s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .todo-hub-task-card--high-priority {
-    animation: none;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--todo-priority-high) 35%, transparent);
-  }
-}
-
-@keyframes todo-hub-priority-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.12),
-      inset 0 0 0 0 color-mix(in srgb, var(--todo-priority-high) 0%, transparent);
-  }
-  50% {
-    box-shadow:
-      0 1px 2px rgb(0 0 0 / 0.12),
-      inset 0 0 0 1px color-mix(in srgb, var(--todo-priority-high) 35%, transparent);
-  }
+  border-color: color-mix(in srgb, var(--todo-priority-high) 32%, rgb(255 255 255 / 0.05));
 }
 
 .todo-hub-task-card--highlight {
@@ -628,59 +610,26 @@
   }
 }
 
+/* Kanban column — Cookie Auto section surface (no KPI gradient). */
 .todo-hub-column {
-  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
-  overflow: hidden;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   border: 1px solid rgb(255 255 255 / 0.05);
-  background-color: color-mix(in srgb, var(--panel) 78%, black);
-  padding: 0.5rem;
+  background-color: rgb(255 255 255 / 0.018);
+  padding: 0.75rem;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.12);
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease;
 }
 
-/* KPI tile parity — soft status tint + corner glow (hub-kpi-tile gradient ~20%) */
-.todo-hub-column::before {
-  content: "";
-  position: absolute;
-  right: -1.5rem;
-  top: -1.5rem;
-  z-index: 0;
-  width: 6.5rem;
-  height: 6.5rem;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--todo-column-accent, transparent) 12%, transparent);
-  filter: blur(1.75rem);
-  pointer-events: none;
-}
-
-.todo-hub-column > * {
-  position: relative;
-  z-index: 1;
-}
-
-.todo-hub-column--todo {
-  --todo-column-accent: var(--todo-status-todo);
-  border-color: color-mix(in srgb, var(--todo-status-todo) 22%, rgb(255 255 255 / 0.06));
-}
-
-.todo-hub-column--inprogress {
-  --todo-column-accent: var(--todo-status-inprogress);
-  border-color: color-mix(in srgb, var(--todo-status-inprogress) 22%, rgb(255 255 255 / 0.06));
-}
-
-.todo-hub-column--done {
-  --todo-column-accent: var(--todo-status-done);
-  border-color: color-mix(in srgb, var(--todo-status-done) 22%, rgb(255 255 255 / 0.06));
-}
-
+.todo-hub-column--todo,
+.todo-hub-column--inprogress,
+.todo-hub-column--done,
 .todo-hub-column--cancelled {
-  --todo-column-accent: var(--todo-status-cancelled);
-  border-color: color-mix(in srgb, var(--todo-status-cancelled) 22%, rgb(255 255 255 / 0.06));
+  /* status accent on header icon only — column surface matches Cookie Auto */
 }
 
 .todo-hub-column__scroll {
@@ -709,12 +658,8 @@
 }
 
 .todo-hub-column--drag-over {
-  background-color: color-mix(
-    in srgb,
-    var(--todo-column-accent) 10%,
-    color-mix(in srgb, var(--panel) 78%, black)
-  );
-  border-color: color-mix(in srgb, var(--todo-column-accent) 32%, transparent);
+  background-color: rgb(255 255 255 / 0.03);
+  border-color: rgb(99 102 241 / 0.28);
 }
 
 .todo-hub-column__header {
@@ -729,24 +674,16 @@
   color: var(--text);
 }
 
-.todo-hub-column__header--todo {
-  border-bottom-color: color-mix(in srgb, var(--todo-status-todo) 65%, transparent);
-  color: color-mix(in srgb, var(--todo-status-todo) 88%, white);
-}
-
-.todo-hub-column__header--inprogress {
-  border-bottom-color: color-mix(in srgb, var(--todo-status-inprogress) 65%, transparent);
-  color: color-mix(in srgb, var(--todo-status-inprogress) 88%, white);
-}
-
-.todo-hub-column__header--done {
-  border-bottom-color: color-mix(in srgb, var(--todo-status-done) 65%, transparent);
-  color: color-mix(in srgb, var(--todo-status-done) 88%, white);
-}
-
+.todo-hub-column__header--todo,
+.todo-hub-column__header--inprogress,
+.todo-hub-column__header--done,
 .todo-hub-column__header--cancelled {
-  border-bottom-color: color-mix(in srgb, var(--todo-status-cancelled) 65%, transparent);
-  color: color-mix(in srgb, var(--todo-status-cancelled) 88%, white);
+  border-bottom-color: rgb(255 255 255 / 0.05);
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .todo-hub-stat-card {

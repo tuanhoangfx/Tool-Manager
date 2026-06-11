@@ -24,6 +24,7 @@
     "@vitest/ui",
     "pg",
     "@dev/hub-load",
+    "@dev/hub-identity",
     "@tool-workspace/hub-identity",
     "@tool-workspace/hub-ui",
     "zod"

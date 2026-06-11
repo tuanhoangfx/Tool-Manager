@@ -13,6 +13,7 @@ import {
   Bot,
   Calculator,
   CheckCircle2,
+  Circle,
   Clock,
   Cloud,
   Database,
@@ -54,7 +55,7 @@ import {
 import type { FilterOption } from "@tool-workspace/hub-ui";
 import type { LinkGroup } from "../features/overview/tool-link-filters";
 import type { Mode } from "./hub-schema-spec";
-import { deployLabel } from "./deploy-label";
+import { deployLabel } from "@tool-workspace/hub-ui";
 import type { MetricBadgeTone } from "@tool-workspace/hub-ui";
 
 export type FilterIconMeta = {
@@ -393,8 +394,22 @@ export function resolveHubKpiIcon(key: string): FilterIconMeta | null {
 const CHART_SYNC_STATUS: Record<string, FilterIconMeta> = {
   Synced: { icon: CheckCircle2, className: "text-emerald-400" },
   Pending: { icon: RefreshCw, className: "text-amber-400" },
+  "Awaiting sync": { icon: RefreshCw, className: "text-amber-400" },
   Error: { icon: AlertTriangle, className: "text-rose-400" },
   Manual: { icon: Pencil, className: "text-slate-400" },
+};
+
+const CHART_TODO_STATUS: Record<string, FilterIconMeta> = {
+  "To Do": { icon: Circle, className: "text-slate-400" },
+  "In Progress": { icon: Clock, className: "text-cyan-400" },
+  Done: { icon: CheckCircle2, className: "text-emerald-400" },
+  Cancelled: { icon: Archive, className: "text-slate-500" },
+};
+
+const CHART_TODO_PRIORITY: Record<string, FilterIconMeta> = {
+  Low: { icon: ArrowDownWideNarrow, className: "text-slate-400" },
+  Medium: { icon: Flag, className: "text-amber-400" },
+  High: { icon: AlertTriangle, className: "text-rose-400" },
 };
 
 const CHART_ROUTE_ACCESS: Record<string, FilterIconMeta> = {
@@ -447,6 +462,8 @@ const CHART_COOKIE_PLATFORM: Record<string, FilterIconMeta> = {
 
 export function resolveChartLegendIcon(label: string): FilterIconMeta | null {
   return (
+    pick(CHART_TODO_STATUS, label) ??
+    pick(CHART_TODO_PRIORITY, label) ??
     pick(CHART_TWOFA_USAGE, label) ??
     pick(CHART_TWOFA_PASSWORD, label) ??
     pick(CHART_TWOFA_IDENTITY, label) ??

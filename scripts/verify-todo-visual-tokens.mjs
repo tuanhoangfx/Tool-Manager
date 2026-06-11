@@ -73,8 +73,8 @@ for (const key of expectedPriority) {
 }
 
 const charts = read("src/features/todo/todo-charts.ts");
-if (!charts.includes("TODO_STATUS_HEX") || !charts.includes("TODO_PRIORITY_HEX")) {
-  errors.push("todo-charts.ts must import TODO_STATUS_HEX and TODO_PRIORITY_HEX");
+if (!charts.includes("chartBreakdownFromPicker") || !charts.includes("buildTodoChartItems")) {
+  errors.push("todo-charts.ts must use chartBreakdownFromPicker for KPI chart parity");
 }
 
 const taskColumn = read("src/features/todo/components/TaskColumn.tsx");
@@ -83,9 +83,7 @@ if (!taskColumn.includes("todo-hub-column--${status}")) {
 }
 
 const themeChecks = [
-  ".todo-hub-column::before",
-  "--todo-column-accent",
-  "color-mix(in srgb, var(--panel) 78%, black)",
+  "rgb(255 255 255 / 0.018)",
   ".todo-hub-column--todo",
   ".todo-hub-column--cancelled",
 ];
@@ -103,6 +101,11 @@ for (const { file, must } of iconSources) {
   for (const token of must) {
     if (!text.includes(token)) errors.push(`${file}: expected "${token}"`);
   }
+}
+
+const taskStyles = read("src/features/todo/hooks/useTaskStyles.ts");
+if (!taskStyles.includes("HUB_DIRECTORY_CARD_SURFACE")) {
+  errors.push("useTaskStyles.ts must use HUB_DIRECTORY_CARD_SURFACE");
 }
 
 const kpi = read("src/features/todo/todo-kpi.ts");

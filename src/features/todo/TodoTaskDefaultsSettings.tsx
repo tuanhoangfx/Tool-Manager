@@ -5,8 +5,9 @@ import {
   Section,
   SettingsOptionFilter,
   SettingsSubsection,
+  compactIconSize,
 } from "@tool-workspace/hub-ui";
-import { compactIconSize } from "../../lib/ui-scale";
+
 import { useSettings } from "./context/SettingsContext";
 import { useToasts } from "./context/ToastContext";
 import { supabase } from "./lib/supabase";

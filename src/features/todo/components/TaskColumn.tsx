@@ -17,11 +17,14 @@ interface TaskColumnProps {
     icon: React.ReactNode;
     tasks: Task[];
     sortConfig: SortConfig;
-    dragOverStatus: Task['status'] | null;
+    isDragOver: boolean;
+    draggingTaskId: number | null;
     lastDataChange: DataChange | null;
     onDrop: (status: Task['status']) => void;
-    setDragOverStatus: (status: Task['status'] | null) => void;
-    setDraggedTaskId: (taskId: number | null) => void;
+    onEnterColumn: (status: Task['status']) => void;
+    onLeaveColumn: (status: Task['status'], related: EventTarget | null, current: EventTarget) => void;
+    onBeginDrag: (taskId: number) => void;
+    onEndDrag: () => void;
     onEditTask: (task: Task) => void;
     onDeleteTask: (task: Task) => void;
     onUpdateStatus: (task: Task, status: Task['status']) => Promise<boolean>;
@@ -35,11 +38,14 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     icon,
     tasks,
     sortConfig,
-    dragOverStatus,
+    isDragOver,
+    draggingTaskId,
     lastDataChange,
     onDrop,
-    setDragOverStatus,
-    setDraggedTaskId,
+    onEnterColumn,
+    onLeaveColumn,
+    onBeginDrag,
+    onEndDrag,
     onEditTask,
     onDeleteTask,
     onUpdateStatus,
@@ -48,13 +54,23 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
 }) => {
     const { t } = useSettings();
     const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const isDragOver = dragOverStatus === status;
-
     return (
         <div
-            onDrop={() => onDrop(status)}
-            onDragOver={(e) => { e.preventDefault(); setDragOverStatus(status); }}
-            onDragLeave={() => setDragOverStatus(null)}
+            onDrop={(e) => {
+                e.preventDefault();
+                onDrop(status);
+            }}
+            onDragEnter={(e) => {
+                e.preventDefault();
+                onEnterColumn(status);
+            }}
+            onDragLeave={(e) => {
+                onLeaveColumn(status, e.relatedTarget, e.currentTarget);
+            }}
+            onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            }}
             className={`${TODO_HUB.taskColumn} todo-hub-column--${status} ${isDragOver ? 'todo-hub-column--drag-over' : ''}`}
         >
             <h3 className={`todo-hub-column__header todo-hub-column__header--${status}`}>
@@ -88,7 +104,9 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
                             onEdit={onEditTask}
                             onDelete={onDeleteTask}
                             onUpdateStatus={onUpdateStatus}
-                            onDragStart={setDraggedTaskId}
+                            onBeginDrag={onBeginDrag}
+                            onEndDrag={onEndDrag}
+                            isDragSource={draggingTaskId === task.id}
                             assignee={task.assignee}
                             creator={task.creator}
                             lastDataChange={lastDataChange}

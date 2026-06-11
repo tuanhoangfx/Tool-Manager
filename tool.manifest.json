@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "4.3.27",
+    "version": "4.3.28",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -221,5 +221,5 @@
       "authVariant": "anonymous-dual"
     }
   ],
-  "manifestUpdatedAt": "2026-06-11T06:00:00.000Z"
+  "manifestUpdatedAt": "2026-06-11T21:40:45.096Z"
 }

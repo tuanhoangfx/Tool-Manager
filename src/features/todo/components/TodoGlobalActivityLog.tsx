@@ -1,8 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { History } from "lucide-react";
-import { TabButton } from "@tool-workspace/hub-ui";
-import { compactIconSize } from "../../../lib/ui-scale";
+import {
+  TabButton,
+  compactIconSize,
+} from "@tool-workspace/hub-ui";
+
 import { supabase } from "../lib/supabase";
 import { useSettings } from "../context/SettingsContext";
 import { SpinnerIcon } from "./Icons";

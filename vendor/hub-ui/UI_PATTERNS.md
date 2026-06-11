@@ -82,6 +82,23 @@ P0016 wrappers: `ConsoleLoadingView`, `ConsolePaneLoading`. P0004: `AppScreenLoa
 
 ---
 
+## System Design Template (P00xx — empty by default)
+
+**Canonical empty state:** `HubDesignTemplateEmpty` · skill: `.cursor/skills/design-preview-5/SKILL.md`
+
+| Rule | Detail |
+|------|--------|
+| Nav | System tab — `Settings2` · `iconTone: "cyan"` · route `/system` |
+| Default | `DesignTemplatePage` + `FEATURES = []` → `HubDesignTemplateEmpty` only |
+| Previews | **Only** when user explicitly requests 5 mockups — mount under `features/system/design-template/design-preview/` (P0004: `system-hub/`) |
+| Forbidden | Sidebar footer "Design Template" link · standalone `/design/*` routes (redirect to `/system`) · hosting another tool's previews |
+| After lock | Delete preview folder + registry entry → empty state again |
+| Prefetch | `lib/system-tab-prefetch.ts` — `prefetchSystemTab()` / `prefetchSystemTabIdle(1200)` |
+
+**Golden refs:** P0016 `features/system/design-template/` · P0020 same · P0004 `features/system-hub/design-template/`
+
+---
+
 ## Filter (golden — P0004 Hub)
 
 **Canonical source:** `P0004/vendor/hub-ui` → promoted to `packages/hub-ui` via `node Tool/scripts/sync-hub-ui-vendor.cjs`.

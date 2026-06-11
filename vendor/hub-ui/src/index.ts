@@ -47,6 +47,44 @@ export type {
 } from "./display-prefs/types";
 export { SUBTAB_DISPLAY_CHANGE } from "./display-prefs/types";
 export { compactIconSize, HUB_COMPACT_SCALE } from "./ui-scale";
+export { deployLabel } from "./lib/deploy-label";
+export { formatTabHeaderTimestamp } from "./lib/tab-header-timestamp";
+export {
+  CATEGORY,
+  DEPLOY,
+  DRIFT,
+  FIELD_KEY,
+  HUB_KPI,
+  LINK_KIND,
+  LINK_KIND_LABEL,
+  LINKS,
+  LINK_STATUS,
+  LINK_STATUS_LABEL,
+  LINK_STATUS_TONE,
+  MODE_LABEL_SHORT,
+  SCHEMA_GROUP,
+  SCHEMA_MODE,
+  STATUS_HEALTH,
+  pickBadgeIcon,
+  resolveCategoryDisplayIcon,
+  resolveChartLegendIcon,
+  resolveDeployBadge,
+  resolveDeployTargetIcon,
+  resolveDriftChipIcon,
+  resolveDriftCleanIcon,
+  resolveFieldSpecIcon,
+  resolveHealthStatusIcon,
+  resolveHubKpiIcon,
+  resolveLinkGapChipIcon,
+  resolveLinkKindBadge,
+  resolveLinkStatusBadge,
+  resolveLocalOnlyIcon,
+  resolveLocalPortIcon,
+  resolveSchemaGroupIcon,
+  resolveSchemaModeIcon,
+  type BadgeSpec,
+  type SchemaMode,
+} from "./lib/badge-registry-core";
 export {
   applyHubUserZoomPct,
   HUB_USER_ZOOM_DEFAULT,
@@ -472,6 +510,7 @@ export {
   semanticFilterMeta,
   semanticHeaderStat,
   semanticKpiIcon,
+  semanticDirectoryColumnIcon,
 } from "./lib/semantic-icon-registry";
 export type {
   DeprecatedSemanticIconKey,
@@ -597,6 +636,12 @@ export {
   type HubBulkActionCountBadgeProps,
   type HubBulkActionTone,
 } from "./shell/HubBulkActionButton";
+export {
+  HubChatbotBulkActionDropdown,
+  type HubChatbotBulkActionDropdownProps,
+  type HubChatbotBulkPersonalityOption,
+  type HubChatbotBulkSelection,
+} from "./shell/HubChatbotBulkActionDropdown";
 export {
   HubCatalogSyncButton,
   HubScreensDirectoryBulkActions,

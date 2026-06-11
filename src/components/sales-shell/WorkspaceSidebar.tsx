@@ -27,6 +27,7 @@ import {
   useNavGroupOpenState,
 } from "@tool-workspace/hub-ui";
 import { NAV_STRUCTURE, NAV_SUBNAV_PREFIX } from "../../lib/nav-structure";
+import { prefetchSystemTab } from "../../lib/system-tab-prefetch";
 import { prefetchWorkspaceTab } from "../../lib/workspace-tab-prefetch";
 
 const EMPTY_GROUP_IDS: readonly string[] = [];
@@ -71,7 +72,10 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
           setGroupSubnavOpen={setGroupSubnavOpen}
           showToggleIcon={false}
           onNavigateScreen={onNavigate}
-          onPrefetchScreen={prefetchWorkspaceTab}
+          onPrefetchScreen={(next) => {
+            prefetchWorkspaceTab(next);
+            if (next === "system") prefetchSystemTab();
+          }}
           onSelectView={() => {}}
         />
       }

@@ -1,6 +1,6 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { KeyRound, Plus, Shield } from "lucide-react";
-import { MiniBarChart, type HubViewMode } from "../../components/sales-shell";
+import type { HubViewMode } from "../../components/sales-shell";
 import { useAppToast } from "../../components/toast";
 import { PageHeader } from "../../components/PageHeader";
 import { useTwofaAccounts } from "./useTwofaAccounts";
@@ -16,6 +16,7 @@ import { useResolvedVisibleKpiKeys } from "../../components/sales-shell";
 import {
   barChartSeriesSignature,
   chartKeysSignature,
+  directoryChartBandNode,
   kpiTilesSignature,
   hubDirectoryListResetKey,
   DirectorySearchToolbar,
@@ -28,6 +29,7 @@ import {
   DEFAULT_TWOFA_CHART_KEYS,
   DEFAULT_TWOFA_HEADER_STAT_KEYS,
   DEFAULT_TWOFA_KPI_KEYS,
+  TWOFA_CHART_DEFS,
   TWOFA_KPI_DEFS,
 } from "./twofa-display-prefs";
 import { buildTwofaChartItems, buildTwofaKpis } from "./twofa-aggregates";
@@ -202,7 +204,7 @@ function TwofaManagerScreenBody({
   } = useHubDirectorySelection(sortedDisplayedAccounts, (row) => row.id);
   const listResetKey = useMemo(
     () =>
-      hubDirectoryListResetKey(query, filterValues, period, visibleColumns, sortKey, sortDir, viewMode),
+      hubDirectoryListResetKey(query, filterValues, period, Array.from(visibleColumns).join(","), sortKey, sortDir, viewMode),
     [query, filterValues, period, visibleColumns, sortKey, sortDir, viewMode],
   );
 
@@ -345,29 +347,22 @@ function TwofaManagerScreenBody({
     () => (analyticsActive ? buildTwofaChartItems(displayedAccounts) : null),
     [analyticsActive, displayedAccounts],
   );
-  const chartsBand = useMemo(() => {
-    if (!analyticsActive || !twofaChartData) return undefined;
-    const hasCharts =
-      visCharts.has("service_bar") ||
-      visCharts.has("identity_bar") ||
-      visCharts.has("usage_bar") ||
-      visCharts.has("password_bar");
-    if (!hasCharts) return undefined;
-    return (
-      <>
-        {visCharts.has("service_bar") ? (
-          <MiniBarChart title="Top Services" items={twofaChartData.serviceItems} />
-        ) : null}
-        {visCharts.has("identity_bar") ? (
-          <MiniBarChart title="Account Identity" items={twofaChartData.identityItems} />
-        ) : null}
-        {visCharts.has("usage_bar") ? <MiniBarChart title="Usage" items={twofaChartData.usageItems} /> : null}
-        {visCharts.has("password_bar") ? (
-          <MiniBarChart title="Password Saved" items={twofaChartData.passwordItems} />
-        ) : null}
-      </>
-    );
-  }, [analyticsActive, twofaChartData, visCharts]);
+  const chartsBand = useMemo(
+    () =>
+      analyticsActive && twofaChartData
+        ? directoryChartBandNode({
+            visCharts,
+            defs: TWOFA_CHART_DEFS,
+            data: {
+              service_bar: twofaChartData.serviceItems,
+              identity_bar: twofaChartData.identityItems,
+              usage_bar: twofaChartData.usageItems,
+              password_bar: twofaChartData.passwordItems,
+            },
+          })
+        : undefined,
+    [analyticsActive, twofaChartData, visCharts],
+  );
 
   const kpiSig = useMemo(
     () => kpiTilesSignature(twofaKpis.length > 0 ? twofaKpis : undefined),

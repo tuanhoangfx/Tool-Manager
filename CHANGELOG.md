@@ -4,6 +4,27 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-12 - Hub-UI SSOT consolidation + dead code cleanup
+
+- Version: `4.3.28`
+- Type: Patch
+- Product: P0020
+- Timestamp: 2026-06-12 (UTC+7)
+- Status: Committed
+- Release: https://databox.infi.io.vn
+
+### Changes
+
+- **hub-ui SSOT:** `deployLabel`, `formatTabHeaderTimestamp`, `SchemaMode` from `@tool-workspace/hub-ui` v0.2.1; vendor full sync.
+- **Cleanup:** Removed local `ui-scale`, `hide-boot-loader`, `deploy-label`, `promise-timeout`; boot via `mountHubApp` only.
+- **Snapshots:** `sync-workspace-snapshots.cjs` after hub-ui catalog update.
+
+### Verification
+
+- `node Tool/scripts/hub-ui-parity-check.mjs --code P0020`
+- `pnpm run deadcode`
+
+---
 ## 2026-06-11 - Tab-load gate + Cookie virtual + Notes autosave
 
 - Version: `4.3.27`

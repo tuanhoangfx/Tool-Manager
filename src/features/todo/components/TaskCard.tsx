@@ -21,7 +21,9 @@ interface TaskCardProps {
     onEdit: (task: Task) => void;
     onDelete: (task: Task) => void;
     onUpdateStatus: (task: Task, status: Task['status']) => void;
-    onDragStart: (taskId: number) => void;
+    onBeginDrag: (taskId: number) => void;
+    onEndDrag: () => void;
+    isDragSource?: boolean;
     assignee?: Profile | null;
     creator?: Profile | null;
     lastDataChange: DataChange | null;
@@ -67,7 +69,18 @@ const formatShortDate = (dateString: string) => {
 };
 
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onUpdateStatus, onDragStart, assignee, creator, lastDataChange }) => {
+const TaskCard: React.FC<TaskCardProps> = ({
+    task,
+    onEdit,
+    onDelete,
+    onUpdateStatus,
+    onBeginDrag,
+    onEndDrag,
+    isDragSource = false,
+    assignee,
+    creator,
+    lastDataChange,
+}) => {
     const { t, timezone, language } = useSettings();
     const { addToast } = useToasts();
     const [isHighlighted, setIsHighlighted] = useState(false);
@@ -187,14 +200,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onUpdateSta
 
     return (
         <div 
-            className={`${styles.containerClassName} todo-hub-task-card--clickable ${isHighlighted ? 'todo-hub-task-card--highlight' : ''}`}
+            className={`${styles.containerClassName} todo-hub-task-card--clickable${isDragSource ? ' todo-hub-task-card--drag-source' : ''}${isHighlighted ? ' todo-hub-task-card--highlight' : ''}`}
             draggable={!styles.isArchived}
-            onDragStart={() => {
+            onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', String(task.id));
                 dragState.current.dragging = true;
-                onDragStart(task.id);
+                onBeginDrag(task.id);
             }}
             onDragEnd={() => {
                 dragState.current.dragging = false;
+                onEndDrag();
                 window.setTimeout(() => {
                     dragState.current.moved = false;
                 }, 0);

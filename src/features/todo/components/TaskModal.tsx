@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { History, LayoutList } from "lucide-react";
-import { HubDetailModal, TabButton } from "@tool-workspace/hub-ui";
-import { compactIconSize } from "../../../lib/ui-scale";
+import {
+  HubDetailModal,
+  TabButton,
+  compactIconSize,
+} from "@tool-workspace/hub-ui";
+
 import { SpinnerIcon, ChevronRightIcon } from "./Icons";
 import { useSettings } from "../context/SettingsContext";
 import { Task, TaskAttachment, Profile, TaskComment, ProjectMember, Project, TaskAssignee } from "../types";

@@ -133,7 +133,32 @@ export type SemanticIconKey =
   | "filter.deploy"
   | "filter.drift"
   | "filter.links"
-  | "filter.dueDate";
+  | "filter.dueDate"
+  | "col.directory.page"
+  | "col.directory.pageId"
+  | "col.directory.chatbot"
+  | "col.directory.status"
+  | "col.directory.replies"
+  | "col.directory.followers"
+  | "col.directory.posts"
+  | "col.directory.reactions"
+  | "col.directory.impressions"
+  | "col.directory.clicks"
+  | "col.directory.engagement"
+  | "col.directory.category"
+  | "col.directory.username"
+  | "col.directory.account"
+  | "col.directory.fbAccount"
+  | "col.directory.pages"
+  | "col.directory.added"
+  | "col.directory.expires"
+  | "col.directory.uid"
+  | "col.directory.lastActive"
+  | "col.directory.threads"
+  | "col.directory.groups"
+  | "col.directory.friends"
+  | "col.directory.gender"
+  | "col.directory.created";
 
 /** @deprecated Analytics tab removed — resolve via `SEMANTIC_ICON_ALIASES` in hub-ui. */
 export type DeprecatedSemanticIconKey =

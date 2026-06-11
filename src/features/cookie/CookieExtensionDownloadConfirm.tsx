@@ -13,8 +13,9 @@ import {
   HubToolDetailSection,
   HUB_TOOL_DETAIL_SCROLL_ROOT,
   HUB_TOOL_DETAIL_SECTIONS_CLASS,
+  compactIconSize,
 } from "@tool-workspace/hub-ui";
-import { compactIconSize } from "../../lib/ui-scale";
+
 import { TocSectionNav } from "../overview/TocSectionNav";
 import { EXTENSION_BUILD } from "./extensionBuildInfo";
 import { E0001_ICON_URL } from "./extensionBrand";

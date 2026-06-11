@@ -15,6 +15,7 @@ import {
 } from "./CookieRouteFormModal";
 import {
   DirectorySearchToolbar,
+  directoryChartBandNode,
   HubModalFilterField,
   HubFormFieldLabel,
   hubDirectoryListResetKey,
@@ -54,7 +55,6 @@ import {
 } from "lucide-react";
 import {
   MetricBadge,
-  MiniBarChart,
   type HubViewMode,
   type KpiTileData,
   type MetricBadgeTone,
@@ -448,18 +448,19 @@ export function CookieAutoSyncTable({
     [sortedFilteredRows, shareCounts, vaultByKey],
   );
 
-  const hasCharts =
-    visCharts.has("status_bar") || visCharts.has("platform_bar") || visCharts.has("share_bar");
-  const chartsBand = useMemo(() => {
-    if (!hasCharts) return undefined;
-    return (
-      <>
-        {visCharts.has("status_bar") ? <MiniBarChart title="Sync status" items={charts.statusItems} /> : null}
-        {visCharts.has("platform_bar") ? <MiniBarChart title="Routes by platform" items={charts.platformItems} /> : null}
-        {visCharts.has("share_bar") ? <MiniBarChart title="Route share" items={charts.shareItems} /> : null}
-      </>
-    );
-  }, [charts, hasCharts, visCharts]);
+  const chartsBand = useMemo(
+    () =>
+      directoryChartBandNode({
+        visCharts,
+        defs: COOKIE_CHART_DEFS,
+        data: {
+          status_bar: charts.statusItems,
+          platform_bar: charts.platformItems,
+          share_bar: charts.shareItems,
+        },
+      }),
+    [charts.platformItems, charts.shareItems, charts.statusItems, visCharts],
+  );
 
   const kpiSig = useMemo(
     () => kpiTilesSignature(routeKpis.length > 0 ? routeKpis : undefined),
@@ -489,8 +490,8 @@ export function CookieAutoSyncTable({
 
   useEffect(() => {
     sanitizeCookieFilterUrl();
-    setFilterValues((prev) => stripLegacyCookieFilterValues(prev));
-  }, [setFilterValues]);
+    setFilterValues(stripLegacyCookieFilterValues(filterValues));
+  }, [filterValues, setFilterValues]);
 
   useEffect(() => subscribeHubListPrefs(() => {
     setPrefs(readCookieHubPrefs());
@@ -630,8 +631,8 @@ export function CookieAutoSyncTable({
   }, [refreshShareCount]);
 
   useEffect(
-    () =>
-      subscribeNoteCookieMembersCache(() => {
+    () => {
+      const unsubscribe = subscribeNoteCookieMembersCache(() => {
         setShareCounts((prev) => {
           let changed = false;
           const next = { ...prev };
@@ -646,7 +647,11 @@ export function CookieAutoSyncTable({
           }
           return changed ? next : prev;
         });
-      }),
+      });
+      return () => {
+        unsubscribe();
+      };
+    },
     [],
   );
 

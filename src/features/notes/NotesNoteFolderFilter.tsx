@@ -8,8 +8,9 @@ import {
   HUB_FILTER_DROPDOWN_ROW_CLASS,
   HubFilterDropdownCircle,
   HubFilterDropdownTrigger,
+  compactIconSize,
 } from "@tool-workspace/hub-ui";
-import { compactIconSize } from "../../lib/ui-scale";
+
 import type { NoteFolder } from "./noteFolders";
 import { isSystemFolder } from "./noteFolderLifecycle";
 import { NotesFolderGlyph } from "./NotesFolderGlyph";

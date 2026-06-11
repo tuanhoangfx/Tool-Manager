@@ -8,7 +8,7 @@ import {
   ToggleRight,
   type LucideIcon,
 } from "lucide-react";
-import { compactIconSize } from "../../lib/ui-scale";
+import { compactIconSize } from "@tool-workspace/hub-ui";
 import {
   EXTENSION_UNPACKED_INSTALL_STEPS,
   getExtensionInstallSteps,

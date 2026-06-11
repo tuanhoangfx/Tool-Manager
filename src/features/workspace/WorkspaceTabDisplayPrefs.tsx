@@ -1,9 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { FolderOpen } from "lucide-react";
-import { Section } from "@tool-workspace/hub-ui";
+import {
+  Section,
+  compactIconSize,
+} from "@tool-workspace/hub-ui";
 import { DisplayPrefs } from "../../components/sales-shell";
 import type { FilterDef } from "../../components/sales-shell";
-import { compactIconSize } from "../../lib/ui-scale";
+
 import {
   COOKIE_CHART_DEFS,
   COOKIE_FILTER_DEFS,

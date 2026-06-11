@@ -1,4 +1,4 @@
-/** Deploy target label for filter badges (P0020 subset — no P0004 catalog). */
+/** Deploy target label for filter badges and directory chips. */
 export function deployLabel(target?: string): string {
   const map: Record<string, string> = {
     "github-pages": "GitHub Pages",

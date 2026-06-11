@@ -38,9 +38,12 @@ export function useCookieRouteShareCount(
 
   useEffect(() => {
     if (!id) return;
-    return subscribeNoteCookieMembersCache(() => {
+    const unsubscribe = subscribeNoteCookieMembersCache(() => {
       setShareCount((prev) => readShareCount(id) ?? prev);
     });
+    return () => {
+      unsubscribe();
+    };
   }, [id]);
 
   return shareCount;

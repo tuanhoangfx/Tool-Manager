@@ -1,7 +1,6 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { HubAppLogProvider, resolveHubActiveScreenId, useHubActiveScreenSync } from "@tool-workspace/hub-ui";
 import { DisplayPrefs, HubLoaderRoot, WorkspaceLoadingView } from "../../components/sales-shell";
-import { hideBootLoader } from "../../lib/hide-boot-loader";
 import { WorkspaceSidebar } from "../../components/sales-shell/WorkspaceSidebar";
 import { ToastContainer, ToastProvider } from "../../components/toast";
 import type { WorkspaceNavScreen, WorkspaceScreen } from "../../lib/workspace-screen";
@@ -23,6 +22,7 @@ import {
   prefetchWorkspaceTabsBackground,
 } from "../../lib/hub-background-prefetch";
 import { prefetchWorkspaceTab, prefetchWorkspaceTabIdle } from "../../lib/workspace-tab-prefetch";
+import { prefetchSystemTab, prefetchSystemTabIdle } from "../../lib/system-tab-prefetch";
 import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
 import { NotesAuthGate } from "../notes/NotesAuthGate";
 import { WorkspaceShellTabFrame } from "./WorkspaceShellTabFrame";
@@ -71,18 +71,17 @@ function WorkspaceAppInner() {
   }, [activeNav]);
 
   useEffect(() => {
-    hideBootLoader();
     prefetchNotesListBackground();
     prefetchWorkspaceTab("twofa");
     prefetchWorkspaceTab("todo");
     prefetchWorkspaceTabIdle("cookie", 600);
-    prefetchWorkspaceTabIdle("system", 1200);
+    prefetchSystemTabIdle();
     const warm = () => {
       prefetchNotesListBackground();
       prefetchWorkspaceTab("twofa");
       prefetchWorkspaceTab("todo");
       prefetchWorkspaceTab("cookie");
-      prefetchWorkspaceTab("system");
+      prefetchSystemTab();
     };
     const idle = window.requestIdleCallback?.(warm, { timeout: 300 });
     if (idle == null) {
@@ -102,7 +101,7 @@ function WorkspaceAppInner() {
     prefetchWorkspaceTab("twofa");
     prefetchWorkspaceTab("todo");
     prefetchWorkspaceTab("cookie");
-    prefetchWorkspaceTab("system");
+    prefetchSystemTab();
     prefetchWorkspaceTabsBackground(session);
   }, [session]);
 

@@ -31,7 +31,9 @@ function cacheResult(noteId: string, result: MembersResult) {
 /** Subscribe to members cache writes — keeps share aggregates realtime without stale UI. */
 export function subscribeNoteCookieMembersCache(listener: () => void) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 /** Warm members list on route card hover — route detail opens with data ready. */

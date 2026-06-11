@@ -7,7 +7,7 @@ export type TabLoadContractEntry = {
   tab: WorkspaceNavScreen;
   eager: boolean;
   lazyChunk: boolean;
-  chunkPrefetch: "boot" | "session" | "hover" | "none";
+  chunkPrefetch: "boot" | "session" | "hover" | "none" | "boot+session";
   dataWarmers: readonly string[];
   tabActiveHooks: readonly string[];
   sharedCode: readonly string[];

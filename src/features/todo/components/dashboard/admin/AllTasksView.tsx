@@ -6,6 +6,7 @@ import { todoKanbanStatusConfig } from '../../../todo-kanban-status';
 import type { DataChange, TaskCounts } from '../../../app-types';
 import { type SortConfig, sortTasks } from '../../../lib/taskUtils';
 import { useCachedSupabaseQuery } from '../../../hooks/useCachedSupabaseQuery';
+import { useKanbanDrag } from '../../../hooks/useKanbanDrag';
 import { useTaskFilter } from '../../../hooks/useTaskFilter';
 import { useSyncTodoChrome } from '../../../hooks/useSyncTodoChrome';
 import { useTodoChrome } from '../../../TodoChromeContext';
@@ -32,8 +33,6 @@ interface AllTasksViewProps {
 const AllTasksView: React.FC<AllTasksViewProps> = ({ profile, lastDataChange, allUsers, allProjects, onEditTask, onDeleteTask, onUpdateStatus, onClearCancelledTasks, setTaskCounts }) => {
     const { t, timezone } = useSettings();
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-    const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
-    const [dragOverStatus, setDragOverStatus] = useState<Task['status'] | null>(null);
     const {
         filters,
         timeRange,
@@ -139,16 +138,11 @@ const AllTasksView: React.FC<AllTasksViewProps> = ({ profile, lastDataChange, al
 
     const filteredTasksForBoard = useTaskFilter(tasksForSummaryAndChart, filters, timezone);
 
-
-    const handleDrop = (status: Task['status']) => {
-        if (draggedTaskId === null) return;
-        const taskToMove = allTasks_safe.find(t => t.id === draggedTaskId);
-        if (taskToMove && taskToMove.status !== status) {
-            onUpdateStatus(taskToMove, status);
-        }
-        setDraggedTaskId(null);
-        setDragOverStatus(null);
-    };
+    const findTaskById = useCallback(
+        (id: number) => allTasks_safe.find((t) => t.id === id),
+        [allTasks_safe],
+    );
+    const kanbanDrag = useKanbanDrag(findTaskById, onUpdateStatus);
 
     const { todo, inprogress, done, cancelled } = useMemo(() => {
         const grouped = {
@@ -217,7 +211,7 @@ const AllTasksView: React.FC<AllTasksViewProps> = ({ profile, lastDataChange, al
     return (
         <div className="w-full min-h-0 flex-1">
                 {loading && allTasks_safe.length === 0 ? <TaskBoardSkeleton /> : (
-                    <div className="grid min-h-[60vh] grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <div className={`grid min-h-[60vh] grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4${kanbanDrag.isDragging ? ' todo-kanban-board--dragging' : ''}`}>
                         {columns.map(({ tasks, status }) => (
                             <TaskColumn
                                 key={status}
@@ -227,10 +221,13 @@ const AllTasksView: React.FC<AllTasksViewProps> = ({ profile, lastDataChange, al
                                 tasks={tasks}
                                 sortConfig={sortConfigs[status]}
                                 onSortChange={(newConfig) => setSortConfigs(prev => ({ ...prev, [status]: newConfig }))}
-                                dragOverStatus={dragOverStatus}
-                                onDrop={handleDrop}
-                                setDragOverStatus={setDragOverStatus}
-                                setDraggedTaskId={setDraggedTaskId}
+                                isDragOver={kanbanDrag.dragOverStatus === status}
+                                draggingTaskId={kanbanDrag.draggingTaskId}
+                                onDrop={kanbanDrag.dropOnColumn}
+                                onEnterColumn={kanbanDrag.enterColumn}
+                                onLeaveColumn={kanbanDrag.leaveColumn}
+                                onBeginDrag={kanbanDrag.beginDrag}
+                                onEndDrag={kanbanDrag.endDrag}
                                 onEditTask={onEditTask}
                                 onDeleteTask={onDeleteTask}
                                 onUpdateStatus={onUpdateStatus}

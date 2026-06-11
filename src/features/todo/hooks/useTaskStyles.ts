@@ -1,5 +1,6 @@
 
 import { useMemo } from 'react';
+import { HUB_DIRECTORY_CARD_SURFACE } from '@tool-workspace/hub-ui';
 import { Task } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { getTodayDateString } from '../lib/taskUtils';
@@ -22,7 +23,7 @@ export const useTaskStyles = (task: Task) => {
             isToday = task.due_date === todayString;
         }
 
-        const containerClasses: string[] = [TODO_HUB.taskCard];
+        const containerClasses: string[] = [HUB_DIRECTORY_CARD_SURFACE, TODO_HUB.taskCard];
         if (isArchived) containerClasses.push(TODO_HUB.taskCardArchived);
         if (task.priority === 'high' && !isArchived) containerClasses.push(TODO_HUB.taskCardHigh);
 

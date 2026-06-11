@@ -9,6 +9,7 @@ import type { DataChange, TaskCounts } from '../../../app-types';
 import { type SortConfig, sortTasks } from '../../../lib/taskUtils';
 import type { CalendarSortState } from '../../../lib/calendar-types';
 import { useCachedSupabaseQuery } from '../../../hooks/useCachedSupabaseQuery';
+import { useKanbanDrag } from '../../../hooks/useKanbanDrag';
 import { useTaskFilter } from '../../../hooks/useTaskFilter';
 import { useSyncTodoChrome } from '../../../hooks/useSyncTodoChrome';
 import { useTodoChrome } from '../../../TodoChromeContext';
@@ -46,8 +47,6 @@ const EmployeeDashboard: React.FC<TaskDashboardProps> = ({
 }) => {
     const { t, timezone } = useSettings();
     const [view, setView] = useState<'board' | 'calendar'>('board');
-    const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
-    const [dragOverStatus, setDragOverStatus] = useState<Task['status'] | null>(null);
     const {
         filters,
         timeRange,
@@ -102,16 +101,12 @@ const EmployeeDashboard: React.FC<TaskDashboardProps> = ({
 
 
     const filteredTasksForBoard = useTaskFilter(timeFilteredTasks, filters, timezone);
-    
-    const handleDrop = (status: Task['status']) => {
-        if (draggedTaskId === null) return;
-        const taskToMove = tasks_safe.find(t => t.id === draggedTaskId);
-        if (taskToMove && taskToMove.status !== status) {
-            onUpdateStatus(taskToMove, status);
-        }
-        setDraggedTaskId(null);
-        setDragOverStatus(null);
-    };
+
+    const findTaskById = useCallback(
+        (id: number) => tasks_safe.find((t) => t.id === id),
+        [tasks_safe],
+    );
+    const kanbanDrag = useKanbanDrag(findTaskById, onUpdateStatus);
 
     const { todo, inprogress, done, cancelled } = useMemo(() => {
         const grouped = {
@@ -156,7 +151,7 @@ const EmployeeDashboard: React.FC<TaskDashboardProps> = ({
         ];
 
         return (
-            <div className="grid min-h-[60vh] grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className={`grid min-h-[60vh] grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4${kanbanDrag.isDragging ? ' todo-kanban-board--dragging' : ''}`}>
                 {columns.map(({ tasks, status }) => (
                     <TaskColumn
                         key={status}
@@ -166,10 +161,13 @@ const EmployeeDashboard: React.FC<TaskDashboardProps> = ({
                         tasks={tasks}
                         sortConfig={sortConfigs[status]}
                         onSortChange={(newConfig) => setSortConfigs(prev => ({ ...prev, [status]: newConfig }))}
-                        dragOverStatus={dragOverStatus}
-                        onDrop={handleDrop}
-                        setDragOverStatus={setDragOverStatus}
-                        setDraggedTaskId={setDraggedTaskId}
+                        isDragOver={kanbanDrag.dragOverStatus === status}
+                        draggingTaskId={kanbanDrag.draggingTaskId}
+                        onDrop={kanbanDrag.dropOnColumn}
+                        onEnterColumn={kanbanDrag.enterColumn}
+                        onLeaveColumn={kanbanDrag.leaveColumn}
+                        onBeginDrag={kanbanDrag.beginDrag}
+                        onEndDrag={kanbanDrag.endDrag}
                         onEditTask={onEditTask}
                         onDeleteTask={onDeleteTask}
                         onUpdateStatus={onUpdateStatus}

@@ -21,7 +21,7 @@ export function CookieRouteChipRow({
   return (
     <div className="flex min-h-[var(--hub-card-chip-row-min-h)] flex-wrap items-center gap-1.5">
       <RouteSyncChip
-        status={syncStatus}
+        status={syncStatus ?? "pending"}
         noteSyncedAt={noteSyncedAt}
         vaultCookieCount={vaultCookieCount}
       />

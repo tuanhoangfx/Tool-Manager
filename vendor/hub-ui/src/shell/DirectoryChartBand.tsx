@@ -3,6 +3,11 @@ import type { ChartRow } from "../chart-items";
 import type { PrefItem } from "../display-prefs/types";
 import { chartPanelTitleFromDefs } from "../lib/chart-panel-titles";
 import { MiniBarChart } from "./MiniBarChart";
+import { MiniDonut } from "./MiniDonut";
+
+function isDonutChartKey(key: string): boolean {
+  return key.endsWith("_donut");
+}
 
 export type DirectoryChartBandProps = {
   visCharts: Set<string>;
@@ -31,13 +36,15 @@ export function DirectoryChartBand({ visCharts, defs, data }: DirectoryChartBand
   if (keys.length === 0) return null;
   return (
     <>
-      {keys.map((key) => (
-        <MiniBarChart
-          key={key}
-          title={chartPanelTitleFromDefs(defs, key)}
-          items={data[key]!}
-        />
-      ))}
+      {keys.map((key) => {
+        const title = chartPanelTitleFromDefs(defs, key);
+        const items = data[key]!;
+        return isDonutChartKey(key) ? (
+          <MiniDonut key={key} title={title} items={items} />
+        ) : (
+          <MiniBarChart key={key} title={title} items={items} />
+        );
+      })}
     </>
   );
 }

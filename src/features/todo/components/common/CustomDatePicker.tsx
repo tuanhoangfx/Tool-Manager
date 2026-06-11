@@ -3,9 +3,10 @@ import { createPortal } from "react-dom";
 import {
   HUB_FILTER_DROPDOWN_PANEL_PORTAL_CLASS,
   HubFilterDropdownTrigger,
+  compactIconSize,
 } from "@tool-workspace/hub-ui";
 import { Calendar } from "lucide-react";
-import { compactIconSize } from "../../../../lib/ui-scale";
+
 import { useSettings } from "../../context/SettingsContext";
 import { ChevronLeftIcon, ChevronRightIcon } from "../Icons";
 
