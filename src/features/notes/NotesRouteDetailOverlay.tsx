@@ -1,9 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { useMemo } from "react";
-import {
-  CookieRouteDetailModal,
-  type CookieAutoRow,
-} from "../cookie/CookieAutoSyncTable";
+import type { CookieAutoRow } from "../cookie/cookieAutoRow";
+import { CookieRouteDetailModal } from "../cookie/CookieRouteDetailModal";
 import {
   getActiveCookieBindingsForNote,
   normalizeCookieDomain,

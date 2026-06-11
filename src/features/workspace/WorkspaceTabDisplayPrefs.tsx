@@ -14,6 +14,7 @@ import {
   DEFAULT_COOKIE_KPI_KEYS,
   DEFAULT_COOKIE_ROUTE_FILTER_KEYS,
 } from "../cookie/cookie-display-prefs";
+import { stripLegacyCookieFilterKeys } from "../cookie/cookie-filter-icons";
 import { patchCookieHubPrefs, readCookieHubPrefs } from "../cookie/cookie-tab-prefs";
 import { CookieSortExtras } from "../cookie/CookieSortExtras";
 import { readCookieListPrefs, type CookieListSort } from "../cookie/cookie-list-prefs";
@@ -126,9 +127,11 @@ export function WorkspaceTabDisplayPrefs({
     const filters = screenFilters.length
       ? screenFilters.map(({ key, label }) => ({ key, label }))
       : COOKIE_FILTER_DEFS;
-    const defaultFilterKeys = screenFilters.length
-      ? new Set(screenFilters.map((f) => f.key))
-      : DEFAULT_COOKIE_ROUTE_FILTER_KEYS;
+    const defaultFilterKeys = stripLegacyCookieFilterKeys(
+      screenFilters.length
+        ? new Set(screenFilters.map((f) => f.key))
+        : DEFAULT_COOKIE_ROUTE_FILTER_KEYS,
+    ) ?? DEFAULT_COOKIE_ROUTE_FILTER_KEYS;
 
     return (
       <DisplayPrefs

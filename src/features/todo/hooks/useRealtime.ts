@@ -7,14 +7,14 @@ import type { DataChange } from "../app-types";
 
 interface UseRealtimeProps {
     session: Session | null;
-    // FIX: Use MutableRefObject directly instead of React.MutableRefObject
     locallyUpdatedTaskIds: MutableRefObject<Set<number>>;
     notifyDataChange: (change: Omit<DataChange, 'timestamp'>) => void;
+    enabled?: boolean;
 }
 
-export const useRealtime = ({ session, locallyUpdatedTaskIds, notifyDataChange }: UseRealtimeProps) => {
+export const useRealtime = ({ session, locallyUpdatedTaskIds, notifyDataChange, enabled = true }: UseRealtimeProps) => {
     useEffect(() => {
-        if (!session || !isSupabaseConfigured) return;
+        if (!enabled || !session || !isSupabaseConfigured) return;
 
         const channels: RealtimeChannel[] = [];
 
@@ -58,5 +58,5 @@ export const useRealtime = ({ session, locallyUpdatedTaskIds, notifyDataChange }
         return () => {
             channels.forEach(channel => supabase.removeChannel(channel));
         };
-    }, [session, notifyDataChange, locallyUpdatedTaskIds]);
+    }, [enabled, session, notifyDataChange, locallyUpdatedTaskIds]);
 };

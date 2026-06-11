@@ -96,8 +96,8 @@ const en: Translation = {
   deleteTaskConfirmationMessage: (taskTitle: string) => `Are you sure you want to delete the task "${taskTitle}"? This action cannot be undone.`,
   taskDeleted: "This task has been deleted.",
   taskNotFound: "Task Not Found",
-  boardView: "Board View",
-  calendarView: "Calendar View",
+  boardView: "Board",
+  calendarView: "Calendar",
   summaryView: "Summary View",
 
   // Task Status
@@ -409,8 +409,8 @@ const vi: Translation = {
   deleteTaskConfirmationMessage: (taskTitle: string) => `Bạn có chắc muốn xóa công việc "${taskTitle}" không? Hành động này không thể hoàn tác.`,
   taskDeleted: "Công việc này đã bị xóa.",
   taskNotFound: "Không tìm thấy công việc",
-  boardView: "Xem dạng bảng",
-  calendarView: "Xem dạng lịch",
+  boardView: "Bảng",
+  calendarView: "Lịch",
   summaryView: "Xem tóm tắt",
 
   // Task Status

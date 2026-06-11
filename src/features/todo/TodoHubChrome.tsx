@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Mail } from "lucide-react";
 import {
-  FilterBar,
-  HubTabChrome,
-  HubTabScreenBody,
   HubAlert,
+  HubDashboardScreen,
   MiniBarChart,
   buildSemanticTocIcon,
   useHubChromePrefs,
@@ -30,17 +28,14 @@ import {
   filterValuesToTodoFilters,
   todoFiltersToFilterValues,
 } from "./todo-filters";
-import {
-  TodoFilterRowActions,
-  TodoSearchToolbar,
-} from "./todo-filter-toolbar";
-import { readTodoHubPrefs } from "./todo-tab-prefs";
+import { TodoFilterRowActions } from "./todo-filter-toolbar";
 import type { TaskCounts, TodoAdminView } from "./app-types";
 import type { Profile, Task } from "./types";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
 import { WorkspaceHeaderActions } from "../workspace/WorkspaceHeaderActions";
 import { workspaceVersionLine } from "../workspace/workspace-tab-header-meta";
 import { TodoViewToggle } from "./TodoViewToggle";
+import { readTodoHubPrefs } from "./todo-tab-prefs";
 
 export type TodoBoardActions = {
   onDeleteTask: (task: Task) => void;
@@ -59,7 +54,6 @@ type Props = {
   onAddTask: () => void;
   onOpenNotifications: () => void;
   onEditTask: (task: Task | Partial<Task> | null, from?: string | null) => void;
-  /** Active task id — enables "This task" tab in Log → Activity. */
   activityLogTaskId?: number | null;
   children: ReactNode;
 };
@@ -81,8 +75,8 @@ export function TodoHubChrome({
 }: Props) {
   const { t } = useSettings();
   const version = useMemo(() => workspaceVersionLine(), []);
-  const showAdminViews = profile?.role === "admin" || profile?.role === "manager";
   const { searchPin, headerPin, stackChrome } = useHubChromePrefs();
+  const showAdminViews = profile?.role === "admin" || profile?.role === "manager";
 
   const [activePreview, setActivePreview] = useState<Task["status"] | null>(null);
   const [previewTasks, setPreviewTasks] = useState<Task[]>([]);
@@ -202,6 +196,11 @@ export function TodoHubChrome({
       <TodoViewToggle activeView={adminView} onViewChange={onAdminViewChange} showAdminViews={showAdminViews} />
     ) : null;
 
+  const emailMeta = useMemo(
+    () => (hubEmail ? [{ icon: Mail, value: hubEmail }] : []),
+    [hubEmail],
+  );
+
   const header = (
     <WorkspaceTabHeader
       ariaLabel="Todo header"
@@ -210,11 +209,7 @@ export function TodoHubChrome({
       title="Todo"
       versionLine={version.line}
       versionLive={version.live}
-      extraMetaItems={
-        hubEmail || session?.user?.email
-          ? [{ icon: ClipboardList, value: hubEmail ?? session?.user?.email ?? "" }]
-          : undefined
-      }
+      extraMetaItems={emailMeta}
       centerStats={centerStats}
       actions={
         <WorkspaceHeaderActions
@@ -237,51 +232,39 @@ export function TodoHubChrome({
     />
   );
 
-  const filterBar =
-    session && profile ? (
-      <div className="space-y-2">
-        <FilterBar
-          shortcutScope="todo"
-          layout="hub"
-          pinSticky={searchPin && !stackChrome}
-          headerPinned={headerPin}
-          embedded={stackChrome}
-          placeholder={t.searchPlaceholder}
-          filters={chrome.filterDefs}
-          query={chrome.filters.searchTerm}
-          onQueryChange={(q) => chrome.setFilters((prev) => ({ ...prev, searchTerm: q }))}
-          values={todoFiltersToFilterValues(chrome.filters)}
-          onValuesChange={(next) =>
-            chrome.setFilters((prev) => filterValuesToTodoFilters(next, prev, chrome.filterDefs))
-          }
-          toolbar={
-            <>
-              {chrome.filterToolbarLeading}
-              <TodoSearchToolbar t={t} />
-            </>
-          }
-          row2Leading={chrome.filterRowLeading ?? undefined}
-          row2Actions={<TodoFilterRowActions onAddTask={onAddTask} />}
-        />
-        {usersDirectoryWarning ? (
-          <HubAlert tone="warn">{usersDirectoryWarning}</HubAlert>
-        ) : null}
-      </div>
-    ) : undefined;
-
   return (
-    <div className="todo-board-root flex min-h-0 min-w-0 flex-1 flex-col">
-      <HubTabChrome header={header} filterBar={filterBar}>
-        <HubTabScreenBody
-          kpis={session ? filteredKpis : undefined}
-          charts={session ? chartsBand : undefined}
-          chartCount={session ? chartCount : undefined}
-          sectionRuleLabel={session ? chrome.sectionRuleLabel : undefined}
-          bodyFlex
-        >
-          {children}
-        </HubTabScreenBody>
-      </HubTabChrome>
+    <>
+      <HubDashboardScreen
+        header={header}
+        filterShortcutScope="todo"
+        filterPlaceholder={t.searchPlaceholder}
+        filters={session && profile ? chrome.filterDefs : []}
+        query={chrome.filters.searchTerm}
+        onQueryChange={
+          session && profile
+            ? (q) => chrome.setFilters((prev) => ({ ...prev, searchTerm: q }))
+            : undefined
+        }
+        filterValues={todoFiltersToFilterValues(chrome.filters)}
+        onFilterValuesChange={(next) =>
+          chrome.setFilters((prev) => filterValuesToTodoFilters(next, prev, chrome.filterDefs))
+        }
+        directoryToolbar={session && profile ? chrome.directoryToolbar : undefined}
+        filterRowLeading={chrome.filterRowLeading ?? undefined}
+        filterRowActions={session && profile ? <TodoFilterRowActions onAddTask={onAddTask} /> : undefined}
+        kpis={session ? filteredKpis : undefined}
+        charts={session ? chartsBand : undefined}
+        chartCount={session ? chartCount : undefined}
+        sectionRuleLabel={session ? chrome.sectionRuleLabel : undefined}
+        bodyFlex
+      >
+        {usersDirectoryWarning ? (
+          <div className="mb-2">
+            <HubAlert tone="warn">{usersDirectoryWarning}</HubAlert>
+          </div>
+        ) : null}
+        <div className="todo-board-root flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+      </HubDashboardScreen>
 
       {session ? (
         <TaskPreviewPopover
@@ -295,6 +278,6 @@ export function TodoHubChrome({
           onUpdateStatus={boardActions.onUpdateStatus}
         />
       ) : null}
-    </div>
+    </>
   );
 }

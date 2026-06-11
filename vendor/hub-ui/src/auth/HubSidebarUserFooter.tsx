@@ -31,6 +31,7 @@ export function HubSidebarUserFooter({
       <HubSidebarFooterButton
         icon={RoleIcon}
         iconClass={roleIconPending ? "opacity-0" : roleMeta.className}
+        iconFadeIn={!roleIconPending}
         label={footerUserLabel}
         title={title}
         onClick={onOpenUser}

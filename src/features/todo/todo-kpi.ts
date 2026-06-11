@@ -1,6 +1,6 @@
-import { CheckCircle2, ClipboardList, Clock, XCircle } from "lucide-react";
+import { ClipboardList, Clock } from "lucide-react";
 import type { KpiTileData } from "@tool-workspace/hub-ui";
-import { TodoInProgressIcon } from "./todo-icons";
+import { TodoCancelledIcon, TodoDoneIcon, TodoInProgressIcon, TodoTodoIcon } from "./todo-icons";
 import type { Task } from "./types";
 import type { Translation } from "./types";
 
@@ -38,10 +38,10 @@ export function buildTodoKpis(tasks: Task[], t: Translation): KpiTileData[] {
 
   return [
     { prefKey: "total", label: t.totalTasks, value: stats.total, icon: ClipboardList, tone: "blue" },
-    { prefKey: "todo", label: t.todo, value: stats.todo, icon: ClipboardList, tone: "amber" },
-    { prefKey: "inprogress", label: t.inprogress, value: stats.inprogress, icon: TodoInProgressIcon, iconClassName: "animate-spin", tone: "indigo" },
-    { prefKey: "done", label: t.done, value: stats.done, icon: CheckCircle2, tone: "emerald" },
-    { prefKey: "cancelled", label: t.cancelled, value: stats.cancelled, icon: XCircle, tone: "rose" },
+    { prefKey: "todo", label: t.todo, value: stats.todo, icon: TodoTodoIcon, tone: "amber" },
+    { prefKey: "inprogress", label: t.inprogress, value: stats.inprogress, icon: TodoInProgressIcon, tone: "indigo" },
+    { prefKey: "done", label: t.done, value: stats.done, icon: TodoDoneIcon, tone: "emerald" },
+    { prefKey: "cancelled", label: t.cancelled, value: stats.cancelled, icon: TodoCancelledIcon, tone: "rose" },
     {
       prefKey: "avg_time",
       label: t.avgCompletionTime,

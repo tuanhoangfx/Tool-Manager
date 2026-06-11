@@ -12,9 +12,17 @@ interface UseProjectsProps {
     lastDataChange: DataChange | null;
     notifyDataChange: (change: Omit<DataChange, 'timestamp'>) => void;
     closeProjectModal: () => void;
+    enabled?: boolean;
 }
 
-export const useProjects = ({ session, profile, lastDataChange, notifyDataChange, closeProjectModal }: UseProjectsProps) => {
+export const useProjects = ({
+    session,
+    profile,
+    lastDataChange,
+    notifyDataChange,
+    closeProjectModal,
+    enabled = true,
+}: UseProjectsProps) => {
     const { addToast } = useToasts();
     const [userProjects, setUserProjects] = useLocalStorage<ProjectMember[]>(
         session ? `user_projects_${session.user.id}` : 'user_projects_guest',
@@ -22,6 +30,8 @@ export const useProjects = ({ session, profile, lastDataChange, notifyDataChange
     );
 
     useEffect(() => {
+        if (!enabled) return;
+
         const fetchUserProjects = async () => {
             if (!session) {
                 setUserProjects([]);
@@ -40,7 +50,7 @@ export const useProjects = ({ session, profile, lastDataChange, notifyDataChange
             }
         };
         fetchUserProjects();
-    }, [session, lastDataChange, setUserProjects]);
+    }, [enabled, session, lastDataChange, setUserProjects]);
 
     const handleSaveProject = async (name: string, color: string, updatedMembers: MemberDetails[], originalMembers: MemberDetails[], project: Project | null) => {
         if (!profile) return;

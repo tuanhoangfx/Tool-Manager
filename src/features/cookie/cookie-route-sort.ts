@@ -1,5 +1,5 @@
 import { resolveCookieSiteIcon } from "./cookieSiteIcon";
-import type { CookieAutoRow } from "./CookieAutoSyncTable";
+import type { CookieAutoRow } from "./cookieAutoRow";
 import { resolveRouteSyncedDisplayIso } from "./route-sync-display";
 import type { CookieListSort } from "./cookie-list-prefs";
 

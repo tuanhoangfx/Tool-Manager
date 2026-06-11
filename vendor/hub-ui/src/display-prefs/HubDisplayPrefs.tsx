@@ -3,15 +3,8 @@ import { Rows3, Settings } from "lucide-react";
 import { buildSemanticTocIcon } from "../lib/semantic-icon-registry";
 import { LIMIT_OPTIONS, TABLE_PAGE_SIZE_OPTIONS, TIME_RANGES } from "./constants";
 import { HUB_TABLE_PAGE_SIZE_DEFAULT, patchHubTablePageSizeValue } from "../table/hub-table-page-size";
-import {
-  MAX_VISIBLE_CHART,
-  enforceChartMaxOnAdd,
-  resolveVisibleChartKeys,
-} from "./chart-visible";
-import {
-  MAX_VISIBLE_KPI,
-  enforceKpiMaxOnAdd,
-} from "./kpi-visible";
+import { MAX_VISIBLE_CHART } from "./chart-visible";
+import { MAX_VISIBLE_KPI } from "./kpi-visible";
 import { Section, ToggleRow } from "./primitives";
 import { SettingsOptionFilter } from "./SettingsOptionFilter";
 import type { HubDisplayPrefsProps, PrefItem } from "./types";
@@ -212,19 +205,20 @@ export function HubDisplayPrefs({
             ? visHeaderStats
             : visHubFilters;
 
+    const wasSelected = isVisible(cur, defaults, key);
+    if (!wasSelected) {
+      const selectedCount = allItems.filter((item) => isVisible(cur, defaults, item.key)).length;
+      if (param === "kpi" && selectedCount >= MAX_VISIBLE_KPI) {
+        emitLog(`KPI limit: maximum ${MAX_VISIBLE_KPI} — turn one off to add another`);
+        return;
+      }
+      if (param === "charts" && selectedCount >= MAX_VISIBLE_CHART) {
+        emitLog(`Charts limit: maximum ${MAX_VISIBLE_CHART} — turn one off to add another`);
+        return;
+      }
+    }
+
     let { next, allDefault } = toggleSetParam(param, cur, allItems, defaults, key);
-
-    if (param === "kpi" && next.has(key)) {
-      next = enforceKpiMaxOnAdd(next, allItems, key);
-      allDefault =
-        next.size === defaults.size && [...next].every((k) => defaults.has(k));
-    }
-
-    if (param === "charts" && next.has(key)) {
-      next = enforceChartMaxOnAdd(next, allItems, key);
-      allDefault =
-        next.size === defaults.size && [...next].every((k) => defaults.has(k));
-    }
 
     if (usesLegacySystemDisplay && systemDisplay && systemTab && (param === "kpi" || param === "charts")) {
       systemDisplay.patch(systemTab, {
@@ -262,8 +256,10 @@ export function HubDisplayPrefs({
   const filterDefaults = defaultsFor(tabFilters, defaultFilterKeys);
   const visKpiCount = tabKpis.filter((k) => isVisible(visKpiEffective, kpiDefaults, k.key)).length;
   const kpiAtMax = visKpiCount >= MAX_VISIBLE_KPI;
-  const visChartsResolved = resolveVisibleChartKeys(visChartsEffective, chartsDefaults, tabCharts);
-  const visChartsCount = visChartsResolved.size;
+  const visChartsCount = tabCharts.filter((c) => isVisible(visChartsEffective, chartsDefaults, c.key)).length;
+  const chartAtMax = visChartsCount >= MAX_VISIBLE_CHART;
+  const kpiCapMessage = `KPI limit: maximum ${MAX_VISIBLE_KPI} — turn one off to add another`;
+  const chartCapMessage = `Charts limit: maximum ${MAX_VISIBLE_CHART} — turn one off to add another`;
   const visFilterCount = visHubFilters === null ? filterDefaults.size : visHubFilters.size;
   const visHeaderStatCount = visHeaderStats === null ? headerStatDefaults.size : visHeaderStats.size;
 
@@ -465,6 +461,7 @@ export function HubDisplayPrefs({
                 label={k.label}
                 on={selected}
                 disabled={kpiAtMax && !selected}
+                onDisabledClick={() => emitLog(kpiCapMessage)}
                 onChange={() => toggle("kpi", tabKpis, kpiDefaults, k.key)}
               />
             );
@@ -482,14 +479,19 @@ export function HubDisplayPrefs({
         icon={buildSemanticTocIcon("settings.charts")}
       >
         <div className="space-y-0.5">
-          {tabCharts.map((c) => (
-            <ToggleRow
-              key={c.key}
-              label={c.label}
-              on={isVisible(visChartsEffective, chartsDefaults, c.key)}
-              onChange={() => toggle("charts", tabCharts, chartsDefaults, c.key)}
-            />
-          ))}
+          {tabCharts.map((c) => {
+            const selected = isVisible(visChartsEffective, chartsDefaults, c.key);
+            return (
+              <ToggleRow
+                key={c.key}
+                label={c.label}
+                on={selected}
+                disabled={chartAtMax && !selected}
+                onDisabledClick={() => emitLog(chartCapMessage)}
+                onChange={() => toggle("charts", tabCharts, chartsDefaults, c.key)}
+              />
+            );
+          })}
         </div>
       </Section>,
     );

@@ -5,7 +5,6 @@ import {
   Clock,
   Cookie,
   Database,
-  Globe2,
   Lock,
   Share2,
   UserRound,
@@ -55,25 +54,6 @@ export function RouteSyncChip({
   );
 }
 
-export function RoutePublishChip({
-  published,
-  ready = true,
-}: {
-  published?: boolean;
-  ready?: boolean;
-}) {
-  if (!ready) {
-    return <RouteStatChip icon={Globe2} label="Route…" tone="neutral" />;
-  }
-  return (
-    <RouteStatChip
-      icon={published ? Globe2 : AlertCircle}
-      label={published ? "Published" : "Missing"}
-      tone={published ? "ok" : "warn"}
-    />
-  );
-}
-
 export function RouteVaultChip({ cookieCount }: { cookieCount: number | null | undefined }) {
   if (cookieCount == null || cookieCount < 0) {
     return <RouteStatChip icon={Database} label="No vault" tone="warn" />;
@@ -97,7 +77,10 @@ export function RouteShareChip({
   if (binding.accessRole === "member") {
     return <RouteStatChip icon={Share2} label="Shared to me" tone="share" />;
   }
-  if (shareCount && shareCount > 0) {
+  if (shareCount === undefined) {
+    return <RouteStatChip icon={Users} label="Share…" tone="neutral" />;
+  }
+  if (shareCount > 0) {
     return <RouteStatChip icon={Users} label={`Shared ${shareCount}`} tone="share" />;
   }
   return <RouteStatChip icon={UserRound} label="Private" tone="neutral" />;

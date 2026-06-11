@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { KeyRound, Plus, Shield } from "lucide-react";
-import { MiniBarChart } from "../../components/sales-shell";
+import { MiniBarChart, type HubViewMode } from "../../components/sales-shell";
 import { useAppToast } from "../../components/toast";
 import { PageHeader } from "../../components/PageHeader";
 import { useTwofaAccounts } from "./useTwofaAccounts";
@@ -9,13 +9,20 @@ import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
 import { readWorkspacePeriod, type WorkspacePeriodPrefs } from "../../lib/hub-workspace-period";
 import { readTwofaHubPrefs } from "./twofa-tab-prefs";
-import { TwofaFilterToolbar } from "./TwofaFilterToolbar";
+import { P0020DirectoryScreen } from "../workspace/P0020DirectoryScreen";
+import { useP0020DirectoryChrome } from "../workspace/useP0020DirectoryChrome";
+import { TwofaCloudSyncTrailing } from "./TwofaCloudSyncTrailing";
 import { useResolvedVisibleKpiKeys } from "../../components/sales-shell";
 import {
   barChartSeriesSignature,
   chartKeysSignature,
   kpiTilesSignature,
+  hubDirectoryListResetKey,
+  DirectorySearchToolbar,
+  HubDirectoryBulkActionBar,
+  useHubDirectorySelection,
   useDirectoryBandSync,
+  useDirectoryTableSort,
 } from "@tool-workspace/hub-ui";
 import {
   DEFAULT_TWOFA_CHART_KEYS,
@@ -27,10 +34,15 @@ import { buildTwofaChartItems, buildTwofaKpis } from "./twofa-aggregates";
 import { buildTwofaHeaderStats } from "./twofa-header-metrics";
 import { filterTwofaAccounts } from "./twofa-filters";
 import { twofaFiltersWithCounts } from "./twofa-filter-counts";
+import { TwofaAccountCard } from "./TwofaAccountCard";
 import { TwofaAccountsTable } from "./TwofaAccountsTable";
+import { patchTwofaViewMode, readTwofaViewMode } from "./twofa-list-prefs";
+import { TwofaTotpTickProvider } from "./twofa-totp-tick";
 import { TwofaBulkActionBar } from "./TwofaBulkActionBar";
 import { TwofaAddModal } from "./TwofaAddModal";
 import { TwofaConfirmDialog } from "./TwofaConfirmDialog";
+import { TwofaDedupePreviewModal } from "./TwofaDedupePreviewModal";
+import type { TwofaDedupePreview } from "./twofa-upsert-accounts";
 import { findTwofaDraftConflict } from "./twofa-upsert-accounts";
 import {
   formatTwofaEntryLabel,
@@ -40,9 +52,9 @@ import {
   twofaSingleAddToast,
   twofaUpdateToast,
 } from "./twofa-toast-messages";
-import { readTwofaTableColumns } from "./twofa-table-prefs";
+import { readTwofaTableColumns, type TwofaTableColumnKey } from "./twofa-table-prefs";
+import { sortableTwofaValue } from "./twofa-sort";
 import { useNotesAuth } from "../notes/useNotesAuth";
-import { NotesAuthGate } from "../notes/NotesAuthGate";
 
 function visibleSet(set: Set<string> | null, defaults: Set<string>) {
   return set ?? defaults;
@@ -64,43 +76,47 @@ type PendingReplaceState = {
 export function TwofaManagerScreen({
   shellMode,
   query: queryProp = "",
+  tabActive = true,
 }: {
   shellMode?: boolean;
   query?: string;
+  tabActive?: boolean;
 } = {}) {
   const { session, loading: authLoading, offline } = useNotesAuth();
 
   if (shellMode && !authLoading && (!session || offline)) {
-    return <NotesAuthGate variant="twofa" />;
+    return null;
   }
 
   return (
-    <TwofaManagerScreenBody shellMode={shellMode} query={queryProp} />
+    <TwofaManagerScreenBody shellMode={shellMode} query={queryProp} tabActive={tabActive} />
   );
 }
 
 function TwofaManagerScreenBody({
   shellMode,
   query: queryProp = "",
+  tabActive = true,
 }: {
   shellMode?: boolean;
   query?: string;
+  tabActive?: boolean;
 } = {}) {
   const {
     accounts,
-    tick,
     add,
     addMany,
     update,
     remove,
     touchLastUsed,
     dedupeNow,
+    previewDedupe,
     cloudState,
     cloudError,
     fullSyncNotice,
     ackFullSyncNotice,
     syncFromCloud,
-  } = useTwofaAccounts();
+  } = useTwofaAccounts({ tabActive });
   const { pushToast } = useAppToast();
 
   useEffect(() => {
@@ -115,9 +131,6 @@ function TwofaManagerScreenBody({
     query: wsQuery,
     filterValues,
     setFilters,
-    setToolbar,
-    setFilterToolbar,
-    setCenterStats,
     setDirectoryKpis,
     setDirectoryCharts,
     setSectionRuleLabel,
@@ -131,7 +144,17 @@ function TwofaManagerScreenBody({
   const [pendingReplace, setPendingReplace] = useState<PendingReplaceState>(null);
   const [error, setError] = useState<string | null>(null);
   const [visibleColumns, setVisibleColumns] = useState(() => readTwofaTableColumns());
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [dedupeModalOpen, setDedupeModalOpen] = useState(false);
+  const [dedupePreview, setDedupePreview] = useState<TwofaDedupePreview | null>(null);
+  const [dedupePreviewLoading, setDedupePreviewLoading] = useState(false);
+  const [dedupePreviewError, setDedupePreviewError] = useState<string | null>(null);
+  const [dedupeRunning, setDedupeRunning] = useState(false);
+  const [viewMode, setViewModeState] = useState<HubViewMode>(() => readTwofaViewMode());
+
+  const setViewMode = useCallback((mode: HubViewMode) => {
+    setViewModeState(mode);
+    patchTwofaViewMode(mode);
+  }, []);
 
   useEffect(() => {
     const sync = () => setVisibleColumns(readTwofaTableColumns());
@@ -142,11 +165,13 @@ function TwofaManagerScreenBody({
   useEffect(() => subscribeHubListPrefs(() => {
     setHubPrefs(readTwofaHubPrefs());
     setPeriod(readWorkspacePeriod("twofa", "all"));
+    setViewModeState(readTwofaViewMode());
   }), []);
 
+  const accountsForAnalytics = useDeferredValue(accounts);
   const twofaFilters = useMemo(
-    () => twofaFiltersWithCounts(accounts, query, filterValues, period),
-    [accounts, filterValues, period, query],
+    () => twofaFiltersWithCounts(accountsForAnalytics, query, filterValues, period),
+    [accountsForAnalytics, filterValues, period, query],
   );
 
   useEffect(() => {
@@ -160,20 +185,26 @@ function TwofaManagerScreenBody({
     [accounts, filterValues, period, query],
   );
 
-  const tableRows = useMemo(
-    () => displayedAccounts.slice(0, hubPrefs.limit),
-    [displayedAccounts, hubPrefs.limit],
+  const { sortKey, sortDir, onSort, sorted: sortedDisplayedAccounts } = useDirectoryTableSort(
+    displayedAccounts,
+    "service" as TwofaTableColumnKey,
+    sortableTwofaValue,
   );
 
-  const tableTruncated = displayedAccounts.length > tableRows.length;
-
-  const selectedRows = useMemo(
-    () => displayedAccounts.filter((row) => selectedIds.has(row.id)),
-    [displayedAccounts, selectedIds],
+  const {
+    selectedIds,
+    setSelectedIds,
+    selectedRows,
+    allVisibleSelected,
+    hasSelection,
+    toggleSelect,
+    toggleSelectAll,
+  } = useHubDirectorySelection(sortedDisplayedAccounts, (row) => row.id);
+  const listResetKey = useMemo(
+    () =>
+      hubDirectoryListResetKey(query, filterValues, period, visibleColumns, sortKey, sortDir, viewMode),
+    [query, filterValues, period, visibleColumns, sortKey, sortDir, viewMode],
   );
-  const allVisibleSelected =
-    tableRows.length > 0 && tableRows.every((row) => selectedIds.has(row.id));
-  const hasSelection = selectedIds.size > 0;
 
   const closeModal = useCallback(() => {
     setAddModal(null);
@@ -189,28 +220,6 @@ function TwofaManagerScreenBody({
     setAddModal({ mode: "edit", account: row });
     setError(null);
   }, []);
-
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const toggleSelectAll = useCallback(() => {
-    setSelectedIds((prev) => {
-      if (tableRows.every((row) => prev.has(row.id))) {
-        const next = new Set(prev);
-        tableRows.forEach((row) => next.delete(row.id));
-        return next;
-      }
-      const next = new Set(prev);
-      tableRows.forEach((row) => next.add(row.id));
-      return next;
-    });
-  }, [tableRows]);
 
   const requestBulkDelete = useCallback(() => {
     if (selectedRows.length === 0) return;
@@ -269,10 +278,43 @@ function TwofaManagerScreenBody({
     [addMany, pushToast],
   );
 
-  const handleDedupeNow = useCallback(() => {
-    const removed = dedupeNow();
-    pushToast(twofaDedupeToast(removed), removed > 0 ? "success" : "info");
+  const handleDedupePreview = useCallback(() => {
+    setDedupeModalOpen(true);
+    setDedupePreviewLoading(true);
+    setDedupePreviewError(null);
+    setDedupePreview(null);
+    void previewDedupe().then(({ preview, error }) => {
+      setDedupePreviewLoading(false);
+      if (error) {
+        setDedupePreviewError(error);
+        return;
+      }
+      if (preview.totalRemoved === 0) {
+        setDedupeModalOpen(false);
+        pushToast(twofaDedupeToast(0), "info");
+        return;
+      }
+      setDedupePreview(preview);
+    });
+  }, [previewDedupe, pushToast]);
+
+  const handleDedupeConfirm = useCallback(() => {
+    setDedupeRunning(true);
+    void dedupeNow()
+      .then((removed) => {
+        pushToast(twofaDedupeToast(removed), removed > 0 ? "success" : "info");
+        setDedupeModalOpen(false);
+        setDedupePreview(null);
+      })
+      .finally(() => setDedupeRunning(false));
   }, [dedupeNow, pushToast]);
+
+  const closeDedupeModal = useCallback(() => {
+    if (dedupeRunning) return;
+    setDedupeModalOpen(false);
+    setDedupePreview(null);
+    setDedupePreviewError(null);
+  }, [dedupeRunning]);
 
   const confirmReplace = useCallback(() => {
     if (!pendingReplace) return;
@@ -291,16 +333,20 @@ function TwofaManagerScreenBody({
     setPendingReplace(null);
   }, [pendingReplace, pushToast, update]);
 
+  const analyticsActive = shellMode && tabActive;
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_TWOFA_HEADER_STAT_KEYS;
   const visKpi = useResolvedVisibleKpiKeys(hubPrefs.kpi, DEFAULT_TWOFA_KPI_KEYS, TWOFA_KPI_DEFS);
   const visCharts = visibleSet(hubPrefs.charts, DEFAULT_TWOFA_CHART_KEYS);
   const twofaKpis = useMemo(
-    () => (shellMode ? buildTwofaKpis(accounts, displayedAccounts, visKpi) : []),
-    [accounts, displayedAccounts, shellMode, visKpi],
+    () => (analyticsActive ? buildTwofaKpis(accounts, displayedAccounts, visKpi) : []),
+    [accounts, analyticsActive, displayedAccounts, visKpi],
   );
-  const twofaChartData = useMemo(() => buildTwofaChartItems(displayedAccounts), [displayedAccounts]);
+  const twofaChartData = useMemo(
+    () => (analyticsActive ? buildTwofaChartItems(displayedAccounts) : null),
+    [analyticsActive, displayedAccounts],
+  );
   const chartsBand = useMemo(() => {
-    if (!shellMode) return undefined;
+    if (!analyticsActive || !twofaChartData) return undefined;
     const hasCharts =
       visCharts.has("service_bar") ||
       visCharts.has("identity_bar") ||
@@ -321,14 +367,14 @@ function TwofaManagerScreenBody({
         ) : null}
       </>
     );
-  }, [shellMode, twofaChartData, visCharts]);
+  }, [analyticsActive, twofaChartData, visCharts]);
 
   const kpiSig = useMemo(
     () => kpiTilesSignature(twofaKpis.length > 0 ? twofaKpis : undefined),
     [twofaKpis],
   );
   const chartsDepKey = useMemo(() => {
-    if (!shellMode) return "";
+    if (!analyticsActive || !twofaChartData) return "";
     const visible = chartKeysSignature(visCharts, TWOFA_CHART_ORDER);
     if (!visible) return "";
     const parts: string[] = [];
@@ -337,7 +383,7 @@ function TwofaManagerScreenBody({
     if (visCharts.has("usage_bar")) parts.push(barChartSeriesSignature(twofaChartData.usageItems));
     if (visCharts.has("password_bar")) parts.push(barChartSeriesSignature(twofaChartData.passwordItems));
     return `${visible}|${parts.join(";")}`;
-  }, [shellMode, twofaChartData, visCharts]);
+  }, [analyticsActive, twofaChartData, visCharts]);
 
   useDirectoryBandSync(
     {
@@ -348,7 +394,7 @@ function TwofaManagerScreenBody({
       chartsKey: chartsDepKey,
     },
     { setDirectoryKpis, setDirectoryCharts, setSectionRuleLabel },
-    shellMode,
+    analyticsActive,
   );
 
   const editingId = addModal?.mode === "edit" ? addModal.account.id : null;
@@ -398,60 +444,95 @@ function TwofaManagerScreenBody({
       </>
     ) : null;
 
-  useEffect(() => {
-    if (!shellMode) return;
-    setToolbar(
-      <TwofaFilterToolbar
-        limit={hubPrefs.limit}
-        tableShown={tableRows.length}
-        filteredTotal={displayedAccounts.length}
+  const directoryToolbar = useMemo(
+    () => (
+      <DirectorySearchToolbar
+        workspacePeriod={{ scope: "twofa", defaultRange: "all", inactiveKeys: ["all"] }}
+        showTimeRange={false}
+        showRefresh={false}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        showTablePageSize
+        countIcon={Shield}
+        shown={displayedAccounts.length}
         total={accounts.length}
-        cloudState={cloudState}
-        cloudError={cloudError}
-        onCloudSync={() => void syncFromCloud({ full: true })}
-        onDedupe={handleDedupeNow}
-      />,
-    );
-    setFilterToolbar(
-      <TwofaBulkActionBar
-        hasSelection={hasSelection}
-        selectedCount={selectedIds.size}
-        onAdd={() => openAddModal()}
-        onEdit={handleBulkEdit}
-        onDelete={requestBulkDelete}
-      />,
-    );
-    setCenterStats(
+        countLabel="accounts"
+        trailing={
+          <TwofaCloudSyncTrailing
+            filteredTotal={displayedAccounts.length}
+            total={accounts.length}
+            cloudState={cloudState}
+            cloudError={cloudError}
+            onCloudSync={() => void syncFromCloud({ full: true })}
+          />
+        }
+      />
+    ),
+    [
+      accounts.length,
+      cloudError,
+      cloudState,
+      displayedAccounts.length,
+      setViewMode,
+      syncFromCloud,
+      viewMode,
+    ],
+  );
+
+  const directoryFilterToolbar = useMemo(
+    () => (
+      <HubDirectoryBulkActionBar
+        selectAll={
+          viewMode === "card"
+            ? {
+                visibleCount: sortedDisplayedAccounts.length,
+                selectedCount: selectedIds.size,
+                allVisibleSelected,
+                onToggleSelectAll: toggleSelectAll,
+                noun: "accounts",
+              }
+            : null
+        }
+      >
+        <TwofaBulkActionBar
+          hasSelection={hasSelection}
+          selectedCount={selectedIds.size}
+          onAdd={() => openAddModal()}
+          onEdit={handleBulkEdit}
+          onDelete={requestBulkDelete}
+          onDedupe={handleDedupePreview}
+        />
+      </HubDirectoryBulkActionBar>
+    ),
+    [
+      allVisibleSelected,
+      handleBulkEdit,
+      handleDedupePreview,
+      hasSelection,
+      openAddModal,
+      requestBulkDelete,
+      selectedIds.size,
+      sortedDisplayedAccounts.length,
+      toggleSelectAll,
+      viewMode,
+    ],
+  );
+
+  const directoryCenterStats = useMemo(
+    () =>
       buildTwofaHeaderStats(visHeaderStats, {
         total: accounts.length,
-        shown: tableRows.length,
+        shown: displayedAccounts.length,
       }),
-    );
-    return () => {
-      setToolbar(null);
-      setFilterToolbar(null);
-      setCenterStats([]);
-    };
-  }, [
-    accounts.length,
-    cloudError,
-    cloudState,
-    displayedAccounts.length,
-    handleBulkEdit,
-    handleDedupeNow,
-    syncFromCloud,
-    hasSelection,
-    hubPrefs.limit,
-    openAddModal,
-    requestBulkDelete,
-    selectedIds.size,
-    shellMode,
-    setCenterStats,
-    setFilterToolbar,
-    setToolbar,
-    tableRows.length,
-    visHeaderStats,
-  ]);
+    [accounts.length, displayedAccounts.length, visHeaderStats],
+  );
+
+  useP0020DirectoryChrome({
+    active: Boolean(shellMode && tabActive),
+    toolbar: directoryToolbar,
+    filterToolbar: directoryFilterToolbar,
+    centerStats: directoryCenterStats,
+  });
 
   const accountsBody = (
     <>
@@ -468,34 +549,51 @@ function TwofaManagerScreenBody({
         </button>
       ) : null}
 
-      {displayedAccounts.length === 0 && !addModalOpen ? (
-        <div className="rounded-xl border border-dashed border-white/15 bg-white/[.02] px-6 py-10 text-center text-sm text-[var(--muted)]">
-          <Shield className="mx-auto mb-2 text-amber-300/80" size={28} />
-          {accounts.length === 0
-            ? "No 2FA entries yet. Use Add to create one."
-            : "No accounts match search or filters."}
-        </div>
-      ) : (
-        <>
-          <TwofaAccountsTable
-            rows={tableRows}
-            tick={tick}
-            visibleColumns={visibleColumns}
-            editingId={editingId}
-            selectedIds={selectedIds}
-            onToggleSelect={toggleSelect}
-            onToggleSelectAll={toggleSelectAll}
-            allVisibleSelected={allVisibleSelected}
-            onUsed={touchLastUsed}
-          />
-          {tableTruncated ? (
-            <p className="mt-2 text-center text-[11px] text-[var(--muted)]">
-              Showing {tableRows.length} of {displayedAccounts.length} matching — increase row limit in toolbar
-              (25–500).
-            </p>
-          ) : null}
-        </>
-      )}
+      <TwofaTotpTickProvider active={tabActive}>
+        <P0020DirectoryScreen
+          items={sortedDisplayedAccounts}
+          viewMode={viewMode}
+          resetKey={listResetKey}
+          empty={
+            !addModalOpen ? (
+              <div className="rounded-xl border border-dashed border-white/15 bg-white/[.02] px-6 py-10 text-center text-sm text-[var(--muted)]">
+                <Shield className="mx-auto mb-2 text-amber-300/80" size={28} />
+                {accounts.length === 0
+                  ? "No 2FA entries yet. Use Add to create one."
+                  : "No accounts match search or filters."}
+              </div>
+            ) : null
+          }
+          cardGridAriaLabel="2FA account card pages"
+          renderCard={(row) => (
+            <TwofaAccountCard
+              key={row.id}
+              account={row}
+              selected={selectedIds.has(row.id)}
+              editing={editingId === row.id}
+              onToggleSelect={() => toggleSelect(row.id)}
+              onOpen={() => startEdit(row)}
+              onUsed={() => touchLastUsed(row.id)}
+            />
+          )}
+          table={
+            <TwofaAccountsTable
+              rows={sortedDisplayedAccounts}
+              visibleColumns={visibleColumns}
+              editingId={editingId}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
+              allVisibleSelected={allVisibleSelected}
+              onUsed={touchLastUsed}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={onSort}
+              resetKey={listResetKey}
+            />
+          }
+        />
+      </TwofaTotpTickProvider>
     </>
   );
 
@@ -547,6 +645,16 @@ function TwofaManagerScreenBody({
         headerIconClassName="text-amber-300"
         onConfirm={confirmReplace}
         onClose={() => setPendingReplace(null)}
+      />
+
+      <TwofaDedupePreviewModal
+        open={dedupeModalOpen}
+        loading={dedupePreviewLoading}
+        running={dedupeRunning}
+        preview={dedupePreview}
+        error={dedupePreviewError}
+        onConfirm={handleDedupeConfirm}
+        onClose={closeDedupeModal}
       />
     </div>
   );

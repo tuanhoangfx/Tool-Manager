@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { TwofaAccount } from "./types";
-import { dedupeTwofaAccounts, findTwofaDraftConflict, upsertTwofaDraft } from "./twofa-upsert-accounts";
+import {
+  dedupeTwofaAccounts,
+  findTwofaDraftConflict,
+  previewTwofaDedupe,
+  upsertTwofaDraft,
+} from "./twofa-upsert-accounts";
 import { twofaIdentityKey } from "./twofa-identity";
 
 const SECRET = "JBSWY3DPEHPK3PXP";
@@ -135,5 +140,24 @@ describe("dedupeTwofaAccounts", () => {
     expect(accounts).toHaveLength(2);
     expect(accounts.find((r) => r.service === "Google")?.id).toBe("b");
     expect(removedIds).toEqual(["a"]);
+  });
+});
+
+describe("previewTwofaDedupe", () => {
+  it("groups removed duplicates by service", () => {
+    const prev = [
+      row("a", "Gmail", "a@gmail.com", SECRET, "2026-06-01T00:00:00.000Z"),
+      row("b", "Gmail", "a@gmail.com", SECRET, "2026-06-05T00:00:00.000Z"),
+      row("c", "ChatGPT", "x@y.com", SECRET, "2026-06-01T00:00:00.000Z"),
+      row("d", "ChatGPT", "x@y.com", SECRET, "2026-06-04T00:00:00.000Z"),
+      row("e", "ChatGPT", "z@y.com", SECRET, "2026-06-04T00:00:00.000Z"),
+      row("f", "ChatGPT", "z@y.com", SECRET, "2026-06-06T00:00:00.000Z"),
+    ];
+    const preview = previewTwofaDedupe(prev);
+    expect(preview.totalRemoved).toBe(3);
+    expect(preview.byService).toEqual([
+      { service: "ChatGPT", count: 2 },
+      { service: "Gmail", count: 1 },
+    ]);
   });
 });

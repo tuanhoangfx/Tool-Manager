@@ -1,40 +1,9 @@
-/** Tool Hub (P0004) — workspace identity & user directory. */
+import { createHubIdentityUrls } from "@tool-workspace/hub-identity";
 
-export const HUB_DEV_ORIGIN = "http://127.0.0.1:5176";
-export const HUB_PRODUCTION_ORIGIN = "https://infi.io.vn";
+const urls = createHubIdentityUrls({
+  toolHubUrl: import.meta.env.VITE_TOOL_HUB_URL,
+  toolHostnames: ["databox.infi.io.vn"],
+  dev: import.meta.env.DEV,
+});
 
-export function resolveToolHubOrigin(): string {
-  const fromEnv = import.meta.env.VITE_TOOL_HUB_URL as string | undefined;
-  if (fromEnv?.trim()) return fromEnv.trim().replace(/\/$/, "");
-
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (host === "databox.infi.io.vn" || host.endsWith(".databox.infi.io.vn")) {
-      return HUB_PRODUCTION_ORIGIN;
-    }
-  }
-
-  return import.meta.env.DEV ? HUB_DEV_ORIGIN : HUB_PRODUCTION_ORIGIN;
-}
-
-export function toolHubUsersUrl(): string {
-  return `${resolveToolHubOrigin()}/users`;
-}
-
-export function toolHubSignInUrl(returnTo?: string): string {
-  const base = toolHubUsersUrl();
-  if (!returnTo?.trim()) return base;
-  const url = new URL(base);
-  url.searchParams.set("returnTo", returnTo.trim());
-  return url.toString();
-}
-
-export function isToolHubOrigin(origin: string): boolean {
-  if (origin === HUB_DEV_ORIGIN || origin === HUB_PRODUCTION_ORIGIN) return true;
-  try {
-    const host = new URL(origin).hostname;
-    return host === "infi.io.vn" || host.endsWith(".infi.io.vn") || host.endsWith(".vercel.app");
-  } catch {
-    return false;
-  }
-}
+export const { resolveToolHubOrigin, toolHubUsersUrl, toolHubSignInUrl, isToolHubOrigin } = urls;

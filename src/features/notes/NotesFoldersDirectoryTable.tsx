@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { HubPaginatedTableShell, HubSortIndicator, type HubSortDir } from "@tool-workspace/hub-ui";
-import { FolderOpen, Hash, StickyNote } from "lucide-react";
+import { HubDirectoryTableShell, hubDirectoryListResetKey, type HubSortDir } from "@tool-workspace/hub-ui";
+import { Hash } from "lucide-react";
 import type { NoteFolder } from "./noteFolders";
 import { NotesFolderGlyph } from "./NotesFolderGlyph";
 import { isSystemFolder } from "./noteFolderLifecycle";
@@ -9,31 +9,20 @@ export type FolderTableSortKey = "name" | "noteCount";
 
 export type FolderTableRow = NoteFolder & { noteCount: number };
 
-type ColumnDef = {
-  key: FolderTableSortKey;
-  label: string;
-  colClass: string;
-  icon: typeof FolderOpen;
-  iconClass: string;
-  align: "left" | "center";
-};
-
-const COLUMNS: ColumnDef[] = [
+const COLUMNS = [
   {
-    key: "name",
+    key: "name" as const,
     label: "Name",
+    role: "name" as const,
     colClass: "hub-users-col--folder-name",
-    icon: FolderOpen,
-    iconClass: "hub-users-th-icon--name",
-    align: "left",
+    headerAlign: "start" as const,
   },
   {
-    key: "noteCount",
+    key: "noteCount" as const,
     label: "Notes",
+    role: "tools" as const,
     colClass: "hub-users-col--folder-notes",
-    icon: StickyNote,
-    iconClass: "hub-users-th-icon--tools",
-    align: "center",
+    headerAlign: "center" as const,
   },
 ];
 
@@ -65,25 +54,6 @@ function NotesCountCell({ count }: { count: number }) {
   );
 }
 
-function renderBodyCell(key: FolderTableSortKey, folder: FolderTableRow) {
-  switch (key) {
-    case "name":
-      return (
-        <td key={key} className="hub-users-col--folder-name">
-          <FolderNameCell folder={folder} />
-        </td>
-      );
-    case "noteCount":
-      return (
-        <td key={key} className="hub-users-col--folder-notes">
-          <NotesCountCell count={folder.noteCount} />
-        </td>
-      );
-    default:
-      return null;
-  }
-}
-
 export function NotesFoldersDirectoryTable({
   rows,
   sortKey,
@@ -91,8 +61,6 @@ export function NotesFoldersDirectoryTable({
   onSort,
   selectedIds,
   onToggleSelect,
-  onToggleSelectAll,
-  allVisibleSelected,
   editingId,
 }: {
   rows: FolderTableRow[];
@@ -101,87 +69,43 @@ export function NotesFoldersDirectoryTable({
   onSort: (key: FolderTableSortKey) => void;
   selectedIds: Set<string>;
   onToggleSelect: (folderId: string) => void;
-  onToggleSelectAll: () => void;
-  allVisibleSelected: boolean;
   editingId: string | null;
 }) {
-  const visibleDefs = useMemo(() => COLUMNS, []);
+  const columns = useMemo(() => COLUMNS, []);
+  const resetKey = useMemo(
+    () => hubDirectoryListResetKey(sortKey, sortDir, rows.length),
+    [rows.length, sortDir, sortKey],
+  );
 
   return (
-    <HubPaginatedTableShell items={rows} ariaLabel="Folders table pages">
-      {(pageRows) => (
-    <div className="hub-users-table-wrap overflow-hidden rounded-2xl border border-white/5">
-      <table className="hub-users-table hub-users-table--folders">
-        <colgroup>
-          <col className="hub-users-col--select" />
-          {visibleDefs.map((col) => (
-            <col key={col.key} className={col.colClass} />
-          ))}
-        </colgroup>
-        <thead>
-          <tr>
-            <th className="hub-users-col--select" scope="col">
-              <label className="hub-users-select-all">
-                <input
-                  type="checkbox"
-                  className="hub-checkbox"
-                  checked={rows.length > 0 && allVisibleSelected}
-                  onChange={onToggleSelectAll}
-                  aria-label="Select all folders"
-                />
-              </label>
-            </th>
-            {visibleDefs.map((col) => {
-              const Icon = col.icon;
-              return (
-                <th key={col.key} className={col.colClass} scope="col">
-                  <button
-                    type="button"
-                    className={`hub-users-th-btn${col.align === "left" ? " hub-users-th-btn--align-start" : ""}`}
-                    onClick={() => onSort(col.key)}
-                    aria-sort={sortKey === col.key ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
-                  >
-                    <span className={`hub-users-th-label${col.align === "left" ? " hub-users-th-label--start" : ""}`}>
-                      <Icon size={13} className={`hub-users-th-icon ${col.iconClass}`} aria-hidden />
-                      <span className="hub-users-th-text">{col.label}</span>
-                      <HubSortIndicator active={sortKey === col.key} dir={sortDir} />
-                    </span>
-                  </button>
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {pageRows.map((folder) => {
-            const selected = selectedIds.has(folder.id);
-            const isEditing = editingId === folder.id;
-            return (
-              <tr
-                key={folder.id}
-                className={`hub-users-row hub-users-row--static${selected ? " is-selected" : ""}${isEditing ? " is-editing" : ""}`}
-              >
-                <td className="hub-users-col--select" onClick={(e) => e.stopPropagation()}>
-                  <label className="hub-users-select-row">
-                    <input
-                      type="checkbox"
-                      className="hub-checkbox"
-                      checked={selected}
-                      onChange={() => onToggleSelect(folder.id)}
-                      aria-label={`Select ${folder.name}`}
-                    />
-                  </label>
-                </td>
-                {visibleDefs.map((col) => renderBodyCell(col.key, folder))}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      {rows.length === 0 ? <div className="hub-users-empty">No folders yet — use Add to create one.</div> : null}
-    </div>
+    <HubDirectoryTableShell
+      items={rows}
+      resetKey={resetKey}
+      ariaLabel="Folders table pages"
+      tableClassName="hub-users-table hub-users-table--folders"
+      columns={columns}
+      sortKey={sortKey}
+      sortDir={sortDir}
+      onSort={onSort}
+      getRowKey={(folder) => folder.id}
+      selectedIds={selectedIds}
+      onToggleSelect={onToggleSelect}
+      selectAllLabel="Select all folders on this page"
+      emptyMessage="No folders yet — use Add to create one."
+      getRowClassName={(folder) =>
+        ` hub-users-row--static${editingId === folder.id ? " is-editing" : ""}`
+      }
+      renderRowCells={(folder) => (
+        <>
+          <td className="hub-users-col--folder-name">
+            <FolderNameCell folder={folder} />
+          </td>
+          <td className="hub-users-col--folder-notes">
+            <NotesCountCell count={folder.noteCount} />
+          </td>
+        </>
       )}
-    </HubPaginatedTableShell>
+    />
   );
 }
 

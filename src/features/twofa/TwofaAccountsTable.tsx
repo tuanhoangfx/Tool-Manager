@@ -1,5 +1,5 @@
-import { memo, useMemo } from "react";
-import { HubPaginatedTableShell, HubTableColumnHeader, type HubTableColumnRole } from "@tool-workspace/hub-ui";
+import { useMemo } from "react";
+import { HubDirectoryTableShell, type HubSortDir, type HubTableColumnRole } from "@tool-workspace/hub-ui";
 import { TwofaPlatformIcon } from "./TwofaPlatformIcon";
 import "./twofa-platform-icon.css";
 import "./twofa-table-cells.css";
@@ -8,64 +8,38 @@ import {
   TwofaBrowserCell,
   TwofaCodeCell,
   TwofaPasswordCell,
+  TwofaPeriodCell,
   TwofaSecretCell,
 } from "./twofa-copy-cells";
 import type { TwofaAccount } from "./types";
-import { secondsRemaining } from "./totp";
 import { fmtHubDate, twofaActivityAt } from "./twofa-time";
 import type { TwofaTableColumnKey } from "./twofa-table-prefs";
 
 type ColumnKey = TwofaTableColumnKey;
 
-type ColumnAlign = "left" | "center";
-
 type ColumnDef = {
   key: ColumnKey;
   label: string;
   colClass: string;
-  align: ColumnAlign;
   role: HubTableColumnRole;
+  headerAlign?: "start" | "center";
 };
 
 const COLUMNS: ColumnDef[] = [
-  { key: "service", label: "Service", colClass: "hub-users-col--twofa-service", align: "left", role: "service" },
-  { key: "browser", label: "Browser", colClass: "hub-users-col--twofa-browser", align: "center", role: "id" },
-  { key: "account", label: "Account", colClass: "hub-users-col--twofa-account", align: "left", role: "email" },
-  { key: "password", label: "Password", colClass: "hub-users-col--twofa-password", align: "left", role: "password" },
-  { key: "secret", label: "Secret", colClass: "hub-users-col--twofa-secret", align: "left", role: "id" },
-  { key: "code", label: "Code", colClass: "hub-users-col--twofa-code", align: "left", role: "code" },
-  { key: "period", label: "Time", colClass: "hub-users-col--twofa-period", align: "center", role: "period" },
-  { key: "created", label: "Created", colClass: "hub-users-col--twofa-created", align: "center", role: "created" },
-  { key: "used", label: "Last used", colClass: "hub-users-col--twofa-used", align: "center", role: "activity" },
+  { key: "service", label: "Service", colClass: "hub-users-col--twofa-service", role: "service", headerAlign: "start" },
+  { key: "browser", label: "Browser", colClass: "hub-users-col--twofa-browser", role: "id", headerAlign: "center" },
+  { key: "account", label: "Account", colClass: "hub-users-col--twofa-account", role: "email", headerAlign: "start" },
+  { key: "password", label: "Password", colClass: "hub-users-col--twofa-password", role: "password", headerAlign: "start" },
+  { key: "secret", label: "Secret", colClass: "hub-users-col--twofa-secret", role: "id", headerAlign: "start" },
+  { key: "code", label: "Code", colClass: "hub-users-col--twofa-code", role: "code", headerAlign: "start" },
+  { key: "period", label: "Time", colClass: "hub-users-col--twofa-period", role: "period", headerAlign: "center" },
+  { key: "created", label: "Created", colClass: "hub-users-col--twofa-created", role: "created", headerAlign: "center" },
+  { key: "used", label: "Last used", colClass: "hub-users-col--twofa-used", role: "activity", headerAlign: "center" },
 ];
 
-function thBtnClass(align: ColumnAlign) {
-  return `hub-users-th-btn hub-users-th-btn--static${align === "left" ? " hub-users-th-btn--align-start" : ""}`;
-}
+const NON_SORTABLE_COLUMNS = new Set<ColumnKey>(["code", "period"]);
 
-function periodTone(secondsLeft: number): "fresh" | "warn" | "urgent" {
-  if (secondsLeft > 20) return "fresh";
-  if (secondsLeft > 10) return "warn";
-  return "urgent";
-}
-
-const TwofaPeriodCell = memo(function TwofaPeriodCell({ tick }: { tick: number }) {
-  void tick;
-  const left = secondsRemaining();
-  const tone = periodTone(left);
-  return (
-    <span className="hub-twofa-period-inline" title={`${left}s remaining`}>
-      <span className={`hub-twofa-period-dot hub-twofa-period-dot--${tone}`} aria-hidden />
-      <span className="hub-twofa-period-label tabular-nums">{left}s</span>
-    </span>
-  );
-});
-
-function renderBodyCell(
-  key: ColumnKey,
-  row: TwofaAccount,
-  ctx: { tick: number; onUsed: (id: string) => void },
-) {
+function renderBodyCell(key: ColumnKey, row: TwofaAccount, onUsed: (id: string) => void) {
   switch (key) {
     case "service":
       return (
@@ -105,13 +79,13 @@ function renderBodyCell(
     case "code":
       return (
         <td key={key} className="hub-users-col--twofa-code">
-          <TwofaCodeCell account={row} tick={ctx.tick} onUsed={ctx.onUsed} />
+          <TwofaCodeCell account={row} onUsed={onUsed} />
         </td>
       );
     case "period":
       return (
         <td key={key} className="hub-users-col--twofa-period">
-          <TwofaPeriodCell tick={ctx.tick} />
+          <TwofaPeriodCell />
         </td>
       );
     case "created":
@@ -131,59 +105,9 @@ function renderBodyCell(
   }
 }
 
-type Props = {
-  rows: TwofaAccount[];
-  tick: number;
-  editingId: string | null;
-  visibleColumns: Set<TwofaTableColumnKey>;
-  selectedIds: Set<string>;
-  onToggleSelect: (id: string) => void;
-  onToggleSelectAll: () => void;
-  allVisibleSelected: boolean;
-  onUsed: (id: string) => void;
-};
-
-const TwofaTableRow = memo(function TwofaTableRow({
-  row,
-  visibleDefs,
-  tick,
-  editingId,
-  selected,
-  onToggleSelect,
-  onUsed,
-}: {
-  row: TwofaAccount;
-  visibleDefs: ColumnDef[];
-  tick: number;
-  editingId: string | null;
-  selected: boolean;
-  onToggleSelect: (id: string) => void;
-  onUsed: (id: string) => void;
-}) {
-  const ctx = { tick, onUsed };
-  return (
-    <tr
-      className={`hub-users-row hub-users-row--static${selected ? " is-selected" : ""}${editingId === row.id ? " is-editing" : ""}`}
-    >
-      <td className="hub-users-col--select" onClick={(e) => e.stopPropagation()}>
-        <label className="hub-users-select-row">
-          <input
-            type="checkbox"
-            className="hub-checkbox"
-            checked={selected}
-            onChange={() => onToggleSelect(row.id)}
-            aria-label={`Select ${row.service}`}
-          />
-        </label>
-      </td>
-      {visibleDefs.map((col) => renderBodyCell(col.key, row, ctx))}
-    </tr>
-  );
-});
-
+/** Golden 2FA directory table — HubDirectoryTableShell only (no virtual bypass). */
 export function TwofaAccountsTable({
   rows,
-  tick,
   editingId,
   visibleColumns,
   selectedIds,
@@ -191,67 +115,64 @@ export function TwofaAccountsTable({
   onToggleSelectAll,
   allVisibleSelected,
   onUsed,
-}: Props) {
+  sortKey,
+  sortDir,
+  onSort,
+  resetKey,
+}: {
+  rows: TwofaAccount[];
+  editingId: string | null;
+  visibleColumns: Set<TwofaTableColumnKey>;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
+  allVisibleSelected: boolean;
+  onUsed: (id: string) => void;
+  sortKey: ColumnKey;
+  sortDir: HubSortDir;
+  onSort: (key: ColumnKey) => void;
+  resetKey?: string | number | boolean | null;
+}) {
   const visibleDefs = useMemo(
     () => COLUMNS.filter((col) => visibleColumns.has(col.key)),
     [visibleColumns],
   );
 
+  const shellColumns = useMemo(
+    () =>
+      visibleDefs.map((col) => ({
+        key: col.key,
+        label: col.label,
+        role: col.role,
+        colClass: col.colClass,
+        sortable: !NON_SORTABLE_COLUMNS.has(col.key),
+        headerAlign: col.headerAlign,
+      })),
+    [visibleDefs],
+  );
+
   return (
-    <HubPaginatedTableShell items={rows} resetKey={rows.length} ariaLabel="2FA accounts table pages">
-      {(pageRows) => (
-    <div className="hub-users-table-wrap overflow-hidden rounded-2xl border border-white/5">
-      <table className="hub-users-table hub-users-table--twofa">
-        <colgroup>
-          <col className="hub-users-col--select" />
-          {visibleDefs.map((col) => (
-            <col key={col.key} className={col.colClass} />
-          ))}
-        </colgroup>
-        <thead>
-          <tr>
-            <th className="hub-users-col--select" scope="col">
-              <label className="hub-users-select-all">
-                <input
-                  type="checkbox"
-                  className="hub-checkbox"
-                  checked={rows.length > 0 && allVisibleSelected}
-                  onChange={onToggleSelectAll}
-                  aria-label="Select all visible accounts"
-                />
-              </label>
-            </th>
-            {visibleDefs.map((col) => (
-              <th key={col.key} className={col.colClass} scope="col">
-                <span className={thBtnClass(col.align)}>
-                  <span className={`hub-users-th-label${col.align === "left" ? " hub-users-th-label--start" : ""}`}>
-                    <HubTableColumnHeader label={col.label} role={col.role} />
-                  </span>
-                </span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {pageRows.map((row) => (
-            <TwofaTableRow
-              key={row.id}
-              row={row}
-              visibleDefs={visibleDefs}
-              tick={tick}
-              editingId={editingId}
-              selected={selectedIds.has(row.id)}
-              onToggleSelect={onToggleSelect}
-              onUsed={onUsed}
-            />
-          ))}
-        </tbody>
-      </table>
-      {rows.length === 0 ? (
-        <div className="hub-users-empty">No accounts match search or filters.</div>
-      ) : null}
-    </div>
-      )}
-    </HubPaginatedTableShell>
+    <HubDirectoryTableShell
+      items={rows}
+      resetKey={resetKey}
+      ariaLabel="2FA accounts table pages"
+      wrapClassName="overflow-hidden"
+      tableClassName="hub-users-table hub-users-table--twofa"
+      columns={shellColumns}
+      sortKey={sortKey}
+      sortDir={sortDir}
+      onSort={onSort}
+      getRowKey={(row) => row.id}
+      selectedIds={selectedIds}
+      onToggleSelect={onToggleSelect}
+      onToggleSelectAll={onToggleSelectAll}
+      allVisibleSelected={allVisibleSelected}
+      selectAllLabel="Select all accounts on this page"
+      emptyMessage="No accounts match search or filters."
+      getRowClassName={(row) =>
+        ` hub-users-row--static${editingId === row.id ? " is-editing" : ""}`
+      }
+      renderRowCells={(row) => visibleDefs.map((col) => renderBodyCell(col.key, row, onUsed))}
+    />
   );
 }

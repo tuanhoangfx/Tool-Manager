@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { subscribeHubIdentity } from "../../lib/hub-identity-session";
 import { relayActiveSessionsToExtension } from "../../lib/relay-extension-sessions";
 import { getOfflineMode } from "../../lib/offlineMode";
 
@@ -14,12 +15,11 @@ export function useExtensionSessionRelay(session: Session | null) {
 
     push();
     const intervalId = window.setInterval(push, RELAY_MS);
-    const onHubIdentity = () => push();
-    window.addEventListener("p0020:hub-identity", onHubIdentity);
+    const unsubHubIdentity = subscribeHubIdentity(() => push());
 
     return () => {
       window.clearInterval(intervalId);
-      window.removeEventListener("p0020:hub-identity", onHubIdentity);
+      unsubHubIdentity();
     };
   }, [session?.access_token, session?.user?.id]);
 }

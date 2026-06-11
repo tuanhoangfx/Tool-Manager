@@ -57,7 +57,11 @@ export function TodoAppCore({
     setLastDataChange({ ...change, timestamp: Date.now() });
   }, []);
 
-  const { profile, allUsers, usersWarning, loadingProfile, profileError, getProfile } = useProfileAndUsers(session, lastDataChange);
+  const { profile, allUsers, usersWarning, loadingProfile, profileError, getProfile } = useProfileAndUsers(
+    session,
+    lastDataChange,
+    tabActive,
+  );
   const chrome = useTodoChrome();
 
   useEffect(() => {
@@ -70,6 +74,7 @@ export function TodoAppCore({
     lastDataChange,
     notifyDataChange,
     closeProjectModal: modals.editProject.close,
+    enabled: tabActive,
   });
 
   useEffect(() => {
@@ -97,7 +102,7 @@ export function TodoAppCore({
   });
 
   const canAddTask = !!(session && profile);
-  useRealtime({ session, locallyUpdatedTaskIds, notifyDataChange });
+  useRealtime({ session, locallyUpdatedTaskIds, notifyDataChange, enabled: tabActive });
   useGlobalShortcuts({ modals, canAddTask, enabled: tabActive });
 
   const handleIdle = useCallback(() => {
@@ -107,7 +112,7 @@ export function TodoAppCore({
     }
   }, [session, notifyDataChange, addToast, t.dataRefreshed]);
 
-  useIdleTimer(handleIdle, 5 * 60 * 1000);
+  useIdleTimer(handleIdle, tabActive ? 5 * 60 * 1000 : 24 * 60 * 60 * 1000);
 
   useEffect(() => {
     if (!session) {

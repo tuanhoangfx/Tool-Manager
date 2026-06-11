@@ -1,5 +1,8 @@
 import { parseHubPrefSet, patchHubListPrefs, readHubListPrefs, type HubListPrefs } from "../../lib/url-prefs";
-import { migrateChartKeysWithPersist } from "@tool-workspace/hub-ui";
+import { CHART_KEY_MIGRATION, migrateChartKeysWithPersist } from "@tool-workspace/hub-ui";
+import { COOKIE_CHART_KEY_MIGRATION } from "./cookie-display-prefs";
+
+const COOKIE_CHART_MIGRATION = { ...CHART_KEY_MIGRATION, ...COOKIE_CHART_KEY_MIGRATION };
 
 export { HUB_LIST_PREFS_CHANGE_EVENT } from "../../lib/url-prefs";
 
@@ -8,8 +11,10 @@ export function readCookieHubPrefs(): HubListPrefs {
   if (typeof window === "undefined") return readHubListPrefs();
   const hub = readHubListPrefs();
   const sp = new URLSearchParams(window.location.search);
-  const charts = migrateChartKeysWithPersist(sp.get("ccharts"), (value) =>
-    patchHubListPrefs({ ccharts: value }),
+  const charts = migrateChartKeysWithPersist(
+    sp.get("ccharts"),
+    (value) => patchHubListPrefs({ ccharts: value }),
+    COOKIE_CHART_MIGRATION,
   );
   return {
     ...hub,

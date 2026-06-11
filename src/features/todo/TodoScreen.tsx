@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import { useNotesAuth } from "../notes/useNotesAuth";
-import { NotesAuthGate } from "../notes/NotesAuthGate";
 import { useModalManager } from "./hooks/useModalManager";
 import { useNotifications } from "./hooks/useNotifications";
 import type { TaskCounts, TodoAdminView } from "./app-types";
@@ -30,7 +29,7 @@ function boardActionsEqual(a: TodoBoardActions, b: TodoBoardActions) {
 function TodoScreenInner({ tabActive }: Props) {
   const { session, loading, offline, hubEmail } = useNotesAuth();
   const { modals } = useModalManager();
-  const { unreadCount, setUnreadCount } = useNotifications(session);
+  const { unreadCount, setUnreadCount } = useNotifications(session, tabActive);
   const [adminView, setAdminView] = useState<TodoAdminView>("myTasks");
   const [taskCounts, setTaskCounts] = useState<TaskCounts>({ todo: 0, inprogress: 0, done: 0 });
   const [boardActions, setBoardActions] = useState<TodoBoardActions>(noopBoardActions);
@@ -71,15 +70,7 @@ function TodoScreenInner({ tabActive }: Props) {
         : null,
   };
 
-  if (!session && !loading) {
-    return (
-      <TodoHubChrome {...chromeProps}>
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 p-6">
-          <NotesAuthGate variant="notes" />
-        </div>
-      </TodoHubChrome>
-    );
-  }
+  if (!session) return null;
 
   return (
     <TodoHubChrome {...chromeProps}>

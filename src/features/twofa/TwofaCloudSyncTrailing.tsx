@@ -1,45 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import { CloudOff, CloudUpload, GitMerge, RefreshCw, Shield } from "lucide-react";
-import {
-  HubResultCount,
-  HubRowLimitSelect,
-  HubWorkspacePeriodSelect,
-} from "../../components/sales-shell";
+import { CloudOff, RefreshCw } from "lucide-react";
 import type { TwofaCloudSyncState } from "./twofa-cloud-sync";
 
 const VAULT_IDLE_RETRY_MS = 10_000;
-
-type Props = {
-  limit: number;
-  /** Rows rendered in the table (after row limit). */
-  tableShown: number;
-  /** Rows matching search/filters. */
-  filteredTotal: number;
-  /** All accounts in vault. */
-  total: number;
-  cloudState?: TwofaCloudSyncState;
-  cloudError?: string | null;
-  onCloudSync?: () => void;
-  onDedupe?: () => void;
-};
 
 function cloudSyncMeta(
   state: TwofaCloudSyncState,
   error: string | null | undefined,
   staleIdle: boolean,
 ) {
-  if (state === "off") return { label: "Local only", className: "border-white/10 text-[var(--muted)]", icon: CloudOff };
   if (state === "syncing") return { label: "Syncing…", className: "border-sky-400/25 text-sky-200", icon: RefreshCw };
   if (state === "error") {
     return {
-      label: error ? `Sync error` : "Sync error",
+      label: "Sync error",
       className: "border-rose-400/30 text-rose-200",
       icon: CloudOff,
       title: error ?? "Cloud sync failed",
     };
   }
-  if (state === "ok") return { label: "Vault synced", className: "border-emerald-400/25 text-emerald-200", icon: CloudUpload };
-  if (staleIdle) {
+  if (state === "idle" && staleIdle) {
     return {
       label: "Connecting vault…",
       className: "border-amber-400/25 text-amber-200",
@@ -47,18 +26,24 @@ function cloudSyncMeta(
       title: "Retrying full sync with cloud vault",
     };
   }
-  return { label: "Vault idle", className: "border-white/10 text-[var(--muted)]", icon: CloudUpload };
+  return null;
 }
 
-export function TwofaFilterToolbar({
-  limit,
-  tableShown,
+type Props = {
+  filteredTotal: number;
+  total: number;
+  cloudState?: TwofaCloudSyncState;
+  cloudError?: string | null;
+  onCloudSync?: () => void;
+};
+
+/** 2FA-only trailing chips for `DirectorySearchToolbar`. */
+export function TwofaCloudSyncTrailing({
   filteredTotal,
   total,
   cloudState = "off",
   cloudError,
   onCloudSync,
-  onDedupe,
 }: Props) {
   const [staleIdle, setStaleIdle] = useState(false);
   const retriedRef = useRef(false);
@@ -83,18 +68,15 @@ export function TwofaFilterToolbar({
   }, [cloudState, onCloudSync]);
 
   const cloud = cloudSyncMeta(cloudState, cloudError, staleIdle);
-  const CloudIcon = cloud.icon;
+  const CloudIcon = cloud?.icon;
 
   return (
     <>
-      <HubWorkspacePeriodSelect scope="twofa" defaultRange="all" inactiveKeys={["all"]} />
-      <HubRowLimitSelect value={limit} />
-      <HubResultCount icon={Shield} shown={tableShown} total={filteredTotal} />
-      {cloudState !== "off" ? (
+      {cloud && CloudIcon ? (
         <button
           type="button"
           className={`inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1 rounded-lg border bg-white/[.03] px-2.5 text-[10px] font-semibold transition-colors hover:bg-white/[.06] ${cloud.className}`}
-          title={cloud.title ?? "Full resync 2FA vault with cloud"}
+          title={cloud.title ?? "Retry cloud vault sync"}
           onClick={onCloudSync}
           disabled={cloudState === "syncing"}
         >
@@ -113,17 +95,6 @@ export function TwofaFilterToolbar({
         >
           vault {total}
         </span>
-      ) : null}
-      {onDedupe ? (
-        <button
-          type="button"
-          className="inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1 rounded-lg border border-amber-400/25 bg-amber-400/10 px-2.5 text-[10px] font-semibold text-amber-200/90 transition-colors hover:bg-amber-400/20"
-          title="Remove duplicate accounts (same platform + ID, or same secret-only)"
-          onClick={onDedupe}
-        >
-          <GitMerge size={12} aria-hidden />
-          Dedupe
-        </button>
       ) : null}
     </>
   );

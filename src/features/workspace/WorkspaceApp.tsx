@@ -7,7 +7,6 @@ import { ToastContainer, ToastProvider } from "../../components/toast";
 import type { WorkspaceNavScreen, WorkspaceScreen } from "../../lib/workspace-screen";
 import { NAV_SCREENS } from "../../lib/workspace-screen";
 import { readNoteIdFromUrl } from "../../lib/note-url";
-import { useHubIdentityRelay } from "../hub/useHubIdentityRelay";
 import { useHubNavigation } from "../hub/useHubNavigation";
 import { AuthSessionProvider } from "../notes/AuthSessionProvider";
 import { useNotesAuth } from "../notes/useNotesAuth";
@@ -19,12 +18,16 @@ import {
   TodoScreen,
   TwofaManagerScreen,
 } from "./workspace-lazy-screens";
-import { prefetchNotesListBackground } from "../../lib/hub-background-prefetch";
-import { prefetchWorkspaceTabIdle } from "../../lib/workspace-tab-prefetch";
-import { setupHubUiFilterIcons } from "../../lib/hub-ui-setup";
+import {
+  prefetchNotesListBackground,
+  prefetchWorkspaceTabsBackground,
+} from "../../lib/hub-background-prefetch";
+import { prefetchWorkspaceTab, prefetchWorkspaceTabIdle } from "../../lib/workspace-tab-prefetch";
 import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
+import { NotesAuthGate } from "../notes/NotesAuthGate";
 import { WorkspaceShellTabFrame } from "./WorkspaceShellTabFrame";
 import { WorkspaceVisitedTabPanel } from "./WorkspaceVisitedTabPanel";
+import { authVariantForNav } from "./workspace-auth-variant";
 
 function WorkspaceSidebarDisplayPrefs() {
   return (
@@ -47,9 +50,8 @@ function navScreen(screen: WorkspaceScreen): WorkspaceNavScreen {
 const NOTES_SCREENS = new Set<WorkspaceScreen>(["notes", "edit"]);
 
 function WorkspaceAppInner() {
-  const { session } = useNotesAuth();
+  const { session, loading: authLoading, offline } = useNotesAuth();
   const { screen, navigate } = useHubNavigation();
-  useHubIdentityRelay();
   useExtensionBindingsRelay(true);
   useExtensionSessionRelay(session);
   const activeNav = navScreen(screen);
@@ -69,28 +71,40 @@ function WorkspaceAppInner() {
   }, [activeNav]);
 
   useEffect(() => {
-    if (activeNav === "twofa" || activeNav === "cookie") setupHubUiFilterIcons();
-  }, [activeNav]);
-
-  useEffect(() => {
     hideBootLoader();
     prefetchNotesListBackground();
-    prefetchWorkspaceTabIdle("todo", 2500);
-    prefetchWorkspaceTabIdle("twofa", 3000);
-    prefetchWorkspaceTabIdle("cookie", 3500);
+    prefetchWorkspaceTab("twofa");
+    prefetchWorkspaceTab("todo");
+    prefetchWorkspaceTabIdle("cookie", 600);
+    prefetchWorkspaceTabIdle("system", 1200);
     const warm = () => {
       prefetchNotesListBackground();
-      prefetchWorkspaceTabIdle("todo", 2500);
-      prefetchWorkspaceTabIdle("twofa", 3000);
-      prefetchWorkspaceTabIdle("cookie", 3500);
+      prefetchWorkspaceTab("twofa");
+      prefetchWorkspaceTab("todo");
+      prefetchWorkspaceTab("cookie");
+      prefetchWorkspaceTab("system");
     };
-    const idle = window.requestIdleCallback?.(warm, { timeout: 2000 });
+    const idle = window.requestIdleCallback?.(warm, { timeout: 300 });
     if (idle == null) {
-      const t = window.setTimeout(warm, 400);
+      const t = window.setTimeout(warm, 200);
       return () => window.clearTimeout(t);
     }
     return () => window.cancelIdleCallback(idle);
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    setVisited((prev) => {
+      const next = new Set(prev);
+      for (const tab of NAV_SCREENS) next.add(tab);
+      return next;
+    });
+    prefetchWorkspaceTab("twofa");
+    prefetchWorkspaceTab("todo");
+    prefetchWorkspaceTab("cookie");
+    prefetchWorkspaceTab("system");
+    prefetchWorkspaceTabsBackground(session);
+  }, [session]);
 
   useEffect(() => {
     document.documentElement.classList.add("theme-hub");
@@ -114,6 +128,9 @@ function WorkspaceAppInner() {
     ? "hub-main hub-main--notes flex-1 min-h-0 min-w-0 flex-col overflow-hidden"
     : "hub-main flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden";
 
+  const needsAuthGate = !session && !authLoading && !offline;
+  const authGateVariant = authVariantForNav(activeNav);
+
   return (
     <HubAppLogProvider
       activeScreen={activeScreenId}
@@ -128,6 +145,13 @@ function WorkspaceAppInner() {
 
       <main className={mainClass}>
         <HubLoaderRoot />
+        {needsAuthGate ? (
+          <NotesAuthGate variant={authGateVariant} />
+        ) : !session && authLoading ? (
+          <div className="flex flex-1 items-center justify-center p-6 text-[12px] text-[var(--muted)]">
+            Signing in…
+          </div>
+        ) : (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <WorkspaceVisitedTabPanel tabId="notes" active={isNotesLayout} visited={visited}>
             <NotesWorkspaceScreen
@@ -145,7 +169,7 @@ function WorkspaceAppInner() {
           <WorkspaceVisitedTabPanel tabId="twofa" active={screen === "twofa"} visited={visited}>
             <WorkspaceShellTabFrame screen="twofa" active={screen === "twofa"}>
               <Suspense fallback={<WorkspaceLoadingView screen="twofa" variant="overlay" />}>
-                <TwofaManagerScreen shellMode />
+                <TwofaManagerScreen shellMode tabActive={screen === "twofa"} />
               </Suspense>
             </WorkspaceShellTabFrame>
           </WorkspaceVisitedTabPanel>
@@ -166,6 +190,7 @@ function WorkspaceAppInner() {
             </WorkspaceShellTabFrame>
           </WorkspaceVisitedTabPanel>
         </div>
+        )}
       </main>
       <ToastContainer />
     </div>

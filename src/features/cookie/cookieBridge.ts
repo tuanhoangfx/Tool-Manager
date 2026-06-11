@@ -1,6 +1,7 @@
 /** Cookie bridge ↔ E0001-cookie-bridge extension (postMessage + local prefs). */
 
 import { notifyCookieBridgePrefsChange } from "./cookie-bridge-prefs-events";
+import { postCookieBindingsCrossTab } from "./cookie-bindings-cross-tab";
 
 export { normalizeCookieDomain } from "./normalizeCookieDomain";
 
@@ -40,9 +41,11 @@ export type CookieBridgePrefs = {
   bridgeRole: CookieBridgeRole;
 };
 
-const BINDINGS_KEY = "e0001-cookie-bindings-v1";
+export const COOKIE_BINDINGS_STORAGE_KEY = "e0001-cookie-bindings-v1";
+const BINDINGS_KEY = COOKIE_BINDINGS_STORAGE_KEY;
 const PREFS_KEY = "e0001-cookie-bridge-prefs-v1";
-const SELECTED_BINDING_KEY = "e0001-selected-binding-id";
+export const COOKIE_SELECTED_BINDING_STORAGE_KEY = "e0001-selected-binding-id";
+const SELECTED_BINDING_KEY = COOKIE_SELECTED_BINDING_STORAGE_KEY;
 
 function purgeLegacyCookieBridgeStorage() {
   if (typeof window === "undefined") return;
@@ -102,6 +105,7 @@ export function saveCookieBindings(bindings: CookieBinding[]) {
   localStorage.setItem(BINDINGS_KEY, JSON.stringify(bindings));
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(COOKIE_BINDINGS_CHANGE_EVENT));
+    postCookieBindingsCrossTab("local-updated");
   }
 }
 
@@ -115,6 +119,7 @@ export function saveSelectedBindingId(id: string | null) {
   if (typeof window === "undefined") return;
   if (id) localStorage.setItem(SELECTED_BINDING_KEY, id);
   else localStorage.removeItem(SELECTED_BINDING_KEY);
+  postCookieBindingsCrossTab("selection-updated");
 }
 
 export function loadCookieBridgePrefs(): CookieBridgePrefs {

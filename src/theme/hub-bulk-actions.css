@@ -60,6 +60,16 @@
   background: rgba(244, 63, 94, 0.25);
 }
 
+.hub-bulk-action-btn--dedupe {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.12);
+  color: #fde68a;
+}
+
+.hub-bulk-action-btn--dedupe:hover:not(:disabled) {
+  background: rgba(251, 191, 36, 0.22);
+}
+
 .hub-bulk-action-count {
   display: grid;
   height: 1rem;

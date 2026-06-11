@@ -1,7 +1,8 @@
 import { memo, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check } from "lucide-react";
 import type { TwofaAccount } from "./types";
-import { generateCode, normalizeSecret } from "./totp";
+import { generateCode, normalizeSecret, secondsRemaining } from "./totp";
+import { useTwofaTotpTick } from "./twofa-totp-tick";
 import { readTwofaMaskPasswordInTable, TWOFA_TABLE_DISPLAY_CHANGE_EVENT } from "./twofa-table-display-prefs";
 
 const CODE_CHIP_CLASS =
@@ -133,15 +134,33 @@ export function TwofaPasswordCell({ account }: { account: TwofaAccount }) {
   );
 }
 
+function periodTone(secondsLeft: number): "fresh" | "warn" | "urgent" {
+  if (secondsLeft > 20) return "fresh";
+  if (secondsLeft > 10) return "warn";
+  return "urgent";
+}
+
+export const TwofaPeriodCell = memo(function TwofaPeriodCell() {
+  const tick = useTwofaTotpTick();
+  void tick;
+  const left = secondsRemaining();
+  const tone = periodTone(left);
+  return (
+    <span className="hub-twofa-period-inline" title={`${left}s remaining`}>
+      <span className={`hub-twofa-period-dot hub-twofa-period-dot--${tone}`} aria-hidden />
+      <span className="hub-twofa-period-label tabular-nums">{left}s</span>
+    </span>
+  );
+});
+
 export const TwofaCodeCell = memo(function TwofaCodeCell({
   account,
-  tick,
   onUsed,
 }: {
   account: TwofaAccount;
-  tick: number;
   onUsed: (id: string) => void;
 }) {
+  const tick = useTwofaTotpTick();
   const code = useMemo(
     () => generateCode(account.service, account.account, account.secret),
     [account.service, account.account, account.secret, tick],

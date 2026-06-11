@@ -53,6 +53,8 @@ export default defineConfig({
       { find: /^@tool-workspace\/hub-ui\/(.+)$/, replacement: `${hubUiSrc}/$1` },
       { find: "@tool-workspace/hub-identity", replacement: path.join(hubIdentitySrc, "index.ts") },
       { find: /^@tool-workspace\/hub-identity\/(.+)$/, replacement: `${hubIdentitySrc}/$1` },
+      { find: "@dev/hub-identity", replacement: path.join(hubIdentitySrc, "index.ts") },
+      { find: /^@dev\/hub-identity\/(.+)$/, replacement: `${hubIdentitySrc}/$1` },
       { find: "@p0020/bridge", replacement: path.resolve(rootDir, "packages/p0020-bridge/src") },
       { find: "@dev/hub-load", replacement: path.resolve(rootDir, "vendor/hub-load/src") },
     ],

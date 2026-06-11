@@ -67,5 +67,32 @@
       "webSrc": "/assets/brand-icons/kalodata.png",
       "extensionSrc": "assets/brand-icons/kalodata.png"
     }
+  },
+  {
+    "label": "Cursor",
+    "match": "(^|\\.)cursor\\.com$",
+    "source": {
+      "type": "local",
+      "webSrc": "/assets/brand-icons/cursor.png",
+      "extensionSrc": "assets/brand-icons/cursor.png"
+    }
+  },
+  {
+    "label": "BigSpy Pro",
+    "match": "(^|\\.)bigspy\\.com$",
+    "source": {
+      "type": "local",
+      "webSrc": "/assets/brand-icons/bigspy.png",
+      "extensionSrc": "assets/brand-icons/bigspy.png"
+    }
+  },
+  {
+    "label": "ChatGPT",
+    "match": "(^|\\.)chatgpt\\.com$|(^|\\.)openai\\.com$",
+    "source": {
+      "type": "local",
+      "webSrc": "/assets/brand-icons/chatgpt.svg",
+      "extensionSrc": "assets/brand-icons/chatgpt.svg"
+    }
   }
 ]

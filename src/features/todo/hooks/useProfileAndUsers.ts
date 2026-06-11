@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import type { Profile } from '../types';
 import { AdminView, DataChange } from '../app-types';
+import { subscribeHubIdentity } from '../../../lib/hub-identity-session';
 import { ensureWorkspaceAuthReady } from '../../../lib/workspace-profile';
 import { fetchWorkspaceUserDirectory } from '../../../lib/workspace-user-directory';
 import { useWorkspaceProfile } from '../../workspace/useWorkspaceProfile';
@@ -10,7 +11,11 @@ import { supabase } from '../lib/supabase';
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const useProfileAndUsers = (session: Session | null, lastDataChange: DataChange | null) => {
+export const useProfileAndUsers = (
+    session: Session | null,
+    lastDataChange: DataChange | null,
+    enabled = true,
+) => {
     const { profile, loadingProfile, profileError, refreshProfile } = useWorkspaceProfile(session);
     const [allUsers, setAllUsers] = useState<Profile[]>([]);
     const [usersWarning, setUsersWarning] = useState<string | null>(null);
@@ -53,6 +58,8 @@ export const useProfileAndUsers = (session: Session | null, lastDataChange: Data
     }, [refreshProfile]);
 
     useEffect(() => {
+        if (!enabled) return;
+
         let heartbeatInterval: number | undefined;
 
         const updateLastActive = async () => {
@@ -89,15 +96,15 @@ export const useProfileAndUsers = (session: Session | null, lastDataChange: Data
 
         window.addEventListener('focus', handleFocus);
         window.addEventListener('visibilitychange', handleFocus);
-        window.addEventListener('p0020:hub-identity', handleFocus);
+        const unsubHubIdentity = subscribeHubIdentity(handleFocus);
 
         return () => {
             if (heartbeatInterval) clearInterval(heartbeatInterval);
             window.removeEventListener('focus', handleFocus);
             window.removeEventListener('visibilitychange', handleFocus);
-            window.removeEventListener('p0020:hub-identity', handleFocus);
+            unsubHubIdentity();
         };
-    }, [session, getAllUsers]);
+    }, [enabled, session, getAllUsers]);
 
      useEffect(() => {
         if(!lastDataChange) return;

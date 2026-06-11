@@ -20,6 +20,12 @@ describe("routePlatformKey", () => {
     expect(routePlatformKey(".kalodata.com")).toBe("kalodata");
   });
 
+  it("maps cursor and chatgpt domains to registry slugs", () => {
+    expect(routePlatformKey(".cursor.com")).toBe("cursor");
+    expect(routePlatformKey(".chatgpt.com")).toBe("chatgpt");
+    expect(routePlatformKey(".bigspy.com")).toBe("bigspy-pro");
+  });
+
   it("maps unknown domain to other", () => {
     expect(routePlatformKey(".example.org")).toBe("other");
   });

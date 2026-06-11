@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { HubSessionLike } from "@tool-workspace/hub-identity";
 import {
@@ -16,6 +16,12 @@ export type UseWorkspaceRoleKeyOptions = {
   onResolveRoleKey?: (userId: string) => Promise<string | null | undefined>;
   /** Supabase client — fetch + realtime `profiles.role` (Hub Users SSOT). */
   profileRoleClient?: SupabaseClient | null;
+  /** Hub identity user id — overrides session.user.id (P0020 dual-auth). */
+  profileRoleUserId?: string | null;
+  /** Fallback directory match when local auth id ≠ Hub profiles.id. */
+  profileRoleEmail?: string | null;
+  /** Apply Hub JWT before profiles query (e.g. applyHubIdentitySession). */
+  onPrepareProfileRoleClient?: (client: SupabaseClient) => Promise<void>;
 };
 
 export type WorkspaceRoleState = {
@@ -29,14 +35,26 @@ export function useWorkspaceRoleKey(
   session: HubSessionLike,
   opts: UseWorkspaceRoleKeyOptions = {},
 ): WorkspaceRoleState {
-  const { anonymous = false, roleKey: roleKeyProp, onResolveRoleKey, profileRoleClient } = opts;
-  const userId = session?.user?.id;
-  const usesProfileSsot = Boolean(profileRoleClient && userId);
+  const {
+    anonymous = false,
+    roleKey: roleKeyProp,
+    onResolveRoleKey,
+    profileRoleClient,
+    profileRoleUserId,
+    profileRoleEmail,
+    onPrepareProfileRoleClient,
+  } = opts;
+  const sessionUserId = session?.user?.id;
+  const roleUserId = profileRoleUserId?.trim() || sessionUserId;
+  const roleEmail = profileRoleEmail?.trim() || session?.user?.email || null;
+  const usesProfileSsot = Boolean(profileRoleClient && roleUserId);
   const sessionRoleKey = anonymous ? "anonymous" : resolveWorkspaceRoleKey(session);
-  const initialCached = userId ? readCachedWorkspaceProfileRole(userId) : null;
+  const initialCached = roleUserId ? readCachedWorkspaceProfileRole(roleUserId) : null;
 
   const [resolvedRoleKey, setResolvedRoleKey] = useState<string | null>(initialCached);
   const [roleIconPending, setRoleIconPending] = useState(() => usesProfileSsot && !initialCached);
+  const prepareClientRef = useRef(onPrepareProfileRoleClient);
+  prepareClientRef.current = onPrepareProfileRoleClient;
 
   useEffect(() => {
     if (roleKeyProp) {
@@ -44,14 +62,14 @@ export function useWorkspaceRoleKey(
       setRoleIconPending(false);
       return;
     }
-    if (anonymous || !userId) {
+    if (anonymous || !roleUserId) {
       setResolvedRoleKey(null);
       setRoleIconPending(false);
       return;
     }
 
     let cancelled = false;
-    const cached = profileRoleClient ? readCachedWorkspaceProfileRole(userId) : null;
+    const cached = profileRoleClient ? readCachedWorkspaceProfileRole(roleUserId) : null;
     setResolvedRoleKey(cached);
     setRoleIconPending(Boolean(profileRoleClient && !cached));
 
@@ -64,13 +82,16 @@ export function useWorkspaceRoleKey(
 
     if (profileRoleClient) {
       const load = () => {
-        void fetchWorkspaceProfileRole(profileRoleClient, userId).then((role) => {
+        void fetchWorkspaceProfileRole(profileRoleClient, roleUserId, {
+          email: roleEmail,
+          prepareClient: prepareClientRef.current,
+        }).then((role) => {
           applyRole(role);
           if (!cancelled) setRoleIconPending(false);
         });
       };
       load();
-      const unsubscribeRole = subscribeWorkspaceProfileRole(profileRoleClient, userId, applyRole);
+      const unsubscribeRole = subscribeWorkspaceProfileRole(profileRoleClient, roleUserId, applyRole);
       const {
         data: { subscription },
       } = profileRoleClient.auth.onAuthStateChange(() => {
@@ -85,11 +106,11 @@ export function useWorkspaceRoleKey(
 
     if (!onResolveRoleKey) return;
 
-    void onResolveRoleKey(userId).then(applyRole);
+    void onResolveRoleKey(roleUserId).then(applyRole);
     return () => {
       cancelled = true;
     };
-  }, [anonymous, onResolveRoleKey, profileRoleClient, roleKeyProp, userId]);
+  }, [anonymous, onResolveRoleKey, profileRoleClient, roleEmail, roleKeyProp, roleUserId]);
 
   if (roleKeyProp) {
     return { roleKey: normalizeWorkspaceRoleKey(roleKeyProp), roleIconPending: false };

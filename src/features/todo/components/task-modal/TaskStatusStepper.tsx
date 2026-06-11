@@ -2,7 +2,7 @@
 import React from 'react';
 import { Task } from '../../types';
 import { useSettings } from '../../context/SettingsContext';
-import { ClipboardListIcon, SpinnerIcon, CheckCircleIcon, XCircleIcon } from '../Icons';
+import { TodoKanbanStatusIcon } from '../../todo-kanban-status';
 import { TODO_HUB } from '../../styles/todo-hub-classes';
 
 interface TaskStatusStepperProps {
@@ -21,11 +21,11 @@ const TaskStatusStepper: React.FC<TaskStatusStepperProps> = ({ currentStatus, on
   const { t } = useSettings();
   const statusOrder: Task['status'][] = ['todo', 'inprogress', 'done', 'cancelled'];
 
-  const statusConfig: { [key in Task['status']]: { label: string; icon: React.FC<{ size?: number; className?: string }> } } = {
-    todo: { label: t.todo, icon: ClipboardListIcon },
-    inprogress: { label: t.inprogress, icon: SpinnerIcon },
-    done: { label: t.done, icon: CheckCircleIcon },
-    cancelled: { label: t.cancelled, icon: XCircleIcon },
+  const statusConfig: { [key in Task['status']]: { label: string } } = {
+    todo: { label: t.todo },
+    inprogress: { label: t.inprogress },
+    done: { label: t.done },
+    cancelled: { label: t.cancelled },
   };
 
   const currentIndex = statusOrder.indexOf(currentStatus);
@@ -42,7 +42,6 @@ const TaskStatusStepper: React.FC<TaskStatusStepperProps> = ({ currentStatus, on
         />
         {statusOrder.map((status) => {
           const config = statusConfig[status];
-          const Icon = config.icon;
           const isActive = status === currentStatus;
           return (
             <button
@@ -52,7 +51,7 @@ const TaskStatusStepper: React.FC<TaskStatusStepperProps> = ({ currentStatus, on
               className={`${TODO_HUB.statusBtn}${isActive ? ` todo-hub-status-btn--active ${STATUS_MODIFIERS[status]}` : ''}`}
               aria-pressed={isActive}
             >
-              <Icon size={16} className={status === 'inprogress' && isActive ? 'animate-spin' : ''} />
+              <TodoKanbanStatusIcon status={status} size={16} />
               <span className="hidden sm:inline">{config.label}</span>
             </button>
           );

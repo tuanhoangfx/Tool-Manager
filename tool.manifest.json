@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "4.3.21",
+    "version": "4.3.27",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -170,13 +170,14 @@
     ],
     "components": {
       "badge": "src/features/todo/components/common/TodoHubBadge.tsx",
-      "filter": "src/features/todo/components/FilterBar.tsx",
-      "search": "src/features/todo/components/common/TodoHubSearchInput.tsx"
+      "filter": "vendor/hub-ui/src/shell/FilterBar.tsx",
+      "search": "vendor/hub-ui/src/shell/HubSearchField.tsx",
+      "filterMulti": "vendor/hub-ui/src/shell/FilterBar.tsx"
     },
     "hubUi": "@tool-workspace/hub-ui",
     "chromeTemplate": "HubDashboardScreen",
     "chromeEntry": "src/features/todo/TodoHubChrome.tsx",
-    "syncHook": "src/features/todo/hooks/useSyncTodoChrome.ts",
+    "syncHook": "src/features/todo/hooks/useSyncTodoChrome.tsx",
     "golden": "P0020/todo",
     "legacySource": "P0019-Work-Performance",
     "supabaseProjectRef": "bklxcjrkhrevdcqjscku",
@@ -220,5 +221,5 @@
       "authVariant": "anonymous-dual"
     }
   ],
-  "manifestUpdatedAt": "2026-06-10T13:34:44.578Z"
+  "manifestUpdatedAt": "2026-06-11T06:00:00.000Z"
 }

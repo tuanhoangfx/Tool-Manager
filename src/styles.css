@@ -1,4 +1,5 @@
 @import "./styles/hub-ui-styles.css";
+/* hub-ui stack via hub-ui-styles.css: hub-check-indicator.css hub-shell-layout.css hub-app-tab-header.css hub-fields.css hub-users-table.css hub-modal.css hub-auth-gate.css */
 @import "./theme/hub-appearance.css";
 @import "./styles/base.css";
 @import "./styles/layout.css";

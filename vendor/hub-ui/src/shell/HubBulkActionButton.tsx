@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { HUB_SHELL_LABEL_TYPO_CLASS } from "./hub-typography";
 
 export type HubBulkActionTone = "indigo" | "amber" | "emerald" | "rose" | "sky" | "neutral";
 
@@ -21,8 +22,7 @@ const BADGE_CLASS: Record<HubBulkActionTone, string> = {
   neutral: "bg-white/80 text-[#0f1220]",
 };
 
-export const HUB_BULK_ACTION_BTN_CLASS =
-  "inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+export const HUB_BULK_ACTION_BTN_CLASS = `inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 rounded-lg px-3 ${HUB_SHELL_LABEL_TYPO_CLASS} transition-colors disabled:cursor-not-allowed disabled:opacity-40`;
 
 export type HubBulkActionCountBadgeProps = {
   count: number;

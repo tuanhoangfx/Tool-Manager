@@ -9,9 +9,29 @@ type MembersResult =
 
 const inflight = new Map<string, Promise<MembersResult>>();
 const resolved = new Map<string, MembersResult>();
+const listeners = new Set<() => void>();
+
+function notifyListeners() {
+  listeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      // Listener errors must not break cache writes.
+    }
+  });
+}
 
 function cacheResult(noteId: string, result: MembersResult) {
+  const prev = resolved.get(noteId);
+  if (!result.ok && prev?.ok) return;
   resolved.set(noteId, result);
+  notifyListeners();
+}
+
+/** Subscribe to members cache writes — keeps share aggregates realtime without stale UI. */
+export function subscribeNoteCookieMembersCache(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }
 
 /** Warm members list on route card hover — route detail opens with data ready. */
@@ -43,6 +63,7 @@ export function invalidateNoteCookieMembersCache(noteId: string | null | undefin
   if (!id) return;
   resolved.delete(id);
   inflight.delete(id);
+  notifyListeners();
 }
 
 /** Warm many routes when directory list loads (share counts + detail open). */

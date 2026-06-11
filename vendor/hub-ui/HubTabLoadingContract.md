@@ -108,9 +108,22 @@ Parent **must** be `position: relative` with explicit min-height. Inline uses `.
 
 ---
 
+## Worker health probe (P0016 / P00xx worker)
+
+Console and header chips must **not** call full `GET /api/health` on every boot — full payload includes messenger activity blobs and can block first paint for seconds.
+
+| Use case | Endpoint | Notes |
+|----------|----------|--------|
+| Worker online chip, auth policy boot, gate scripts | `GET /api/health?lite=1` | `{ ok, product, hub?, worker }` only |
+| Dashboard / channel status panels | `GET /api/health` | Full payload when UI needs messenger activities |
+
+Implement `?lite=1` on worker routes that today return heavy health JSON. Front-end: `useWorkerHealth`, `useHubAuthState` policy probe.
+
+---
+
 ## Performance (cache-first)
 
-1. **Suspense fallback** — only while JS chunk loads; prefetch tab chunks on boot / sidebar hover.
+1. **Suspense fallback** — only while JS chunk loads; prefetch tab chunks on boot / sidebar hover (after auth session is ready — never flood APIs from AuthShell).
 2. **Directory overlay** — only when `loading && rows.length === 0` (no stale cache painted).
 3. **Revalidate** — use `useStaleWhileRevalidateDirectory` / `@dev/hub-load`; do not show full overlay when stale data is visible.
 4. **Tab switch** — reset `.hub-main` scroll only (`resetHubMainPane`); never `replaceChildren()` on `#hub-tab-loader-root` while Suspense fallbacks are mounted (React `removeChild` crash). Use `enabled={activeTab}` on fallbacks instead.

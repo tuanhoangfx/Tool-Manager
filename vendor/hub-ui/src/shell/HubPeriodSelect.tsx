@@ -2,8 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from "react-dom";
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import {
+  HUB_FILTER_DROPDOWN_LIST_CLASS,
   HUB_FILTER_DROPDOWN_PANEL_CLASS,
   HUB_FILTER_DROPDOWN_PANEL_PORTAL_CLASS,
+  HUB_FILTER_DROPDOWN_ROW_CLASS,
   hubFilterTriggerClass,
 } from "./filter-dropdown-primitives";
 import { compactIconSize } from "../ui-scale";
@@ -270,13 +272,13 @@ export function HubPeriodSelect<T extends string>({
         role="listbox"
       >
         {view === "list" ? (
-          <div className="max-h-72 overflow-auto p-1">
+          <div className={HUB_FILTER_DROPDOWN_LIST_CLASS}>
             {options.map((o) => (
               <button
                 key={o.value}
                 type="button"
                 onClick={() => handleSelectPeriod(o.value)}
-                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-white/5 ${
+                className={`${HUB_FILTER_DROPDOWN_ROW_CLASS} ${
                   o.value === value ? "bg-indigo-500/10 text-indigo-200" : "text-[var(--text)]"
                 }`}
               >

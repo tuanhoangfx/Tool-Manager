@@ -12,7 +12,12 @@ export type CookieVaultRow = {
   updated_by: string | null;
 };
 
-export function useCookieVaultMap(session: Session | null, bindings: CookieBinding[]) {
+export function useCookieVaultMap(
+  session: Session | null,
+  bindings: CookieBinding[],
+  opts?: { enabled?: boolean },
+) {
+  const enabled = opts?.enabled ?? true;
   const [vaultByKey, setVaultByKey] = useState<Record<string, CookieVaultRow>>({});
   const [vaultError, setVaultError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -24,7 +29,7 @@ export function useCookieVaultMap(session: Session | null, bindings: CookieBindi
 
   const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent ?? false;
-    if (!session || noteIds.length === 0) {
+    if (!enabled || !session || noteIds.length === 0) {
       setVaultByKey({});
       setVaultError(null);
       return;
@@ -44,13 +49,14 @@ export function useCookieVaultMap(session: Session | null, bindings: CookieBindi
       return;
     }
     setVaultByKey(mapVaultRows(data ?? []));
-  }, [noteIds, session]);
+  }, [enabled, noteIds, session]);
 
   useEffect(() => {
+    if (!enabled) return;
     const hasVault = Object.keys(vaultByKey).length > 0;
     void refresh({ silent: hasVault });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- silent when vault already shown
-  }, [refresh]);
+  }, [enabled, refresh]);
 
   return { vaultByKey, vaultError, vaultLoading: loading, refreshVault: refresh };
 }

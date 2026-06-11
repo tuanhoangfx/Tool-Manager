@@ -7,7 +7,14 @@
 
 .todo-board-root {
   color: var(--text);
-  font-family: var(--font-sans, Inter, system-ui, sans-serif);
+  /* KPI chart parity — keep in sync with todo-visual-tokens.ts */
+  --todo-status-todo: #f59e0b;
+  --todo-status-inprogress: #6366f1;
+  --todo-status-done: #22c55e;
+  --todo-status-cancelled: #f43f5e;
+  --todo-priority-low: #22c55e;
+  --todo-priority-medium: #f59e0b;
+  --todo-priority-high: #f43f5e;
 }
 
 .todo-board-root .bg-gray-50,
@@ -357,19 +364,19 @@
 }
 
 .todo-hub-status-btn--active.todo-hub-status-btn--todo {
-  color: #f97316;
+  color: var(--todo-status-todo);
 }
 
 .todo-hub-status-btn--active.todo-hub-status-btn--inprogress {
-  color: #6366f1;
+  color: var(--todo-status-inprogress);
 }
 
 .todo-hub-status-btn--active.todo-hub-status-btn--done {
-  color: #22c55e;
+  color: var(--todo-status-done);
 }
 
 .todo-hub-status-btn--active.todo-hub-status-btn--cancelled {
-  color: var(--muted);
+  color: var(--todo-status-cancelled);
 }
 
 .todo-hub-attachment-row {
@@ -493,21 +500,21 @@
 }
 
 .todo-hub-badge--priority-low {
-  border-color: rgb(34 197 94 / 0.25);
-  background-color: rgb(34 197 94 / 0.12);
-  color: #86efac;
+  border-color: color-mix(in srgb, var(--todo-priority-low) 25%, transparent);
+  background-color: color-mix(in srgb, var(--todo-priority-low) 12%, transparent);
+  color: color-mix(in srgb, var(--todo-priority-low) 72%, white);
 }
 
 .todo-hub-badge--priority-medium {
-  border-color: rgb(234 179 8 / 0.3);
-  background-color: rgb(234 179 8 / 0.12);
-  color: #fde047;
+  border-color: color-mix(in srgb, var(--todo-priority-medium) 30%, transparent);
+  background-color: color-mix(in srgb, var(--todo-priority-medium) 12%, transparent);
+  color: color-mix(in srgb, var(--todo-priority-medium) 78%, white);
 }
 
 .todo-hub-badge--priority-high {
-  border-color: rgb(239 68 68 / 0.35);
-  background-color: rgb(239 68 68 / 0.14);
-  color: #fca5a5;
+  border-color: color-mix(in srgb, var(--todo-priority-high) 35%, transparent);
+  background-color: color-mix(in srgb, var(--todo-priority-high) 14%, transparent);
+  color: color-mix(in srgb, var(--todo-priority-high) 72%, white);
 }
 
 .todo-hub-badge--project {
@@ -559,10 +566,10 @@
   flex-direction: column;
   gap: 0.5rem;
   border-radius: 0.75rem;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  background-color: var(--panel);
+  border: 1px solid rgb(255 255 255 / 0.06);
+  background-color: rgb(255 255 255 / 0.03);
   padding: 0.75rem;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+  box-shadow: none;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -583,14 +590,14 @@
 }
 
 .todo-hub-task-card--high-priority {
-  border-color: rgb(239 68 68 / 0.45);
+  border-color: color-mix(in srgb, var(--todo-priority-high) 45%, transparent);
   animation: todo-hub-priority-glow 2.4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .todo-hub-task-card--high-priority {
     animation: none;
-    box-shadow: inset 0 0 0 1px rgb(239 68 68 / 0.35);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--todo-priority-high) 35%, transparent);
   }
 }
 
@@ -599,12 +606,12 @@
   100% {
     box-shadow:
       0 1px 2px rgb(0 0 0 / 0.12),
-      inset 0 0 0 0 rgb(239 68 68 / 0);
+      inset 0 0 0 0 color-mix(in srgb, var(--todo-priority-high) 0%, transparent);
   }
   50% {
     box-shadow:
       0 1px 2px rgb(0 0 0 / 0.12),
-      inset 0 0 0 1px rgb(239 68 68 / 0.35);
+      inset 0 0 0 1px color-mix(in srgb, var(--todo-priority-high) 35%, transparent);
   }
 }
 
@@ -622,14 +629,58 @@
 }
 
 .todo-hub-column {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
+  overflow: hidden;
   border-radius: 0.75rem;
   border: 1px solid rgb(255 255 255 / 0.05);
-  background-color: var(--panel-2);
+  background-color: color-mix(in srgb, var(--panel) 78%, black);
   padding: 0.5rem;
-  transition: background-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* KPI tile parity — soft status tint + corner glow (hub-kpi-tile gradient ~20%) */
+.todo-hub-column::before {
+  content: "";
+  position: absolute;
+  right: -1.5rem;
+  top: -1.5rem;
+  z-index: 0;
+  width: 6.5rem;
+  height: 6.5rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--todo-column-accent, transparent) 12%, transparent);
+  filter: blur(1.75rem);
+  pointer-events: none;
+}
+
+.todo-hub-column > * {
+  position: relative;
+  z-index: 1;
+}
+
+.todo-hub-column--todo {
+  --todo-column-accent: var(--todo-status-todo);
+  border-color: color-mix(in srgb, var(--todo-status-todo) 22%, rgb(255 255 255 / 0.06));
+}
+
+.todo-hub-column--inprogress {
+  --todo-column-accent: var(--todo-status-inprogress);
+  border-color: color-mix(in srgb, var(--todo-status-inprogress) 22%, rgb(255 255 255 / 0.06));
+}
+
+.todo-hub-column--done {
+  --todo-column-accent: var(--todo-status-done);
+  border-color: color-mix(in srgb, var(--todo-status-done) 22%, rgb(255 255 255 / 0.06));
+}
+
+.todo-hub-column--cancelled {
+  --todo-column-accent: var(--todo-status-cancelled);
+  border-color: color-mix(in srgb, var(--todo-status-cancelled) 22%, rgb(255 255 255 / 0.06));
 }
 
 .todo-hub-column__scroll {
@@ -658,8 +709,12 @@
 }
 
 .todo-hub-column--drag-over {
-  background-color: rgb(56 189 248 / 0.08);
-  border-color: rgb(56 189 248 / 0.25);
+  background-color: color-mix(
+    in srgb,
+    var(--todo-column-accent) 10%,
+    color-mix(in srgb, var(--panel) 78%, black)
+  );
+  border-color: color-mix(in srgb, var(--todo-column-accent) 32%, transparent);
 }
 
 .todo-hub-column__header {
@@ -675,19 +730,23 @@
 }
 
 .todo-hub-column__header--todo {
-  border-bottom-color: rgb(249 115 22 / 0.65);
+  border-bottom-color: color-mix(in srgb, var(--todo-status-todo) 65%, transparent);
+  color: color-mix(in srgb, var(--todo-status-todo) 88%, white);
 }
 
 .todo-hub-column__header--inprogress {
-  border-bottom-color: rgb(99 102 241 / 0.65);
+  border-bottom-color: color-mix(in srgb, var(--todo-status-inprogress) 65%, transparent);
+  color: color-mix(in srgb, var(--todo-status-inprogress) 88%, white);
 }
 
 .todo-hub-column__header--done {
-  border-bottom-color: rgb(34 197 94 / 0.65);
+  border-bottom-color: color-mix(in srgb, var(--todo-status-done) 65%, transparent);
+  color: color-mix(in srgb, var(--todo-status-done) 88%, white);
 }
 
 .todo-hub-column__header--cancelled {
-  border-bottom-color: rgb(107 114 128 / 0.55);
+  border-bottom-color: color-mix(in srgb, var(--todo-status-cancelled) 65%, transparent);
+  color: color-mix(in srgb, var(--todo-status-cancelled) 88%, white);
 }
 
 .todo-hub-stat-card {

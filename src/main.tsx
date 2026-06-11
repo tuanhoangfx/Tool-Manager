@@ -9,6 +9,7 @@ initHubUserZoom();
 import { isPublicShareEntry, migratePublicShareUrl } from "./features/notes/shareUtils";
 import { prefetchDataBoxAuth } from "./lib/prefetch-data-box-auth";
 import { prefetchTwofaAuth } from "./lib/prefetch-twofa-auth";
+import { registerTabChunkServiceWorker } from "./lib/register-tab-chunk-sw";
 import "./theme/hub-boot.css";
 import "./theme/p0008-globals.css";
 import "./theme/hub-appearance.css";
@@ -16,6 +17,7 @@ import "./theme/data-box-layout.css";
 import "./styles.css";
 
 setupHubUi();
+registerTabChunkServiceWorker();
 
 if (typeof window !== "undefined" && isPublicShareEntry()) {
   migratePublicShareUrl();

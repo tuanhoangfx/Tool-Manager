@@ -2,6 +2,7 @@ import type { ElementType } from "react";
 import { MAX_VISIBLE_KPI } from "../display-prefs/kpi-visible";
 import { clampBandSlotCount } from "../lib/analytics-band-count";
 import { compactIconSize } from "../ui-scale";
+import { HUB_ANALYTICS_CAPTION_TYPO_CLASS } from "./hub-typography";
 
 /** Visible KPI tile count for `data-kpi-count` (0 or 1…MAX_VISIBLE_KPI). */
 export function resolveKpiStripCount(count: number): number {
@@ -78,10 +79,13 @@ function KpiTile({ label, value, hint, icon: Icon, iconClassName, tone = "indigo
           {Icon ? <Icon size={compactIconSize(18)} className={iconClasses} /> : null}
         </div>
         <div className="hub-kpi-tile__body">
-          <div className="hub-kpi-tile__label truncate uppercase tracking-wider text-[var(--muted)]" title={label}>
+          <div
+            className={`hub-kpi-tile__label truncate text-[var(--muted)] ${HUB_ANALYTICS_CAPTION_TYPO_CLASS}`}
+            title={label}
+          >
             {label}
           </div>
-          <div className="hub-kpi-tile__value truncate font-semibold tabular-nums">{value}</div>
+          <div className="hub-kpi-tile__value truncate font-medium tabular-nums">{value}</div>
           {hint ? <div className="hub-kpi-tile__hint truncate text-[var(--muted)]">{hint}</div> : null}
         </div>
       </div>

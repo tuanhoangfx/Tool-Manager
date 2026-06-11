@@ -5,17 +5,23 @@ import { COOKIE_ROUTE_FILTER_DEFS } from "./cookie-route-filters";
 export const COOKIE_KPI_DEFS: PrefItem[] = [
   { key: "routes_shown", label: "Routes (shown)" },
   { key: "locked_browser", label: "Locked browser" },
-  { key: "vault_cookies", label: "Vault cookies" },
   { key: "owner_routes", label: "Owner routes" },
 ];
 
 export const COOKIE_CHART_DEFS: PrefItem[] = [
   { key: "status_bar", label: "Sync status (bar)" },
   { key: "platform_bar", label: "Routes by platform (bar)" },
-  { key: "cookies_bar", label: "Cookies stored (bar)" },
-  { key: "access_bar", label: "Route access (bar)" },
-  { key: "share_bar", label: "Route sharing (bar)" },
+  { key: "share_bar", label: "Route share (bar)" },
 ];
+
+/** Retired chart keys → share_bar (cookies/access/vault donuts removed). */
+export const COOKIE_CHART_KEY_MIGRATION: Record<string, string> = {
+  cookies_bar: "share_bar",
+  access_bar: "share_bar",
+  vault_donut: "share_bar",
+  access_donut: "share_bar",
+  share_donut: "share_bar",
+};
 
 export const COOKIE_FILTER_DEFS: PrefItem[] = COOKIE_ROUTE_FILTER_DEFS.map(({ key, label }) => ({
   key,

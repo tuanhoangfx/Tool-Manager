@@ -4,6 +4,111 @@
 > **Template:** `E:\Dev\Rules\templates\tool-docs\CHANGELOG_ENTRY_TEMPLATE.md`  
 > **Script:** `powershell -File E:\Dev\Tool\scripts\ship-product.ps1 -Code P0020 -Keyword Push`
 
+## 2026-06-11 - Tab-load gate + Cookie virtual + Notes autosave
+
+- Version: `4.3.27`
+- Type: Patch
+- Product: P0020
+- Prompt: Gắn verify:tab-load vào agent-verify-gate; Cookie routes virtual ≥50; Notes autosave tabActive.
+- Timestamp: 2026-06-11 13:00 (UTC+7)
+- Status: Verified
+- Release: https://databox.infi.io.vn
+
+### Changes
+
+- `agent-verify-gate.mjs`: P0020 acceptance item `tab-load-contract` (runs `agent-verify-tab-load.mjs`).
+- Cookie: `useCookieRoutesVirtualWindow` + virtual table path in `CookieRoutesDirectoryTable` (threshold 50).
+- Notes: debounced autosave chỉ chạy khi `tabActive`.
+
+### Verification
+
+- `node Tool/scripts/agent-verify-tab-load.mjs --code P0020`
+- `node Tool/scripts/agent-verify-gate.mjs --code P0020 --json`
+
+## 2026-06-11 - Workspace tab load golden pattern
+
+- Version: `4.3.26`
+- Type: Patch
+- Product: P0020
+- Prompt: Tab perf chuẩn hóa — Todo hub-load cache, Cookie tabActive sâu, tab-load contract gate + bump version.
+- Timestamp: 2026-06-11 12:00 (UTC+7)
+- Status: Verified
+- Release: https://databox.infi.io.vn
+
+### Changes
+
+- Todo: `useCachedSupabaseQuery` → `@dev/hub-load` `createClientCache` via `createTodoQueryCache` (legacy migrate).
+- Cookie: gate `useNotes`, `useCookieVaultMap`, note-title sync khi tab ẩn.
+- `agent-verify-tab-load.mjs` — static gate cho chunk warm, eager mount, tabActive, virtual window.
+- Session warm: todo tasks + cookie schema + 2FA vault; eager mount all tabs; prod SW chunk cache.
+
+### Verification
+
+- `node Tool/scripts/agent-verify-tab-load.mjs --code P0020`
+- `node Tool/scripts/check-version-sync.mjs --product-root Tool/P0020-Data-Box`
+
+## 2026-06-10 - 2FA dedupe preview modal
+
+- Version: `4.3.25`
+- Type: Patch
+- Product: P0020
+- Prompt: Dedupe preview modal — hiện số duplicate theo service trước khi xóa.
+- Timestamp: 2026-06-10 22:02 (UTC+7)
+- Status: Verified
+- Release: https://databox.infi.io.vn
+
+### Changes
+
+- `previewTwofaDedupe` / `previewTwofaDedupeCombined`: scan cloud + local trước khi xóa.
+- `TwofaDedupePreviewModal`: breakdown theo service (icon + bar + count), confirm trước khi chạy.
+- Không có duplicate → toast ngay, không mở modal.
+
+### Verification
+
+- `vitest` twofa — 54/54 pass
+
+## 2026-06-10 - 2FA dedupe cloud + toolbar UX
+
+- Version: `4.3.24`
+- Type: Patch
+- Product: P0020
+- Prompt: Dedupe xuống row 2; icon trực quan; bỏ vault synced badge khi auto sync; cloud dedupe theo identity.
+- Timestamp: 2026-06-10 21:55 (UTC+7)
+- Status: Verified
+- Release: https://databox.infi.io.vn
+
+### Changes
+
+- `dedupeTwofaCloudByIdentity`: tombstone duplicate rows trên Supabase (giữ `updatedAt` mới nhất).
+- `dedupeNow`: cloud dedupe → local dedupe → full resync.
+- `TwofaBulkActionBar`: Dedupe cạnh Add/Edit/Delete, icon `CopyMinus`.
+- `TwofaFilterToolbar`: ẩn badge khi vault ok/idle; chỉ hiện khi syncing, lỗi, hoặc connecting.
+
+### Verification
+
+- `vitest` twofa — 53/53 pass
+
+## 2026-06-10 - 2FA cross-browser count fix (paginated cloud id set)
+
+- Version: `4.3.23`
+- Type: Patch
+- Product: P0020
+- Prompt: Kiểm tra tại sao total 2FA khác nhau giữa browsers dù cùng tài khoản.
+- Timestamp: 2026-06-10 21:30 (UTC+7)
+- Status: Verified
+- Release: https://databox.infi.io.vn
+
+### Changes
+
+- `fetchCloudRowSets`: paginate `id, deleted_at` (Supabase default 1000-row cap caused ~2700 rows to be misclassified as local-only pending).
+- `runTwofaCloudSync`: full boot pull is cloud-only (no stale per-browser extras); skip bulk `pushTwofaLocalOnly` on full sync.
+- `pushTwofaLocalOnly`: use reconciled snapshot instead of pre-sync local ref.
+- `twofa-cloud-sync.test.ts`: regression tests for pending-upload classification.
+
+### Verification
+
+- `vitest` twofa-cloud-sync + twofa-cloud-delta — 5/5 pass
+
 ## 2026-06-10 - 2FA search UX + cross-browser vault sync
 
 - Version: `4.3.21`

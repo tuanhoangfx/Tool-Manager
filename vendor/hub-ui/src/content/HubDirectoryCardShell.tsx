@@ -1,9 +1,13 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
+import { Pin } from "lucide-react";
+import { compactIconSize } from "../ui-scale";
 
 /** Golden directory card surface — shared by Dashboard / Hub / Users card grids. */
 export const HUB_DIRECTORY_CARD_SURFACE =
   "relative flex h-full min-h-[var(--hub-card-min-h)] w-full flex-col rounded-xl border border-white/5 bg-[var(--panel)] transition-[border-color,box-shadow,background-color] duration-200 hover:border-indigo-500/40 hover:bg-white/[0.02] hover:shadow-[0_8px_24px_rgba(99,102,241,0.12)]";
 export const HUB_DIRECTORY_CARD_SELECTED = "ring-2 ring-inset ring-indigo-400/35 bg-indigo-500/5";
+export const HUB_DIRECTORY_CARD_PINNED =
+  "border-amber-400/40 shadow-[0_0_0_1px_rgba(251,191,36,0.28),0_8px_28px_rgba(245,158,11,0.14)] hub-directory-card--pinned";
 
 const PANEL_SURFACE =
   "relative flex h-full min-h-[var(--hub-card-min-h)] w-full flex-col anim-slide rounded-2xl border border-white/5 bg-[var(--panel)] p-4 pr-10 transition-all hover:-translate-y-0.5 hover:ring-2 hover:ring-emerald-500/25";
@@ -12,6 +16,8 @@ export type HubDirectoryCardShellVariant = "grid" | "panel";
 
 export type HubDirectoryCardShellProps = {
   selected?: boolean;
+  /** Pinned screen / favorite — amber border glow (Dashboard). */
+  pinned?: boolean;
   /** `grid` — P0004 directory card grid (default). `panel` — rounded panel cards (Users). */
   variant?: HubDirectoryCardShellVariant;
   isDetail?: boolean;
@@ -22,6 +28,7 @@ export type HubDirectoryCardShellProps = {
 
 function shellClass({
   selected,
+  pinned,
   variant = "grid",
   isDetail,
   detailRingClass,
@@ -31,6 +38,7 @@ function shellClass({
   return [
     surface,
     selected ? HUB_DIRECTORY_CARD_SELECTED : "",
+    pinned ? HUB_DIRECTORY_CARD_PINNED : "",
     isDetail ? `ring-2 ${detailRingClass ?? "ring-emerald-500/40"}` : "",
     className ?? "",
   ]
@@ -79,6 +87,52 @@ export type HubDirectoryCardCheckboxProps = {
   corner?: boolean;
   className?: string;
 };
+
+/** Top-right cluster — pin + checkbox (Dashboard screens). */
+export function HubDirectoryCardCornerRail({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="absolute right-3 top-3 z-10 flex items-center gap-1.5"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      {children}
+    </div>
+  );
+}
+
+export type HubDirectoryCardPinButtonProps = {
+  pinned: boolean;
+  label: string;
+  onClick: () => void;
+};
+
+/** Icon-only pin — sits left of the card checkbox (pushpin metaphor). */
+export function HubDirectoryCardPinButton({ pinned, label, onClick }: HubDirectoryCardPinButtonProps) {
+  const title = pinned ? `Unpin ${label}` : `Pin ${label}`;
+
+  function handleClick(e: MouseEvent<HTMLButtonElement>) {
+    e.stopPropagation();
+    onClick();
+  }
+
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      aria-pressed={pinned}
+      onClick={handleClick}
+      className={`grid h-4 w-4 shrink-0 place-items-center rounded-md transition-colors ${
+        pinned
+          ? "text-amber-200 hub-directory-pin-mark"
+          : "text-[var(--muted)] opacity-70 hover:text-amber-200/90"
+      }`}
+    >
+      <Pin size={compactIconSize(13)} className={pinned ? "fill-current" : ""} aria-hidden />
+    </button>
+  );
+}
 
 /** Bulk-select checkbox — stops card activation propagation. */
 export function HubDirectoryCardCheckbox({

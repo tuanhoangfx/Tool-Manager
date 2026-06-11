@@ -110,7 +110,30 @@ export type SemanticIconKey =
   | "kpi.fanpages.webhook"
   | "kpi.fanpages.tokenHealth"
   | "kpi.fanpages.lastReply"
-  | "kpi.fanpages.rag";
+  | "kpi.fanpages.rag"
+  | "filter.folder"
+  | "filter.pinned"
+  | "filter.sync"
+  | "filter.share"
+  | "filter.service"
+  | "filter.usage"
+  | "filter.platform"
+  | "filter.health"
+  | "filter.status"
+  | "filter.role"
+  | "filter.permission"
+  | "filter.access"
+  | "filter.note"
+  | "filter.type"
+  | "filter.source"
+  | "filter.project"
+  | "filter.priority"
+  | "filter.creator"
+  | "filter.category"
+  | "filter.deploy"
+  | "filter.drift"
+  | "filter.links"
+  | "filter.dueDate";
 
 /** @deprecated Analytics tab removed — resolve via `SEMANTIC_ICON_ALIASES` in hub-ui. */
 export type DeprecatedSemanticIconKey =

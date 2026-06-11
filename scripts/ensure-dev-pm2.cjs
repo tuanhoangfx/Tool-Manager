@@ -5,23 +5,21 @@
  */
 const { execSync } = require("node:child_process");
 const path = require("node:path");
+const { findPm2Bin, pm2ExecSync } = require("../../scripts/lib/win-shell-env.cjs");
+const { killPorts } = require("../../scripts/lib/ensure-dev-core.cjs");
 
 const root = path.resolve(__dirname, "..");
 const open = process.argv.includes("--open");
 const force = process.argv.includes("--force");
-const pm2Bin = path.join(root, "node_modules", "pm2", "bin", "pm2");
-
-function pm2Cmd(args) {
-  return `"${process.execPath}" "${pm2Bin}" ${args}`;
-}
+const PORT = 5177;
 
 function hasPm2() {
-  return require("node:fs").existsSync(pm2Bin);
+  return Boolean(findPm2Bin(root));
 }
 
 function pm2Status() {
   try {
-    const raw = execSync(pm2Cmd("jlist"), { encoding: "utf8", cwd: root });
+    const raw = pm2ExecSync(["jlist"], { encoding: "utf8", cwd: root });
     const apps = JSON.parse(raw);
     const app = apps.find((a) => a.name === "p0020-dev");
     return app?.pm2_env?.status ?? null;
@@ -32,8 +30,9 @@ function pm2Status() {
 
 function startPm2() {
   if (force) {
+    killPorts(PORT);
     try {
-      execSync(pm2Cmd("delete p0020-dev"), { stdio: "ignore", cwd: root });
+      pm2ExecSync(["delete", "p0020-dev"], { stdio: "ignore", cwd: root });
     } catch {
       /* not running */
     }
@@ -45,13 +44,15 @@ function startPm2() {
   }
   if (status && status !== "online") {
     console.log("[P0020] Restarting PM2 process p0020-dev…");
-    execSync(pm2Cmd("restart p0020-dev"), { stdio: "inherit", cwd: root });
+    killPorts(PORT);
+    pm2ExecSync(["restart", "p0020-dev"], { stdio: "inherit", cwd: root });
   } else if (!status) {
     console.log("[P0020] Starting PM2 process p0020-dev (background)…");
-    execSync(pm2Cmd("start ecosystem.config.cjs"), { stdio: "inherit", cwd: root });
+    killPorts(PORT);
+    pm2ExecSync(["start", "ecosystem.config.cjs"], { stdio: "inherit", cwd: root });
   }
   try {
-    execSync(pm2Cmd("save"), { stdio: "ignore" });
+    pm2ExecSync(["save"], { stdio: "ignore", cwd: root });
   } catch {
     /* optional */
   }

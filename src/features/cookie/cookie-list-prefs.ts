@@ -1,4 +1,16 @@
+import type { HubViewMode } from "../../components/sales-shell";
 import { patchHubListPrefs } from "../../lib/url-prefs";
+
+/** Cookie routes directory view (URL `cview`). */
+export function readCookieViewMode(): HubViewMode {
+  if (typeof window === "undefined") return "card";
+  const raw = new URLSearchParams(window.location.search).get("cview");
+  return raw === "table" ? "table" : "card";
+}
+
+export function patchCookieViewMode(mode: HubViewMode) {
+  patchHubListPrefs({ cview: mode === "card" ? null : mode });
+}
 
 /** Cookie routes directory ordering (URL `csort`). */
 export type CookieListSort = "updated" | "created" | "platform" | "title";

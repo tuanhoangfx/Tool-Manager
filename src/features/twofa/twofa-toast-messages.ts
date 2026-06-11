@@ -23,7 +23,7 @@ export function twofaImportToast(result: TwofaAddManyResult): string {
 
 export function twofaDedupeToast(removed: number): string {
   if (removed === 0) return "No duplicate accounts found";
-  return `Removed ${removed} duplicate account${removed === 1 ? "" : "s"}`;
+  return `Removed ${removed} duplicate account${removed === 1 ? "" : "s"} (cloud + local)`;
 }
 
 export function twofaUpdateToast(service: string, account: string): string {

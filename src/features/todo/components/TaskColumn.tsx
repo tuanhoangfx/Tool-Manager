@@ -55,7 +55,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
             onDrop={() => onDrop(status)}
             onDragOver={(e) => { e.preventDefault(); setDragOverStatus(status); }}
             onDragLeave={() => setDragOverStatus(null)}
-            className={`${TODO_HUB.taskColumn} ${isDragOver ? 'todo-hub-column--drag-over' : ''}`}
+            className={`${TODO_HUB.taskColumn} todo-hub-column--${status} ${isDragOver ? 'todo-hub-column--drag-over' : ''}`}
         >
             <h3 className={`todo-hub-column__header todo-hub-column__header--${status}`}>
                 <div className="flex items-center gap-2">

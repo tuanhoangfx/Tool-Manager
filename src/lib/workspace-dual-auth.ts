@@ -1,17 +1,21 @@
 import type { Session } from "@supabase/supabase-js";
-import { createClient } from "@supabase/supabase-js";
 import {
+  authenticateMirrorSupabase,
+  HUB_INVALID_LOGIN,
   hubAuthEmailFromLogin,
-  resolveHubLogin,
+  isHubAuthRateLimitError,
+  recoverHubSessionViaApi,
+  runWorkspaceDualSignIn,
   sanitizeHubLoginInput,
   signInWithHubPassword,
 } from "@tool-workspace/hub-identity";
-import { HUB_SUPABASE_ANON_KEY, HUB_SUPABASE_URL, isHubSupabaseConfigured } from "./hub-supabase-env";
 import { cacheDataBoxSession } from "./data-box-session";
 import { cacheHubIdentity } from "./hub-identity-session";
+import { HUB_SUPABASE_ANON_KEY, HUB_SUPABASE_URL, isHubSupabaseConfigured } from "./hub-supabase-env";
 import { authenticateTwofaVault } from "./authenticate-twofa-vault";
 import { isTwofaSupabaseConfigured } from "./twofa-supabase-env";
 import { isSupabaseConfigured, supabase } from "./supabase";
+import { getIdentitySupabase } from "./supabase-identity";
 
 export type WorkspaceDualSignInResult = {
   identitySession: Session | null;
@@ -21,17 +25,30 @@ export type WorkspaceDualSignInResult = {
   twofaError: string | null;
 };
 
-function hubClient() {
-  if (!isHubSupabaseConfigured) return null;
-  return createClient(HUB_SUPABASE_URL, HUB_SUPABASE_ANON_KEY);
+const recoverToken = (import.meta.env.VITE_HUB_ADMIN_RECOVER_TOKEN as string | undefined)?.trim();
+const hubRecoverWorkerBase = (
+  (import.meta.env.VITE_CHATCENTER_WORKER_URL as string | undefined) || "http://127.0.0.1:3921"
+)
+  .trim()
+  .replace(/\/$/, "");
+
+function hubRecoverApiUrl(path: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${hubRecoverWorkerBase}${p}`;
 }
 
-const INVALID_LOGIN = /invalid login credentials/i;
+async function recoverHubSessionViaWorker(loginInput: string, password: string) {
+  const recovered = await recoverHubSessionViaApi({
+    apiUrl: hubRecoverApiUrl,
+    loginInput,
+    password,
+    recoverToken,
+    mirrorSessionKey: "chatcenterSession",
+  });
+  if (!recovered) return null;
+  return { identitySession: recovered.identitySession, chatcenterSession: null };
+}
 
-/**
- * Data Box keeps its own auth.users for RLS on notes / cookie / 2FA data.
- * After Hub validates the password, mirror the account here if missing (no extra sign-up UI).
- */
 async function authenticateDataBox(
   loginInput: string,
   password: string,
@@ -45,16 +62,14 @@ async function authenticateDataBox(
   const primaryEmail = hubAuthEmailFromLogin(login);
 
   if (mode === "signup") {
-    const { data, error } = await supabase.auth.signUp({ email: primaryEmail, password });
-    if (error) return { session: null, error: error.message };
-    if (!data.session) {
-      return {
-        session: null,
-        error: "Check your email to confirm sign-up on Data Box, or disable Confirm email in Supabase Auth.",
-      };
-    }
-    cacheDataBoxSession(data.session);
-    return { session: data.session, error: null };
+    return authenticateMirrorSupabase({
+      client: supabase,
+      authEmail: primaryEmail,
+      password,
+      mode,
+      cacheSession: cacheDataBoxSession,
+      planeLabel: "Data Box",
+    });
   }
 
   const attempt = async (authEmail: string) => {
@@ -69,16 +84,23 @@ async function authenticateDataBox(
   }
 
   const lastError = signIn.error?.message ?? null;
-  if (lastError && INVALID_LOGIN.test(lastError)) {
-    const mirror = await supabase.auth.signUp({ email: primaryEmail, password });
-    if (!mirror.error && mirror.data.session) {
-      cacheDataBoxSession(mirror.data.session);
-      return { session: mirror.data.session, error: null };
-    }
-    if (mirror.error) return { session: null, error: mirror.error.message };
+  if (lastError && isHubAuthRateLimitError(lastError)) {
+    return { session: null, error: lastError };
+  }
+  if (!lastError || !HUB_INVALID_LOGIN.test(lastError)) {
+    return { session: null, error: lastError ?? "Data Box sign-in failed." };
   }
 
-  return { session: null, error: lastError ?? "Data Box sign-in failed." };
+  const mirror = await authenticateMirrorSupabase({
+    client: supabase,
+    authEmail: primaryEmail,
+    password,
+    mode: "signup",
+    cacheSession: cacheDataBoxSession,
+    planeLabel: "Data Box",
+  });
+  if (mirror.session) return mirror;
+  return { session: null, error: mirror.error ?? lastError };
 }
 
 /** Sign in / sign up on Tool Hub (identity), then Data Box and 2FA vault. */
@@ -87,74 +109,47 @@ export async function signInWorkspaceDual(
   password: string,
   mode: "signin" | "signup",
 ): Promise<WorkspaceDualSignInResult> {
-  const hub = hubClient();
-  if (!hub) {
+  if (!isHubSupabaseConfigured) {
     throw new Error("Tool Hub Supabase is not configured (VITE_HUB_SUPABASE_ANON_KEY).");
   }
 
-  const login = sanitizeHubLoginInput(loginInput);
-  const resolved = resolveHubLogin(login);
-  const identityAttempt = async (authEmail: string) => {
-    const result =
-      mode === "signup"
-        ? await hub.auth.signUp({
-            email: authEmail,
-            password,
-            options: {
-              data: {
-                full_name: resolved.loginId ?? authEmail.split("@")[0],
-                login_id: resolved.loginId ?? undefined,
-              },
-            },
-          })
-        : await hub.auth.signInWithPassword({ email: authEmail, password });
-    return { data: { session: result.data.session }, error: result.error };
-  };
-
-  const identityResult = await signInWithHubPassword(login, identityAttempt, mode);
-  if (identityResult.error) throw identityResult.error;
-  const identitySession = identityResult.data?.session as Session | null | undefined;
-  if (!identitySession) {
-    throw new Error(
-      mode === "signup" ? "Check your email to confirm sign-up on Tool Hub." : "No Hub session returned.",
-    );
-  }
-
-  if (mode === "signup" && resolved.loginId && identitySession.user?.id) {
-    await hub
-      .from("profiles")
-      .update({
-        login_id: resolved.loginId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", identitySession.user.id);
-  }
-
-  const mirrorEmail = identitySession.user?.email ?? identityResult.authEmail ?? resolved.authEmail;
-
-  cacheHubIdentity({
-    access_token: identitySession.access_token,
-    refresh_token: identitySession.refresh_token,
-    expires_at: identitySession.expires_at ?? null,
-    user_id: identitySession.user?.id ?? null,
-    user_email: mirrorEmail,
-    supabase_url: HUB_SUPABASE_URL,
-    supabase_anon_key: HUB_SUPABASE_ANON_KEY,
+  const result = await runWorkspaceDualSignIn(loginInput, password, mode, {
+    getHubClient: getIdentitySupabase,
+    recoverHubSession: recoverHubSessionViaWorker,
+    cacheHubIdentityFromSession: (session, mirrorEmail) => {
+      cacheHubIdentity({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at ?? null,
+        user_id: session.user?.id ?? null,
+        user_email: mirrorEmail,
+        supabase_url: HUB_SUPABASE_URL,
+        supabase_anon_key: HUB_SUPABASE_ANON_KEY,
+      });
+    },
+    planes: [
+      {
+        authenticate: ({ loginInput: login, password: pwd, mode: authMode }) =>
+          authenticateDataBox(login, pwd, authMode),
+      },
+      {
+        authenticate: ({ mirrorEmail, password: pwd, mode: authMode }) =>
+          isTwofaSupabaseConfigured
+            ? authenticateTwofaVault(mirrorEmail, pwd, authMode)
+            : Promise.resolve({ session: null, error: null }),
+      },
+    ],
   });
 
-  const { session: dataSession, error: dataError } = await authenticateDataBox(login, password, mode);
-
-  const { session: twofaSession, error: twofaError } = isTwofaSupabaseConfigured
-    ? await authenticateTwofaVault(mirrorEmail, password, mode)
-    : { session: null, error: null };
-
-  if (twofaError) console.warn("[P0020] 2FA vault mirror:", twofaError);
+  const data = result.planes[0] ?? { session: null, error: null };
+  const twofa = result.planes[1] ?? { session: null, error: null };
+  if (twofa.error) console.warn("[P0020] 2FA vault mirror:", twofa.error);
 
   return {
-    identitySession,
-    dataSession,
-    dataError,
-    twofaSession,
-    twofaError,
+    identitySession: result.identitySession,
+    dataSession: data.session,
+    dataError: data.error,
+    twofaSession: twofa.session,
+    twofaError: twofa.error,
   };
 }

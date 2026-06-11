@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useSettings } from '../../../context/SettingsContext';
 import type { Profile, Task, Project } from '../../../types';
-import { ClipboardListIcon, CheckCircleIcon, XCircleIcon, SpinnerIcon, UsersIcon } from '../../Icons';
+import { todoKanbanStatusConfig } from '../../../todo-kanban-status';
 import type { DataChange, TaskCounts } from '../../../app-types';
 import { type SortConfig, sortTasks } from '../../../lib/taskUtils';
 import { useCachedSupabaseQuery } from '../../../hooks/useCachedSupabaseQuery';
@@ -12,7 +12,8 @@ import { useTodoChrome } from '../../../TodoChromeContext';
 import { matchesWorkspacePeriod } from '../../../../../lib/hub-workspace-period';
 import { TaskBoardSkeleton } from '../../Skeleton';
 import TaskColumn from '../../TaskColumn';
-import MultiSelectDropdown from './MultiSelectEmployeeDropdown';
+import { HubMultiFilterDropdown } from '@tool-workspace/hub-ui';
+import { buildTodoMultiFilterDef, profileFilterOptions } from '../../../todo-hub-filter-helpers';
 
 const EMPTY_TASKS: Task[] = [];
 
@@ -29,7 +30,7 @@ interface AllTasksViewProps {
 }
 
 const AllTasksView: React.FC<AllTasksViewProps> = ({ profile, lastDataChange, allUsers, allProjects, onEditTask, onDeleteTask, onUpdateStatus, onClearCancelledTasks, setTaskCounts }) => {
-    const { t, language, timezone } = useSettings();
+    const { t, timezone } = useSettings();
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
     const [dragOverStatus, setDragOverStatus] = useState<Task['status'] | null>(null);
@@ -182,24 +183,12 @@ const AllTasksView: React.FC<AllTasksViewProps> = ({ profile, lastDataChange, al
         });
     }, [todo.length, inprogress.length, done.length, setTaskCounts]);
     
-    const getEmployeeLabel = (selectedCount: number, totalCount: number) => {
-        if (selectedCount === 0 || selectedCount === totalCount) {
-          return t.allEmployees;
-        }
-        if (selectedCount === 1) {
-            const user = allUsers.find(u => u.id === selectedUserIds[0]);
-            return user?.full_name || `1 ${t.employee}`;
-        }
-        const pluralEmployee = language === 'vi' ? t.employee : `${t.employee}s`;
-        return `${selectedCount}/${allUsers.length} ${pluralEmployee}`;
-    };
+    const employeeFilterDef = useMemo(
+        () => buildTodoMultiFilterDef('employee', t.employee, profileFilterOptions(allUsers)),
+        [allUsers, t.employee],
+    );
 
-    const statusConfig = {
-        todo: { icon: <ClipboardListIcon size={16} className="text-orange-500" />, title: t.todo },
-        inprogress: { icon: <SpinnerIcon size={16} className="text-indigo-500 animate-spin" />, title: t.inprogress },
-        done: { icon: <CheckCircleIcon size={16} className="text-green-500" />, title: t.done },
-        cancelled: { icon: <XCircleIcon size={16} className="text-gray-500" />, title: t.cancelled },
-    };
+    const statusConfig = todoKanbanStatusConfig(t);
     const columns: { tasks: Task[]; status: Task['status'] }[] = [
         { tasks: todo, status: 'todo' },
         { tasks: inprogress, status: 'inprogress' },
@@ -208,14 +197,10 @@ const AllTasksView: React.FC<AllTasksViewProps> = ({ profile, lastDataChange, al
     ];
 
     const employeeFilter = (
-        <MultiSelectDropdown
-            options={allUsers.map(u => ({ id: u.id, label: u.full_name || '', avatarUrl: u.avatar_url || undefined }))}
-            selectedIds={selectedUserIds}
+        <HubMultiFilterDropdown
+            filter={employeeFilterDef}
+            selected={selectedUserIds}
             onChange={setSelectedUserIds}
-            buttonLabel={getEmployeeLabel}
-            buttonIcon={<UsersIcon size={16} />}
-            searchPlaceholder={t.searchUsers}
-            allLabel={t.allEmployees}
         />
     );
 
@@ -223,8 +208,10 @@ const AllTasksView: React.FC<AllTasksViewProps> = ({ profile, lastDataChange, al
         projects: allProjects,
         allUsers,
         timeFilteredTasks: tasksForSummaryAndChart,
+        shownCount: filteredTasksForBoard.length,
+        totalCount: tasksForSummaryAndChart.length,
         filterRowLeading: employeeFilter,
-        sectionRuleLabel: "Board",
+        sectionRuleLabel: t.boardView,
     });
 
     return (

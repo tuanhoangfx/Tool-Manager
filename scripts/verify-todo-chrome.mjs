@@ -18,8 +18,26 @@ function read(rel) {
 const checks = [
   {
     file: "src/features/todo/todo-header-stats.ts",
-    must: ["SpinnerIcon", "text-indigo-500 animate-spin"],
+    must: ["TodoInProgressIcon", "TodoTodoIcon"],
     mustNot: ["Loader2"],
+  },
+  {
+    file: "src/features/todo/hooks/useSyncTodoChrome.tsx",
+    must: ["TodoDirectoryToolbar", "buildTodoFilterDefs", "buildTodoKpis", "setDirectoryToolbar"],
+    minLines: 40,
+  },
+  {
+    file: "src/features/todo/todo-hub-filter-helpers.ts",
+    must: ["buildTodoMultiFilterDef", "profileFilterOptions"],
+  },
+  {
+    file: "src/features/todo/components/dashboard/admin/AllTasksView.tsx",
+    must: ["HubMultiFilterDropdown"],
+    mustNot: ["MultiSelectEmployeeDropdown"],
+  },
+  {
+    file: "src/features/todo/todo-directory-toolbar.tsx",
+    must: ["DirectorySearchToolbar", 'scope: "todo"'],
   },
   {
     file: "src/features/todo/todo-kpi.ts",
@@ -28,7 +46,7 @@ const checks = [
   },
   {
     file: "src/features/todo/todo-icons.tsx",
-    must: ["SpinnerIcon", "todo-inprogress-icon"],
+    must: ["SpinnerIcon", "todo-inprogress-icon", "TODO_STATUS_HEX"],
   },
   {
     file: "src/features/todo/todo-display-prefs.ts",
@@ -60,7 +78,7 @@ const checks = [
   },
   {
     file: "src/lib/workspace-user-directory.ts",
-    must: ["workspace_user_directory", "directoryRowToProfile", "fetchWorkspaceUserDirectory"],
+    must: ["fetchWorkspaceUserDirectoryRows", "directoryRowToProfile", "fetchWorkspaceUserDirectory"],
   },
   {
     file: "src/features/todo/hooks/useProfileAndUsers.ts",
@@ -85,13 +103,19 @@ const checks = [
 
 const errors = [];
 
-for (const { file, must = [], mustNot = [] } of checks) {
+for (const { file, must = [], mustNot = [], minLines } of checks) {
   let text;
   try {
     text = read(file);
   } catch (e) {
     errors.push(String(e.message ?? e));
     continue;
+  }
+  if (minLines != null) {
+    const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+    if (lines.length < minLines) {
+      errors.push(`${file}: expected at least ${minLines} non-empty lines (got ${lines.length})`);
+    }
   }
   for (const token of must) {
     if (!text.includes(token)) errors.push(`${file}: expected "${token}"`);

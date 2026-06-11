@@ -69,8 +69,6 @@ export function NotesFoldersSettingsPanel({
 
   const noteHasCookieRoute = Boolean(selectedNoteId && cookieRouteNoteIds.has(selectedNoteId));
   const userFolderSelection = [...selectedIds].filter((id) => !isSystemFolder(id));
-  const allVisibleSelected = tableRows.length > 0 && tableRows.every((row) => selectedIds.has(row.id));
-
   const toggleSelect = useCallback((folderId: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -79,14 +77,6 @@ export function NotesFoldersSettingsPanel({
       return next;
     });
   }, []);
-
-  const toggleSelectAll = useCallback(() => {
-    setSelectedIds((prev) => {
-      if (tableRows.length === 0) return prev;
-      if (tableRows.every((row) => prev.has(row.id))) return new Set();
-      return new Set(tableRows.map((row) => row.id));
-    });
-  }, [tableRows]);
 
   const onSort = useCallback(
     (key: FolderTableSortKey) => {
@@ -217,8 +207,6 @@ export function NotesFoldersSettingsPanel({
         onSort={onSort}
         selectedIds={selectedIds}
         onToggleSelect={toggleSelect}
-        onToggleSelectAll={toggleSelectAll}
-        allVisibleSelected={allVisibleSelected}
         editingId={formOpen && formMode === "edit" ? editingFolder?.id ?? null : null}
       />
 

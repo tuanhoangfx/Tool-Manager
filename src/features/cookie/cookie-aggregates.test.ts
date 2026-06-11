@@ -33,35 +33,18 @@ describe("buildCookieChartItems", () => {
     expect(charts.statusItems.map((item) => item.label)).toEqual(["Synced", "Awaiting sync"]);
   });
 
-  it("groups routes by platform label", () => {
+  it("groups routes by platform label with brand icon", () => {
     const charts = buildCookieChartItems(
-      [row(".kalodata.com"), row(".facebook.com"), row(".kalodata.com")],
+      [row(".kalodata.com"), row(".facebook.com"), row(".kalodata.com"), row(".cursor.com")],
       {},
     );
     const kalodata = charts.platformItems.find((item) => item.label === "Kalodata");
     const facebook = charts.platformItems.find((item) => item.label === "Facebook");
+    const cursor = charts.platformItems.find((item) => item.label === "Cursor");
     expect(kalodata?.value).toBe(2);
     expect(facebook?.value).toBe(1);
-  });
-
-  it("sums vault cookies per platform", () => {
-    const vaultByKey = { "n1:.kalodata.com": { cookie_count: 32 } as never };
-    const charts = buildCookieChartItems([row(".kalodata.com")], vaultByKey);
-    expect(charts.cookieItems[0]).toMatchObject({ label: "Kalodata", value: 32 });
-  });
-
-  it("splits route access into owner, locked, member", () => {
-    const charts = buildCookieChartItems(
-      [row(".a.com"), row(".b.com", "pending", undefined, true), row(".c.com", "pending", "member")],
-      {},
-    );
-    expect(charts.accessItems).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ label: "Owner", value: 1 }),
-        expect.objectContaining({ label: "Locked browser", value: 1 }),
-        expect.objectContaining({ label: "Member", value: 1 }),
-      ]),
-    );
+    expect(kalodata?.iconSrc).toBe("/assets/brand-icons/kalodata.png");
+    expect(cursor?.iconSrc).toBe("/assets/brand-icons/cursor.png");
   });
 
   it("splits route sharing into private, shared out, and shared to me", () => {

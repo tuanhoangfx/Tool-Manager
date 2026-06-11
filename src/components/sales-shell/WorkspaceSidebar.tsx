@@ -10,7 +10,7 @@ import { clearTwofaSession } from "../../lib/twofa-session";
 import { getTwofaSupabase } from "../../lib/twofa-supabase";
 import { clearHubIdentity } from "../../lib/hub-identity-session";
 import { useNotesAuth } from "../../features/notes/useNotesAuth";
-import { getIdentitySupabase } from "../../lib/supabase-identity";
+import { applyHubIdentitySession, getIdentitySupabase } from "../../lib/supabase-identity";
 import { supabase } from "../../lib/supabase";
 import {
   requestWorkspaceDataRefresh,
@@ -21,6 +21,7 @@ import {
   HubLogButton,
   HubSidebarFooterButton,
   HubSidebarNavList,
+  HubSidebarShell,
   HubUiZoomControl,
   HubWorkspaceUserShell,
   useNavGroupOpenState,
@@ -37,7 +38,7 @@ type Props = {
 };
 
 export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
-  const { session, offline } = useNotesAuth();
+  const { session, offline, hubUserId, hubEmail } = useNotesAuth();
   const { pushToast } = useAppToast();
   const [listRefreshing, setListRefreshing] = useState(false);
   const { groupOpen, setGroupSubnavOpen } = useNavGroupOpenState(NAV_SUBNAV_PREFIX, EMPTY_GROUP_IDS);
@@ -51,21 +52,18 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
   }, []);
 
   return (
-    <aside className="flex h-full min-h-0 w-60 shrink-0 flex-col overflow-visible border-r border-white/5 bg-[var(--panel)] p-4">
-      <div className="mb-4 shrink-0 flex items-center gap-3">
+    <HubSidebarShell
+      brandLeading={
         <ToolAvatar
           code="P0020"
           iconName={toolIconName({ code: "P0020" })}
           svgSrc={toolSvgIcon({ code: "P0020" }) ?? undefined}
           size="md"
         />
-        <div className="min-w-0">
-          <div className="truncate text-sm font-semibold leading-tight">P0020-Data-Box</div>
-          <div className="text-[10px] text-[var(--muted)]">P0020 · v{APP_VERSION}</div>
-        </div>
-      </div>
-
-      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
+      }
+      brandTitle="P0020-Data-Box"
+      brandTagline={`P0020 · v${APP_VERSION}`}
+      nav={
         <HubSidebarNavList
           structure={NAV_STRUCTURE}
           activeScreen={screen}
@@ -76,52 +74,57 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
           onPrefetchScreen={prefetchWorkspaceTab}
           onSelectView={() => {}}
         />
-      </nav>
-
-      <footer className="mt-2 shrink-0 space-y-0.5 overflow-visible border-t border-white/5 pt-2.5">
-        <HubWorkspaceUserShell
-          session={session}
-          anonymous={offline}
-          profileRoleClient={getIdentitySupabase()}
-          footerTitle="Open workspace user information"
-          emptyEmailLabel="Not signed in"
-          workspaceNote={
-            offline
-              ? "Anonymous mode — cloud vault sync requires sign-in."
-              : "Workspace data syncs per signed-in user on Data Box Supabase."
-          }
-          onSignOut={async () => {
-            setOfflineMode(false);
-            clearHubIdentity();
-            clearDataBoxSession();
-            clearTwofaSession();
-            const identity = getIdentitySupabase();
-            const twofa = getTwofaSupabase();
-            const outs = await Promise.all([
-              identity ? identity.auth.signOut() : Promise.resolve({ error: null }),
-              supabase.auth.signOut(),
-              twofa ? twofa.auth.signOut() : Promise.resolve({ error: null }),
-            ]);
-            const error = outs.find((r) => r.error)?.error;
-            if (error) {
-              pushToast(error.message, "error", 8000);
-              return false;
+      }
+      footer={
+        <>
+          <HubWorkspaceUserShell
+            session={session}
+            anonymous={offline}
+            profileRoleClient={getIdentitySupabase()}
+            profileRoleUserId={hubUserId}
+            profileRoleEmail={hubEmail ?? session?.user?.email}
+            onPrepareProfileRoleClient={async () => {
+              await applyHubIdentitySession();
+            }}
+            footerTitle="Open workspace user information"
+            emptyEmailLabel="Not signed in"
+            workspaceNote={
+              offline
+                ? "Anonymous mode — cloud vault sync requires sign-in."
+                : "Workspace data syncs per signed-in user on Data Box Supabase."
             }
-            window.dispatchEvent(new CustomEvent("p0020:hub-identity"));
-            return true;
-          }}
-        />
-        <HubSidebarFooterButton
-          icon={RefreshCcw}
-          iconClass={`text-emerald-300 ${listRefreshing ? "animate-spin" : ""}`}
-          label={listRefreshing ? "Updating…" : "Refresh"}
-          onClick={() => requestWorkspaceDataRefresh()}
-          title={listRefreshing ? "Updating notes in background" : "Refresh notes list"}
-        />
-        <HubLogButton variant="global" />
-        {displayPrefs}
-        <HubUiZoomControl />
-      </footer>
-    </aside>
+            onSignOut={async () => {
+              setOfflineMode(false);
+              clearHubIdentity();
+              clearDataBoxSession();
+              clearTwofaSession();
+              const identity = getIdentitySupabase();
+              const twofa = getTwofaSupabase();
+              const outs = await Promise.all([
+                identity ? identity.auth.signOut() : Promise.resolve({ error: null }),
+                supabase.auth.signOut(),
+                twofa ? twofa.auth.signOut() : Promise.resolve({ error: null }),
+              ]);
+              const error = outs.find((r) => r.error)?.error;
+              if (error) {
+                pushToast(error.message, "error", 8000);
+                return false;
+              }
+              return true;
+            }}
+          />
+          <HubSidebarFooterButton
+            icon={RefreshCcw}
+            iconClass={`text-emerald-300 ${listRefreshing ? "animate-spin" : ""}`}
+            label={listRefreshing ? "Updating…" : "Refresh"}
+            onClick={() => requestWorkspaceDataRefresh()}
+            title={listRefreshing ? "Updating notes in background" : "Refresh notes list"}
+          />
+          <HubLogButton variant="global" />
+          {displayPrefs}
+          <HubUiZoomControl />
+        </>
+      }
+    />
   );
 }

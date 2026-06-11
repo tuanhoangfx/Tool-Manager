@@ -28,3 +28,21 @@ export {
   type UseStaleWhileRevalidateDirectoryOptions,
   type UseStaleWhileRevalidateDirectoryResult,
 } from "./useStaleWhileRevalidateDirectory";
+export {
+  createCrossTabSync,
+  type CreateCrossTabSyncOptions,
+  type CrossTabSyncMessage,
+} from "./createCrossTabSync";
+export {
+  useCrossTabVaultReload,
+  type UseCrossTabVaultReloadOptions,
+} from "./useCrossTabVaultReload";
+export {
+  useVirtualWindow,
+  virtualWindowStride,
+  virtualWindowContentHeight,
+  isVirtualIndexInView,
+  scrollVirtualIndexIntoView,
+  type UseVirtualWindowOptions,
+  type VirtualWindowLayout,
+} from "./useVirtualWindow";

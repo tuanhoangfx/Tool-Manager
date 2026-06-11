@@ -11,7 +11,8 @@
     "src/features/twofa/TwofaManagerScreen.tsx",
     "src/features/cookie/CookieSyncScreen.tsx",
     "src/features/system/SystemDesignTemplateScreen.tsx",
-    "src/lib/workspace-tab-prefetch.ts"
+    "src/lib/workspace-tab-prefetch.ts",
+    "src/lib/workspace-tab-load-contract.ts"
   ],
   "project": ["src/**/*.{ts,tsx}"],
   "ignore": ["src/**/*.test.ts", "vendor/**"],

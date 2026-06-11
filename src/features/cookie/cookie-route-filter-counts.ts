@@ -14,20 +14,13 @@ export type CookieRouteRow = {
   note?: NoteListItem;
 };
 
-function routeType(domain: string) {
-  return domain.includes("facebook") ? "facebook" : "custom";
-}
-
-function routeSource(binding: CookieBinding) {
-  return binding.sourceBrowserId ? "locked" : "unset";
-}
-
 function rowHaystack({ binding, note }: CookieRouteRow) {
   return [
     binding.domain,
     binding.syncId,
     binding.noteId,
     binding.noteTitle,
+    binding.ownerUserEmail,
     note?.title,
     note?.syncLabel,
   ]
@@ -58,20 +51,15 @@ function matchesCookieRouteRow(
   const normalizedQuery = query.trim().toLowerCase();
   const activeStatuses = filterValues.status ?? [];
   const activePlatforms = filterValues.platform ?? [];
-  const activeTypes = filterValues.type ?? [];
-  const activeSources = filterValues.source ?? [];
+  // Legacy keys (type / source) intentionally ignored — removed from Cookie Auto filters.
   const { binding } = row;
   const status = routeFilterStatus(row, vaultByKey);
   const platform = routePlatformKey(binding.domain);
-  const type = routeType(binding.domain);
-  const source = routeSource(binding);
 
   return (
     (!normalizedQuery || rowHaystack(row).includes(normalizedQuery)) &&
     (activeStatuses.length === 0 || activeStatuses.includes(status)) &&
     (activePlatforms.length === 0 || activePlatforms.includes(platform)) &&
-    (activeTypes.length === 0 || activeTypes.includes(type)) &&
-    (activeSources.length === 0 || activeSources.includes(source)) &&
     routeMatchesTimeRange(binding, row.note, period)
   );
 }
@@ -88,10 +76,6 @@ function matchesCookieRouteOption(
       return routeFilterStatus(row, vaultByKey) === optionValue;
     case "platform":
       return routePlatformKey(binding.domain) === optionValue;
-    case "type":
-      return routeType(binding.domain) === optionValue;
-    case "source":
-      return routeSource(binding) === optionValue;
     default:
       return false;
   }

@@ -1,14 +1,15 @@
 import type { FilterDef } from "../../components/sales-shell";
 
+/** Golden FilterBar defs — Status + Platform (icons: badge-registry + platform iconSrc). */
 export const COOKIE_ROUTE_FILTER_DEFS: FilterDef[] = [
   {
     key: "status",
     label: "Status",
     options: [
-      { value: "synced", label: "Synced" },
-      { value: "pending", label: "Awaiting sync" },
-      { value: "error", label: "Error" },
-      { value: "manual", label: "Manual" },
+      { value: "synced", label: "Synced", color: "#22c55e" },
+      { value: "pending", label: "Awaiting sync", color: "#f59e0b" },
+      { value: "error", label: "Error", color: "#ef4444" },
+      { value: "manual", label: "Manual", color: "#6b7394" },
     ],
     showAllLabel: true,
   },
@@ -16,24 +17,6 @@ export const COOKIE_ROUTE_FILTER_DEFS: FilterDef[] = [
     key: "platform",
     label: "Platform",
     options: [],
-    showAllLabel: true,
-  },
-  {
-    key: "type",
-    label: "Type",
-    options: [
-      { value: "facebook", label: "Facebook" },
-      { value: "custom", label: "Custom" },
-    ],
-    showAllLabel: true,
-  },
-  {
-    key: "source",
-    label: "Source",
-    options: [
-      { value: "locked", label: "Source locked" },
-      { value: "unset", label: "No source" },
-    ],
     showAllLabel: true,
   },
 ];

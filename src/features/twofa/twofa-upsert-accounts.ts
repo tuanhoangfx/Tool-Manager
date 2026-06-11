@@ -133,6 +133,36 @@ export type TwofaDedupeResult = {
   removedIds: string[];
 };
 
+export type TwofaDedupeServiceCount = {
+  service: string;
+  count: number;
+};
+
+export type TwofaDedupePreview = {
+  totalRemoved: number;
+  byService: TwofaDedupeServiceCount[];
+};
+
+function buildTwofaDedupePreview(accounts: TwofaAccount[], removedIds: string[]): TwofaDedupePreview {
+  const idSet = new Set(removedIds);
+  const byServiceMap = new Map<string, number>();
+  for (const row of accounts) {
+    if (!idSet.has(row.id)) continue;
+    const service = row.service.trim() || "Others";
+    byServiceMap.set(service, (byServiceMap.get(service) ?? 0) + 1);
+  }
+  const byService = [...byServiceMap.entries()]
+    .map(([service, count]) => ({ service, count }))
+    .sort((a, b) => b.count - a.count || a.service.localeCompare(b.service));
+  return { totalRemoved: removedIds.length, byService };
+}
+
+/** Preview duplicate removal counts by service — no mutation. */
+export function previewTwofaDedupe(accounts: TwofaAccount[]): TwofaDedupePreview {
+  const { removedIds } = dedupeTwofaAccounts(accounts);
+  return buildTwofaDedupePreview(accounts, removedIds);
+}
+
 /** Collapse duplicate identities in an account list — keep newest updatedAt per key. */
 export function dedupeTwofaAccounts(accounts: TwofaAccount[]): TwofaDedupeResult {
   const groups = new Map<string, TwofaAccount[]>();

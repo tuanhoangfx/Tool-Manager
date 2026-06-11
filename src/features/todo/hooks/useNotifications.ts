@@ -3,11 +3,11 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { addNotificationsRealtimeListener } from "../notifications-realtime-hub";
 
-export const useNotifications = (session: Session | null) => {
+export const useNotifications = (session: Session | null, enabled = true) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!session?.user) {
+    if (!enabled || !session?.user) {
       setUnreadCount(0);
       return;
     }
@@ -36,7 +36,7 @@ export const useNotifications = (session: Session | null) => {
       cancelled = true;
       removeListener();
     };
-  }, [session?.user?.id]);
+  }, [enabled, session?.user?.id]);
 
   return { unreadCount, setUnreadCount };
 };

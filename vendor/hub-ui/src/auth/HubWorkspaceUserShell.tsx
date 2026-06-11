@@ -43,6 +43,10 @@ export type HubWorkspaceUserShellProps = {
   onResolveRoleKey?: (userId: string) => Promise<string | null | undefined>;
   /** Preferred — fetch + realtime `profiles.role` via Supabase client. */
   profileRoleClient?: SupabaseClient | null;
+  /** Hub identity user id when `session` is a tool-local auth user (P0020). */
+  profileRoleUserId?: string | null;
+  profileRoleEmail?: string | null;
+  onPrepareProfileRoleClient?: (client: SupabaseClient) => Promise<void>;
 };
 
 /** Sidebar User footer + workspace account modal — single config (P0020 / P0016). */
@@ -61,6 +65,9 @@ export function HubWorkspaceUserShell({
   roleKey: roleKeyProp,
   onResolveRoleKey,
   profileRoleClient,
+  profileRoleUserId,
+  profileRoleEmail,
+  onPrepareProfileRoleClient,
   renderModal,
 }: HubWorkspaceUserShellProps) {
   const [open, setOpen] = useState(false);
@@ -72,6 +79,9 @@ export function HubWorkspaceUserShell({
     roleKey: roleKeyProp,
     onResolveRoleKey,
     profileRoleClient,
+    profileRoleUserId,
+    profileRoleEmail,
+    onPrepareProfileRoleClient,
   });
   const footerUserLabel = workspaceUserFooterLabel({
     labels,

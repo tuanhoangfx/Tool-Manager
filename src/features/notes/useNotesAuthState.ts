@@ -1,14 +1,31 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { cacheDataBoxSession, clearDataBoxSession, readDataBoxSession, sessionFromDataBoxSnapshot } from "../../lib/data-box-session";
+import {
+  resolveWithBootTimeout,
+  sessionsEqual,
+  useWorkspaceDataAuthBoot,
+  WORKSPACE_AUTH_BOOT_TIMEOUT_MS,
+} from "@tool-workspace/hub-identity";
+import { API_UNAUTHORIZED_EVENT } from "../../lib/api-auth-token";
+import {
+  cacheDataBoxSession,
+  clearDataBoxSession,
+  readDataBoxSession,
+  sessionFromDataBoxSnapshot,
+} from "../../lib/data-box-session";
 import { ensureDataBoxAuth } from "../../lib/ensure-data-box-auth";
-import { ensureHubIdentityStubFromDataSession, readHubIdentity } from "../../lib/hub-identity-session";
-import { promiseWithTimeout } from "../../lib/promise-timeout";
+import {
+  cacheHubIdentity,
+  ensureHubIdentityStubFromDataSession,
+  readHubIdentity,
+} from "../../lib/hub-identity-session";
+import {
+  startHubTokenRefreshScheduler,
+  stopHubTokenRefreshScheduler,
+} from "../../lib/hub-token-refresh-scheduler";
+import { isToolHubOrigin } from "../../lib/hub-identity-urls";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase";
 import { getOfflineMode, offlineSession } from "../../lib/offlineMode";
-
-/** Only first app boot — must not abort an active login session. */
-const AUTH_BOOT_TIMEOUT_MS = 12_000;
 
 async function resolveDataBoxSessionCore(): Promise<Session | null> {
   if (!isSupabaseConfigured) return null;
@@ -21,11 +38,11 @@ async function resolveDataBoxSessionCore(): Promise<Session | null> {
 export type NotesAuthState = {
   session: Session | null;
   hubEmail: string | null;
+  hubUserId: string | null;
   loading: boolean;
   isSupabaseConfigured: boolean;
   offline: boolean;
   refreshSession: () => Promise<void>;
-  /** Call after sign-in so UI updates immediately without a destructive refresh. */
   adoptSession: (session: Session) => void;
 };
 
@@ -34,11 +51,8 @@ function initialAuthState(): { session: Session | null; loading: boolean; offlin
   if (offline) {
     return { session: offlineSession(), loading: false, offline: true };
   }
-  const snap = readDataBoxSession();
-  const cached = sessionFromDataBoxSnapshot(snap);
   return {
-    session: cached,
-    // Always wait for ensureDataBoxAuth before consumers query RLS tables (Todo profiles, etc.).
+    session: sessionFromDataBoxSnapshot(readDataBoxSession()),
     loading: isSupabaseConfigured,
     offline: false,
   };
@@ -47,9 +61,21 @@ function initialAuthState(): { session: Session | null; loading: boolean; offlin
 export function useNotesAuthState(): NotesAuthState {
   const initial = initialAuthState();
   const [session, setSession] = useState<Session | null>(initial.session);
-  const [hubEmail, setHubEmail] = useState<string | null>(null);
+  const [hubEmail, setHubEmail] = useState<string | null>(() => readHubIdentity()?.user_email ?? null);
+  const [hubUserId, setHubUserId] = useState<string | null>(() => readHubIdentity()?.user_id ?? null);
+  const [hubAccessToken, setHubAccessToken] = useState<string | null>(
+    () => readHubIdentity()?.access_token ?? null,
+  );
   const [loading, setLoading] = useState(initial.loading);
   const [offline, setOffline] = useState(initial.offline);
+
+  const syncHubIdentity = useCallback(() => {
+    const snap = readHubIdentity();
+    setHubEmail(snap?.user_email ?? null);
+    setHubUserId(snap?.user_id ?? null);
+    setHubAccessToken(snap?.access_token ?? null);
+  }, []);
+
   const adoptSession = useCallback((next: Session) => {
     cacheDataBoxSession(next);
     ensureHubIdentityStubFromDataSession(next);
@@ -57,117 +83,91 @@ export function useNotesAuthState(): NotesAuthState {
     setLoading(false);
   }, []);
 
-  const refreshSession = useCallback(async (opts?: { boot?: boolean }) => {
-    setHubEmail(readHubIdentity()?.user_email ?? null);
-    const showBlockingLoader = opts?.boot && !sessionFromDataBoxSnapshot(readDataBoxSession());
-    if (showBlockingLoader) setLoading(true);
-    try {
-      const resolved = opts?.boot
-        ? await promiseWithTimeout(resolveDataBoxSessionCore(), AUTH_BOOT_TIMEOUT_MS, null)
-        : await resolveDataBoxSessionCore();
-
-      if (resolved) {
-        setSession((prev) =>
-          prev?.user?.id === resolved.user?.id && prev.access_token === resolved.access_token
-            ? prev
-            : resolved,
-        );
-        return;
-      }
-
-      if (isSupabaseConfigured) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          setSession((prev) =>
-            prev?.user?.id === data.session!.user?.id && prev.access_token === data.session!.access_token
-              ? prev
-              : data.session,
-          );
-          return;
-        }
-      }
-
-      if (opts?.boot) {
-        if (readDataBoxSession()) clearDataBoxSession();
-        setSession(null);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    let dataUnsub: (() => void) | null = null;
-
-    const bindDataBoxListener = () => {
-      if (!isSupabaseConfigured) return;
-      const {
-        data: { subscription },
-      } = supabase.auth.onAuthStateChange((_event, s) => {
-        if (cancelled) return;
-        setSession((prev) => {
-          if (!s) return null;
-          if (prev?.user?.id === s.user?.id && prev.access_token === s.access_token) return prev;
-          return s;
-        });
-        if (s) {
-          cacheDataBoxSession(s);
-          ensureHubIdentityStubFromDataSession(s);
-        }
-        setLoading(false);
-      });
-      dataUnsub = () => subscription.unsubscribe();
-    };
-
-    const sync = async (opts?: { boot?: boolean }) => {
-      if (cancelled) return;
+  const refreshSession = useCallback(
+    async (opts?: { boot?: boolean }) => {
+      syncHubIdentity();
       const nextOffline = getOfflineMode();
       setOffline(nextOffline);
       if (nextOffline) {
         setSession(offlineSession());
         setHubEmail(null);
+        setHubUserId(null);
         setLoading(false);
-        if (dataUnsub) dataUnsub();
-        dataUnsub = null;
         return;
       }
-      if (opts?.boot && !sessionFromDataBoxSnapshot(readDataBoxSession())) {
-        setLoading(true);
+
+      const showBlockingLoader = opts?.boot && !sessionFromDataBoxSnapshot(readDataBoxSession());
+      if (showBlockingLoader) setLoading(true);
+      try {
+        const resolved = await resolveWithBootTimeout(
+          () => resolveDataBoxSessionCore(),
+          opts?.boot,
+          null,
+          WORKSPACE_AUTH_BOOT_TIMEOUT_MS,
+        );
+
+        if (resolved) {
+          setSession((prev) => (sessionsEqual(prev, resolved) ? prev : resolved));
+          return;
+        }
+
+        if (isSupabaseConfigured) {
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            setSession((prev) => (sessionsEqual(prev, data.session) ? prev : data.session));
+            return;
+          }
+        }
+
+        if (opts?.boot) {
+          if (readDataBoxSession()) clearDataBoxSession();
+          setSession(null);
+        }
+      } finally {
+        setLoading(false);
       }
-      await refreshSession({ boot: opts?.boot });
-      if (cancelled) return;
-      bindDataBoxListener();
-    };
+    },
+    [syncHubIdentity],
+  );
 
-    void sync({ boot: true });
-
-    const onHubIdentity = () => {
-      setHubEmail(readHubIdentity()?.user_email ?? null);
-    };
-
-    let storageTimer = 0;
-    const onStorage = () => {
-      window.clearTimeout(storageTimer);
-      storageTimer = window.setTimeout(() => {
-        if (!cancelled) void refreshSession();
-      }, 400);
-    };
-
-    window.addEventListener("p0020:hub-identity", onHubIdentity);
-    const onOfflineMode = () => void sync();
-    window.addEventListener("p0020:offline-mode", onOfflineMode);
-    window.addEventListener("storage", onStorage);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(storageTimer);
-      window.removeEventListener("p0020:hub-identity", onHubIdentity);
-      window.removeEventListener("p0020:offline-mode", onOfflineMode);
-      window.removeEventListener("storage", onStorage);
-      if (dataUnsub) dataUnsub();
-    };
+  const handleOfflineChange = useCallback(() => {
+    void refreshSession();
   }, [refreshSession]);
 
-  return { session, hubEmail, loading, isSupabaseConfigured, offline, refreshSession, adoptSession };
+  useWorkspaceDataAuthBoot({
+    isConfigured: () => isSupabaseConfigured,
+    readCachedSession: () => sessionFromDataBoxSnapshot(readDataBoxSession()),
+    refreshSession,
+    getClient: () => (isSupabaseConfigured ? supabase : null),
+    persistSession: cacheDataBoxSession,
+    onSignedOut: () => {
+      setSession(null);
+      setLoading(false);
+    },
+    onSignedIn: (next) => {
+      setSession((prev) => (sessionsEqual(prev, next) ? prev : next));
+      ensureHubIdentityStubFromDataSession(next);
+      setLoading(false);
+    },
+    onBootStart: () => setLoading(true),
+    isToolHubOrigin,
+    onHubRelayReceived: (snapshot) => {
+      cacheHubIdentity(snapshot);
+      void ensureDataBoxAuth().then((next) => {
+        if (next) adoptSession(next);
+      });
+    },
+    offlineEventName: "p0020:offline-mode",
+    onOfflineChange: handleOfflineChange,
+    apiUnauthorizedEvent: API_UNAUTHORIZED_EVENT,
+    tokenScheduler: {
+      start: startHubTokenRefreshScheduler,
+      stop: stopHubTokenRefreshScheduler,
+    },
+    hubAccessToken,
+    identityRefreshDebounceMs: 400,
+    syncHubIdentityLabels: syncHubIdentity,
+  });
+
+  return { session, hubEmail, hubUserId, loading, isSupabaseConfigured, offline, refreshSession, adoptSession };
 }

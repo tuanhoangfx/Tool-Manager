@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CookieAutoRow } from "./CookieAutoSyncTable";
+import type { CookieAutoRow } from "./cookieAutoRow";
 import { sortCookieAutoRows } from "./cookie-route-sort";
 
 function row(partial: {

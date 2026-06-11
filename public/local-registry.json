@@ -310,44 +310,6 @@
       ]
     },
     {
-      "id": "cursor-telegram",
-      "code": "P0010",
-      "name": "Cursor Telegram",
-      "repo": "tuanhoangfx/P0010-Cursor-Telegram",
-      "branch": "main",
-      "remoteEnabled": true,
-      "localVersion": "1.0.0",
-      "category": "Bot",
-      "audience": "Tool maintainers",
-      "status": "Ready",
-      "summary": "Bridge Cursor local Agent ↔ Telegram forum topics; admin UI, 2-way sync, stop command.",
-      "localPath": "E:\\Dev\\Tool\\P0010-Cursor-Telegram",
-      "tags": [
-        "Node.js",
-        "PowerShell",
-        "Telegram Bot API",
-        "Cursor Hooks"
-      ],
-      "localUrl": "http://127.0.0.1:3921",
-      "deployTarget": "local",
-      "usage": [
-        "Run the configured dev command from package.json.",
-        "Run the configured build command from package.json."
-      ],
-      "downloadHint": "Use GitHub release asset when available, otherwise clone the repository.",
-      "manifestPath": "tool.manifest.json",
-      "trackedFiles": [
-        "tool.manifest.json",
-        "package.json",
-        "README.md",
-        "CHANGELOG.md",
-        "RELEASE.md"
-      ],
-      "scriptFiles": [
-        "scripts/git-push.ps1"
-      ]
-    },
-    {
       "id": "apps-script-sync",
       "code": "P0012",
       "name": "Apps Script Sync",

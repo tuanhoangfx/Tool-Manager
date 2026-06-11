@@ -1,4 +1,4 @@
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { CopyMinus, Pencil, Plus, Trash2 } from "lucide-react";
 
 type Props = {
   hasSelection: boolean;
@@ -6,10 +6,18 @@ type Props = {
   onAdd: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onDedupe?: () => void;
 };
 
 /** P0004 Users row2 bulk actions — shared Hub button skin. */
-export function TwofaBulkActionBar({ hasSelection, selectedCount, onAdd, onEdit, onDelete }: Props) {
+export function TwofaBulkActionBar({
+  hasSelection,
+  selectedCount,
+  onAdd,
+  onEdit,
+  onDelete,
+  onDedupe,
+}: Props) {
   const editEnabled = hasSelection && selectedCount === 1;
   const deleteEnabled = hasSelection;
 
@@ -40,6 +48,17 @@ export function TwofaBulkActionBar({ hasSelection, selectedCount, onAdd, onEdit,
         <Trash2 size={14} aria-hidden />
         Delete
       </button>
+      {onDedupe ? (
+        <button
+          type="button"
+          onClick={onDedupe}
+          title="Remove duplicate accounts (cloud + local, same platform + ID or secret)"
+          className="hub-bulk-action-btn hub-bulk-action-btn--dedupe"
+        >
+          <CopyMinus size={14} aria-hidden />
+          Dedupe
+        </button>
+      ) : null}
     </div>
   );
 }

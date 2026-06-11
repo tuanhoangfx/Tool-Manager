@@ -44,25 +44,26 @@ const checks = [
   },
   {
     base: root,
-    file: "src/features/notes/NotesFilterToolbar.tsx",
-    must: ['scope="notes"', "HubWorkspacePeriodSelect"],
+    file: "src/features/notes/NotesHubChrome.tsx",
+    must: ['scope: "notes"', "DirectorySearchToolbar", "HubWorkspacePeriodSelect"],
     mustNot: ["HubTimeRangeSelect"],
   },
   {
     base: root,
-    file: "src/features/todo/todo-filter-toolbar.tsx",
-    must: ['scope="todo"', "HubWorkspacePeriodSelect"],
+    file: "src/features/todo/todo-directory-toolbar.tsx",
+    must: ['scope: "todo"', "DirectorySearchToolbar", "workspacePeriod"],
+    mustNot: ["HubTimeRangeSelect"],
   },
   {
     base: root,
-    file: "src/features/twofa/TwofaFilterToolbar.tsx",
-    must: ['scope="twofa"', "HubWorkspacePeriodSelect"],
+    file: "src/features/twofa/TwofaManagerScreen.tsx",
+    must: ['scope: "twofa"', "DirectorySearchToolbar", "workspacePeriod"],
     mustNot: ["HubTimeRangeSelect"],
   },
   {
     base: root,
     file: "src/features/cookie/CookieAutoSyncTable.tsx",
-    must: ['scope="cookie"', "HubWorkspacePeriodSelect"],
+    must: ['scope: "cookie"', "DirectorySearchToolbar", "workspacePeriod"],
     mustNot: ["HubTimeRangeSelect"],
   },
   {

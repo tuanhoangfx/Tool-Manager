@@ -8,7 +8,10 @@ import {
   type TwofaDbRow,
 } from "./twofa-cloud-delta";
 import { filterTwofaPendingDeletes } from "./twofa-sync-pending";
-import { dedupeTwofaAccounts } from "./twofa-upsert-accounts";
+import {
+  dedupeTwofaAccounts,
+  type TwofaDedupePreview,
+} from "./twofa-upsert-accounts";
 
 type CloudRowSets = {
   activeIds: Set<string>;
@@ -17,7 +20,7 @@ type CloudRowSets = {
 
 const LEGACY_SYNC_WATERMARK_KEY = "p0020-twofa-cloud-sync-at-v1";
 const SYNC_WATERMARK_PREFIX = "p0020-twofa-cloud-sync-at-v2";
-const PAGE_SIZE = 200;
+const PAGE_SIZE = 500;
 const SELECT_COLS =
   "id,service,browser,account,password,secret,created_at,updated_at,last_used_at,deleted_at";
 
@@ -122,21 +125,37 @@ async function fetchCloudRowSets(userId: string): Promise<{ sets: CloudRowSets; 
   const client = getTwofaSupabase();
   if (!client) return { sets: { activeIds: new Set(), tombstoneIds: new Set() }, error: null };
 
-  const { data, error } = await client.from("twofa_accounts").select("id, deleted_at").eq("user_id", userId);
-  if (error) return { sets: { activeIds: new Set(), tombstoneIds: new Set() }, error: error.message };
-
   const activeIds = new Set<string>();
   const tombstoneIds = new Set<string>();
-  for (const row of data ?? []) {
-    const id = row.id as string;
-    if (row.deleted_at) tombstoneIds.add(id);
-    else activeIds.add(id);
+  let page = 0;
+
+  for (;;) {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await client
+      .from("twofa_accounts")
+      .select("id, deleted_at")
+      .eq("user_id", userId)
+      .order("id", { ascending: true })
+      .range(from, to);
+    if (error) return { sets: { activeIds, tombstoneIds }, error: error.message };
+
+    const chunk = data ?? [];
+    if (!chunk.length) break;
+    for (const row of chunk) {
+      const id = row.id as string;
+      if (row.deleted_at) tombstoneIds.add(id);
+      else activeIds.add(id);
+    }
+    page += 1;
+    if (chunk.length < PAGE_SIZE) break;
   }
+
   return { sets: { activeIds, tombstoneIds }, error: null };
 }
 
 /** Rows only on device — never include tombstoned or in-flight delete ids. */
-function filterPendingUploads(local: TwofaAccount[], sets: CloudRowSets): TwofaAccount[] {
+export function filterPendingUploads(local: TwofaAccount[], sets: CloudRowSets): TwofaAccount[] {
   return local.filter(
     (row) => !sets.activeIds.has(row.id) && !sets.tombstoneIds.has(row.id),
   );
@@ -198,8 +217,16 @@ function writeWatermarkFromAccounts(userId: string, accounts: TwofaAccount[], si
   writeWatermarkFromMax(userId, maxUpdated, since);
 }
 
+export type TwofaReconcileOpts = {
+  /** Boot / manual full sync — cloud snapshot only (no stale per-browser local extras). */
+  cloudOnly?: boolean;
+};
+
 /** Cloud-authoritative reconcile (Cookie Auto pattern): active DB snapshot + genuine pending uploads. */
-export async function reconcileTwofaWithCloud(local: TwofaAccount[]): Promise<{
+export async function reconcileTwofaWithCloud(
+  local: TwofaAccount[],
+  opts?: TwofaReconcileOpts,
+): Promise<{
   accounts: TwofaAccount[];
   error: string | null;
 }> {
@@ -211,17 +238,24 @@ export async function reconcileTwofaWithCloud(local: TwofaAccount[]): Promise<{
 
   const userId = session.user.id;
   const since = readWatermark(userId);
-  const rowSets = await fetchCloudRowSets(userId);
-  if (rowSets.error) return { accounts: local, error: rowSets.error };
 
   const remote = await fetchAllTwofaDbRows(userId, null, true);
   if (remote.error) return { accounts: local, error: remote.error };
 
   const remoteAccounts = remote.rows.map(twofaDbRowToAccount);
-  const pendingLocal = filterPendingUploads(local, rowSets.sets);
+  let pendingLocal: TwofaAccount[] = [];
+  if (!opts?.cloudOnly) {
+    const rowSets = await fetchCloudRowSets(userId);
+    if (rowSets.error) return { accounts: local, error: rowSets.error };
+    pendingLocal = filterPendingUploads(local, rowSets.sets);
+  }
   const merged = pendingLocal.length ? mergeAccounts(remoteAccounts, pendingLocal) : remoteAccounts;
   const { accounts: deduped } = dedupeTwofaAccounts(filterTwofaPendingDeletes(merged));
-  writeWatermarkFromAccounts(userId, deduped, since);
+  if (deduped.length) {
+    writeWatermarkFromAccounts(userId, deduped, since);
+  } else if (opts?.cloudOnly || !since) {
+    writeWatermark(userId, new Date().toISOString());
+  }
   return { accounts: deduped, error: null };
 }
 
@@ -356,6 +390,74 @@ export async function deleteTwofaCloud(id: string): Promise<string | null> {
   return tombstoneTwofaCloudRow(session.user.id, id);
 }
 
+/** Scan cloud + local vault for duplicates before removal. */
+export async function previewTwofaDedupeCombined(
+  local: TwofaAccount[],
+): Promise<{ preview: TwofaDedupePreview; error: string | null }> {
+  const removedIds = new Set<string>();
+  const serviceById = new Map<string, string>();
+
+  const scan = (accounts: TwofaAccount[]) => {
+    for (const row of accounts) {
+      serviceById.set(row.id, row.service.trim() || "Others");
+    }
+    const { removedIds: ids } = dedupeTwofaAccounts(accounts);
+    for (const id of ids) removedIds.add(id);
+  };
+
+  const session = await ensureTwofaAuth();
+  const client = getTwofaSupabase();
+  if (session?.user?.id && client) {
+    const remote = await fetchAllTwofaDbRows(session.user.id, null, true);
+    if (remote.error) {
+      return { preview: { totalRemoved: 0, byService: [] }, error: remote.error };
+    }
+    scan(remote.rows.map(twofaDbRowToAccount));
+  }
+
+  scan(local);
+
+  const byServiceMap = new Map<string, number>();
+  for (const id of removedIds) {
+    const service = serviceById.get(id) ?? "Others";
+    byServiceMap.set(service, (byServiceMap.get(service) ?? 0) + 1);
+  }
+  const byService = [...byServiceMap.entries()]
+    .map(([service, count]) => ({ service, count }))
+    .sort((a, b) => b.count - a.count || a.service.localeCompare(b.service));
+
+  return {
+    preview: { totalRemoved: removedIds.size, byService },
+    error: null,
+  };
+}
+
+/** Tombstone duplicate cloud rows — keep newest updatedAt per identity key. */
+export async function dedupeTwofaCloudByIdentity(): Promise<{
+  removed: number;
+  error: string | null;
+}> {
+  const session = await ensureTwofaAuth();
+  const client = getTwofaSupabase();
+  if (!session?.user?.id || !client) return { removed: 0, error: null };
+
+  const userId = session.user.id;
+  const remote = await fetchAllTwofaDbRows(userId, null, true);
+  if (remote.error) return { removed: 0, error: remote.error };
+
+  const accounts = remote.rows.map(twofaDbRowToAccount);
+  const { removedIds } = dedupeTwofaAccounts(accounts);
+  if (!removedIds.length) return { removed: 0, error: null };
+
+  let removed = 0;
+  for (const id of removedIds) {
+    const err = await tombstoneTwofaCloudRow(userId, id);
+    if (err) return { removed, error: err };
+    removed += 1;
+  }
+  return { removed, error: null };
+}
+
 export async function runTwofaCloudSync(
   getLocal: () => TwofaAccount[],
   opts?: TwofaCloudRunOpts,
@@ -371,15 +473,13 @@ export async function runTwofaCloudSync(
   const useAuthoritative = opts?.full || opts?.reconcile || !hasWatermark;
 
   const pulled = useAuthoritative
-    ? await reconcileTwofaWithCloud(getLocal())
+    ? await reconcileTwofaWithCloud(getLocal(), { cloudOnly: opts?.full })
     : await pullTwofaCloudDelta(getLocal());
   if (pulled.error) return pulled;
 
-  const pushErr = await pushTwofaLocalOnly(getLocal());
-  if (pushErr) return { accounts: pulled.accounts, error: pushErr };
-
-  if (userId && !readWatermark(userId) && pulled.accounts.length) {
-    return reconcileTwofaWithCloud(getLocal());
+  if (!opts?.full) {
+    const pushErr = await pushTwofaLocalOnly(pulled.accounts);
+    if (pushErr) return { accounts: pulled.accounts, error: pushErr };
   }
 
   const local = getLocal();

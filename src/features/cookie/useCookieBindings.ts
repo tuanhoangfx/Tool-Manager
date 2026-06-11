@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useCrossTabVaultReload } from "@dev/hub-load";
 import type { NoteListItem } from "../notes/types";
 import {
   bindingsForExtension,
@@ -10,6 +11,10 @@ import {
   saveSelectedBindingId,
   type CookieBinding,
 } from "./cookieBridge";
+import {
+  COOKIE_BINDINGS_CHANNEL,
+  cookieBindingsStorageMatcher,
+} from "./cookie-bindings-cross-tab";
 import { resolveNoteForBinding } from "./resolveNoteForBinding";
 import { broadcastCookieBindings, broadcastSelectedBinding } from "./extensionBridgeMessages";
 
@@ -20,6 +25,16 @@ export function useCookieBindings(notes: NoteListItem[]) {
   useEffect(() => {
     setPersistReady(true);
   }, []);
+
+  useCrossTabVaultReload({
+    channelName: COOKIE_BINDINGS_CHANNEL,
+    matchesStorageKey: cookieBindingsStorageMatcher,
+    getScopeKey: () => null,
+    debounceMs: 120,
+    onPeerReload: () => {
+      setBindings(loadCookieBindings());
+    },
+  });
 
   useEffect(() => {
     if (!persistReady) return;

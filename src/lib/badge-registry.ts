@@ -3,6 +3,7 @@
  * Hub deploy/health/category chips are canonical; System (Tool Links, Schema) must delegate here.
  */
 import type { ElementType } from "react";
+import { semanticFilterAllIcon } from "@tool-workspace/hub-ui";
 import {
   Activity,
   AlertTriangle,
@@ -110,30 +111,12 @@ const LINKS: Record<string, FilterIconMeta> = {
   missing: { icon: Link2, className: "text-amber-400" },
 };
 
+/** P0020-only filter keys — shared keys use hub-ui `filter.*` semantic registry. */
 const FILTER_ALL: Record<string, FilterIconMeta> = {
   "notes-list-sort": { icon: ArrowDownWideNarrow, className: "text-sky-300" },
   "cookie-list-sort": { icon: ArrowDownWideNarrow, className: "text-sky-300" },
   "notes-autosave-delay": { icon: Timer, className: "text-emerald-300" },
   "notes-version-interval": { icon: History, className: "text-indigo-300" },
-  health: { icon: Activity, className: "text-emerald-400" },
-  category: { icon: Layers, className: "text-indigo-400" },
-  deploy: { icon: Rocket, className: "text-sky-400" },
-  status: { icon: Flag, className: "text-violet-400" },
-  platform: { icon: Globe2, className: "text-cyan-300" },
-  drift: { icon: AlertTriangle, className: "text-rose-400" },
-  links: { icon: Link2, className: "text-amber-400" },
-  pinned: { icon: Pin, className: "text-indigo-300" },
-  sync: { icon: RefreshCw, className: "text-cyan-300" },
-  share: { icon: Share2, className: "text-violet-300" },
-  type: { icon: Layers, className: "text-indigo-300" },
-  source: { icon: Link2, className: "text-emerald-300" },
-  folder: { icon: FolderOpen, className: "text-indigo-300" },
-  service: { icon: KeyRound, className: "text-amber-300" },
-  usage: { icon: Clock, className: "text-cyan-300" },
-  role: { icon: Users, className: "text-indigo-300" },
-  permission: { icon: ShieldCheck, className: "text-emerald-300" },
-  note: { icon: FileText, className: "text-indigo-300" },
-  access: { icon: ShieldCheck, className: "text-emerald-300" },
 };
 
 const COOKIE_ACCESS: Record<string, FilterIconMeta> = {
@@ -271,7 +254,7 @@ function linkGroupFilterLabel(group: LinkGroup): string {
 }
 
 export function resolveFilterAllIcon(filterKey: string): FilterIconMeta | null {
-  return FILTER_ALL[filterKey] ?? null;
+  return semanticFilterAllIcon(filterKey) ?? FILTER_ALL[filterKey] ?? null;
 }
 
 export function resolveFilterOptionIcon(filterKey: string, option: FilterOption): FilterIconMeta | null {
@@ -281,9 +264,9 @@ export function resolveFilterOptionIcon(filterKey: string, option: FilterOption)
     case "service":
       return { icon: KeyRound, className: "text-amber-300" };
     case "usage":
-      return option.value === "recent"
-        ? { icon: Timer, className: "text-emerald-400" }
-        : { icon: Eye, className: "text-slate-400" };
+      if (option.value === "recent") return { icon: Timer, className: "text-emerald-400" };
+      if (option.value === "never") return { icon: Eye, className: "text-slate-400" };
+      return null;
     case "role":
     case "permission":
     case "access":
@@ -322,9 +305,9 @@ export function resolveFilterOptionIcon(filterKey: string, option: FilterOption)
     case "links":
       return pick(LINKS, option.value);
     case "pinned":
-      return option.value === "pinned"
-        ? { icon: Pin, className: "text-indigo-300" }
-        : { icon: ShieldCheck, className: "text-slate-400" };
+      if (option.value === "pinned") return { icon: Pin, className: "text-indigo-300" };
+      if (option.value === "unpinned") return { icon: ShieldCheck, className: "text-slate-400" };
+      return null;
     case "sync":
       return pick(SYNC_STATUS, option.value) ?? { icon: RefreshCw, className: "text-cyan-300" };
     case "platform":
@@ -454,8 +437,11 @@ const CHART_COOKIE_PLATFORM: Record<string, FilterIconMeta> = {
   TikTok: { icon: Monitor, className: "text-slate-200" },
   Instagram: { icon: Monitor, className: "text-pink-300" },
   Kalodata: { icon: Database, className: "text-cyan-300" },
+  Cursor: { icon: Monitor, className: "text-slate-200" },
+  "BigSpy Pro": { icon: Monitor, className: "text-indigo-300" },
   Netflix: { icon: Monitor, className: "text-rose-400" },
   Surfshark: { icon: ShieldCheck, className: "text-emerald-300" },
+  Others: { icon: Globe2, className: "text-slate-400" },
   Other: { icon: Globe2, className: "text-slate-400" },
 };
 

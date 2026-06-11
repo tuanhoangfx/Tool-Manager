@@ -18,7 +18,6 @@ import { NotesRouteDetailOverlay } from "./NotesRouteDetailOverlay";
 import { NotesHubChrome } from "./NotesHubChrome";
 import { NotesWorkspaceToolbar } from "./NotesWorkspaceToolbar";
 import { NotesListRail } from "./NotesListRail";
-import { NotesAuthGate } from "./NotesAuthGate";
 import { noteMatchesFolderFilter, useNoteFolders, mergeDisplayFolders, getEffectiveNoteFolderIds, getUserFolderIds } from "./noteFolders";
 import { NotesFoldersSettingsPanel } from "./NotesFoldersSettingsPanel";
 import { filterNotes } from "./notes-filters";
@@ -37,6 +36,7 @@ import { useNoteVersions } from "./useNoteVersions";
 import { useNotes } from "./useNotes";
 import { useNotesAuth } from "./useNotesAuth";
 import { readNoteDetailStale, writeNoteDetailCache } from "../../lib/note-detail-cache";
+import { prefetchNoteDetailBatch } from "./noteDetailPrefetch";
 import { readNoteRouteLockStale } from "../../lib/note-route-lock-cache";
 import { prefetchCookieBootBackground } from "../../lib/hub-background-prefetch";
 import { getOfflineMode } from "../../lib/offlineMode";
@@ -318,6 +318,23 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     [cookieRouteNoteIds, filtered, prefs.sort],
   );
 
+  useEffect(() => {
+    if (!tabActive || listLoading || sortedFiltered.length === 0) return;
+    const warm = () => {
+      const ids = sortedFiltered
+        .slice(0, 8)
+        .map((n) => n.id)
+        .filter((id) => id !== selectedId);
+      prefetchNoteDetailBatch(ids);
+    };
+    const idle = window.requestIdleCallback?.(warm, { timeout: 1500 });
+    if (idle == null) {
+      const t = window.setTimeout(warm, 300);
+      return () => window.clearTimeout(t);
+    }
+    return () => window.cancelIdleCallback(idle);
+  }, [listLoading, selectedId, sortedFiltered, tabActive]);
+
   const updateTitle = (next: string) => {
     setTitle(next);
     setDirty(true);
@@ -399,24 +416,29 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     }
   };
 
-  const leaveNoteSnapshot = useCallback(async () => {
-    if (!selectedId || getOfflineMode()) return;
-    try {
-      if (dirty) {
-        await persistCurrentNote({ contentOnly: true });
-        setDirty(false);
+  const checkpointLeavingNote = useCallback(
+    async (prevId: string) => {
+      if (!prevId || getOfflineMode()) return;
+      try {
+        if (dirty) {
+          await persistCurrentNote({ contentOnly: true });
+          setDirty(false);
+        }
+      } catch {
+        /* non-blocking when switching notes */
       }
-      const snap = await sessionSnapshot(selectedId);
-      pulseHistoryBadgeOnSnapshot(snap);
-    } catch {
-      /* non-blocking when switching notes */
-    }
-  }, [dirty, persistCurrentNote, pulseHistoryBadgeOnSnapshot, selectedId, sessionSnapshot]);
+      void sessionSnapshot(prevId)
+        .then(pulseHistoryBadgeOnSnapshot)
+        .catch(() => {});
+    },
+    [dirty, persistCurrentNote, pulseHistoryBadgeOnSnapshot, sessionSnapshot],
+  );
 
   const pickNote = useCallback(
     async (id: string, seed?: NoteRow | null) => {
-      if (selectedId && selectedId !== id) {
-        await leaveNoteSnapshot();
+      const prevId = selectedId;
+      if (prevId && prevId !== id) {
+        await checkpointLeavingNote(prevId);
       }
 
       const hasRoute =
@@ -450,7 +472,7 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
       setSelectedId(id);
       if (tabActive) navigate({ note: id });
     },
-    [applyNoteToEditor, leaveNoteSnapshot, navigate, notes, routeByNoteId, selectedId, tabActive],
+    [applyNoteToEditor, checkpointLeavingNote, navigate, notes, routeByNoteId, selectedId, tabActive],
   );
 
   useEffect(() => {
@@ -602,7 +624,7 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
   ]);
 
   useEffect(() => {
-    if (!dirty || !selectedId || saving || creating) return;
+    if (!tabActive || !dirty || !selectedId || saving || creating) return;
     const key = routeLocked
       ? `${selectedId}:${title}:${slug}`
       : `${selectedId}:${title}:${slug}:${domain}:${body}:${pinned}`;
@@ -618,7 +640,21 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
         });
     }, autosaveDebounceMs);
     return () => window.clearTimeout(timer);
-  }, [autosaveDebounceMs, body, creating, dirty, domain, pinned, pushToast, routeLocked, saving, selectedId, slug, title]);
+  }, [
+    autosaveDebounceMs,
+    body,
+    creating,
+    dirty,
+    domain,
+    pinned,
+    pushToast,
+    routeLocked,
+    saving,
+    selectedId,
+    slug,
+    tabActive,
+    title,
+  ]);
 
   const onPinnedToggle = async () => {
     if (routeLocked) {
@@ -765,29 +801,7 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     />
   ) : null;
 
-  if (!session) {
-    return (
-      <div className="notes-workspace anim-fade flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <NotesHubChrome
-          query={query}
-          onQueryChange={setQuery}
-          filterValues={filterValues}
-          onFilterValuesChange={handleFilterValuesChange}
-          notes={[]}
-          cookieRouteNoteIds={cookieRouteNoteIds}
-          shown={0}
-          density={density}
-          onDensityChange={setDensity}
-          sort={prefs.sort}
-          onSortChange={(next) => setPrefs((p) => ({ ...p, sort: next }))}
-          filterToolbar={null}
-          folderSettingsPanel={folderSettingsPanel}
-        >
-          <NotesAuthGate variant="notes" />
-        </NotesHubChrome>
-      </div>
-    );
-  }
+  if (!session) return null;
 
   return (
     <div className="notes-workspace anim-fade flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

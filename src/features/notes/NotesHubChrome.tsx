@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Pin, StickyNote } from "lucide-react";
-import { HubSplitWorkspaceScreen, useHubChromePrefs, WorkspaceTabHeader } from "@tool-workspace/hub-ui";
+import {
+  DirectorySearchToolbar,
+  HubSplitWorkspaceScreen,
+  useHubChromePrefs,
+  WorkspaceTabHeader,
+} from "@tool-workspace/hub-ui";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
 import { readHubListPrefs, subscribeHubListPrefs } from "../../lib/url-prefs";
 import { readWorkspacePeriod, type WorkspacePeriodPrefs } from "../../lib/hub-workspace-period";
 import { DEFAULT_NOTES_HEADER_STAT_KEYS } from "./notes-display-prefs";
-import { NotesFilterToolbar } from "./NotesFilterToolbar";
 import {
   DEFAULT_NOTES_FILTER_KEYS,
   readNotesListPrefs,
@@ -147,7 +151,17 @@ export function NotesHubChrome({
       filterPlaceholder="Search notes, domain, slug, sync ID…"
       filterShortcutScope="notes"
       directoryToolbar={
-        <NotesFilterToolbar shown={shown} total={notes.length} />
+        <DirectorySearchToolbar
+          workspacePeriod={{ scope: "notes", defaultRange: "all", inactiveKeys: ["all"] }}
+          showTimeRange={false}
+          showRefresh={false}
+          showViewToggle={false}
+          showTablePageSize={false}
+          countIcon={StickyNote}
+          shown={shown}
+          total={notes.length}
+          countLabel="notes"
+        />
       }
       filterRowActions={filterToolbar}
     >

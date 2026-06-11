@@ -29,7 +29,6 @@ import {
   pullCookieRoutesFromCloud,
   upsertCookieRouteToCloud,
 } from "./cookieRoutesRepository";
-import { NotesAuthGate } from "../notes/NotesAuthGate";
 import { SupabaseMigrateBanner } from "./SupabaseMigrateBanner";
 import { useCookieSchemaHealth } from "./useCookieSchemaHealth";
 import { EXTENSION_BUILD } from "./extensionBuildInfo";
@@ -100,10 +99,6 @@ function bridgeStatusFromState({
   };
 }
 
-function CookieSyncSignIn({ shellMode }: { shellMode?: boolean }) {
-  return <NotesAuthGate variant="cookie-auto" />;
-}
-
 function CookieSyncMain({
   session,
   shellMode,
@@ -115,11 +110,14 @@ function CookieSyncMain({
 }) {
   const offline = getOfflineMode();
   const cloudSession: Session | null = offline ? null : session;
-  const { notes, loading, refresh } = useNotes(session);
+  const { notes, loading, refresh } = useNotes(session, { realtime: tabActive, enabled: tabActive });
   const { bindings, setBindings, addBinding, connectAndCache, updateBinding, removeBinding, pushToExtension } =
     useCookieBindings(notes);
-  const { vaultByKey, vaultError, refreshVault } = useCookieVaultMap(cloudSession, bindings);
-  const { health: schemaHealth, loading: schemaLoading, refresh: refreshSchemaHealth } = useCookieSchemaHealth(true);
+  const { vaultByKey, vaultError, refreshVault } = useCookieVaultMap(cloudSession, bindings, {
+    enabled: tabActive,
+  });
+  const { health: schemaHealth, loading: schemaLoading, refresh: refreshSchemaHealth } =
+    useCookieSchemaHealth(tabActive);
   const { pushToast } = useAppToast();
   const [deepLinkDone, setDeepLinkDone] = useState(false);
   const [selectedBindingId, setSelectedBindingId] = useState<string | null>(() => loadSelectedBindingId());
@@ -231,14 +229,14 @@ function CookieSyncMain({
   useNotesCookieRealtime(session, onRealtimeRefresh, tabActive && !offline);
 
   useEffect(() => {
-    if (autoRoutesLoaded || !session) return;
+    if (!tabActive || autoRoutesLoaded || !session) return;
     setAutoRoutesLoaded(true);
     void refreshCloudRoutes({ silent: true });
-  }, [autoRoutesLoaded, refreshCloudRoutes, session]);
+  }, [autoRoutesLoaded, refreshCloudRoutes, session, tabActive]);
 
   /** Keep cookie_bridge_routes.note_title in sync when a note is renamed in Notes. */
   useEffect(() => {
-    if (!session || offline || loading) return;
+    if (!tabActive || !session || offline || loading) return;
     const list = bindingsRef.current;
     const noteList = notesRef.current;
     const stale = list.filter((b) => {
@@ -261,7 +259,7 @@ function CookieSyncMain({
     return () => {
       cancelled = true;
     };
-  }, [notesKey, session, offline, loading, publishRouteToCloud, refreshCookieBridge]);
+  }, [notesKey, session, offline, loading, publishRouteToCloud, refreshCookieBridge, tabActive]);
 
   useEffect(() => {
     if (deepLinkDone || loading) return;
@@ -469,9 +467,7 @@ export function CookieSyncScreen({
     );
   }
 
-  if (!session) {
-    return <CookieSyncSignIn shellMode={shellMode} />;
-  }
+  if (!session) return null;
 
   return <CookieSyncMain session={session} shellMode={shellMode} tabActive={tabActive} />;
 }

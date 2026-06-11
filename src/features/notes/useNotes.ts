@@ -13,7 +13,8 @@ import { deleteOfflineNote, listOfflineNotes, upsertOfflineNote } from "./offlin
 
 export type NotesRefreshOpts = { /** Skip loading UI — use for realtime / background poll */ silent?: boolean };
 
-export function useNotes(session: Session | null, opts?: { realtime?: boolean }) {
+export function useNotes(session: Session | null, opts?: { realtime?: boolean; enabled?: boolean }) {
+  const enabled = opts?.enabled ?? true;
   const userId = session?.user?.id ?? null;
   const realtimePref = useNotesRealtimeUiRefresh();
   const [rows, setRows] = useState<NoteRow[]>(() => readNotesListStaleCache(userId) ?? []);
@@ -89,10 +90,15 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean })
     }
     const stale = readNotesListStaleCache(userId);
     setRows(stale ?? []);
+    if (!enabled) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     void refresh({ silent: stale != null && stale.length > 0 });
-  }, [userId, refresh]);
+  }, [userId, refresh, enabled]);
 
-  const realtimeEnabled = opts?.realtime ?? realtimePref;
+  const realtimeEnabled = enabled && (opts?.realtime ?? realtimePref);
   const refreshFromRealtime = useCallback(() => {
     void refresh({ silent: true });
   }, [refresh]);

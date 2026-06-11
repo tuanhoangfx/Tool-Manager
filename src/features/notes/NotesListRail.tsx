@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect } from "react";
+import { useEffect, useState, useLayoutEffect } from "react";
 import { Cookie, Pin } from "lucide-react";
 import { resolveCookieSiteIcon } from "../cookie/cookieSiteIcon";
 import type { NotesCookieRouteIndex } from "../cookie/useNotesCookieRouteIndex";
@@ -8,6 +8,7 @@ import type { NoteFolder } from "./noteFolders";
 import { noteEditorTocLabel } from "./noteUtils";
 import type { NoteListItem } from "./types";
 import type { NotesListDensity } from "./notes-list-prefs";
+import { prefetchNoteDetail, prefetchNoteDetailBatch } from "./noteDetailPrefetch";
 import { NOTES_LIST_ROW_HEIGHT, useNotesListVirtualWindow } from "./useNotesListVirtualWindow";
 
 type Props = {
@@ -47,6 +48,17 @@ export function NotesListRail({
     if (index < 0) return;
     scrollNoteIntoView(selectedId, index);
   }, [notes, scrollNoteIntoView, selectedId]);
+
+  useEffect(() => {
+    if (notes.length === 0) return;
+    const viewportIds = enabled
+      ? visible.map(({ item }) => item.id)
+      : notes.slice(0, 12).map((n) => n.id);
+    const timer = window.setTimeout(() => {
+      prefetchNoteDetailBatch(viewportIds, 12);
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [enabled, notes, visible]);
 
   return (
     <aside className="notes-rail flex min-h-0 shrink-0 flex-col self-stretch overflow-hidden rounded-xl border border-white/10 bg-[var(--panel)]/40">
@@ -143,6 +155,8 @@ function NoteListRow({
       <button
         type="button"
         data-note-id={n.id}
+        onMouseEnter={() => prefetchNoteDetail(n.id)}
+        onFocus={() => prefetchNoteDetail(n.id)}
         onClick={() => onSelect(n.id)}
         className={`flex w-full items-start gap-1.5 rounded-lg border text-left transition-all ${
           compact ? "px-1.5 py-1" : "px-2 py-1.5"

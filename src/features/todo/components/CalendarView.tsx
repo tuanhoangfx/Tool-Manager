@@ -11,6 +11,7 @@ import {
   HUB_FILTER_DROPDOWN_PANEL_CLASS,
   HubFilterDropdownTrigger,
 } from "@tool-workspace/hub-ui";
+import { TODO_STATUS_HEX } from "../todo-visual-tokens";
 
 export type { CalendarSortState } from "../lib/calendar-types";
 
@@ -117,12 +118,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onTaskClick, calenda
     setIsMonthPickerOpen(false);
   };
   
-  const statusColors: { [key in Task['status']]: string } = {
-    todo: 'bg-orange-500 hover:bg-orange-600',
-    inprogress: 'bg-indigo-500 hover:bg-indigo-600',
-    done: 'bg-green-500 hover:bg-green-600',
-    cancelled: 'bg-gray-500 hover:bg-gray-600 line-through',
-  };
 
 
   return (
@@ -193,7 +188,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks, onTaskClick, calenda
                         <div 
                             key={task.id} 
                             onClick={() => onTaskClick(task)}
-                            className={`p-1 rounded text-white text-xs cursor-pointer transition-colors flex items-center gap-1.5 ${statusColors[task.status]}`}
+                            className={`p-1 rounded text-white text-xs cursor-pointer transition-opacity hover:opacity-90 flex items-center gap-1.5 ${task.status === 'cancelled' ? 'line-through' : ''}`}
+                            style={{ backgroundColor: TODO_STATUS_HEX[task.status] }}
                             title={task.title}
                         >
                             <span className="truncate">{task.title}</span>

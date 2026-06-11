@@ -91,7 +91,7 @@ P0016 wrappers: `ConsoleLoadingView`, `ConsolePaneLoading`. P0004: `AppScreenLoa
 | Screen | `HubDirectoryScreen` + `FilterBar layout="hub"` | Directory tabs (Hub, 2FA, Cookie, Notes, System) |
 | Dropdown | `HubSingleFilterDropdown` | Single-select in forms/modals |
 | Primitives | `HubFilterDropdownTrigger`, `HubFilterDropdownCircle`, `HUB_FILTER_DROPDOWN_*_CLASS` | Custom multi-select pickers (e.g. note folder tagger) |
-| Toolbar | `HubTimeRangeSelect`, `HubRowLimitSelect`, `HubResultCount` | FilterBar `toolbar` / `row2Actions` slot |
+| Toolbar | `DirectorySearchToolbar` / `HubDirectoryToolbarSlots` — `HubTimeRangeSelect` (period) + `HubTablePageSizeSelect` (`tpage`) + `HubResultCount` | FilterBar `toolbar` |
 
 **Rules**
 
@@ -345,7 +345,25 @@ One semantic key maps icon + tone across **badge**, **KPI strip**, **tab header 
 | `configureHubUrlPrefs({ defaultRange, defaultLimit, patchImpl, usePrefsChangeEvent })` | Once in app bootstrap / `url-prefs.ts` module load |
 | `readHubListPrefsCore()` + app extras | Per-tool `readHubListPrefs()` wrapper |
 | `patchHubListPrefs` / `parseHubPrefSet` | Shared URL read/write |
-| `HubTimeRangeSelect` / `HubRowLimitSelect` | FilterBar toolbar — import from `@tool-workspace/hub-ui` |
+| `HubTimeRangeSelect` / `HubTablePageSizeSelect` | Directory period + pager rows (`tpage`) — via `DirectorySearchToolbar` |
+| `HubRowLimitSelect` | **Deprecated** on directory — P0020 vault cap only; use `HubTablePageSizeSelect` |
+| `matchesDirectoryTimeRange` | Filter rows by ISO `activityAt` / `updatedAt` |
+| `directoryActivityIso` + `matchesDirectoryActivityAt` | Epoch (s/ms) or ISO — P0016 bots/groups `lastActiveAt` |
+| `useHubDirectorySelection` | Checkbox prune + card select-all — P0004 Hub, P0016/P0020 directories |
+| `DirectorySearchToolbar` `workspacePeriod` | P0020 vault tabs — embeds `HubWorkspacePeriodSelect` (replaces manual `leading`) |
+| `DirectorySearchToolbar` `showTimeRange` | P0004 Hub / P0016 Bots·Groups — `HubTimeRangeSelect` on URL `range` |
+
+**Hub `range` vs workspace `*range`**
+
+| Layer | URL key | Select | Filter helper | Tabs |
+|-------|---------|--------|---------------|------|
+| Hub catalog | `range` | `HubTimeRangeSelect` via `showTimeRange` | `matchesDirectoryTimeRange(iso, range)` | P0004 Hub/Users, P0016 Bots/Groups |
+| Workspace vault | `{scope}range` (e.g. `twofarange`) | `workspacePeriod` on `DirectorySearchToolbar` | `readWorkspacePeriod(scope)` + domain date field | P0020 2FA/Cookie/Notes/Todo |
+
+- **Never** show both selectors on one toolbar — `showTimeRange={false}` when `workspacePeriod` is set.
+- P0016 tabs without activity timestamps (Inbox, Analytics, Fanpages, Channels, Personalities) — `showTimeRange={false}` (default on `ConsoleDirectorySearchToolbar`).
+- P0016 Bots/Groups filter `lastActiveAt` — `showTimeRange` + `matchesDirectoryActivityAt` from hub-ui.
+- Directory selection — `useHubDirectorySelection` (prune + card select-all); wrap domain bulk bars in `HubDirectoryBulkActionBar`.
 
 **Rules**
 
@@ -383,7 +401,8 @@ One semantic key maps icon + tone across **badge**, **KPI strip**, **tab header 
 - KPI toggles are **multi-select** `Set`, not radio. Label: `KPI (n/8)`.
 - Sub-tab screens (System, Fanpages): `HubDisplayPrefs` must bump `displayTick` after `adapter.patch()` so the open Settings modal re-reads `sessionStorage` (avoid overwrite on 2nd toggle).
 - Toggle `on` uses `isVisible(stored, defaults, key)` — not `resolveVisibleKpiKeys().has(key)`.
-- When `n >= MAX_VISIBLE_KPI`, **disable** unselected toggles (`ToggleRow disabled`) — user must turn one off before adding another.
+- When `n >= MAX_VISIBLE_KPI` / `MAX_VISIBLE_CHART`, **disable** unselected toggles; click shows cap message via `onLog` (app log toast). Do **not** silently swap selections — block at cap.
+- **Hide analytics frame** when zero KPI and zero charts: pass `kpis={undefined}` / `charts={undefined}` (use `directoryChartBandNode`, not a bare `<DirectoryChartBand />` element).
 
 **Per-tool wiring**
 
@@ -435,7 +454,7 @@ One semantic key maps icon + tone across **badge**, **KPI strip**, **tab header 
 | `HubDirectoryCardCheckbox` | Bulk-select — **top-right corner**; `stopPropagation` on label (never inside a `<button>`) |
 | `HubDirectoryCardMetaRow` | Meta line — tinted Lucide icon + truncated text (`min-h-[var(--hub-card-meta-min-h)]` stack) |
 | `HubDirectoryCardHeader` | Header block — `leading` avatar/icon + `badges` + `title` + optional `trailing` |
-| `HubDirectorySelectAllChip` | Filter row 2 — **Card view only**; toggles all visible rows on current page |
+| `HubDirectorySelectAllChip` | Filter row 2 **actions** — **Card view only**; first slot before bulk CTAs; uses `HubBulkActionButton` + `ListChecks` icon |
 | `HubBulkActionButton` | Filter row 2 bulk CTAs — Pin / Refresh / Edit / Sync (count badge + tooltip) |
 
 **Variants (`variant` prop)**
@@ -474,9 +493,47 @@ HubDirectoryCardShell selected
 **Filter row 2 (directory tabs)**
 
 ```
-HubDirectorySelectAllChip   ← card view only, when visibleCount > 0
-HubBulkActionButton(s)      ← bulk actions that cannot be done per-card
+HubDirectoryBulkActionBar
+  ├─ selectAll? → HubDirectorySelectAllChip (card view only)
+  └─ children → Hub*DirectoryBulkActions / HubBulkActionButton(s)
 ```
+
+Pass as `filterRowActions` on `HubDirectoryScreen` — `FilterBar` aligns end (`ml-auto flex gap-2`).
+
+---
+
+## Analytics typography (golden — hub-ui)
+
+| Token / class | Size | Use |
+|---------------|------|-----|
+| `HUB_ANALYTICS_CAPTION_TYPO_CLASS` + `.hub-analytics-caption` | `--hub-chrome-micro-size` (10px) · **uppercase** · semibold | KPI tile labels (`SCREENS SHOWN`), chart titles (`BY GROUP`) |
+| `HUB_SHELL_LABEL_TYPO_CLASS` (`text-sm font-medium`) | 14px | Chart legend rows, filter triggers, bulk buttons |
+| `CHART_TOP_N` / `CHART_LEGEND_SLOT_COUNT` | 3 + **Others** | `prepareChartItems` — always reserve 4 legend slots; `--hub-chart-card-min-h` fits 4 rows |
+
+**Do not** put `text-sm` on KPI/chart captions — use `hub-analytics-caption` SSOT only.
+
+---
+
+## Directory screen golden (P0004 — Hub SSOT)
+
+**Reference:** `src/features/hub/HubListPage.tsx` — clone before syncing P0016/P0020 directory tabs.
+
+| Slot | Golden contract |
+|------|-----------------|
+| Shell | `HubDirectoryScreen` + `*ChromeHeader` + `sectionRuleLabel` |
+| `filterToolbar` | `DirectorySearchToolbar` — `ViewToggle` · `showTimeRange` (when data has `updatedAt`) · `showTablePageSize` (`HubTablePageSizeSelect` / `tpage`) · `HubResultCount` · `trailing` extras |
+| `filterRowActions` | `HubDirectoryBulkActionBar` → `selectAll?` (card only) + `Hub*DirectoryBulkActions` |
+| KPI / charts | `build*KpiItems` + `directoryChartBandNode` (`resolveVisibleChartKeys` + `*_CHART_DEFS`); `MiniBarChart` always top-3 + **Others** via `prepareChartItems` |
+| Card view | `HubPaginatedCardGrid` — **never** raw `HubPaginatedTableShell` + manual grid class |
+| Table view | `*DirectoryTable` + checkbox column + same bulk bar as card |
+
+**Per-tab bulk (domain)**
+
+| Tab | `filterRowActions` |
+|-----|-------------------|
+| Hub | Select all only (auto-sync; no manual sync/links bulk) |
+| Dashboard | Select all + `HubScreensDirectoryBulkActions` |
+| Users | Select all + `HubUsersDirectoryBulkActions` |
 
 **Rules**
 

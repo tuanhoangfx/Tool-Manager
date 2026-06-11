@@ -1,5 +1,4 @@
 import { Fingerprint, KeyRound, LockKeyhole, Shield, Timer } from "lucide-react";
-import { prepareChartItems } from "@tool-workspace/hub-ui";
 import { resolveChartLegendIcon } from "../../lib/badge-registry";
 import type { BarItem, KpiTileData } from "../../components/sales-shell";
 import { resolveTwofaPlatformIcon } from "./twofa-platform-icon";
@@ -115,11 +114,9 @@ export function buildTwofaKpis(
 export function buildTwofaChartItems(accounts: TwofaAccount[]) {
   const now = Date.now();
   const serviceCounts = countBy(accounts.map((row) => row.service.trim() || "Other"));
-  const serviceItems: BarItem[] = prepareChartItems(
-    Object.entries(serviceCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([label, value], index) => serviceBarRow(label, value, SERVICE_COLORS[index % SERVICE_COLORS.length]!)),
-  );
+  const serviceItems: BarItem[] = Object.entries(serviceCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, value], index) => serviceBarRow(label, value, SERVICE_COLORS[index % SERVICE_COLORS.length]!));
 
   const usageOrder: UsageBucket[] = ["Used (7d)", "Older use", "Never used"];
   const usageCounts = countBy(accounts.map((row) => usageBucket(row, now)));
@@ -128,35 +125,31 @@ export function buildTwofaChartItems(accounts: TwofaAccount[]) {
     "Older use": "#f59e0b",
     "Never used": "#64748b",
   };
-  const usageItems: BarItem[] = prepareChartItems(
-    usageOrder
-      .map((label) => ({
-        label,
-        value: usageCounts[label] ?? 0,
-        color: usageColors[label],
-        iconMeta: resolveChartLegendIcon(label),
-      }))
-      .filter((row) => row.value > 0),
-  );
+  const usageItems: BarItem[] = usageOrder
+    .map((label) => ({
+      label,
+      value: usageCounts[label] ?? 0,
+      color: usageColors[label],
+      iconMeta: resolveChartLegendIcon(label),
+    }))
+    .filter((row) => row.value > 0);
 
   const withPassword = accounts.filter((row) => Boolean(row.password?.trim())).length;
   const noPassword = accounts.length - withPassword;
-  const passwordItems: BarItem[] = prepareChartItems(
-    [
-      {
-        label: "With password",
-        value: withPassword,
-        color: "#22c55e",
-        iconMeta: resolveChartLegendIcon("With password"),
-      },
-      {
-        label: "No password",
-        value: noPassword,
-        color: "#64748b",
-        iconMeta: resolveChartLegendIcon("No password"),
-      },
-    ].filter((row) => row.value > 0),
-  );
+  const passwordItems: BarItem[] = [
+    {
+      label: "With password",
+      value: withPassword,
+      color: "#22c55e",
+      iconMeta: resolveChartLegendIcon("With password"),
+    },
+    {
+      label: "No password",
+      value: noPassword,
+      color: "#64748b",
+      iconMeta: resolveChartLegendIcon("No password"),
+    },
+  ].filter((row) => row.value > 0);
 
   const identityOrder: IdentityBucket[] = ["Email address", "Username / ID", "Missing / generic"];
   const identityCounts = countBy(accounts.map((row) => twofaAccountIdentityBucket(row.account)));
@@ -165,16 +158,14 @@ export function buildTwofaChartItems(accounts: TwofaAccount[]) {
     "Username / ID": "#818cf8",
     "Missing / generic": "#64748b",
   };
-  const identityItems: BarItem[] = prepareChartItems(
-    identityOrder
-      .map((label) => ({
-        label,
-        value: identityCounts[label] ?? 0,
-        color: identityColors[label],
-        iconMeta: resolveChartLegendIcon(label),
-      }))
-      .filter((row) => row.value > 0),
-  );
+  const identityItems: BarItem[] = identityOrder
+    .map((label) => ({
+      label,
+      value: identityCounts[label] ?? 0,
+      color: identityColors[label],
+      iconMeta: resolveChartLegendIcon(label),
+    }))
+    .filter((row) => row.value > 0);
 
   return { serviceItems, usageItems, passwordItems, identityItems };
 }

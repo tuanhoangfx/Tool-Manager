@@ -19,6 +19,12 @@ export {
   type BarItem,
   MiniDonut,
   type DonutItem,
+  HubSearchField,
+  type HubSearchFieldProps,
+  HubSegmentToggle,
+  hubSegmentIconSize,
+  type HubSegmentToggleOption,
+  type HubSegmentToggleProps,
   ViewToggle,
   type HubViewMode,
   HubResultCount,
@@ -31,6 +37,7 @@ export {
   defaultKpiKeysFromDefs,
   MAX_VISIBLE_KPI,
   HubTimeRangeSelect,
+  HubTablePageSizeSelect,
   HubRowLimitSelect,
 } from "@tool-workspace/hub-ui";
 

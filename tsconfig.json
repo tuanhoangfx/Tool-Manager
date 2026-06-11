@@ -20,6 +20,8 @@
       "@dev/hub-load": ["vendor/hub-load/src/index.ts"],
       "@p0020/bridge": ["packages/p0020-bridge/src/index.js"],
       "@p0020/bridge/*": ["packages/p0020-bridge/src/*"],
+      "@dev/hub-identity": ["vendor/hub-identity/src/index.ts"],
+      "@dev/hub-identity/*": ["vendor/hub-identity/src/*"],
       "@tool-workspace/hub-identity": ["vendor/hub-identity/src/index.ts"],
       "@tool-workspace/hub-identity/*": ["vendor/hub-identity/src/*"],
       "@tool-workspace/hub-ui": ["../../packages/hub-ui/src/index.ts"],

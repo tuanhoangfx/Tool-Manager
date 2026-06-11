@@ -1,11 +1,18 @@
 import { readTwofaSession } from "../../lib/twofa-session";
 import type { TwofaAccount } from "./types";
 
-const LEGACY_STORAGE_KEY = "p0020-twofa-accounts-v1";
-const STORAGE_KEY_PREFIX = "p0020-twofa-accounts-v2";
+export const TWOFA_LEGACY_STORAGE_KEY = "p0020-twofa-accounts-v1";
+export const TWOFA_STORAGE_KEY_PREFIX = "p0020-twofa-accounts-v2";
+
+const LEGACY_STORAGE_KEY = TWOFA_LEGACY_STORAGE_KEY;
+const STORAGE_KEY_PREFIX = TWOFA_STORAGE_KEY_PREFIX;
+
+export function twofaVaultStorageKey(userId: string | null | undefined): string {
+  return userId ? `${STORAGE_KEY_PREFIX}:${userId}` : LEGACY_STORAGE_KEY;
+}
 
 function storageKey(userId: string | null | undefined): string {
-  return userId ? `${STORAGE_KEY_PREFIX}:${userId}` : LEGACY_STORAGE_KEY;
+  return twofaVaultStorageKey(userId);
 }
 
 export function getTwofaStorageUserId(): string | null {

@@ -9,6 +9,7 @@ import {
   isHubSupabaseConfigured,
 } from "../../lib/hub-supabase-env";
 import { setOfflineMode } from "../../lib/offlineMode";
+import { applyHubIdentitySession } from "../../lib/supabase-identity";
 import { signInWorkspaceDual } from "../../lib/workspace-dual-auth";
 import { useNotesAuth } from "./useNotesAuth";
 
@@ -36,6 +37,14 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
         ),
         onAuthed,
         onAnonymous: () => setOfflineMode(true),
+        profileRoleClient: isHubSupabaseConfigured
+          ? createClient(HUB_SUPABASE_URL, HUB_SUPABASE_ANON_KEY, {
+              auth: { persistSession: false, autoRefreshToken: false },
+            })
+          : null,
+        onPrepareProfileRoleClient: async () => {
+          await applyHubIdentitySession();
+        },
         onSubmit: async (login, password, mode) => {
           const { identitySession, dataSession, dataError } = await signInWorkspaceDual(
             login,
@@ -56,7 +65,9 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
         forgotPassword: {
           isHubConfigured: () => isHubSupabaseConfigured,
           resetPasswordForEmail: async (authEmail, redirectTo) => {
-            const hub = createClient(HUB_SUPABASE_URL, HUB_SUPABASE_ANON_KEY);
+            const hub = createClient(HUB_SUPABASE_URL, HUB_SUPABASE_ANON_KEY, {
+              auth: { persistSession: false, autoRefreshToken: false },
+            });
             return hub.auth.resetPasswordForEmail(authEmail, { redirectTo });
           },
         },

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import type { Profile } from "../todo/types";
 import { ensureWorkspaceAuthReady, ensureWorkspaceProfile } from "../../lib/workspace-profile";
+import { readWarmTodoProfile, writeWarmTodoProfile } from "../../lib/todo-profile-warm-cache";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -14,8 +15,9 @@ export type WorkspaceProfileState = {
 
 /** Shared profile loader for Todo (and future workspace tabs). */
 export function useWorkspaceProfile(session: Session | null): WorkspaceProfileState {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(Boolean(session));
+  const warm = readWarmTodoProfile(session?.user?.id);
+  const [profile, setProfile] = useState<Profile | null>(warm);
+  const [loadingProfile, setLoadingProfile] = useState(Boolean(session && !warm));
   const [profileError, setProfileError] = useState<string | null>(null);
 
   const refreshProfile = useCallback(async (user: Session["user"]) => {
@@ -32,6 +34,7 @@ export function useWorkspaceProfile(session: Session | null): WorkspaceProfileSt
           throw new Error("Data Box session is not ready. Sign in again.");
         }
         setProfile(nextProfile);
+        writeWarmTodoProfile(user.id, nextProfile);
         setLoadingProfile(false);
         return;
       } catch (error: unknown) {
@@ -55,6 +58,12 @@ export function useWorkspaceProfile(session: Session | null): WorkspaceProfileSt
     if (!session?.user) {
       setProfile(null);
       setProfileError(null);
+      setLoadingProfile(false);
+      return;
+    }
+    const cached = readWarmTodoProfile(session.user.id);
+    if (cached && cached.id === session.user.id) {
+      setProfile((prev) => (prev?.id === cached.id ? prev : cached));
       setLoadingProfile(false);
       return;
     }

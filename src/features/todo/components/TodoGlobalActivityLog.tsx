@@ -78,6 +78,7 @@ export function TodoGlobalActivityLog({ session, onLogClick, taskIdFilter = null
         value={searchTerm}
         onChange={setSearchTerm}
         placeholder={t.log_searchPlaceholder}
+        shortcutScope="todo-log-activity"
       />
       {loading && safeLogs.length === 0 ? (
         <div className="flex h-32 items-center justify-center">

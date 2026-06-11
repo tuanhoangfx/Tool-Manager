@@ -9,6 +9,7 @@ import { generateShareToken, hashSharePassword } from "./shareUtils";
 import type { NoteRow } from "./types";
 import { getOfflineMode } from "../../lib/offlineMode";
 import { readNoteDetailStale, writeNoteDetailCache } from "../../lib/note-detail-cache";
+import { takePrefetchedNoteDetail } from "./noteDetailPrefetch";
 import { getOfflineNote, upsertOfflineNote } from "./offlineNotesRepository";
 
 export type NoteSaveResult = NoteRow & { passMigrationHint?: string };
@@ -132,15 +133,28 @@ export function useNote(session: Session | null, noteId: string | null) {
 
       if (!silent) setLoading(true);
       setError("");
-      const { data, error: err } = await fetchNoteById(targetId);
+      const prefetched = takePrefetchedNoteDetail(targetId);
+      let row: NoteRow | null = null;
+      if (prefetched) {
+        row = await prefetched;
+      } else {
+        const { data, error: err } = await fetchNoteById(targetId);
+        if (gen !== fetchGen.current || targetId !== noteId) return;
+        if (err) {
+          setError(err.message);
+          setNote(null);
+          setLoading(false);
+          return;
+        }
+        row = (data as NoteRow | null) ?? null;
+      }
       if (gen !== fetchGen.current || targetId !== noteId) return;
 
-      if (err) {
-        setError(err.message);
+      if (!row) {
+        setError("Note not found");
         setNote(null);
       } else {
-        let row = (data as NoteRow | null) ?? null;
-        if (row && !row.sync_id?.trim()) {
+        if (!row.sync_id?.trim()) {
           const sync_id = generateSyncId();
           const { data: patched, error: patchErr } = await updateNoteSyncId(targetId, sync_id);
           if (gen !== fetchGen.current || targetId !== noteId) return;
@@ -150,7 +164,7 @@ export function useNote(session: Session | null, noteId: string | null) {
           }
         }
         commitNote(row);
-        if (row) writeNoteDetailCache(targetId, row);
+        writeNoteDetailCache(targetId, row);
       }
       setLoading(false);
     },

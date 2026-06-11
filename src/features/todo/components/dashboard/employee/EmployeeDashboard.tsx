@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSettings } from '../../../context/SettingsContext';
-import { supabase } from '../../../lib/supabase';
+import { fetchUserTasks } from '../../../lib/userTasksQuery';
 import type { Task, TimeLog, Profile, ProjectMember, Project } from '../../../types';
 import type { Session } from '@supabase/supabase-js';
-import { ClipboardListIcon, CheckCircleIcon, XCircleIcon, SpinnerIcon } from '../../Icons';
+import { todoKanbanStatusConfig } from '../../../todo-kanban-status';
 import { TodoCalendarView } from '../../TodoCalendarView';
 import type { DataChange, TaskCounts } from '../../../app-types';
 import { type SortConfig, sortTasks } from '../../../lib/taskUtils';
@@ -67,17 +67,7 @@ const EmployeeDashboard: React.FC<TaskDashboardProps> = ({
         config: { field: 'compound_status_priority', direction: 'desc' }
     });
 
-    const taskQuery = useCallback(async () => {
-        const userId = session.user.id;
-        const jsonFilter = `assignees.cs.[{"user_id": "${userId}"}]`;
-        
-        return supabase
-            .from('tasks')
-            .select('*, assignee:user_id(*), creator:created_by(*), projects:project_id(*), task_attachments(*), task_time_logs(*), task_comments(*, profiles(*))')
-            .or(`user_id.eq.${userId},created_by.eq.${userId},${jsonFilter}`)
-            .order('priority', { ascending: false })
-            .order('created_at', { ascending: true });
-    }, [session.user.id]);
+    const taskQuery = useCallback(async () => fetchUserTasks(session.user.id), [session.user.id]);
 
     // Real-time filter must strictly mirror the database RLS to prevent "blinking"
     const realtimeFilter = useCallback((task: any) => {
@@ -157,12 +147,7 @@ const EmployeeDashboard: React.FC<TaskDashboardProps> = ({
     }, [todo.length, inprogress.length, done.length, setTaskCounts]);
     
     const renderBoardColumns = () => {
-        const statusConfig = {
-            todo: { icon: <ClipboardListIcon size={16} className="text-orange-500" />, title: t.todo },
-            inprogress: { icon: <SpinnerIcon size={16} className="text-indigo-500 animate-spin" />, title: t.inprogress },
-            done: { icon: <CheckCircleIcon size={16} className="text-green-500" />, title: t.done },
-            cancelled: { icon: <XCircleIcon size={16} className="text-gray-500" />, title: t.cancelled },
-        };
+        const statusConfig = todoKanbanStatusConfig(t);
         const columns: { tasks: Task[]; status: Task['status'] }[] = [
             { tasks: todo, status: 'todo' },
             { tasks: inprogress, status: 'inprogress' },
@@ -202,7 +187,10 @@ const EmployeeDashboard: React.FC<TaskDashboardProps> = ({
         projects: projectsForFilter,
         allUsers,
         timeFilteredTasks: session ? timeFilteredTasks : [],
+        shownCount: filteredTasksForBoard.length,
+        totalCount: timeFilteredTasks.length,
         filterToolbarLeading: session ? <DashboardViewToggle view={view} setView={setView} /> : null,
+        sectionRuleLabel: view === 'board' ? t.boardView : t.calendarView,
     });
 
     if (!session) {

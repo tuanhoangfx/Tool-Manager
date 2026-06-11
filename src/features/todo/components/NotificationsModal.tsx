@@ -6,7 +6,8 @@ import { SpinnerIcon, BellIcon } from "./Icons";
 import type { Notification } from "../types";
 import { formatAbsoluteDateTime } from "../lib/taskUtils";
 import Avatar from "./common/Avatar";
-import MultiSelectDropdown, { MultiSelectOption } from "./dashboard/admin/MultiSelectEmployeeDropdown";
+import { HubMultiFilterDropdown } from "@tool-workspace/hub-ui";
+import { buildTodoMultiFilterDef } from "../todo-hub-filter-helpers";
 import CopyIdButton from "./common/CopyIdButton";
 import { TodoHubSearchInput } from "./common/TodoHubSearchInput";
 import GenericListModal from "./GenericListModal";
@@ -95,32 +96,47 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose
         }
     };
 
-    const actorOptions: MultiSelectOption[] = useMemo(() => {
-        const actors = new Map<string, { id: string; label: string, avatarUrl?: string }>();
-        safeNotifications.forEach(notif => {
+    const actorFilterDef = useMemo(() => {
+        const actors = new Map<string, { value: string; label: string; iconSrc?: string }>();
+        safeNotifications.forEach((notif) => {
             if (notif.profiles && !actors.has(notif.profiles.id)) {
-                actors.set(notif.profiles.id, { id: notif.profiles.id, label: notif.profiles.full_name || 'Unknown', avatarUrl: notif.profiles.avatar_url || undefined });
+                actors.set(notif.profiles.id, {
+                    value: notif.profiles.id,
+                    label: notif.profiles.full_name || 'Unknown',
+                    iconSrc: notif.profiles.avatar_url || undefined,
+                });
             }
         });
-        return Array.from(actors.values()).sort((a, b) => a.label.localeCompare(b.label));
+        return buildTodoMultiFilterDef(
+            'actor',
+            'Actors',
+            Array.from(actors.values()).sort((a, b) => a.label.localeCompare(b.label)),
+        );
     }, [safeNotifications]);
 
-    const typeOptions: MultiSelectOption[] = useMemo(() => {
-        const typeLabels: { [key: string]: string } = {
+    const typeFilterDef = useMemo(() => {
+        const typeLabels: Record<string, string> = {
             new_task_assigned: t.notif_type_new_task,
             new_comment: t.notif_type_new_comment,
             new_project_created: t.notif_type_new_project,
             new_user_registered: t.notif_type_new_user,
             task_part_completed: t.notif_type_task_part_completed,
         };
-        return (Array.from(new Set(safeNotifications.map(n => n.type))) as string[])
-            .map(type => ({ id: type, label: typeLabels[type] || type }));
+        const options = (Array.from(new Set(safeNotifications.map((n) => n.type))) as string[]).map((type) => ({
+            value: type,
+            label: typeLabels[type] || type,
+        }));
+        return buildTodoMultiFilterDef('type', 'Types', options);
     }, [safeNotifications, t]);
-    
-    const statusOptions: MultiSelectOption[] = [
-        { id: 'unread', label: t.notif_status_unread },
-        { id: 'read', label: t.notif_status_read },
-    ];
+
+    const statusFilterDef = useMemo(
+        () =>
+            buildTodoMultiFilterDef('readStatus', 'Status', [
+                { value: 'unread', label: t.notif_status_unread },
+                { value: 'read', label: t.notif_status_read },
+            ]),
+        [t.notif_status_read, t.notif_status_unread],
+    );
 
     const filteredNotifications = useMemo(() => {
         return safeNotifications.filter(notification => {
@@ -148,37 +164,11 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose
                 value={searchTerm}
                 onChange={setSearchTerm}
                 placeholder={t.notif_searchPlaceholder}
+                shortcutScope="todo-notifications"
             />
-            <MultiSelectDropdown 
-                options={actorOptions} 
-                selectedIds={filterActors} 
-                onChange={setFilterActors} 
-                buttonLabel={(s, t) => s === 0 || s === t ? 'All Actors' : `${s} Actors`}
-                buttonIcon={<></>}
-                allLabel={t.notif_allActors}
-                searchPlaceholder={t.searchUsers}
-                widthClass="w-full"
-                />
-                <MultiSelectDropdown 
-                options={typeOptions} 
-                selectedIds={filterTypes} 
-                onChange={setFilterTypes} 
-                buttonLabel={(s) => s === 0 ? 'All Types' : `${s} Types`}
-                buttonIcon={<></>}
-                allLabel={t.notif_allTypes}
-                searchPlaceholder="Search types..."
-                widthClass="w-full"
-                />
-                <MultiSelectDropdown 
-                options={statusOptions} 
-                selectedIds={filterReadStatuses} 
-                onChange={setFilterReadStatuses} 
-                buttonLabel={(s) => s === 0 ? 'All Statuses' : `${s} Statuses`}
-                buttonIcon={<></>}
-                allLabel={t.notif_allStatuses}
-                searchPlaceholder="Search status..."
-                widthClass="w-full"
-                />
+            <HubMultiFilterDropdown filter={actorFilterDef} selected={filterActors} onChange={setFilterActors} />
+            <HubMultiFilterDropdown filter={typeFilterDef} selected={filterTypes} onChange={setFilterTypes} />
+            <HubMultiFilterDropdown filter={statusFilterDef} selected={filterReadStatuses} onChange={setFilterReadStatuses} />
         </div>
     );
 
