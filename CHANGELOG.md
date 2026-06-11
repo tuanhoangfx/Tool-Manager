@@ -10,7 +10,7 @@
 - Type: Patch
 - Product: P0020
 - Timestamp: 2026-06-12 (UTC+7)
-- Status: Committed
+- Status: Verified
 - Release: https://databox.infi.io.vn
 
 ### Changes

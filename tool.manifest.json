@@ -49,9 +49,9 @@
       "cookie-bridge"
     ],
     "latestPublished": {
-      "tag": "v4.3.21",
+      "tag": "v4.3.28",
       "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.1.5",
-      "publishedAt": "2026-06-10T13:34:44.578Z"
+      "publishedAt": "2026-06-11T21:50:59.908Z"
     }
   },
   "urls": {
@@ -221,5 +221,5 @@
       "authVariant": "anonymous-dual"
     }
   ],
-  "manifestUpdatedAt": "2026-06-11T21:40:45.096Z"
+  "manifestUpdatedAt": "2026-06-11T21:50:59.908Z"
 }
