@@ -27,8 +27,11 @@ function run(script, args = []) {
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
 
+console.log("==> preflight Vercel env (.env.local requiredKeys)");
+run(path.join(root, "scripts/preflight-vercel-env.mjs"));
+
 if (!skipSync) {
-  console.log("==> sync Vercel env (API upsert)");
+  console.log("==> sync Vercel env (API upsert / CLI fallback)");
   run(path.join(root, "scripts/sync-p0020-vercel-env-api.mjs"));
 }
 
@@ -54,5 +57,8 @@ if (!skipVersionWait) {
   console.log("==> wait for package.json version in production bundle");
   run(path.join(root, "scripts/wait-prod-app-version.mjs"), ["--origin", prodOrigin]);
 }
+
+console.log("==> verify required VITE_* keys in production bundle");
+run(path.join(root, "scripts/check-prod-vite-env-bundle.mjs"), ["--origin", prodOrigin]);
 
 console.log("vercel-env-ship: complete");

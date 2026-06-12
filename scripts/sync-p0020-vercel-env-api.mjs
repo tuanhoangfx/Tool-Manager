@@ -23,16 +23,27 @@ const targets = allEnvs
   ? ["production", "preview", "development"]
   : ["production", "preview", "development"];
 
-const KEYS = [
-  "VITE_SUPABASE_URL",
-  "VITE_SUPABASE_ANON_KEY",
-  "VITE_HUB_SUPABASE_URL",
-  "VITE_HUB_SUPABASE_ANON_KEY",
-  "VITE_TWOFA_SUPABASE_URL",
-  "VITE_TWOFA_SUPABASE_ANON_KEY",
-  "VITE_CHATCENTER_WORKER_URL",
-  "VITE_HUB_ADMIN_RECOVER_TOKEN",
-];
+function loadManifestKeys() {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, "tool.manifest.json"), "utf8"));
+    const fromManifest = manifest.vercelEnvValidation?.requiredKeys;
+    if (Array.isArray(fromManifest) && fromManifest.length) return fromManifest;
+  } catch {
+    /* ignore */
+  }
+  return [
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY",
+    "VITE_HUB_SUPABASE_URL",
+    "VITE_HUB_SUPABASE_ANON_KEY",
+    "VITE_TWOFA_SUPABASE_URL",
+    "VITE_TWOFA_SUPABASE_ANON_KEY",
+    "VITE_CHATCENTER_WORKER_URL",
+    "VITE_HUB_ADMIN_RECOVER_TOKEN",
+  ];
+}
+
+const KEYS = loadManifestKeys();
 
 const PROJECT_ID = "prj_sYleHL1YghcKIi3JfB8P98TPOK5a";
 const TEAM_SLUG = process.env.VERCEL_TEAM_ID || "team_OJYy4qksQu1vUUw1xNQh9ZHj";
@@ -74,25 +85,30 @@ function loadTokenFromVercelAuthFile() {
   return "";
 }
 
-const token = loadVercelToken(root) || loadTokenFromVercelAuthFile();
-if (!token) {
-  console.error("Missing VERCEL_TOKEN — add to E:\\Dev\\.env.shared or run `vercel login`");
-  console.error("Create token: https://vercel.com/account/tokens");
-  process.exit(1);
-}
 if (!fs.existsSync(envPath)) {
   console.error(`Missing ${envPath}`);
   process.exit(1);
 }
 
-const env = parseEnv(fs.readFileSync(envPath, "utf8"));
-const missing = KEYS.filter((k) => !env[k]);
-if (missing.length) {
-  console.error("Missing keys in .env.local:", missing.join(", "));
-  process.exit(1);
+const preflight = path.join(root, "scripts/preflight-vercel-env.mjs");
+if (fs.existsSync(preflight)) {
+  const { spawnSync } = await import("node:child_process");
+  const pr = spawnSync(process.execPath, [preflight], { cwd: root, stdio: "inherit" });
+  if (pr.status !== 0) process.exit(pr.status ?? 1);
 }
 
+const env = parseEnv(fs.readFileSync(envPath, "utf8"));
+const token = loadVercelToken(root) || loadTokenFromVercelAuthFile();
+
 let useCli = process.argv.includes("--cli");
+if (!useCli && !token && probeCliSession(root)) {
+  console.warn("sync: no VERCEL_TOKEN — using vercel CLI session");
+  useCli = true;
+} else if (!useCli && !token) {
+  console.error("Missing VERCEL_TOKEN — add to E:\\Dev\\.env.shared or run `vercel login`");
+  console.error("Create token: https://vercel.com/account/tokens");
+  process.exit(1);
+}
 if (!useCli && token) {
   try {
     await listProjectEnv({ projectId: PROJECT_ID, teamSlug: TEAM_SLUG, token });
@@ -105,13 +121,6 @@ if (!useCli && token) {
       console.error(msg);
       process.exit(1);
     }
-  }
-}
-
-if (!useCli && !token) {
-  if (probeCliSession(root)) {
-    console.warn("sync: no VERCEL_TOKEN — using vercel CLI session");
-    useCli = true;
   }
 }
 

@@ -70,11 +70,20 @@ Store in `E:\Dev\.env.shared` (never commit).
 | Expiration | 1 year (or No Expiration for automation) |
 | Fallback | If REST returns `invalidToken`, run `vercel login` — sync auto-falls back to CLI |
 
-Verify token:
+Verify token + env gates:
 
 ```powershell
 cd E:\Dev\Tool\P0020-Data-Box
+node ..\scripts\probe-vercel-rest-token.mjs --product-root .
+node scripts/preflight-vercel-env.mjs
 node scripts/sync-p0020-vercel-env-api.mjs
+node scripts/check-prod-vite-env-bundle.mjs
+```
+
+Deploy gate (agent):
+
+```powershell
+node ..\scripts\agent-verify-gate.mjs --code P0020 --json --intent deploy
 ```
 
 Symptoms when token is wrong:

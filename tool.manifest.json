@@ -83,7 +83,9 @@
       "VITE_HUB_SUPABASE_URL",
       "VITE_HUB_SUPABASE_ANON_KEY",
       "VITE_TWOFA_SUPABASE_URL",
-      "VITE_TWOFA_SUPABASE_ANON_KEY"
+      "VITE_TWOFA_SUPABASE_ANON_KEY",
+      "VITE_CHATCENTER_WORKER_URL",
+      "VITE_HUB_ADMIN_RECOVER_TOKEN"
     ],
     "syncScript": "scripts/sync-p0020-vercel-env-api.mjs",
     "shipScript": "scripts/vercel-env-ship.mjs",
@@ -118,6 +120,16 @@
           "Git push missing before hook — production serves previous commit",
           "Vercel build failed — check GitHub commit status"
         ]
+      },
+      {
+        "id": "vite-env-bundle",
+        "script": "scripts/check-prod-vite-env-bundle.mjs",
+        "origin": "https://databox.infi.io.vn",
+        "symptoms": [
+          "Cookie/ChatCenter worker URL missing after env-only change — redeploy production",
+          "VITE_* synced on Vercel but bundle stale — trigger deploy hook after sync",
+          "Hub admin recover token not embedded — check .env.local + sync + redeploy"
+        ]
       }
     ],
     "symptomMap": {
@@ -130,8 +142,10 @@
       "node scripts/check-prod-twofa-env.mjs",
       "node scripts/wait-prod-twofa-anon-key.mjs",
       "node scripts/wait-prod-app-version.mjs",
+      "node scripts/check-prod-vite-env-bundle.mjs",
       "node scripts/smoke-twofa-vault.mjs"
-    ]
+    ],
+    "preflightScript": "scripts/preflight-vercel-env.mjs"
   },
   "parentProject": {
     "code": "P0004",
