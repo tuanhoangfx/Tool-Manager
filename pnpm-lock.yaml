@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@dev/hub-identity':
+        specifier: file:./vendor/hub-identity
+        version: file:vendor/hub-identity(@supabase/supabase-js@2.106.1)(react@19.2.6)
       '@dev/hub-load':
         specifier: file:./vendor/hub-load
         version: file:vendor/hub-load(react@19.2.6)
@@ -16,7 +19,7 @@ importers:
         version: 2.106.1
       '@tool-workspace/hub-identity':
         specifier: file:./vendor/hub-identity
-        version: file:vendor/hub-identity
+        version: '@dev/hub-identity@file:vendor/hub-identity(@supabase/supabase-js@2.106.1)(react@19.2.6)'
       '@tool-workspace/hub-ui':
         specifier: file:./vendor/hub-ui
         version: file:vendor/hub-ui(lucide-react@0.561.0(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -256,6 +259,12 @@ packages:
   '@csstools/css-tokenizer@3.0.4':
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
+
+  '@dev/hub-identity@file:vendor/hub-identity':
+    resolution: {directory: vendor/hub-identity, type: directory}
+    peerDependencies:
+      '@supabase/supabase-js': '>=2.0.0'
+      react: ^19.0.0
 
   '@dev/hub-load@file:vendor/hub-load':
     resolution: {directory: vendor/hub-load, type: directory}
@@ -850,9 +859,6 @@ packages:
         optional: true
       '@types/react-dom':
         optional: true
-
-  '@tool-workspace/hub-identity@file:vendor/hub-identity':
-    resolution: {directory: vendor/hub-identity, type: directory}
 
   '@tool-workspace/hub-ui@file:vendor/hub-ui':
     resolution: {directory: vendor/hub-ui, type: directory}
@@ -2519,6 +2525,11 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
+  '@dev/hub-identity@file:vendor/hub-identity(@supabase/supabase-js@2.106.1)(react@19.2.6)':
+    dependencies:
+      '@supabase/supabase-js': 2.106.1
+      react: 19.2.6
+
   '@dev/hub-load@file:vendor/hub-load(react@19.2.6)':
     dependencies:
       react: 19.2.6
@@ -2945,8 +2956,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.15
       '@types/react-dom': 19.2.3(@types/react@19.2.15)
-
-  '@tool-workspace/hub-identity@file:vendor/hub-identity': {}
 
   '@tool-workspace/hub-ui@file:vendor/hub-ui(lucide-react@0.561.0(react@19.2.6))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
     dependencies:
