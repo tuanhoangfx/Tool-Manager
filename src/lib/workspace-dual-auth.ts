@@ -1,10 +1,12 @@
 import type { Session } from "@supabase/supabase-js";
 import {
   authenticateMirrorSupabase,
+  createHubRecoverApiUrl,
   HUB_INVALID_LOGIN,
   hubAuthEmailFromLogin,
   isHubAuthRateLimitError,
   recoverHubSessionViaApi,
+  resolveHubRecoverApiBase,
   runWorkspaceDualSignIn,
   sanitizeHubLoginInput,
   signInWithHubPassword,
@@ -26,16 +28,7 @@ export type WorkspaceDualSignInResult = {
 };
 
 const recoverToken = (import.meta.env.VITE_HUB_ADMIN_RECOVER_TOKEN as string | undefined)?.trim();
-const hubRecoverWorkerBase = (
-  (import.meta.env.VITE_CHATCENTER_WORKER_URL as string | undefined) || "http://127.0.0.1:3921"
-)
-  .trim()
-  .replace(/\/$/, "");
-
-function hubRecoverApiUrl(path: string): string {
-  const p = path.startsWith("/") ? path : `/${path}`;
-  return `${hubRecoverWorkerBase}${p}`;
-}
+const hubRecoverApiUrl = createHubRecoverApiUrl(resolveHubRecoverApiBase());
 
 async function recoverHubSessionViaWorker(loginInput: string, password: string) {
   const recovered = await recoverHubSessionViaApi({
@@ -43,10 +36,13 @@ async function recoverHubSessionViaWorker(loginInput: string, password: string) 
     loginInput,
     password,
     recoverToken,
-    mirrorSessionKey: "chatcenterSession",
+    mirrorSessionKey: "dataSession",
   });
   if (!recovered) return null;
-  return { identitySession: recovered.identitySession, chatcenterSession: null };
+  return {
+    identitySession: recovered.identitySession,
+    chatcenterSession: recovered.mirrorSession,
+  };
 }
 
 async function authenticateDataBox(
@@ -116,6 +112,7 @@ export async function signInWorkspaceDual(
   const result = await runWorkspaceDualSignIn(loginInput, password, mode, {
     getHubClient: getIdentitySupabase,
     recoverHubSession: recoverHubSessionViaWorker,
+    adoptRecoveredPlaneSession: cacheDataBoxSession,
     cacheHubIdentityFromSession: (session, mirrorEmail) => {
       cacheHubIdentity({
         access_token: session.access_token,

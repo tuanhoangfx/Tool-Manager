@@ -114,7 +114,7 @@
     "hubProjectRef": "fmnrafpzctuhxjaaomzt",
     "hubUrl": "https://fmnrafpzctuhxjaaomzt.supabase.co",
     "localEnv": {
-      "SUPABASE_DB_URL": "postgresql://postgres.bklxcjrkhrevdcqjscku:[DB_PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres",
+      "SUPABASE_DB_URL": "postgresql://postgres.bklxcjrkhrevdcqjscku:[DB_PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres",
       "note": "Replace [DB_PASSWORD] in .env.local. Run `pnpm db:migrate` then `pnpm verify:cookie`."
     },
     "cookieBridge": {

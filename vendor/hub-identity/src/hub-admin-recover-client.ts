@@ -61,7 +61,12 @@ export async function recoverHubSessionViaApi(
   const headers = recoverHeaders(recoverToken);
   const body = JSON.stringify({ login: loginInput, password, mode: "signin" });
 
-  const signInRes = await fetch(apiUrl("/api/auth/hub/sign-in"), { method: "POST", headers, body });
+  let signInRes: Response;
+  try {
+    signInRes = await fetch(apiUrl("/api/auth/hub/sign-in"), { method: "POST", headers, body });
+  } catch {
+    return null;
+  }
   const signInData = (await signInRes.json().catch(() => ({}))) as HubRecoverApiResponse;
   const adopted = adoptRecoverPayload(signInData, mirrorSessionKey);
   if (signInRes.ok && signInData.ok && adopted) {
@@ -76,11 +81,16 @@ export async function recoverHubSessionViaApi(
 
   if (!shouldRecover) return null;
 
-  const recoverRes = await fetch(apiUrl("/api/auth/hub/admin-recover"), {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ login: loginInput, password }),
-  });
+  let recoverRes: Response;
+  try {
+    recoverRes = await fetch(apiUrl("/api/auth/hub/admin-recover"), {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ login: loginInput, password }),
+    });
+  } catch {
+    return null;
+  }
   const recoverData = (await recoverRes.json().catch(() => ({}))) as HubRecoverApiResponse;
   const recovered = adoptRecoverPayload(recoverData, mirrorSessionKey);
   if (recoverRes.ok && recoverData.ok && recovered) {

@@ -23,6 +23,7 @@ export const HUB_ROUTE_ACCESS_COL = {
   activity: "hub-route-access-col--activity",
   rights: "hub-route-access-col--rights",
   route: "hub-route-access-col--route",
+  addedAt: "hub-route-access-col--added-at",
   expires: "hub-route-access-col--expires",
 } as const;
 
@@ -76,7 +77,7 @@ export const HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS = {
   },
   rights: {
     key: "rights",
-    label: "Rights",
+    label: "Shared",
     className: HUB_ROUTE_ACCESS_COL.rights,
     role: "access" as const,
   },
@@ -85,6 +86,12 @@ export const HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS = {
     label: "Route",
     className: HUB_ROUTE_ACCESS_COL.route,
     role: "route" as const,
+  },
+  addedAt: {
+    key: "addedAt",
+    label: "Add",
+    className: HUB_ROUTE_ACCESS_COL.addedAt,
+    role: "created" as const,
   },
   expires: {
     key: "expires",
@@ -107,8 +114,8 @@ export function buildHubRouteAccessModalColumns(
       HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.user,
       HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.role,
       HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.activity,
-      HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.rights,
       ...(showRouteColumn ? [HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.route] : []),
+      HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.addedAt,
       HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.expires,
     ];
   }
@@ -119,9 +126,8 @@ export function buildHubRouteAccessModalColumns(
     HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.role,
     HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.syncAt,
     HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.loadAt,
-    HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.permLoad,
-    HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.permSync,
     ...(showRouteColumn ? [HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.route] : []),
+    HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.addedAt,
     HUB_ROUTE_ACCESS_MODAL_COLUMN_DEFS.expires,
   ];
 }
@@ -138,7 +144,7 @@ export function hubRouteAccessModalColumnCount(
     return showSelect ? dataCols + 1 : dataCols;
   }
 
-  const dataCols = showRouteColumn ? 8 : 7;
+  const dataCols = showRouteColumn ? 7 : 6;
   return showSelect ? dataCols + 1 : dataCols;
 }
 
@@ -158,4 +164,13 @@ export const HUB_ROUTE_ACCESS_SKELETON_WRAP_CLASS = HUB_ROUTE_ACCESS_MODAL_TABLE
 
 /** @deprecated Use modal col defs — kept for HubDirectoryTableShell callers. */
 export type HubRouteAccessColumnKey = "user" | "role";
-export type HubRouteAccessSortKey = HubRouteAccessColumnKey;
+
+export type HubRouteAccessSortKey =
+  | "user"
+  | "role"
+  | "syncAt"
+  | "loadAt"
+  | "activity"
+  | "route"
+  | "addedAt"
+  | "expires";

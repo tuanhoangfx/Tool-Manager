@@ -58,28 +58,20 @@ export function HubRouteAccessDirectoryTableSkeleton({
                   <td className={HUB_ROUTE_ACCESS_COL.loadAt}>
                     <span className="skeleton mx-auto block h-3.5 w-14" />
                   </td>
-                  <td className={HUB_ROUTE_ACCESS_COL.perm}>
-                    <span className="skeleton mx-auto block h-4 w-4 rounded-full" />
-                  </td>
-                  <td className={HUB_ROUTE_ACCESS_COL.perm}>
-                    <span className="skeleton mx-auto block h-4 w-4 rounded-full" />
-                  </td>
                 </>
               ) : (
-                <>
-                  <td className={HUB_ROUTE_ACCESS_COL.activity}>
-                    <span className="skeleton mx-auto block h-6 w-14" />
-                  </td>
-                  <td className={HUB_ROUTE_ACCESS_COL.rights}>
-                    <span className="skeleton mx-auto block h-4 w-10 rounded-full" />
-                  </td>
-                </>
+                <td className={HUB_ROUTE_ACCESS_COL.activity}>
+                  <span className="skeleton mx-auto block h-6 w-14" />
+                </td>
               )}
               {showRoute ? (
                 <td className={HUB_ROUTE_ACCESS_COL.route}>
                   <span className="skeleton mx-auto block h-5 w-16 rounded-full" />
                 </td>
               ) : null}
+              <td className={HUB_ROUTE_ACCESS_COL.addedAt}>
+                <span className="skeleton mx-auto block h-3.5 w-14" />
+              </td>
               <td className={HUB_ROUTE_ACCESS_COL.expires}>
                 <span className="skeleton mx-auto block h-3.5 w-14" />
               </td>

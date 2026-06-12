@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "4.3.28",
+    "version": "4.3.29",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -98,6 +98,15 @@
           "0 accounts after login though cloud vault has rows",
           "No network requests to zurfouqanjcubgneuctp.supabase.co after sign-in"
         ]
+      },
+      {
+        "id": "databox-hub-auth",
+        "script": "scripts/smoke-databox-hub-auth.mjs",
+        "symptoms": [
+          "Cookie tab Vault chip stuck offline after login",
+          "Worker sign-in missing dataSession when Hub GoTrue rate-limits",
+          "note_cookie_vault_summaries_accessible RPC fails with 401"
+        ]
       }
     ],
     "symptomMap": {
@@ -124,7 +133,7 @@
     "hubProjectRef": "fmnrafpzctuhxjaaomzt",
     "hubUrl": "https://fmnrafpzctuhxjaaomzt.supabase.co",
     "localEnv": {
-      "SUPABASE_DB_URL": "postgresql://postgres.bklxcjrkhrevdcqjscku:[DB_PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres",
+      "SUPABASE_DB_URL": "postgresql://postgres.bklxcjrkhrevdcqjscku:[DB_PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:6543/postgres",
       "note": "Replace [DB_PASSWORD] in .env.local. Run `pnpm db:migrate` then `pnpm verify:cookie`."
     },
     "cookieBridge": {
@@ -221,5 +230,5 @@
       "authVariant": "anonymous-dual"
     }
   ],
-  "manifestUpdatedAt": "2026-06-11T21:50:59.908Z"
+  "manifestUpdatedAt": "2026-06-12T08:01:37.130Z"
 }

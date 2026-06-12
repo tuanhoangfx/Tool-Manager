@@ -73,7 +73,7 @@ const FILTER_ICONS: Record<string, React.ElementType> = {
 
 export type FilterValues = Record<string, string[]>;
 
-type FilterBarProps = {
+export type FilterBarProps = {
   placeholder?: string;
   filters?: FilterDef[];
   query: string;

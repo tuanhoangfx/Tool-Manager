@@ -117,6 +117,7 @@ export {
   type HubScreenChunkFallbackProps,
 } from "./shell/HubScreenChunkFallback";
 export { CacheHitBadge } from "./shell/CacheHitBadge";
+export { HubHealthChip, type HubHealthChipProps, type HubSyncHealth } from "./shell/HubHealthChip";
 export {
   hubThreadPreviewFromContent,
   resolveHubThreadPreview,
@@ -128,12 +129,17 @@ export {
   FilterBar,
   HubMultiFilterDropdown,
   HubSingleFilterDropdown,
+  type FilterBarProps,
   type FilterDef,
   type FilterOption,
   type FilterValues,
   type HubMultiFilterDropdownProps,
   type HubSingleFilterDropdownProps,
 } from "./shell/FilterBar";
+export {
+  HubModalDirectoryFilterBar,
+  type HubModalDirectoryFilterBarProps,
+} from "./shell/HubModalDirectoryFilterBar";
 export {
   HubTableCellFilterDropdown,
   type HubTableCellFilterDropdownProps,

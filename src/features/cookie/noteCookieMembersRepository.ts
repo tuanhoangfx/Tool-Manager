@@ -1,7 +1,28 @@
-import { normalizeGranteeEmail } from "./normalizeGranteeEmail";
+import { ensureDataBoxAuth } from "../../lib/ensure-data-box-auth";
+import { normalizeGranteeEmail } from "./grantee-display";
 import { supabase } from "../../lib/supabase";
 import type { CookieCloudRouteRow } from "./cookieRoutesRepository";
 import { normalizeCookieDomain } from "./normalizeCookieDomain";
+
+const MEMBERS_RPC_TIMEOUT_MS = 12_000;
+const MEMBERS_AUTH_TIMEOUT_MS = 8_000;
+
+async function withMembersRpcTimeout<T>(
+  promise: PromiseLike<T>,
+  timeoutMs = MEMBERS_RPC_TIMEOUT_MS,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error("Load members timed out.")), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 export type NoteCookieMemberRow = {
   id: string;
@@ -40,10 +61,24 @@ function envelopeError(data: unknown, fallback: string) {
 }
 
 export async function listNoteCookieMembers(noteId: string): Promise<RpcEnvelope<{ members: NoteCookieMemberRow[] }>> {
-  const { data, error } = await supabase.rpc("note_cookie_member_list", { p_note_id: noteId });
-  if (error) return { ok: false, error: rpcError(error, "Load members failed.") };
-  if (!data || data.ok !== true) return { ok: false, error: envelopeError(data, "Load members failed.") };
-  return { ok: true, members: (data.members ?? []) as NoteCookieMemberRow[] };
+  let session;
+  try {
+    session = await withMembersRpcTimeout(ensureDataBoxAuth(), MEMBERS_AUTH_TIMEOUT_MS);
+  } catch {
+    return { ok: false, error: "Sign in timed out — reload the page and try again." };
+  }
+  if (!session) return { ok: false, error: "Sign in to load route members." };
+  try {
+    const { data, error } = await withMembersRpcTimeout(
+      supabase.rpc("note_cookie_member_list", { p_note_id: noteId }),
+    );
+    if (error) return { ok: false, error: rpcError(error, "Load members failed.") };
+    if (!data || data.ok !== true) return { ok: false, error: envelopeError(data, "Load members failed.") };
+    return { ok: true, members: (data.members ?? []) as NoteCookieMemberRow[] };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err ?? "Load members failed.");
+    return { ok: false, error: message };
+  }
 }
 
 export async function upsertNoteCookieMember(opts: {
@@ -54,6 +89,8 @@ export async function upsertNoteCookieMember(opts: {
   canManage: boolean;
   expiresAt?: string | null;
 }): Promise<RpcEnvelope<{ member: NoteCookieMemberRow }>> {
+  const session = await ensureDataBoxAuth();
+  if (!session) return { ok: false, error: "Sign in to share route members." };
   const { data, error } = await supabase.rpc("note_cookie_member_upsert", {
     p_note_id: opts.noteId,
     p_grantee_email: normalizeGranteeEmail(opts.email),
@@ -68,6 +105,8 @@ export async function upsertNoteCookieMember(opts: {
 }
 
 export async function revokeNoteCookieMember(memberId: string): Promise<RpcVoid> {
+  const session = await ensureDataBoxAuth();
+  if (!session) return { ok: false, error: "Sign in to revoke route members." };
   const { data, error } = await supabase.rpc("note_cookie_member_revoke", { p_member_id: memberId });
   if (error) return { ok: false, error: rpcError(error, "Revoke member failed.") };
   if (!data || data.ok !== true) return { ok: false, error: envelopeError(data, "Revoke member failed.") };

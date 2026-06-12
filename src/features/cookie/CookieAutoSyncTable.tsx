@@ -60,6 +60,8 @@ import {
   type MetricBadgeTone,
   useResolvedVisibleKpiKeys,
 } from "../../components/sales-shell";
+import { useAppToast } from "../../components/toast";
+import { useNotesAuth } from "../notes/useNotesAuth";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import type { NoteListItem } from "../notes/types";
 import { routeMatchesTimeRange } from "./cookie-route-activity";
@@ -93,18 +95,20 @@ import { CookieRouteCard } from "./CookieRouteCard";
 import { P0020DirectoryScreen } from "../workspace/P0020DirectoryScreen";
 import { sanitizeCookieFilterUrl, stripLegacyCookieFilterValues } from "./cookie-filter-icons";
 import { CookieRoutesDirectoryTable } from "./CookieRoutesDirectoryTable";
+import { CookieDirectorySkeleton } from "./CookieDirectorySkeleton";
 import type { CookieAutoRow } from "./cookieAutoRow";
 
 const COOKIE_CHART_ORDER = ["status_bar", "platform_bar", "share_bar"] as const;
 import { COOKIE_ACCESS_SELECT_OPTIONS } from "./cookieAccessSelectOptions";
-import { listNoteCookieMembers, upsertNoteCookieMember } from "./noteCookieMembersRepository";
+import { getCookieRoutePublishStatus } from "./cookieRoutesRepository";
+import { upsertNoteCookieMember } from "./noteCookieMembersRepository";
 import {
+  fetchNoteCookieMembers,
   getCachedNoteCookieMembers,
   prefetchNoteCookieMembers,
-  prefetchNoteCookieMembersBatch,
-  rememberNoteCookieMembers,
   subscribeNoteCookieMembersCache,
 } from "./cookieRouteMembersPrefetch";
+import { formatGranteeSharePreview } from "./grantee-display";
 import type { CookieVaultRow } from "./useCookieVaultMap";
 import { lookupVaultRow } from "./useCookieVaultMap";
 
@@ -131,8 +135,8 @@ type Props = {
   onUpdate?: (id: string, patch: Partial<CookieBinding>) => void;
   onRemove?: (id: string) => void;
   onRefresh?: () => void;
+  onEnsureRoutePublished?: (binding: CookieBinding) => Promise<boolean>;
   vaultByKey?: Record<string, CookieVaultRow>;
-  vaultError?: string | null;
   toolbarActions?: ReactNode;
   toolbarActionsKey?: string;
   renderDetail?: (binding: CookieBinding) => ReactNode;
@@ -298,13 +302,15 @@ export function CookieAutoSyncTable({
   onUpdate,
   onRemove,
   onRefresh,
+  onEnsureRoutePublished,
   vaultByKey = {},
-  vaultError,
   toolbarActions,
   toolbarActionsKey = "",
   renderDetail,
   renderAccessDetail,
 }: Props) {
+  const { pushToast } = useAppToast();
+  const { session } = useNotesAuth();
   const notesById = useMemo(() => new Map(notes.map((note) => [note.id, note])), [notes]);
   const noteSelectOptions = useMemo(
     () =>
@@ -340,6 +346,7 @@ export function CookieAutoSyncTable({
   const [shareEmail, setShareEmail] = useState("");
   const [shareRole, setShareRole] = useState<ShareRole>("load");
   const [shareBusy, setShareBusy] = useState(false);
+  const [shareCloudPublished, setShareCloudPublished] = useState<boolean | null>(null);
   const [shareCounts, setShareCounts] = useState<Record<string, number>>({});
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [viewMode, setViewModeState] = useState<HubViewMode>(() => readCookieViewMode());
@@ -374,11 +381,36 @@ export function CookieAutoSyncTable({
   const deleting = modal?.type === "delete" ? bindings.filter((b) => modal.ids.includes(b.id)) : [];
   const detailBinding = modal?.type === "detail" ? bindings.find((b) => b.id === modal.id) : null;
   const shareBinding = modal?.type === "share" ? bindings.find((b) => b.id === modal.id) : null;
+  const granteeSharePreview = useMemo(() => formatGranteeSharePreview(shareEmail), [shareEmail]);
+  const shareBlocked = shareCloudPublished === false;
+
+  useEffect(() => {
+    if (modal?.type !== "share" || !shareBinding || !session?.user?.id) {
+      setShareCloudPublished(null);
+      return;
+    }
+    let cancelled = false;
+    void getCookieRoutePublishStatus(session, shareBinding).then((res) => {
+      if (cancelled) return;
+      setShareCloudPublished(res.ok ? res.published : false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [modal?.type, session, shareBinding]);
+
   const selectedRow = useMemo(() => rows.find((row) => row.binding.id === selectedBindingId), [rows, selectedBindingId]);
-  const detailRow = useMemo(
-    () => (detailBinding ? rows.find((row) => row.binding.id === detailBinding.id) : null),
-    [detailBinding, rows],
-  );
+  const detailRow = useMemo(() => {
+    if (!detailBinding) return null;
+    const hit = rows.find((row) => row.binding.id === detailBinding.id);
+    if (hit) return hit;
+    const note = notesById.get(detailBinding.noteId);
+    return {
+      binding: detailBinding,
+      note,
+      lines: note ? cookieLines(note.cookie_snapshot) : [],
+    };
+  }, [detailBinding, notesById, rows]);
   const filteredRows = useMemo(
     () => filterCookieRows(rows, routeQuery, filterValues, period, vaultByKey),
     [filterValues, period, routeQuery, rows, vaultByKey],
@@ -580,13 +612,10 @@ export function CookieAutoSyncTable({
     }
 
     const loadShareCounts = () => {
-      prefetchNoteCookieMembersBatch(uniqueNoteIds);
       void Promise.all(
         uniqueNoteIds.map(async (noteId) => {
-          const res = await listNoteCookieMembers(noteId);
-          rememberNoteCookieMembers(noteId, res);
-          const cached = getCachedNoteCookieMembers(noteId);
-          const count = cached?.ok ? cached.members.length : res.ok ? res.members.length : undefined;
+          const res = await fetchNoteCookieMembers(noteId);
+          const count = res.ok ? res.members.length : 0;
           return [noteId, count] as const;
         }),
       ).then((entries) => {
@@ -594,29 +623,24 @@ export function CookieAutoSyncTable({
         setShareCounts((prev) => {
           const next = { ...prev };
           for (const [noteId, count] of entries) {
-            if (count !== undefined) next[noteId] = count;
+            next[noteId] = count;
           }
           return next;
         });
       });
     };
 
-    const idleId =
-      typeof window.requestIdleCallback === "function"
-        ? window.requestIdleCallback(loadShareCounts, { timeout: 3000 })
-        : window.setTimeout(loadShareCounts, 200);
+    const timerId = window.setTimeout(loadShareCounts, 0);
 
     return () => {
       cancelled = true;
-      if (typeof idleId === "number") window.clearTimeout(idleId);
-      else window.cancelIdleCallback(idleId);
+      window.clearTimeout(timerId);
     };
   }, [shareCountKey]);
 
   const refreshShareCount = useCallback(async (noteId: string) => {
     if (!noteId) return;
-    const res = await listNoteCookieMembers(noteId);
-    rememberNoteCookieMembers(noteId, res);
+    const res = await fetchNoteCookieMembers(noteId, { refresh: true });
     if (!res.ok) return;
     setShareCounts((prev) => ({ ...prev, [noteId]: res.members.length }));
   }, []);
@@ -676,11 +700,35 @@ export function CookieAutoSyncTable({
     setDraftPass("");
   };
 
-  const openShare = useCallback((binding: CookieBinding) => {
-    setShareEmail("");
-    setShareRole("load");
-    setModal({ type: "share", id: binding.id });
-  }, []);
+  const openRouteDetail = useCallback(
+    (bindingId: string, noteId: string) => {
+      prefetchNoteCookieMembers(noteId);
+      onSelect?.(bindingId);
+      setModal({ type: "detail", id: bindingId });
+    },
+    [onSelect],
+  );
+
+  const openShare = useCallback(
+    (binding: CookieBinding) => {
+      if (!session?.user?.id) {
+        pushToast("Sign in to share routes.", "warn");
+        return;
+      }
+      void getCookieRoutePublishStatus(session, binding).then((res) => {
+        const published = res.ok ? res.published : false;
+        setShareCloudPublished(published);
+        if (!published) {
+          pushToast("Route is not published to cloud yet — save the route first, then share.", "warn", 8000);
+          return;
+        }
+        setShareEmail("");
+        setShareRole("load");
+        setModal({ type: "share", id: binding.id });
+      });
+    },
+    [pushToast, session],
+  );
 
   const submitShare = async () => {
     if (!shareBinding?.noteId || !shareEmail.trim() || shareBusy) return;
@@ -690,12 +738,32 @@ export function CookieAutoSyncTable({
       email: shareEmail,
       ...sharePermissions(shareRole),
     });
+    if (!res.ok) {
+      setShareBusy(false);
+      pushToast(res.error, "error", 8000);
+      return;
+    }
+    const published = onEnsureRoutePublished ? await onEnsureRoutePublished(shareBinding) : true;
     setShareBusy(false);
-    if (!res.ok) return;
+    const granteeEmail = res.member.grantee_email ?? shareEmail.trim();
     setShareEmail("");
     setModal(null);
     void refreshShareCount(shareBinding.noteId);
     onRefresh?.();
+    if (!published) {
+      pushToast(
+        `Added ${granteeEmail}, but cloud publish failed — recipient cannot load until the route is saved to cloud.`,
+        "warn",
+        8000,
+      );
+      return;
+    }
+    pushToast(
+      res.member.grantee_user_id
+        ? `Shared with ${granteeEmail}. Recipient can refresh routes immediately.`
+        : `Shared with ${granteeEmail}. Recipient must sign in with that email, then Refresh routes.`,
+      "success",
+    );
   };
 
   const submitEdit = () => {
@@ -838,6 +906,8 @@ export function CookieAutoSyncTable({
     toolbarActionsKey,
   ]);
 
+  const coldNotesLoad = Boolean(loading && notes.length === 0);
+
   return (
     <>
       {modal?.type === "add" && onAdd ? (
@@ -917,7 +987,7 @@ export function CookieAutoSyncTable({
               primaryLabel="Share"
               primaryIcon={UserPlus}
               primaryBusy={shareBusy}
-              primaryDisabled={!shareEmail.trim()}
+              primaryDisabled={!shareEmail.trim() || shareBlocked}
               onPrimary={() => void submitShare()}
               onSecondary={() => setModal(null)}
             />
@@ -946,17 +1016,25 @@ export function CookieAutoSyncTable({
             title={cookieRouteSectionTitle(COOKIE_ROUTE_SHARE_TOC, "grant")}
           >
             <p className="cookie-route-modal__note">
-              Grant Load or Sync by Hub User ID (e.g. CS00761) or email. Manage stays with route owner only.
+              Enter Hub User ID (e.g. CS00642) or email — User ID maps to the workspace auth email automatically.
             </p>
+            {shareBlocked ? (
+              <p className="rounded-lg border border-amber-400/20 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-100">
+                Route is not published to cloud. Save the route from the directory first.
+              </p>
+            ) : null}
             <div className={HUB_TOOL_DETAIL_FORM_GRID_3_CLASS}>
               <label className="block min-w-0">
                 <HubFormFieldLabel icon={Mail}>User ID or email</HubFormFieldLabel>
                 <input
                   className="field auth-gate-field w-full"
                   value={shareEmail}
-                  placeholder="CS00761 or user@example.com"
+                  placeholder="CS00642 or user@example.com"
                   onChange={(event) => setShareEmail(event.target.value)}
                 />
+                {granteeSharePreview ? (
+                  <p className="mt-1 text-[10px] text-indigo-200/80">{granteeSharePreview}</p>
+                ) : null}
               </label>
               <HubModalFilterField
                 filterKey="access"
@@ -971,60 +1049,55 @@ export function CookieAutoSyncTable({
         </CookieRouteFormModal>
       ) : null}
 
-      {vaultError ? (
-        <p className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-          {vaultError}
-        </p>
-      ) : null}
-
-      <P0020DirectoryScreen
-        items={sortedFilteredRows}
-        viewMode={viewMode}
-        resetKey={routeFilterResetKey}
-        cardGridAriaLabel="Route cards pages"
-        empty={
-          <p className="hub-users-empty rounded-lg border border-white/5 bg-white/[.02] px-3 py-6 text-center text-[12px] text-[var(--muted)]">
-            {rows.length === 0 ? "No active routes — click Add route." : "No routes match search or filters."}
-          </p>
-        }
-        renderCard={(row) => {
-          const vault = row.binding.noteId
-            ? lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain)
-            : undefined;
-          const checked = selectedIds.includes(row.binding.id);
-          return (
-            <CookieRouteCard
-              key={row.binding.id}
-              row={row}
-              vault={vault}
-              checked={checked}
-              onOpen={() => {
-                prefetchNoteCookieMembers(row.binding.noteId);
-                onSelect?.(row.binding.id);
-                setModal({ type: "detail", id: row.binding.id });
-              }}
-              onSelect={() => onSelect?.(row.binding.id)}
-              onCheck={(next) => toggleSelected(row.binding.id, next)}
+      {coldNotesLoad ? (
+        <CookieDirectorySkeleton />
+      ) : (
+        <P0020DirectoryScreen
+          items={sortedFilteredRows}
+          viewMode={viewMode}
+          resetKey={routeFilterResetKey}
+          cardGridAriaLabel="Route cards pages"
+          empty={
+            <p className="hub-users-empty rounded-lg border border-white/5 bg-white/[.02] px-3 py-6 text-center text-[12px] text-[var(--muted)]">
+              {rows.length === 0 ? "No active routes — click Add route." : "No routes match search or filters."}
+            </p>
+          }
+          renderCard={(row) => {
+            const vault = row.binding.noteId
+              ? lookupVaultRow(vaultByKey, row.binding.noteId, row.binding.domain)
+              : undefined;
+            const checked = selectedIds.includes(row.binding.id);
+            return (
+              <CookieRouteCard
+                key={row.binding.id}
+                row={row}
+                vault={vault}
+                checked={checked}
+                onOpen={() => openRouteDetail(row.binding.id, row.binding.noteId)}
+                onSelect={() => onSelect?.(row.binding.id)}
+                onCheck={(next) => toggleSelected(row.binding.id, next)}
+              />
+            );
+          }}
+          table={
+            <CookieRoutesDirectoryTable
+              rows={sortedFilteredRows}
+              resetKey={routeFilterResetKey}
+              loading={loading}
+              totalRowCount={rows.length}
+              selectedIds={selectedIds}
+              selectedBindingId={selectedBindingId}
+              vaultByKey={vaultByKey}
+              sortKey={listPrefs.sort}
+              sortDir={cookieTableSortDir}
+              onSort={handleCookieTableSort}
+              onSelect={onSelect}
+              onOpenDetail={openRouteDetail}
+              onToggleSelect={toggleSelected}
             />
-          );
-        }}
-        table={
-          <CookieRoutesDirectoryTable
-            rows={sortedFilteredRows}
-            resetKey={routeFilterResetKey}
-            loading={loading}
-            totalRowCount={rows.length}
-            selectedIds={selectedIds}
-            selectedBindingId={selectedBindingId}
-            vaultByKey={vaultByKey}
-            sortKey={listPrefs.sort}
-            sortDir={cookieTableSortDir}
-            onSort={handleCookieTableSort}
-            onSelect={onSelect}
-            onToggleSelect={toggleSelected}
-          />
-        }
-      />
+          }
+        />
+      )}
 
       {detailRow ? (
         <CookieRouteDetailModal
@@ -1090,10 +1163,6 @@ export function CookieAutoSyncTable({
             </div>
           </CookieRouteModalSection>
         </CookieRouteFormModal>
-      ) : null}
-
-      {loading && notes.length === 0 ? (
-        <p className="py-3 text-center text-[11px] text-[var(--muted)]">Loading notes…</p>
       ) : null}
 
       {deleting.length > 0 && onRemove ? (

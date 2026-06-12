@@ -1,0 +1,32 @@
+---
+description: P0020 Cookie Auto — vault sync health UX (toolbar chip only)
+globs:
+  - Tool/P0020-Data-Box/src/features/cookie/**
+  - P0020-Data-Box/src/features/cookie/**
+alwaysApply: false
+---
+
+# P0020 Cookie vault health
+
+## Never use inline banners for vault/network errors
+
+- **Do not** add `inline-banner`, `HubAlert`, or yellow error strips for cookie vault fetch failures, `Failed to fetch`, or transient Supabase errors.
+- **Do** surface state via `HubHealthChip` from `@tool-workspace/hub-ui` in toolbar/header chips (`synced` | `stale` | `offline`).
+- **Do** keep last-good data in `cookie-vault-cache` (sessionStorage) and set health to `stale` while retrying silently.
+
+## Implementation contract
+
+| Concern | SSOT |
+|--------|------|
+| Health chip UI | `packages/hub-ui` → `HubHealthChip` |
+| Vault map + health | `useCookieVaultMap` → `vaultHealth` |
+| Cache | `cookie-vault-cache.ts` |
+| Auth before RPC | `ensureDataBoxAuth()` in `cookieVaultRepository` |
+
+## Labels (English UI)
+
+- `synced` → **Vault**
+- `stale` → **Vault stale** (cached rows visible)
+- `offline` → **Vault offline**
+
+`SupabaseMigrateBanner` on Cookie tab is schema migration only — not a substitute for vault error banners.

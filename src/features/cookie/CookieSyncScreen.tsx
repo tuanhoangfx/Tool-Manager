@@ -35,70 +35,6 @@ import { EXTENSION_BUILD } from "./extensionBuildInfo";
 import { PageHeader } from "../../components/PageHeader";
 import { getOfflineMode } from "../../lib/offlineMode";
 
-type BridgeStatusBadge = {
-  label: string;
-  tone: "ready" | "busy" | "warn" | "error";
-  title: string;
-};
-
-function BridgeStatusIndicator({ status }: { status: BridgeStatusBadge }) {
-  const dotClass =
-    status.tone === "ready"
-      ? "bg-emerald-400"
-      : status.tone === "busy"
-        ? "bg-amber-300"
-        : status.tone === "error"
-          ? "bg-rose-400"
-          : "bg-slate-300";
-  const ringClass =
-    status.tone === "ready"
-      ? "border-emerald-400/35 text-emerald-200"
-      : status.tone === "busy"
-        ? "border-amber-400/35 text-amber-100"
-        : status.tone === "error"
-          ? "border-rose-400/35 text-rose-200"
-          : "border-white/10 text-[var(--muted)]";
-
-  return (
-    <span
-      className={`inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 rounded-lg border bg-[var(--panel-2)] px-2.5 text-[11px] font-medium ${ringClass}`}
-      title={`Extension bridge · ${status.title}`}
-    >
-      <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} aria-hidden />
-      {status.label}
-    </span>
-  );
-}
-
-function bridgeStatusFromState({
-  schemaHealth,
-  schemaLoading,
-}: {
-  schemaHealth: ReturnType<typeof useCookieSchemaHealth>["health"];
-  schemaLoading: boolean;
-}): BridgeStatusBadge {
-  if (schemaHealth && !schemaHealth.ok) {
-    const failed = schemaHealth.checks.find((check) => !check.ok)?.name ?? "schema";
-    return {
-      label: "Cloud",
-      tone: "error",
-      title: `Cloud schema needs attention: ${failed}`,
-    };
-  }
-  if (schemaLoading && !schemaHealth) {
-    return {
-      label: "Check",
-      tone: "busy",
-      title: "Checking cloud schema readiness",
-    };
-  }
-  return {
-    label: "Ready",
-    tone: "ready",
-    title: "Cloud schema is ready. Sync and load run in the extension.",
-  };
-}
-
 function CookieSyncMain({
   session,
   shellMode,
@@ -113,7 +49,7 @@ function CookieSyncMain({
   const { notes, loading, refresh } = useNotes(session, { realtime: tabActive, enabled: tabActive });
   const { bindings, setBindings, addBinding, connectAndCache, updateBinding, removeBinding, pushToExtension } =
     useCookieBindings(notes);
-  const { vaultByKey, vaultError, refreshVault } = useCookieVaultMap(cloudSession, bindings, {
+  const { vaultByKey, refreshVault } = useCookieVaultMap(cloudSession, bindings, {
     enabled: tabActive,
   });
   const { health: schemaHealth, loading: schemaLoading, refresh: refreshSchemaHealth } =
@@ -221,10 +157,21 @@ function CookieSyncMain({
     [notes, offline, pushToExtension, pushToast, session, setBindings],
   );
 
+  const realtimeRefreshTimer = useRef(0);
   const onRealtimeRefresh = useCallback(() => {
-    void refreshVault();
-    void refreshCookieBridge({ silent: true });
+    window.clearTimeout(realtimeRefreshTimer.current);
+    realtimeRefreshTimer.current = window.setTimeout(() => {
+      void refreshVault({ silent: true });
+      void refreshCookieBridge({ silent: true });
+    }, 800);
   }, [refreshCookieBridge, refreshVault]);
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(realtimeRefreshTimer.current);
+    },
+    [],
+  );
 
   useNotesCookieRealtime(session, onRealtimeRefresh, tabActive && !offline);
 
@@ -311,19 +258,20 @@ function CookieSyncMain({
 
   const selectedBinding = bindings.find((b) => b.id === selectedBindingId);
 
+  const ensureRoutePublished = useCallback(
+    async (route: CookieBinding) => {
+      if (offline) return false;
+      const ok = await publishRouteToCloud(route, { silent: true });
+      if (ok) void refreshCookieBridge({ silent: true });
+      return ok;
+    },
+    [offline, publishRouteToCloud, refreshCookieBridge],
+  );
+
   const { renderAccessDetail } = useCookieRouteDetailRenderers(session, {
+    onEnsureRoutePublished: ensureRoutePublished,
     onShared: () => void refreshCloudRoutes({ silent: true }),
   });
-
-  const bridgeStatus = useMemo(
-    () => bridgeStatusFromState({ schemaHealth, schemaLoading }),
-    [schemaHealth, schemaLoading],
-  );
-  const toolbarBridgeKey = `${bridgeStatus.tone}:${bridgeStatus.label}:${schemaHealth?.ok ?? "unknown"}`;
-
-  const bridgeStatusChip = useMemo(() => <BridgeStatusIndicator status={bridgeStatus} />, [bridgeStatus]);
-
-  const pageHeaderActions = useMemo(() => <>{bridgeStatusChip}</>, [bridgeStatusChip]);
 
   return (
     <>
@@ -339,7 +287,6 @@ function CookieSyncMain({
           <PageHeader
             title="Cookie sync"
             desc={`Domain → note binding · vault · extension v${EXTENSION_BUILD.version} (${EXTENSION_BUILD.updated})`}
-            actions={pageHeaderActions}
           />
         </>
       ) : null}
@@ -422,9 +369,7 @@ function CookieSyncMain({
             });
           }}
           vaultByKey={vaultByKey}
-          vaultError={vaultError}
-          toolbarActions={null}
-          toolbarActionsKey=""
+          onEnsureRoutePublished={ensureRoutePublished}
           renderAccessDetail={renderAccessDetail}
         />
 

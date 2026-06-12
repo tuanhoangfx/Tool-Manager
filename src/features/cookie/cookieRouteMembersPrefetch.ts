@@ -36,23 +36,54 @@ export function subscribeNoteCookieMembersCache(listener: () => void) {
   };
 }
 
+type FetchMembersOpts = { refresh?: boolean };
+
+/** Single deduped members fetch — used by prefetch, batch counts, and detail modal. */
+export function fetchNoteCookieMembers(
+  noteId: string | null | undefined,
+  opts?: FetchMembersOpts,
+): Promise<MembersResult> {
+  const id = noteId?.trim();
+  if (!id) return Promise.resolve({ ok: false, error: "note_id_required" });
+
+  if (opts?.refresh) {
+    resolved.delete(id);
+    inflight.delete(id);
+  }
+
+  const hit = resolved.get(id);
+  if (hit) return Promise.resolve(hit);
+
+  const pending = inflight.get(id);
+  if (pending) return pending;
+
+  const promise = listNoteCookieMembers(id)
+    .then((result) => {
+      cacheResult(id, result);
+      return result;
+    })
+    .finally(() => {
+      inflight.delete(id);
+    });
+  inflight.set(id, promise);
+  return promise;
+}
+
 /** Warm members list on route card hover — route detail opens with data ready. */
 export function prefetchNoteCookieMembers(noteId: string | null | undefined) {
+  void fetchNoteCookieMembers(noteId);
+}
+
+/** Any settled cache entry — used for share count (failed → treat as private). */
+export function getResolvedNoteCookieMembers(noteId: string | null | undefined): MembersResult | undefined {
   const id = noteId?.trim();
-  if (!id || inflight.has(id)) return;
-  if (resolved.get(id)?.ok) return;
-  const pending = listNoteCookieMembers(id).then((result) => {
-    cacheResult(id, result);
-    return result;
-  });
-  inflight.set(id, pending);
+  if (!id) return undefined;
+  return resolved.get(id);
 }
 
 /** Synchronous hit after hover prefetch or prior detail open. */
 export function getCachedNoteCookieMembers(noteId: string | null | undefined): MembersResult | undefined {
-  const id = noteId?.trim();
-  if (!id) return undefined;
-  const hit = resolved.get(id);
+  const hit = getResolvedNoteCookieMembers(noteId);
   return hit?.ok ? hit : undefined;
 }
 
@@ -72,14 +103,8 @@ export function invalidateNoteCookieMembersCache(noteId: string | null | undefin
 export function prefetchNoteCookieMembersBatch(noteIds: readonly string[]) {
   for (const noteId of noteIds) prefetchNoteCookieMembers(noteId);
 }
-export function takePrefetchedNoteCookieMembers(noteId: string): Promise<MembersResult> | undefined {
-  const id = noteId.trim();
-  const pending = inflight.get(id);
-  if (pending) {
-    inflight.delete(id);
-    return pending;
-  }
-  const hit = resolved.get(id);
-  if (hit?.ok) return Promise.resolve(hit);
-  return undefined;
+
+/** @deprecated Use {@link fetchNoteCookieMembers} */
+export function takePrefetchedNoteCookieMembers(noteId: string): Promise<MembersResult> {
+  return fetchNoteCookieMembers(noteId);
 }

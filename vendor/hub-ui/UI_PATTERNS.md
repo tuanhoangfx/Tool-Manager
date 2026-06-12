@@ -606,7 +606,8 @@ Pass as `filterRowActions` on `HubDirectoryScreen` — `FilterBar` aligns end (`
 
 | Component | When to use |
 |-----------|-------------|
-| `HubModalDirectorySection` | **Any** `HubToolDetailSection` that has FilterBar + table (User Access tools, Cookie Route access, future P0016) |
+| `HubModalDirectorySection` | **Any** `HubToolDetailSection` that has FilterBar + table (User Access tools, Cookie Route access, P0016 modals) |
+| `HubModalDirectoryFilterBar` | **Mandatory** modal search/filter — two-row `layout="hub"`, `shortcutScope`, no Active: row |
 | `HubToolDetailIdentityHeader` | Modal header row — avatar/icon · title · trailing badges (User Access, Cookie Route, **Hub Tool detail**) |
 | `HubModalDirectoryEmptyFiltered` | Zero rows after search/filters — same empty box as P0004 User Access |
 | `HubPaginatedDataTable` | Modal table **≤6 columns**, simple rows, optional checkbox in `renderRow` (P0004 User Access tools) |
@@ -625,13 +626,14 @@ HubToolDetailModal
   └─ HubToolDetailSection
        └─ HubModalDirectorySection
             ├─ banner? / error?
-            ├─ FilterBar layout="inline"
+            ├─ HubModalDirectoryFilterBar (shortcutScope + toolbar + row2Actions)
             └─ HubPaginatedDataTable | HubDirectoryTableShell
 ```
 
 **Rules**
 
-- Modal sections: **always** `FilterBar layout="inline"` inside `HubModalDirectorySection` — never `layout="hub"`, never local `hub-*-access-panel` wrappers.
+- Modal sections: **always** `HubModalDirectoryFilterBar` inside `HubModalDirectorySection` — never raw `FilterBar layout="inline"` (Active: row), never local `hub-*-access-panel` wrappers.
+- Each modal section needs a unique `shortcutScope` (e.g. `user-access-tools`, `cookie-route-access-{id}`).
 - Do **not** use `--flush` / negative-margin section hacks — section padding is golden default.
 - Pick table primitive by column complexity (see Table pager section above); both sit inside the same `HubModalDirectorySection`.
 - Route About: `HubRouteAboutSummary` — chips + TM sync id + Note ID; publish/share live in About (not access table Route column).

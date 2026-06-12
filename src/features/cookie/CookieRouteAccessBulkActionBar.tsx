@@ -29,7 +29,7 @@ export function CookieRouteAccessBulkActionBar({
         type="button"
         disabled={!canManage || shareBusy}
         onClick={onAdd}
-        title={canManage ? "Share access by email" : "Owner or manager only"}
+        title={canManage ? "Share access by User ID or email" : "Owner or manager only"}
         className="hub-bulk-action-btn hub-bulk-action-btn--add"
       >
         <Plus size={14} aria-hidden />

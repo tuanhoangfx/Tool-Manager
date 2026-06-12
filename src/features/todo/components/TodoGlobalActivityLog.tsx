@@ -2,8 +2,12 @@ import { useCallback, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { History } from "lucide-react";
 import {
+  HubModalDirectoryEmptyFiltered,
+  HubModalDirectoryFilterBar,
+  HubResultCount,
   TabButton,
   compactIconSize,
+  type FilterValues,
 } from "@tool-workspace/hub-ui";
 
 import { supabase } from "../lib/supabase";
@@ -14,7 +18,6 @@ import { formatAbsoluteDateTime } from "../lib/taskUtils";
 import { formatActivityLogMessage } from "../lib/activity-log-format";
 import Avatar from "./common/Avatar";
 import CopyIdButton from "./common/CopyIdButton";
-import { TodoHubSearchInput } from "./common/TodoHubSearchInput";
 import { useCachedSupabaseQuery } from "../hooks/useCachedSupabaseQuery";
 
 type Props = {
@@ -28,6 +31,7 @@ type Props = {
 export function TodoGlobalActivityLog({ session, onLogClick, taskIdFilter = null }: Props) {
   const { t, language, timezone } = useSettings();
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterValues, setFilterValues] = useState<FilterValues>({});
   const [tab, setTab] = useState<"all" | "task">(taskIdFilter ? "task" : "all");
 
   const fetchLogsQuery = useCallback(async () => {
@@ -59,36 +63,46 @@ export function TodoGlobalActivityLog({ session, onLogClick, taskIdFilter = null
 
   return (
     <div className="space-y-3">
-      {taskIdFilter ? (
-        <div className="flex gap-1">
-          <TabButton
-            active={tab === "all"}
-            onClick={() => setTab("all")}
-            icon={<History size={compactIconSize(12)} aria-hidden />}
-          >
-            All
-          </TabButton>
-          <TabButton
-            active={tab === "task"}
-            onClick={() => setTab("task")}
-            icon={<History size={compactIconSize(12)} aria-hidden />}
-          >
-            This task
-          </TabButton>
-        </div>
-      ) : null}
-      <TodoHubSearchInput
-        value={searchTerm}
-        onChange={setSearchTerm}
-        placeholder={t.log_searchPlaceholder}
+      <HubModalDirectoryFilterBar
         shortcutScope="todo-log-activity"
+        filters={[]}
+        query={searchTerm}
+        onQueryChange={setSearchTerm}
+        values={filterValues}
+        onValuesChange={setFilterValues}
+        placeholder={t.log_searchPlaceholder}
+        toolbar={
+          <HubResultCount icon={History} shown={filteredLogs.length} total={safeLogs.length} label="entries" />
+        }
+        row2Leading={
+          taskIdFilter ? (
+            <div className="flex gap-1">
+              <TabButton
+                active={tab === "all"}
+                onClick={() => setTab("all")}
+                icon={<History size={compactIconSize(12)} aria-hidden />}
+              >
+                All
+              </TabButton>
+              <TabButton
+                active={tab === "task"}
+                onClick={() => setTab("task")}
+                icon={<History size={compactIconSize(12)} aria-hidden />}
+              >
+                This task
+              </TabButton>
+            </div>
+          ) : null
+        }
       />
       {loading && safeLogs.length === 0 ? (
         <div className="flex h-32 items-center justify-center">
           <SpinnerIcon size={24} className="animate-spin text-[var(--accent-color)]" />
         </div>
       ) : filteredLogs.length === 0 ? (
-        <p className="py-6 text-center text-xs text-[var(--muted)]">{t.noActivity}</p>
+        <HubModalDirectoryEmptyFiltered>
+          {safeLogs.length === 0 ? t.noActivity : "No activity matches search."}
+        </HubModalDirectoryEmptyFiltered>
       ) : (
         <ul className="max-h-80 divide-y divide-white/5 overflow-y-auto">
           {filteredLogs.map((log) => {

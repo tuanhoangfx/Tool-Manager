@@ -5,6 +5,7 @@ type Listener = () => void;
 
 let channel: RealtimeChannel | null = null;
 let boundUserId: string | null = null;
+let boundUserEmail: string | null = null;
 const listeners = new Set<Listener>();
 let notifyTimer = 0;
 
@@ -27,16 +28,19 @@ function scheduleNotify() {
   }, 400);
 }
 
-function ensureChannel(userId: string) {
-  if (channel && boundUserId === userId) return;
+function ensureChannel(userId: string, userEmail?: string | null) {
+  const emailKey = userEmail?.trim().toLowerCase() || null;
+  if (channel && boundUserId === userId && boundUserEmail === emailKey) return;
 
   if (channel) {
     void supabase.removeChannel(channel);
     channel = null;
     boundUserId = null;
+    boundUserEmail = null;
   }
 
   boundUserId = userId;
+  boundUserEmail = emailKey;
   channel = supabase
     .channel(`notes-cookie:${userId}`)
     .on(
@@ -104,7 +108,24 @@ function ensureChannel(userId: string) {
       () => {
         scheduleNotify();
       },
-    )
+    );
+
+  if (emailKey) {
+    channel = channel!.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "note_cookie_members",
+        filter: `grantee_email=eq.${emailKey}`,
+      },
+      () => {
+        scheduleNotify();
+      },
+    );
+  }
+
+  channel = channel!
     .on(
       "postgres_changes",
       {
@@ -140,13 +161,18 @@ function teardownIfIdle() {
     void supabase.removeChannel(channel);
     channel = null;
     boundUserId = null;
+    boundUserEmail = null;
   }
 }
 
 /** One Supabase channel per user — safe for useNotes + useNote + Cookie screen together */
-export function addNotesCookieListener(userId: string, listener: Listener): () => void {
+export function addNotesCookieListener(
+  userId: string,
+  listener: Listener,
+  userEmail?: string | null,
+): () => void {
   listeners.add(listener);
-  ensureChannel(userId);
+  ensureChannel(userId, userEmail);
   return () => {
     listeners.delete(listener);
     teardownIfIdle();

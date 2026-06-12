@@ -1,7 +1,7 @@
 {
   "name": "p0020-data-box",
   "private": true,
-  "version": "4.3.28",
+  "version": "4.3.29",
   "packageManager": "pnpm@9.15.9",
   "type": "module",
   "description": "P0020-Data-Box — unified data workspace for Notes, 2FA, secure cookie vault, and browser agents.",
@@ -39,6 +39,7 @@
     "sync:cookie-icons": "node scripts/sync-cookie-brand-icons.mjs",
     "verify:cookie-icons": "node scripts/verify-cookie-brand-icons.mjs",
     "verify:tab-load": "node ../scripts/agent-verify-tab-load.mjs --code P0020",
+    "smoke:tab-loading": "node scripts/smoke-tab-loading.mjs",
     "supabase:version": "supabase --version",
     "supabase:query:file": "node scripts/supabase-query-file.mjs",
     "supabase:apply:versioned": "node scripts/supabase-query-file.mjs supabase/migrations/20260527113000_note_cookie_vault_versioned_sync.sql",

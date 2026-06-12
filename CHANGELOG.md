@@ -1,3 +1,21 @@
+# Changelog
+
+## 2026-06-12 - P0020 version sync
+
+- Version: `4.3.29`
+- Timestamp: 2026-06-12 15:01 (UTC+7)
+- Type: Patch
+- Status: Draft
+
+### Changes
+
+- Align CHANGELOG with package.json v4.3.29.
+
+### Verification
+
+- pending
+
+---
 # Changelog - P0020-Data-Box
 
 > **Ship keywords:** `Git P0020` | `Push P0020` | `Release P0020`  

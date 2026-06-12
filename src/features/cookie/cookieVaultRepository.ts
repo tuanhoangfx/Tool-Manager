@@ -1,3 +1,4 @@
+import { ensureDataBoxAuth } from "../../lib/ensure-data-box-auth";
 import { supabase } from "../../lib/supabase";
 import { cookieRouteDomainKey } from "./cookieRouteDomain";
 import type { CookieVaultRow } from "./useCookieVaultMap";
@@ -5,6 +6,11 @@ import type { CookieVaultRow } from "./useCookieVaultMap";
 export async function fetchCookieVaultRows(noteIds: string[]) {
   const uniqueNoteIds = [...new Set(noteIds.filter(Boolean))];
   if (!uniqueNoteIds.length) return { data: [] as CookieVaultRow[], error: null };
+
+  const session = await ensureDataBoxAuth();
+  if (!session) {
+    return { data: [], error: new Error("Sign in to load cookie vault.") };
+  }
 
   const accessible = await supabase.rpc("note_cookie_vault_summaries_accessible");
   if (!accessible.error && Array.isArray(accessible.data)) {

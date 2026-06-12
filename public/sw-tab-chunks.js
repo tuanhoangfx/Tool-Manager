@@ -1,6 +1,10 @@
-/* P0020 — stale-while-revalidate cache for lazy tab chunks (prod reload). */
-const CACHE = "p0020-tab-chunks-v1";
-const CHUNK_RE = /\/assets\/(feature-(todo|twofa|cookie|system)|index-)[^/?#]*/i;
+/* P0020 — tab chunk cache (prod reload).
+ * index-* main bundle: network-first (deploy must show immediately).
+ * feature-* lazy chunks: stale-while-revalidate.
+ */
+const CACHE = "p0020-tab-chunks-v2";
+const INDEX_RE = /\/assets\/index-[^/?#]*/i;
+const FEATURE_RE = /\/assets\/feature-(todo|twofa|cookie|system)[^/?#]*/i;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());
@@ -18,7 +22,25 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = event.request.url;
-  if (!CHUNK_RE.test(url)) return;
+
+  if (INDEX_RE.test(url)) {
+    event.respondWith(
+      caches.open(CACHE).then(async (cache) => {
+        try {
+          const res = await fetch(event.request);
+          if (res.ok) void cache.put(event.request, res.clone());
+          return res;
+        } catch {
+          const cached = await cache.match(event.request);
+          if (cached) return cached;
+          throw new Error("index bundle offline and not cached");
+        }
+      }),
+    );
+    return;
+  }
+
+  if (!FEATURE_RE.test(url)) return;
 
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {

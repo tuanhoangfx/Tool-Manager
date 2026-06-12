@@ -14,16 +14,6 @@ const HUB_ROUTE_ACCESS_ROLE_FILTER: FilterDef = {
   ],
 };
 
-const HUB_ROUTE_ACCESS_PERMISSION_FILTER: FilterDef = {
-  key: "permission",
-  label: "Permission",
-  showAllLabel: true,
-  options: [
-    { value: "load", label: "Load", color: "#34d399" },
-    { value: "sync", label: "Sync", color: "#818cf8" },
-  ],
-};
-
 /** Publish state per route — only meaningful when multiple routes are listed. */
 const HUB_ROUTE_ACCESS_PUBLISH_FILTER: FilterDef = {
   key: "status",
@@ -37,11 +27,7 @@ const HUB_ROUTE_ACCESS_PUBLISH_FILTER: FilterDef = {
 
 export function hubRouteAccessFilterDefs(scope: HubRouteAccessFilterScope): FilterDef[] {
   if (scope === "multi-route") {
-    return [
-      HUB_ROUTE_ACCESS_ROLE_FILTER,
-      HUB_ROUTE_ACCESS_PERMISSION_FILTER,
-      HUB_ROUTE_ACCESS_PUBLISH_FILTER,
-    ];
+    return [HUB_ROUTE_ACCESS_ROLE_FILTER, HUB_ROUTE_ACCESS_PUBLISH_FILTER];
   }
-  return [HUB_ROUTE_ACCESS_ROLE_FILTER, HUB_ROUTE_ACCESS_PERMISSION_FILTER];
+  return [HUB_ROUTE_ACCESS_ROLE_FILTER];
 }

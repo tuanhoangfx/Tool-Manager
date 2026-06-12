@@ -21,8 +21,7 @@ import {
   prefetchNotesListBackground,
   prefetchWorkspaceTabsBackground,
 } from "../../lib/hub-background-prefetch";
-import { prefetchWorkspaceTab, prefetchWorkspaceTabIdle } from "../../lib/workspace-tab-prefetch";
-import { prefetchSystemTab, prefetchSystemTabIdle } from "../../lib/system-tab-prefetch";
+import { WorkspaceEagerTabPrefetch } from "../../lib/workspace-eager-tabs";
 import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
 import { NotesAuthGate } from "../notes/NotesAuthGate";
 import { WorkspaceShellTabFrame } from "./WorkspaceShellTabFrame";
@@ -72,36 +71,10 @@ function WorkspaceAppInner() {
 
   useEffect(() => {
     prefetchNotesListBackground();
-    prefetchWorkspaceTab("twofa");
-    prefetchWorkspaceTab("todo");
-    prefetchWorkspaceTabIdle("cookie", 600);
-    prefetchSystemTabIdle();
-    const warm = () => {
-      prefetchNotesListBackground();
-      prefetchWorkspaceTab("twofa");
-      prefetchWorkspaceTab("todo");
-      prefetchWorkspaceTab("cookie");
-      prefetchSystemTab();
-    };
-    const idle = window.requestIdleCallback?.(warm, { timeout: 300 });
-    if (idle == null) {
-      const t = window.setTimeout(warm, 200);
-      return () => window.clearTimeout(t);
-    }
-    return () => window.cancelIdleCallback(idle);
   }, []);
 
   useEffect(() => {
     if (!session) return;
-    setVisited((prev) => {
-      const next = new Set(prev);
-      for (const tab of NAV_SCREENS) next.add(tab);
-      return next;
-    });
-    prefetchWorkspaceTab("twofa");
-    prefetchWorkspaceTab("todo");
-    prefetchWorkspaceTab("cookie");
-    prefetchSystemTab();
     prefetchWorkspaceTabsBackground(session);
   }, [session]);
 
@@ -135,6 +108,7 @@ function WorkspaceAppInner() {
       activeScreen={activeScreenId}
       bootLog={{ scope: "P0020", message: "Data-Box workspace started", screen: activeScreenId }}
     >
+    <WorkspaceEagerTabPrefetch />
     <div className="hub-app theme-hub flex h-full min-h-0 min-h-dvh w-full overflow-hidden">
       <WorkspaceSidebar
         screen={activeNav}
@@ -160,14 +134,14 @@ function WorkspaceAppInner() {
           </WorkspaceVisitedTabPanel>
 
           <WorkspaceVisitedTabPanel tabId="todo" active={screen === "todo"} visited={visited}>
-            <Suspense fallback={<WorkspaceLoadingView screen="todo" variant="overlay" />}>
+            <Suspense fallback={<WorkspaceLoadingView screen="todo" enabled={screen === "todo"} />}>
               <TodoScreen tabActive={screen === "todo"} />
             </Suspense>
           </WorkspaceVisitedTabPanel>
 
           <WorkspaceVisitedTabPanel tabId="twofa" active={screen === "twofa"} visited={visited}>
             <WorkspaceShellTabFrame screen="twofa" active={screen === "twofa"}>
-              <Suspense fallback={<WorkspaceLoadingView screen="twofa" variant="overlay" />}>
+              <Suspense fallback={<WorkspaceLoadingView screen="twofa" enabled={screen === "twofa"} />}>
                 <TwofaManagerScreen shellMode tabActive={screen === "twofa"} />
               </Suspense>
             </WorkspaceShellTabFrame>
@@ -175,7 +149,7 @@ function WorkspaceAppInner() {
 
           <WorkspaceVisitedTabPanel tabId="cookie" active={screen === "cookie"} visited={visited}>
             <WorkspaceShellTabFrame screen="cookie" active={screen === "cookie"}>
-              <Suspense fallback={<WorkspaceLoadingView screen="cookie" variant="overlay" />}>
+              <Suspense fallback={<WorkspaceLoadingView screen="cookie" enabled={screen === "cookie"} />}>
                 <CookieSyncScreen shellMode tabActive={screen === "cookie"} />
               </Suspense>
             </WorkspaceShellTabFrame>
@@ -183,7 +157,7 @@ function WorkspaceAppInner() {
 
           <WorkspaceVisitedTabPanel tabId="system" active={screen === "system"} visited={visited}>
             <WorkspaceShellTabFrame screen="system" active={screen === "system"}>
-              <Suspense fallback={<WorkspaceLoadingView screen="system" variant="overlay" />}>
+              <Suspense fallback={<WorkspaceLoadingView screen="system" enabled={screen === "system"} />}>
                 <SystemDesignTemplateScreen />
               </Suspense>
             </WorkspaceShellTabFrame>

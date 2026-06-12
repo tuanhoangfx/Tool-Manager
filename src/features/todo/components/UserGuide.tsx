@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { XIcon, SearchIcon, PlayIcon, ClipboardListIcon, UsersIcon, SettingsIcon, KeyboardIcon } from "./Icons";
+import { BookOpen } from "lucide-react";
+import {
+  HubModalDirectoryEmptyFiltered,
+  HubModalDirectoryFilterBar,
+  HubResultCount,
+  type FilterValues,
+} from "@tool-workspace/hub-ui";
+import { XIcon, PlayIcon, ClipboardListIcon, UsersIcon, SettingsIcon, KeyboardIcon } from "./Icons";
 import { useSettings } from "../context/SettingsContext";
 import type { Translation } from "../types";
 
@@ -92,6 +99,7 @@ const guideSections: Array<{
 const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
     const { t } = useSettings();
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterValues, setFilterValues] = useState<FilterValues>({});
 
     const filteredSections = useMemo(() => {
         if (!searchTerm.trim()) {
@@ -155,19 +163,24 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
                     </button>
                 </div>
 
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder={t.userGuide_searchPlaceholder}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)]"
-                        />
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <SearchIcon size={20} className="text-gray-400" />
-                        </div>
-                    </div>
+                <div className="border-b border-gray-200 p-4 dark:border-gray-700">
+                    <HubModalDirectoryFilterBar
+                        shortcutScope="todo-user-guide"
+                        filters={[]}
+                        query={searchTerm}
+                        onQueryChange={setSearchTerm}
+                        values={filterValues}
+                        onValuesChange={setFilterValues}
+                        placeholder={t.userGuide_searchPlaceholder}
+                        toolbar={
+                            <HubResultCount
+                                icon={BookOpen}
+                                shown={filteredSections.length}
+                                total={guideSections.length}
+                                label="sections"
+                            />
+                        }
+                    />
                 </div>
 
                 <div className="overflow-y-auto p-6">
@@ -189,7 +202,9 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
                            )
                         })
                     ) : (
-                        <p className="text-center text-gray-500 dark:text-gray-400 py-10">No results found for "{searchTerm}".</p>
+                        <HubModalDirectoryEmptyFiltered>
+                            No results found for &ldquo;{searchTerm}&rdquo;.
+                        </HubModalDirectoryEmptyFiltered>
                     )}
                 </div>
             </div>

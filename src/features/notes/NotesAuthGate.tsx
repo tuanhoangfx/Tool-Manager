@@ -52,11 +52,11 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
             mode === "signup" ? "signup" : "signin",
           );
           if (!dataSession) {
-            return {
-              error:
-                dataError ??
-                "Tool Hub sign-in succeeded but Data Box session failed. Check Data Box Supabase status or try again.",
-            };
+            const message =
+              typeof dataError === "string" && dataError.trim()
+                ? dataError
+                : "Tool Hub sign-in succeeded but Data Box session failed. Check Data Box Supabase status or try again.";
+            return { error: message };
           }
           setOfflineMode(false);
           adoptSession(dataSession);

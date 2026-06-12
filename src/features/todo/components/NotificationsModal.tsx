@@ -1,15 +1,20 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { Bell } from "lucide-react";
+import {
+  HubModalDirectoryEmptyFiltered,
+  HubModalDirectoryFilterBar,
+  HubResultCount,
+  type FilterValues,
+} from "@tool-workspace/hub-ui";
 import { supabase } from "../lib/supabase";
 import { useSettings } from "../context/SettingsContext";
 import { SpinnerIcon, BellIcon } from "./Icons";
 import type { Notification } from "../types";
 import { formatAbsoluteDateTime } from "../lib/taskUtils";
 import Avatar from "./common/Avatar";
-import { HubMultiFilterDropdown } from "@tool-workspace/hub-ui";
 import { buildTodoMultiFilterDef } from "../todo-hub-filter-helpers";
 import CopyIdButton from "./common/CopyIdButton";
-import { TodoHubSearchInput } from "./common/TodoHubSearchInput";
 import GenericListModal from "./GenericListModal";
 import { useCachedSupabaseQuery } from "../hooks/useCachedSupabaseQuery";
 import type { Session } from '@supabase/supabase-js';
@@ -25,9 +30,7 @@ interface NotificationsModalProps {
 const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose, onNotificationClick, setUnreadCount, session }) => {
     const { t, language, timezone } = useSettings();
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterActors, setFilterActors] = useState<string[]>([]);
-    const [filterTypes, setFilterTypes] = useState<string[]>([]);
-    const [filterReadStatuses, setFilterReadStatuses] = useState<string[]>([]);
+    const [filterValues, setFilterValues] = useState<FilterValues>({});
 
     const formatNotificationMessage = useCallback((notification: Notification) => {
         const actorName = notification.profiles?.full_name || 'Someone';
@@ -138,6 +141,15 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose
         [t.notif_status_read, t.notif_status_unread],
     );
 
+    const filterActors = filterValues.actor ?? [];
+    const filterTypes = filterValues.type ?? [];
+    const filterReadStatuses = filterValues.readStatus ?? [];
+
+    const notificationFilters = useMemo(
+        () => [actorFilterDef, typeFilterDef, statusFilterDef],
+        [actorFilterDef, statusFilterDef, typeFilterDef],
+    );
+
     const filteredNotifications = useMemo(() => {
         return safeNotifications.filter(notification => {
             const actorMatch = filterActors.length === 0 || (notification.actor_id && filterActors.includes(notification.actor_id));
@@ -159,29 +171,40 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose
     const hasUnread = safeNotifications.some(n => !n.is_read);
 
     const filterContent = (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
-            <TodoHubSearchInput
-                value={searchTerm}
-                onChange={setSearchTerm}
-                placeholder={t.notif_searchPlaceholder}
-                shortcutScope="todo-notifications"
-            />
-            <HubMultiFilterDropdown filter={actorFilterDef} selected={filterActors} onChange={setFilterActors} />
-            <HubMultiFilterDropdown filter={typeFilterDef} selected={filterTypes} onChange={setFilterTypes} />
-            <HubMultiFilterDropdown filter={statusFilterDef} selected={filterReadStatuses} onChange={setFilterReadStatuses} />
-        </div>
+        <HubModalDirectoryFilterBar
+            shortcutScope="todo-notifications"
+            placeholder={t.notif_searchPlaceholder}
+            filters={notificationFilters}
+            query={searchTerm}
+            onQueryChange={setSearchTerm}
+            values={filterValues}
+            onValuesChange={setFilterValues}
+            toolbar={
+                <HubResultCount
+                    icon={Bell}
+                    shown={filteredNotifications.length}
+                    total={safeNotifications.length}
+                    label="notifications"
+                />
+            }
+            row2Actions={
+                safeNotifications.length > 0 ? (
+                    <button
+                        type="button"
+                        onClick={() => void handleMarkAllAsRead()}
+                        disabled={!hasUnread}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-[var(--panel-2)] px-3 py-1.5 text-xs text-[var(--text)] hover:bg-white/5 disabled:opacity-50"
+                    >
+                        {t.mark_all_as_read}
+                    </button>
+                ) : null
+            }
+        />
     );
 
-    const footerContent = safeNotifications.length > 0 ? (
-        <div className="flex justify-between items-center px-2">
-            {loading && <span className="text-[10px] text-gray-400 italic">Refreshing...</span>}
-            <button 
-                onClick={handleMarkAllAsRead} 
-                disabled={!hasUnread}
-                className="text-xs font-semibold text-[var(--accent-color)] hover:underline disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
-            >
-                {t.mark_all_as_read}
-            </button>
+    const footerContent = loading && safeNotifications.length > 0 ? (
+        <div className="flex justify-end px-2">
+            <span className="text-[10px] text-[var(--muted)] italic">Refreshing…</span>
         </div>
     ) : null;
 
@@ -198,9 +221,17 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose
                     <SpinnerIcon size={32} className="animate-spin text-[var(--accent-color)]" />
                 </div>
             ) : filteredNotifications.length === 0 ? (
-                <div className="text-center text-gray-500 dark:text-gray-400 py-10 flex flex-col items-center h-full justify-center">
-                    <BellIcon size={40} className="mb-4 text-gray-400 dark:text-gray-500" />
-                    <p>{safeNotifications.length === 0 ? t.notifications_empty : "No notifications match your filters."}</p>
+                <div className="flex flex-col items-center py-6">
+                    {safeNotifications.length === 0 ? (
+                        <>
+                            <BellIcon size={40} className="mb-4 text-[var(--muted)]" />
+                            <p className="text-sm text-[var(--muted)]">{t.notifications_empty}</p>
+                        </>
+                    ) : (
+                        <HubModalDirectoryEmptyFiltered>
+                            No notifications match search or filters.
+                        </HubModalDirectoryEmptyFiltered>
+                    )}
                 </div>
             ) : (
                 <ul className="divide-y divide-gray-200 dark:divide-gray-700">

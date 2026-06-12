@@ -1,6 +1,7 @@
 export * from "./hub-login";
 export * from "./hub-auth-rate-limit";
 export * from "./hub-admin-recover-client";
+export * from "./hub-recover-api-base";
 export * from "./hub-auth-submit";
 export * from "./hub-session-labels";
 export * from "./hub-forgot-password";

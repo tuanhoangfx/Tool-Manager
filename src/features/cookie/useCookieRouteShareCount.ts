@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import {
-  getCachedNoteCookieMembers,
-  prefetchNoteCookieMembers,
+  fetchNoteCookieMembers,
+  getResolvedNoteCookieMembers,
   subscribeNoteCookieMembersCache,
 } from "./cookieRouteMembersPrefetch";
 
 function readShareCount(noteId: string | null | undefined): number | undefined {
-  const hit = getCachedNoteCookieMembers(noteId);
-  return hit?.ok ? hit.members.length : undefined;
+  const hit = getResolvedNoteCookieMembers(noteId);
+  if (!hit) return undefined;
+  return hit.ok ? hit.members.length : 0;
 }
 
 type Options = {
@@ -32,7 +33,7 @@ export function useCookieRouteShareCount(
       setShareCount(undefined);
       return;
     }
-    if (prefetch) prefetchNoteCookieMembers(id);
+    if (prefetch) void fetchNoteCookieMembers(id);
     setShareCount((prev) => readShareCount(id) ?? prev);
   }, [id, prefetch]);
 

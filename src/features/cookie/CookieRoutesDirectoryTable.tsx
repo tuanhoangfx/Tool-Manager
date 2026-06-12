@@ -176,6 +176,7 @@ type TableProps = {
   sortDir: HubSortDir;
   onSort: (key: CookieListSort) => void;
   onSelect?: (bindingId: string) => void;
+  onOpenDetail?: (bindingId: string, noteId: string) => void;
   onToggleSelect: (bindingId: string, checked: boolean) => void;
 };
 
@@ -193,6 +194,7 @@ export function CookieRoutesDirectoryTable(props: TableProps) {
     sortDir,
     onSort,
     onSelect,
+    onOpenDetail,
     onToggleSelect,
   } = props;
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
@@ -218,7 +220,10 @@ export function CookieRoutesDirectoryTable(props: TableProps) {
       onToggleSelect={(id) => onToggleSelect(id, !selectedSet.has(id))}
       selectAllLabel="Select all routes on this page"
       emptyMessage={loading ? "Loading routes…" : emptyMessage}
-      onRowClick={(row) => onSelect?.(row.binding.id)}
+      onRowClick={(row) => {
+        onOpenDetail?.(row.binding.id, row.binding.noteId);
+        onSelect?.(row.binding.id);
+      }}
       getRowClassName={(row) =>
         cookieRowClassName(row.binding.id, selectedSet, selectedBindingId)
       }

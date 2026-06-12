@@ -7,6 +7,7 @@ export function useNotesCookieRealtime(session: Session | null, onChange: () => 
   const onChangeRef = useRef(onChange);
 
   const userId = session?.user.id;
+  const userEmail = session?.user.email ?? null;
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -14,6 +15,6 @@ export function useNotesCookieRealtime(session: Session | null, onChange: () => 
 
   useEffect(() => {
     if (!userId || !enabled) return;
-    return addNotesCookieListener(userId, () => onChangeRef.current());
-  }, [userId, enabled]);
+    return addNotesCookieListener(userId, () => onChangeRef.current(), userEmail);
+  }, [userId, userEmail, enabled]);
 }

@@ -47,5 +47,6 @@ export { DisplayPrefs, type PrefItem } from "./DisplayPrefs";
 export { WorkspaceSidebar } from "./WorkspaceSidebar";
 export {
   WorkspaceLoadingView,
+  WorkspacePaneLoading,
   WORKSPACE_LOADING_PRESETS,
 } from "./HubLoadingView";

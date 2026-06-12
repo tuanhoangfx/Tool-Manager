@@ -10,6 +10,7 @@ const rows: RouteAccessRow[] = [
     role: "Owner",
     canApply: true,
     canPublish: true,
+    addedAt: null,
     expiresAt: null,
     member: null,
     selectable: false,
@@ -20,6 +21,7 @@ const rows: RouteAccessRow[] = [
     role: "Load",
     canApply: true,
     canPublish: false,
+    addedAt: "2026-06-01T10:00:00.000Z",
     expiresAt: null,
     member: null,
     selectable: true,
@@ -27,8 +29,11 @@ const rows: RouteAccessRow[] = [
 ];
 
 describe("access-filter-counts", () => {
-  it("single-route defs omit publish/status filter", () => {
+  it("single-route defs only expose Access facet", () => {
     expect(ACCESS_FILTER_DEFS).toEqual(hubRouteAccessFilterDefs("single-route"));
+    expect(ACCESS_FILTER_DEFS).toHaveLength(1);
+    expect(ACCESS_FILTER_DEFS[0]?.key).toBe("role");
+    expect(ACCESS_FILTER_DEFS.some((d) => d.key === "permission")).toBe(false);
     expect(ACCESS_FILTER_DEFS.some((d) => d.key === "status")).toBe(false);
   });
 

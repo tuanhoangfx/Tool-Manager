@@ -79,8 +79,12 @@ export async function signInHubIdentityPlane(
       identityResult.error &&
       isHubAuthRateLimitError(identityResult.error.message);
     if (rateLimited && config.recoverHubSession) {
-      const recovered = await config.recoverHubSession(loginInput, password);
-      if (recovered?.identitySession) identitySession = recovered.identitySession;
+      try {
+        const recovered = await config.recoverHubSession(loginInput, password);
+        if (recovered?.identitySession) identitySession = recovered.identitySession;
+      } catch {
+        /* worker offline — fall through to rate-limit message */
+      }
     }
     if (!identitySession) {
       if (identityResult.error) throw identityResult.error;
