@@ -24,6 +24,7 @@
     "sync:vercel-env": "node scripts/sync-p0020-vercel-env-api.mjs",
     "verify:prod-twofa-env": "node scripts/check-prod-twofa-env.mjs",
     "wait:prod-twofa-env": "node scripts/wait-prod-twofa-anon-key.mjs",
+    "wait:prod-app-version": "node scripts/wait-prod-app-version.mjs",
     "deploy:vercel:env-ship": "node scripts/vercel-env-ship.mjs",
     "verify:vault": "node scripts/verify-vault-v4.mjs",
     "verify:cookie": "node scripts/verify-p0020-schema.mjs && node scripts/verify-note-version.mjs",

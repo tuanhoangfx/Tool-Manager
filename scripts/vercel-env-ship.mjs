@@ -2,7 +2,7 @@
 /**
  * P0020: sync Vercel env from .env.local → deploy hook → wait for TWOFA anon in bundle.
  *
- * Usage: node scripts/vercel-env-ship.mjs [--skip-sync] [--skip-wait]
+ * Usage: node scripts/vercel-env-ship.mjs [--skip-sync] [--skip-wait] [--skip-version-wait]
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const skipSync = process.argv.includes("--skip-sync");
 const skipWait = process.argv.includes("--skip-wait");
+const skipVersionWait = process.argv.includes("--skip-version-wait");
 
 function run(script, args = []) {
   const r = spawnSync(process.execPath, [script, ...args], {
@@ -42,9 +43,16 @@ console.log("==> trigger production deploy hook");
 const hook = await triggerDeployHook(hookUrl);
 console.log("deploy hook:", hook.job?.job?.id || hook.job?.id || "ok");
 
+const prodOrigin = manifest.urls?.app || manifest.vercel?.productionUrl || "";
+
 if (!skipWait) {
   console.log("==> wait for TWOFA anon key in production bundle");
-  run(path.join(root, "scripts/wait-prod-twofa-anon-key.mjs"), ["--origin", manifest.urls?.app || ""]);
+  run(path.join(root, "scripts/wait-prod-twofa-anon-key.mjs"), ["--origin", prodOrigin]);
+}
+
+if (!skipVersionWait) {
+  console.log("==> wait for package.json version in production bundle");
+  run(path.join(root, "scripts/wait-prod-app-version.mjs"), ["--origin", prodOrigin]);
 }
 
 console.log("vercel-env-ship: complete");

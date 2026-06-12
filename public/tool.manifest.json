@@ -92,6 +92,26 @@
           "0 accounts after login though cloud vault has rows",
           "No network requests to zurfouqanjcubgneuctp.supabase.co after sign-in"
         ]
+      },
+      {
+        "id": "databox-hub-auth",
+        "script": "scripts/smoke-databox-hub-auth.mjs",
+        "symptoms": [
+          "Cookie tab Vault chip stuck offline after login",
+          "Worker sign-in missing dataSession when Hub GoTrue rate-limits",
+          "note_cookie_vault_summaries_accessible RPC fails with 401"
+        ]
+      },
+      {
+        "id": "app-version",
+        "script": "scripts/wait-prod-app-version.mjs",
+        "waitScript": "scripts/wait-prod-app-version.mjs",
+        "origin": "https://databox.infi.io.vn",
+        "symptoms": [
+          "Sidebar/header still shows old vX.Y.Z after deploy hook",
+          "Git push missing before hook — production serves previous commit",
+          "Vercel build failed — check GitHub commit status"
+        ]
       }
     ],
     "symptomMap": {
@@ -103,6 +123,7 @@
     "verifyCommands": [
       "node scripts/check-prod-twofa-env.mjs",
       "node scripts/wait-prod-twofa-anon-key.mjs",
+      "node scripts/wait-prod-app-version.mjs",
       "node scripts/smoke-twofa-vault.mjs"
     ]
   },

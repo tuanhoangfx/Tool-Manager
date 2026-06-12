@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Push P0020 VITE_* env from .env.local to Vercel via REST API (upsert).
- * Token: VERCEL_TOKEN env, E:\Dev\.env.shared, or ~/.local/share/com.vercel.cli/auth.json
+ * Token: VERCEL_TOKEN in E:\Dev\.env.shared (scope: tuanhoangfx's projects team), or vercel login auth.json
  *
  * Usage: node scripts/sync-p0020-vercel-env-api.mjs [--all-envs]
  */
@@ -9,7 +9,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadVercelToken } from "../../scripts/lib/vercel-cli-lib.mjs";
-import { upsertProjectEnv } from "../../scripts/lib/vercel-env-upsert.mjs";
+import { upsertProjectEnv, listProjectEnv } from "../../scripts/lib/vercel-env-upsert.mjs";
+import {
+  probeCliSession,
+  upsertEnvViaCli,
+} from "../../scripts/lib/vercel-env-cli-sync.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -52,8 +56,9 @@ function parseEnv(content) {
 function loadTokenFromVercelAuthFile() {
   const home = process.env.USERPROFILE || process.env.HOME || "";
   const candidates = [
-    path.join(home, ".local", "share", "com.vercel.cli", "auth.json"),
+    path.join(process.env.APPDATA || "", "com.vercel.cli", "Data", "auth.json"),
     path.join(process.env.APPDATA || "", "com.vercel.cli", "auth.json"),
+    path.join(home, ".local", "share", "com.vercel.cli", "auth.json"),
     path.join(process.env.LOCALAPPDATA || "", "com.vercel.cli", "auth.json"),
   ];
   for (const file of candidates) {
@@ -87,18 +92,45 @@ if (missing.length) {
   process.exit(1);
 }
 
+let useCli = process.argv.includes("--cli");
+if (!useCli && token) {
+  try {
+    await listProjectEnv({ projectId: PROJECT_ID, teamSlug: TEAM_SLUG, token });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/invalidToken|403/i.test(msg) && probeCliSession(root)) {
+      console.warn("sync: REST token invalid — falling back to vercel CLI session");
+      useCli = true;
+    } else if (!/invalidToken|403/i.test(msg)) {
+      console.error(msg);
+      process.exit(1);
+    }
+  }
+}
+
+if (!useCli && !token) {
+  if (probeCliSession(root)) {
+    console.warn("sync: no VERCEL_TOKEN — using vercel CLI session");
+    useCli = true;
+  }
+}
+
 let failed = 0;
 for (const key of KEYS) {
   try {
-    const r = await upsertProjectEnv({
-      projectId: PROJECT_ID,
-      teamSlug: TEAM_SLUG,
-      token,
-      key,
-      value: env[key],
-      targets,
-    });
-    console.log(`${r.action === "patch" ? "PATCH" : "POST"} ${key} → ${targets.join(", ")}`);
+    if (useCli) {
+      upsertEnvViaCli({ cwd: root, key, value: env[key], targets });
+    } else {
+      const r = await upsertProjectEnv({
+        projectId: PROJECT_ID,
+        teamSlug: TEAM_SLUG,
+        token,
+        key,
+        value: env[key],
+        targets,
+      });
+      console.log(`${r.action === "patch" ? "PATCH" : "POST"} ${key} → ${targets.join(", ")}`);
+    }
   } catch (e) {
     console.error(`FAIL ${key}:`, e instanceof Error ? e.message : e);
     failed++;
