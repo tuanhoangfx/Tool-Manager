@@ -1,18 +1,15 @@
 import { useMemo } from "react";
-import { HubDirectoryTableShell, type HubSortDir, type HubTableColumnRole } from "@tool-workspace/hub-ui";
-import { TwofaPlatformIcon } from "./TwofaPlatformIcon";
+import {
+  HubDirectoryTableShell,
+  buildDirectoryColgroup,
+  hubDirectoryTableClass,
+  type HubSortDir,
+  type HubTableColumnRole,
+} from "@tool-workspace/hub-ui";
+import { renderTwofaAccountsDirectoryBodyCell } from "./twofa-accounts-directory-cells";
 import "./twofa-platform-icon.css";
 import "./twofa-table-cells.css";
-import {
-  TwofaAccountCell,
-  TwofaBrowserCell,
-  TwofaCodeCell,
-  TwofaPasswordCell,
-  TwofaPeriodCell,
-  TwofaSecretCell,
-} from "./twofa-copy-cells";
 import type { TwofaAccount } from "./types";
-import { fmtHubDate, twofaActivityAt } from "./twofa-time";
 import type { TwofaTableColumnKey } from "./twofa-table-prefs";
 
 type ColumnKey = TwofaTableColumnKey;
@@ -38,72 +35,6 @@ const COLUMNS: ColumnDef[] = [
 ];
 
 const NON_SORTABLE_COLUMNS = new Set<ColumnKey>(["code", "period"]);
-
-function renderBodyCell(key: ColumnKey, row: TwofaAccount, onUsed: (id: string) => void) {
-  switch (key) {
-    case "service":
-      return (
-        <td key={key} className="hub-users-col--twofa-service">
-          <div className="hub-users-cell-name">
-            <TwofaPlatformIcon service={row.service} />
-            <span className="hub-users-name-title" title={row.service}>
-              {row.service}
-            </span>
-          </div>
-        </td>
-      );
-    case "browser":
-      return (
-        <td key={key} className="hub-users-col--twofa-browser">
-          <TwofaBrowserCell account={row} />
-        </td>
-      );
-    case "account":
-      return (
-        <td key={key} className="hub-users-col--twofa-account">
-          <TwofaAccountCell account={row} />
-        </td>
-      );
-    case "password":
-      return (
-        <td key={key} className="hub-users-col--twofa-password">
-          <TwofaPasswordCell account={row} />
-        </td>
-      );
-    case "secret":
-      return (
-        <td key={key} className="hub-users-col--twofa-secret">
-          <TwofaSecretCell account={row} />
-        </td>
-      );
-    case "code":
-      return (
-        <td key={key} className="hub-users-col--twofa-code">
-          <TwofaCodeCell account={row} onUsed={onUsed} />
-        </td>
-      );
-    case "period":
-      return (
-        <td key={key} className="hub-users-col--twofa-period">
-          <TwofaPeriodCell />
-        </td>
-      );
-    case "created":
-      return (
-        <td key={key} className="hub-users-cell-muted hub-users-col--twofa-created">
-          <span className="line-clamp-1">{fmtHubDate(row.createdAt)}</span>
-        </td>
-      );
-    case "used":
-      return (
-        <td key={key} className="hub-users-cell-muted hub-users-col--twofa-used">
-          <span className="line-clamp-1">{fmtHubDate(twofaActivityAt(row))}</span>
-        </td>
-      );
-    default:
-      return null;
-  }
-}
 
 /** Golden 2FA directory table — HubDirectoryTableShell only (no virtual bypass). */
 export function TwofaAccountsTable({
@@ -151,13 +82,19 @@ export function TwofaAccountsTable({
     [visibleDefs],
   );
 
+  const colgroup = useMemo(
+    () => buildDirectoryColgroup(shellColumns, { includeSelect: true }),
+    [shellColumns],
+  );
+
   return (
     <HubDirectoryTableShell
       items={rows}
       resetKey={resetKey}
       ariaLabel="2FA accounts table pages"
       wrapClassName="overflow-hidden"
-      tableClassName="hub-users-table hub-users-table--twofa"
+      tableClassName={`${hubDirectoryTableClass("default")} hub-users-table--twofa`}
+      colgroup={colgroup}
       columns={shellColumns}
       sortKey={sortKey}
       sortDir={sortDir}
@@ -172,7 +109,9 @@ export function TwofaAccountsTable({
       getRowClassName={(row) =>
         ` hub-users-row--static${editingId === row.id ? " is-editing" : ""}`
       }
-      renderRowCells={(row) => visibleDefs.map((col) => renderBodyCell(col.key, row, onUsed))}
+      renderRowCells={(row) =>
+        shellColumns.map((col) => renderTwofaAccountsDirectoryBodyCell(col, row, onUsed))
+      }
     />
   );
 }

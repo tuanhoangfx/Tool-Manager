@@ -24,6 +24,6 @@
 ## Tiếp theo
 
 - [ ] Vercel env: `VITE_SUPABASE_*`, `VITE_GITHUB_TOKEN`
-- [ ] Extension publish Chrome Web Store (optional)
+- [x] Extension publish Chrome Web Store — [E0001 Cookie Bridge](https://chromewebstore.google.com/detail/e0001-cookie-bridge/kaaadageakdandpobcofplmfbjfjabdk) v1.1.2 (2026-06-11)
 - [ ] `share_expires_at` UI + view count RPC
 - [x] Đổi folder `P0020-Data-Box` (canonical `Tool/P0020-Data-Box`; stub `P0020-Workspace-Notes` đã xóa 2026-06-05)

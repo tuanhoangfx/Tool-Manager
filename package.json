@@ -1,7 +1,7 @@
 {
   "name": "p0020-data-box",
   "private": true,
-  "version": "4.3.29",
+  "version": "4.3.30",
   "packageManager": "pnpm@9.15.9",
   "type": "module",
   "description": "P0020-Data-Box — unified data workspace for Notes, 2FA, secure cookie vault, and browser agents.",
@@ -9,7 +9,7 @@
   "scripts": {
     "predev": "node scripts/sync-extension-version.mjs && node ../scripts/sync-hub-ui-vendor.cjs && node ../scripts/sync-hub-identity-vendor.cjs && node scripts/sync-cookie-brand-icons.mjs && node scripts/verify-cookie-brand-icons.mjs && node scripts/verify-todo-chrome.mjs && node scripts/verify-todo-visual-tokens.mjs",
     "dev": "node scripts/ensure-dev.cjs --open",
-    "dev:recover": "node ../scripts/verify-hub-ui-exports.cjs P0020 && node scripts/dev-recover.cjs",
+    "dev:recover": "node ../scripts/run-script-chain.cjs -- node ../scripts/verify-hub-ui-exports.cjs P0020 -- node scripts/dev-recover.cjs",
     "dev:recover:open": "node scripts/dev-recover.cjs --open",
     "dev:vite": "vite --host 127.0.0.1 --port 5177",
     "daemon:start": "node scripts/ensure-dev-pm2.cjs",

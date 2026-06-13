@@ -10,15 +10,18 @@ export const EXTENSION_RELEASE_PAGE = `https://github.com/${EXTENSION_GITHUB_REP
 export const EXTENSION_CHROME_WEB_STORE_ID = "kaaadageakdandpobcofplmfbjfjabdk";
 
 export const EXTENSION_CHROME_WEB_STORE_URL =
-  `https://chrome.google.com/webstore/detail/e0001-cookie-bridge/${EXTENSION_CHROME_WEB_STORE_ID}` as const;
+  `https://chromewebstore.google.com/detail/e0001-cookie-bridge/${EXTENSION_CHROME_WEB_STORE_ID}` as const;
 
 /** Human label when store link is available. */
 export const EXTENSION_CHROME_WEB_STORE_LABEL = "Install from Chrome Web Store";
 
+/** GitHub ZIP direct download (Load unpacked fallback). */
+export const EXTENSION_GITHUB_ZIP_LABEL = "Download ZIP from GitHub";
+
 /** Public privacy policy (hosted on Data Box). */
 export const EXTENSION_PRIVACY_POLICY_URL = "https://databox.infi.io.vn/e0001-privacy.html";
 
-/** GitHub release ZIP version (may trail manifest during CWS review). */
+/** GitHub release ZIP version (fallback when Store unavailable). */
 export function getExtensionDownloadVersion(): string {
   return EXTENSION_BUILD.downloadVersion ?? EXTENSION_BUILD.version;
 }
@@ -82,16 +85,6 @@ export type ExtensionInstallStep = {
   symbol?: string;
 };
 
-export const EXTENSION_STORE_INSTALL_STEPS: ExtensionInstallStep[] = [
-  {
-    id: "store",
-    title: "Install from Chrome Web Store",
-    hint: "One-click add to Chrome — no Developer mode",
-    symbol: "Chrome Web Store",
-  },
-  { id: "link", title: "Link on Cookie Auto", hint: "Sign in here → Link extension on this tab" },
-];
-
 export const EXTENSION_UNPACKED_INSTALL_STEPS: ExtensionInstallStep[] = [
   { id: "download", title: "Download ZIP", hint: "Latest release from GitHub" },
   { id: "extract", title: "Extract folder", hint: "Unzip to a permanent path (e.g. C:\\Tools\\E0001-cookie-bridge)" },
@@ -100,6 +93,26 @@ export const EXTENSION_UNPACKED_INSTALL_STEPS: ExtensionInstallStep[] = [
   { id: "unpacked", title: "Load unpacked", hint: "Select the extracted extension folder" },
   { id: "link", title: "Link on Cookie Auto", hint: "Data Box → Cookie Auto → sign in & connect extension" },
 ];
+
+export const EXTENSION_STORE_INSTALL_STEPS: ExtensionInstallStep[] = [
+  {
+    id: "store",
+    title: "Install from Chrome Web Store",
+    hint: "Add to Chrome — no Developer mode or ZIP extract",
+    symbol: "Add to Chrome",
+  },
+  { id: "link", title: "Link on Cookie Auto", hint: "Sign in here → Link extension on this tab" },
+  {
+    id: "download",
+    title: EXTENSION_GITHUB_ZIP_LABEL,
+    hint: "Optional — dev / Load unpacked when Store is unavailable",
+    symbol: "GitHub",
+  },
+];
+
+/** Load unpacked sub-steps after GitHub ZIP (Store live — optional dev path). */
+export const EXTENSION_STORE_UNPACKED_OPTIONAL_STEPS: ExtensionInstallStep[] =
+  EXTENSION_UNPACKED_INSTALL_STEPS.filter((step) => step.id !== "download" && step.id !== "link");
 
 /** Primary install steps — Store when published, else Load unpacked. */
 export const EXTENSION_INSTALL_STEPS: ExtensionInstallStep[] = getExtensionInstallSteps();

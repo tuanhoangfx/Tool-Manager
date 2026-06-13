@@ -1,9 +1,13 @@
 import { useMemo } from "react";
-import { HubDirectoryTableShell, hubDirectoryListResetKey, type HubSortDir } from "@tool-workspace/hub-ui";
-import { Hash } from "lucide-react";
+import {
+  HubDirectoryTableShell,
+  buildDirectoryColgroup,
+  hubDirectoryListResetKey,
+  hubDirectoryTableClass,
+  type HubSortDir,
+} from "@tool-workspace/hub-ui";
 import type { NoteFolder } from "./noteFolders";
-import { NotesFolderGlyph } from "./NotesFolderGlyph";
-import { isSystemFolder } from "./noteFolderLifecycle";
+import { renderNotesFoldersDirectoryBodyCell } from "./notes-folders-directory-cells";
 
 export type FolderTableSortKey = "name" | "noteCount";
 
@@ -26,34 +30,6 @@ const COLUMNS = [
   },
 ];
 
-function FolderNameCell({ folder }: { folder: FolderTableRow }) {
-  return (
-    <div className="hub-users-cell-name">
-      <NotesFolderGlyph color={folder.color} size={12} variant="badge" />
-      <span className="hub-users-name-title min-w-0" title={folder.name}>
-        {folder.name}
-      </span>
-      {isSystemFolder(folder.id) ? (
-        <span className="shrink-0 rounded border border-amber-400/25 bg-amber-500/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-100/90">
-          System
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-function NotesCountCell({ count }: { count: number }) {
-  return (
-    <span
-      className={`hub-users-tool-badge${count === 0 ? " hub-users-tool-badge--empty" : ""}`}
-      title={count === 0 ? "No notes tagged" : `${count} note${count === 1 ? "" : "s"}`}
-    >
-      <Hash size={11} className="hub-users-tool-badge__icon" aria-hidden />
-      <span className="hub-users-tool-badge__count tabular-nums">{count}</span>
-    </span>
-  );
-}
-
 export function NotesFoldersDirectoryTable({
   rows,
   sortKey,
@@ -72,6 +48,10 @@ export function NotesFoldersDirectoryTable({
   editingId: string | null;
 }) {
   const columns = useMemo(() => COLUMNS, []);
+  const colgroup = useMemo(
+    () => buildDirectoryColgroup(columns, { includeSelect: true }),
+    [columns],
+  );
   const resetKey = useMemo(
     () => hubDirectoryListResetKey(sortKey, sortDir, rows.length),
     [rows.length, sortDir, sortKey],
@@ -82,7 +62,8 @@ export function NotesFoldersDirectoryTable({
       items={rows}
       resetKey={resetKey}
       ariaLabel="Folders table pages"
-      tableClassName="hub-users-table hub-users-table--folders"
+      tableClassName={`${hubDirectoryTableClass("default")} hub-users-table--folders`}
+      colgroup={colgroup}
       columns={columns}
       sortKey={sortKey}
       sortDir={sortDir}
@@ -95,16 +76,9 @@ export function NotesFoldersDirectoryTable({
       getRowClassName={(folder) =>
         ` hub-users-row--static${editingId === folder.id ? " is-editing" : ""}`
       }
-      renderRowCells={(folder) => (
-        <>
-          <td className="hub-users-col--folder-name">
-            <FolderNameCell folder={folder} />
-          </td>
-          <td className="hub-users-col--folder-notes">
-            <NotesCountCell count={folder.noteCount} />
-          </td>
-        </>
-      )}
+      renderRowCells={(folder) =>
+        columns.map((col) => renderNotesFoldersDirectoryBodyCell(col, folder))
+      }
     />
   );
 }

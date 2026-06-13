@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-06-13 - Cookie extension download modal — Store + GitHub ZIP
+
+- Version: `4.3.30`
+- Timestamp: 2026-06-13 (UTC+7)
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Download FAB modal: dual footer (Install from Chrome Web Store + Download ZIP from GitHub).
+- Install steps when CWS published: Store → Link → optional GitHub ZIP + Load unpacked dev details.
+- Extension build info synced to E0001 v1.1.3.
+
+### Verification
+
+- pending
+
+---
 ## 2026-06-12 - P0020 version sync
 
 - Version: `4.3.29`
