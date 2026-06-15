@@ -121,7 +121,93 @@ export function hasTwofaSyncWatermark(userId: string): boolean {
   return readWatermark(userId) !== null;
 }
 
+/** Build active/tombstone id sets from a full vault row scan. */
+export function rowSetsFromDbRows(rows: TwofaDbRow[]): CloudRowSets {
+  const activeIds = new Set<string>();
+  const tombstoneIds = new Set<string>();
+  for (const row of rows) {
+    if (row.deleted_at) tombstoneIds.add(row.id);
+    else activeIds.add(row.id);
+  }
+  return { activeIds, tombstoneIds };
+}
+
+type VaultPullPayload = {
+  userId: string;
+  coalesceKey: string;
+  rows: TwofaDbRow[];
+  sets: CloudRowSets;
+  since: string | null;
+};
+
+let pullCache: (VaultPullPayload & { at: number }) | null = null;
+const pullInflight = new Map<string, Promise<VaultPullPayload>>();
+const PULL_CACHE_TTL_MS = 5000;
+
+function vaultPullCoalesceKey(
+  userId: string,
+  mode: "auth-active" | "auth-all" | "delta",
+  since: string | null,
+): string {
+  return `${userId}:${mode}:${since ?? ""}`;
+}
+
+function recentVaultRowSets(userId: string): CloudRowSets | null {
+  if (
+    pullCache &&
+    pullCache.userId === userId &&
+    Date.now() - pullCache.at < PULL_CACHE_TTL_MS
+  ) {
+    return pullCache.sets;
+  }
+  return null;
+}
+
+/** Shared paginated vault pull — coalesces parallel callers (prefetch + tab hook). */
+async function pullTwofaVault(
+  userId: string,
+  mode: "auth-active" | "auth-all" | "delta",
+  since: string | null,
+): Promise<{ payload: VaultPullPayload; error: string | null }> {
+  const coalesceKey = vaultPullCoalesceKey(userId, mode, since);
+  const cached = pullCache;
+  if (cached && cached.coalesceKey === coalesceKey && Date.now() - cached.at < PULL_CACHE_TTL_MS) {
+    return { payload: cached, error: null };
+  }
+
+  let inflight = pullInflight.get(coalesceKey);
+  if (!inflight) {
+    inflight = (async (): Promise<VaultPullPayload> => {
+      const activeOnly = mode === "auth-active";
+      const remote = await fetchAllTwofaDbRows(userId, mode === "delta" ? since : null, activeOnly);
+      if (remote.error) throw new Error(remote.error);
+      const payload: VaultPullPayload = {
+        userId,
+        coalesceKey,
+        rows: remote.rows,
+        sets: rowSetsFromDbRows(remote.rows),
+        since,
+      };
+      if (mode !== "delta") {
+        pullCache = { ...payload, at: Date.now() };
+      }
+      return payload;
+    })().finally(() => {
+      pullInflight.delete(coalesceKey);
+    });
+    pullInflight.set(coalesceKey, inflight);
+  }
+
+  try {
+    return { payload: await inflight, error: null };
+  } catch (err) {
+    return { payload: { userId, coalesceKey, rows: [], sets: { activeIds: new Set(), tombstoneIds: new Set() }, since }, error: err instanceof Error ? err.message : "Cloud pull failed" };
+  }
+}
+
 async function fetchCloudRowSets(userId: string): Promise<{ sets: CloudRowSets; error: string | null }> {
+  const cached = recentVaultRowSets(userId);
+  if (cached) return { sets: cached, error: null };
   const client = getTwofaSupabase();
   if (!client) return { sets: { activeIds: new Set(), tombstoneIds: new Set() }, error: null };
 
@@ -239,15 +325,16 @@ export async function reconcileTwofaWithCloud(
   const userId = session.user.id;
   const since = readWatermark(userId);
 
-  const remote = await fetchAllTwofaDbRows(userId, null, true);
-  if (remote.error) return { accounts: local, error: remote.error };
+  const mode = opts?.cloudOnly ? "auth-active" : "auth-all";
+  const pulled = await pullTwofaVault(userId, mode, null);
+  if (pulled.error) return { accounts: local, error: pulled.error };
 
-  const remoteAccounts = remote.rows.map(twofaDbRowToAccount);
+  const remoteAccounts = pulled.payload.rows
+    .filter((row) => !row.deleted_at)
+    .map(twofaDbRowToAccount);
   let pendingLocal: TwofaAccount[] = [];
   if (!opts?.cloudOnly) {
-    const rowSets = await fetchCloudRowSets(userId);
-    if (rowSets.error) return { accounts: local, error: rowSets.error };
-    pendingLocal = filterPendingUploads(local, rowSets.sets);
+    pendingLocal = filterPendingUploads(local, pulled.payload.sets);
   }
   const merged = pendingLocal.length ? mergeAccounts(remoteAccounts, pendingLocal) : remoteAccounts;
   const { accounts: deduped } = dedupeTwofaAccounts(filterTwofaPendingDeletes(merged));
@@ -272,24 +359,24 @@ export async function pullTwofaCloudDelta(local: TwofaAccount[]): Promise<{
 
   const userId = session.user.id;
   const since = readWatermark(userId);
-  const remote = await fetchAllTwofaDbRows(userId, since, !since);
-  if (remote.error) return { accounts: local, error: remote.error };
 
-  let accounts = local;
   if (since) {
-    const { accounts: next, maxUpdated } = applyTwofaCloudDelta(local, remote.rows);
-    accounts = next;
+    const pulled = await pullTwofaVault(userId, "delta", since);
+    if (pulled.error) return { accounts: local, error: pulled.error };
+    const { accounts: next, maxUpdated } = applyTwofaCloudDelta(local, pulled.payload.rows);
+    const { accounts: deduped } = dedupeTwofaAccounts(filterTwofaPendingDeletes(next));
     writeWatermarkFromMax(userId, maxUpdated, since);
-  } else {
-    const rowSets = await fetchCloudRowSets(userId);
-    if (rowSets.error) return { accounts: local, error: rowSets.error };
-    accounts = reconcileMergeFullPull(
-      local,
-      remote.rows.filter((row) => !row.deleted_at).map(twofaDbRowToAccount),
-      rowSets.sets,
-    );
-    writeWatermarkFromAccounts(userId, accounts, since);
+    return { accounts: deduped, error: null };
   }
+
+  const pulled = await pullTwofaVault(userId, "auth-all", null);
+  if (pulled.error) return { accounts: local, error: pulled.error };
+  const accounts = reconcileMergeFullPull(
+    local,
+    pulled.payload.rows.filter((row) => !row.deleted_at).map(twofaDbRowToAccount),
+    pulled.payload.sets,
+  );
+  writeWatermarkFromAccounts(userId, accounts, since);
 
   const { accounts: deduped } = dedupeTwofaAccounts(filterTwofaPendingDeletes(accounts));
   return { accounts: deduped, error: null };
@@ -306,14 +393,21 @@ function reconcileMergeFullPull(
 }
 
 /** Push genuine local-only rows (never tombstoned / in-flight deletes). */
-export async function pushTwofaLocalOnly(local: TwofaAccount[]): Promise<string | null> {
+export async function pushTwofaLocalOnly(
+  local: TwofaAccount[],
+  rowSets?: CloudRowSets,
+): Promise<string | null> {
   const session = await ensureTwofaAuth();
   if (!session?.user?.id) return null;
 
-  const rowSets = await fetchCloudRowSets(session.user.id);
-  if (rowSets.error) return rowSets.error;
+  let sets = rowSets ?? recentVaultRowSets(session.user.id);
+  if (!sets) {
+    const fetched = await fetchCloudRowSets(session.user.id);
+    if (fetched.error) return fetched.error;
+    sets = fetched.sets;
+  }
 
-  const pending = filterPendingUploads(filterTwofaPendingDeletes(local), rowSets.sets);
+  const pending = filterPendingUploads(filterTwofaPendingDeletes(local), sets);
   if (!pending.length) return null;
 
   for (const row of pending) {
@@ -458,7 +552,25 @@ export async function dedupeTwofaCloudByIdentity(): Promise<{
   return { removed, error: null };
 }
 
+let syncSerial: Promise<unknown> = Promise.resolve();
+
 export async function runTwofaCloudSync(
+  getLocal: () => TwofaAccount[],
+  opts?: TwofaCloudRunOpts,
+): Promise<{
+  accounts: TwofaAccount[];
+  error: string | null;
+}> {
+  const run = () => runTwofaCloudSyncInner(getLocal, opts);
+  const next = syncSerial.then(run, run);
+  syncSerial = next.then(
+    () => {},
+    () => {},
+  );
+  return next;
+}
+
+async function runTwofaCloudSyncInner(
   getLocal: () => TwofaAccount[],
   opts?: TwofaCloudRunOpts,
 ): Promise<{
@@ -478,7 +590,8 @@ export async function runTwofaCloudSync(
   if (pulled.error) return pulled;
 
   if (!opts?.full) {
-    const pushErr = await pushTwofaLocalOnly(pulled.accounts);
+    const pushSets = userId ? recentVaultRowSets(userId) ?? undefined : undefined;
+    const pushErr = await pushTwofaLocalOnly(pulled.accounts, pushSets);
     if (pushErr) return { accounts: pulled.accounts, error: pushErr };
   }
 
@@ -491,7 +604,7 @@ export async function runTwofaCloudSync(
     local.length === 0
   ) {
     clearTwofaSyncWatermark(userId);
-    return runTwofaCloudSync(getLocal, { full: true });
+    return runTwofaCloudSyncInner(getLocal, { full: true });
   }
 
   return pulled;

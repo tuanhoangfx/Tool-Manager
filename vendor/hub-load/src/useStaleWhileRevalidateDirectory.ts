@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDirectoryLoad } from "./useDirectoryLoad";
+import { useDelayedTrue } from "./useDelayedTrue";
+
+const DIRECTORY_LOADING_DELAY_MS = 300;
 
 export type UseStaleWhileRevalidateDirectoryOptions<T> = {
   scopeKey: string;
@@ -65,5 +68,8 @@ export function useStaleWhileRevalidateDirectory<T>({
     if (!hasCachedData) setLoading(true);
   }, [hasCachedData]);
 
-  return { loading, refreshing, revalidate };
+  const displayLoading = useDelayedTrue(loading, DIRECTORY_LOADING_DELAY_MS);
+  const displayRefreshing = useDelayedTrue(refreshing, DIRECTORY_LOADING_DELAY_MS);
+
+  return { loading: displayLoading, refreshing: displayRefreshing, revalidate };
 }

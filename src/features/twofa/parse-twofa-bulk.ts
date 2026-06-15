@@ -168,6 +168,117 @@ export function validateTwofaBulkRows(rows: TwofaBulkRow[]): {
   return { valid, invalid };
 }
 
+export type TwofaBulkLineStatus =
+  | { kind: "empty" }
+  | { kind: "skip" }
+  | { kind: "valid" }
+  | { kind: "invalid"; message: string };
+
+/** Per visible textarea line — for gutter badges (empty lines included). */
+export function getTwofaBulkLineStatuses(text: string): TwofaBulkLineStatus[] {
+  const lines = text.split(/\r?\n/);
+  return lines.map((raw, index) => getTwofaBulkLineStatus(raw, index + 1));
+}
+
+function getTwofaBulkLineStatus(raw: string, lineNo: number): TwofaBulkLineStatus {
+  const trimmed = raw.trim();
+  if (!trimmed) return { kind: "empty" };
+  if (trimmed.startsWith("#") || isHeaderLine(trimmed)) return { kind: "skip" };
+
+  const parts = splitFields(trimmed);
+  const parsed = parseTwofaBulkLine(parts.length ? parts : [trimmed]);
+  if (!parsed) {
+    return { kind: "invalid", message: "Expected 2FA secret (Base32) or Platform|ID|2FA" };
+  }
+  if (!parsed.secret.trim()) {
+    return { kind: "invalid", message: "Missing 2FA secret" };
+  }
+
+  const row: TwofaBulkRow = {
+    line: lineNo,
+    service: parsed.service,
+    browser: parsed.browser,
+    account: parsed.account,
+    password: parsed.password || undefined,
+    secret: parsed.secret,
+  };
+  const { valid, invalid } = validateTwofaBulkRows([row]);
+  if (valid.length) return { kind: "valid" };
+  return { kind: "invalid", message: invalid[0]?.message ?? "Invalid row" };
+}
+
+export function summarizeTwofaBulkLineStatuses(statuses: TwofaBulkLineStatus[]): {
+  valid: number;
+  invalid: number;
+  skip: number;
+} {
+  let valid = 0;
+  let invalid = 0;
+  let skip = 0;
+  for (const status of statuses) {
+    if (status.kind === "valid") valid += 1;
+    else if (status.kind === "invalid") invalid += 1;
+    else if (status.kind === "skip") skip += 1;
+  }
+  return { valid, invalid, skip };
+}
+
+/** Detected row schema label for gutter (e.g. Browser|Platform|ID|2FA). */
+export function detectTwofaBulkLineFormat(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("#")) return null;
+  if (isHeaderLine(trimmed)) return "Header";
+
+  const parts = splitFields(trimmed);
+  const effectiveParts = parts.length ? parts : [trimmed];
+  const hasBrowser = effectiveParts.length > 1 && isBrowserCode(effectiveParts[0] ?? "");
+  const core = hasBrowser ? effectiveParts.slice(1) : effectiveParts;
+
+  if (hasBrowser) {
+    const prefix = "Browser|";
+    if (core.length === 1) return `${prefix}2FA`;
+    if (core.length === 2) return `${prefix}Platform|2FA`;
+    if (core.length === 3) return `${prefix}Platform|ID|2FA`;
+    return `${prefix}Platform|ID|Pass|2FA`;
+  }
+
+  if (effectiveParts.length === 1) return "2FA";
+  if (effectiveParts.length === 2) return "Platform|2FA";
+  if (effectiveParts.length === 3) return "Platform|ID|2FA";
+  return "Platform|ID|Pass|2FA";
+}
+
+export function getTwofaBulkLineFormats(text: string): (string | null)[] {
+  const lines = text.split(/\r?\n/);
+  return lines.map((raw) => detectTwofaBulkLineFormat(raw));
+}
+
+/** Tooltip lines for format badge — parsed field breakdown. */
+export function describeTwofaBulkLineFields(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("#")) return "Comment line (skipped)";
+  if (isHeaderLine(trimmed)) return "Header row (skipped)";
+
+  const parts = splitFields(trimmed);
+  const parsed = parseTwofaBulkLine(parts.length ? parts : [trimmed]);
+  if (!parsed) return null;
+
+  const lines: string[] = [];
+  if (parsed.browser) lines.push(`Browser: ${parsed.browser}`);
+  if (parsed.service) lines.push(`Platform: ${parsed.service}`);
+  if (parsed.account) lines.push(`ID: ${parsed.account}`);
+  if (parsed.password) lines.push(`Pass: ${parsed.password}`);
+  if (parsed.secret) lines.push(`2FA: ${parsed.secret}`);
+
+  if (!lines.length) return null;
+  if (lines.length === 1 && parsed.secret && !parsed.service && !parsed.browser) {
+    return `2FA secret: ${parsed.secret}`;
+  }
+  return lines.join("\n");
+}
+
 export function formatTwofaBulkLine(draft: TwofaDraft): string {
   const browser = draft.browser?.trim();
   const pass = draft.password?.trim();
@@ -175,31 +286,4 @@ export function formatTwofaBulkLine(draft: TwofaDraft): string {
     ? `${draft.service}|${draft.account}|${pass}|${draft.secret}`
     : `${draft.service}|${draft.account}|${draft.secret}`;
   return browser ? `${browser}|${core}` : core;
-}
-
-export async function parseTwofaBulkFile(file: File): Promise<TwofaBulkParseResult> {
-  const name = file.name.toLowerCase();
-  if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
-    return parseTwofaBulkExcel(file);
-  }
-  const text = await file.text();
-  return parseTwofaBulkText(text);
-}
-
-async function parseTwofaBulkExcel(file: File): Promise<TwofaBulkParseResult> {
-  const buf = await file.arrayBuffer();
-  const XLSX = await import("xlsx");
-  const book = XLSX.read(buf, { type: "array" });
-  const sheet = book.Sheets[book.SheetNames[0] ?? ""];
-  if (!sheet) {
-    return { rows: [], errors: [{ line: 0, message: "Empty workbook" }] };
-  }
-
-  const matrix = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: "" }) as string[][];
-  const lines = matrix
-    .map((row) => row.map((c) => String(c ?? "").trim()).join("|"))
-    .filter((line) => line.replace(/\|/g, "").trim().length > 0)
-    .join("\n");
-
-  return parseTwofaBulkText(lines);
 }

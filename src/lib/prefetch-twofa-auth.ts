@@ -1,5 +1,6 @@
 import { cacheTwofaSession, readTwofaSession } from "./twofa-session";
 import { ensureTwofaAuth } from "./ensure-twofa-auth";
+import { prefetchTwofaVaultBackground } from "./prefetch-twofa-vault-background";
 import { isTwofaSupabaseConfigured } from "./twofa-supabase-env";
 
 let prefetchStarted = false;
@@ -12,6 +13,7 @@ export function prefetchTwofaAuth() {
   const warm = () => {
     void ensureTwofaAuth().then((session) => {
       if (session) cacheTwofaSession(session);
+      prefetchTwofaVaultBackground();
     });
   };
 

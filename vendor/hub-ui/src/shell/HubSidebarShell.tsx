@@ -18,6 +18,8 @@ export type HubSidebarShellProps = {
   brandLeading: ReactNode;
   brandTitle: string;
   brandTagline?: string;
+  /** Optional pill/chip beside brand (e.g. Local mode when Hub auth off). */
+  brandTrailing?: ReactNode;
   nav: ReactNode;
   footer: ReactNode;
   asideClassName?: string;
@@ -28,6 +30,7 @@ export function HubSidebarShell({
   brandLeading,
   brandTitle,
   brandTagline,
+  brandTrailing,
   nav,
   footer,
   asideClassName,
@@ -36,8 +39,11 @@ export function HubSidebarShell({
     <aside className={asideClassName ?? HUB_SIDEBAR_SHELL_ASIDE_CLASS}>
       <div className="mb-4 flex shrink-0 items-center gap-3">
         {brandLeading}
-        <div className="min-w-0">
-          <div className={HUB_SIDEBAR_SHELL_BRAND_TITLE_CLASS}>{brandTitle}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className={`min-w-0 flex-1 ${HUB_SIDEBAR_SHELL_BRAND_TITLE_CLASS}`}>{brandTitle}</div>
+            {brandTrailing}
+          </div>
           {brandTagline ? (
             <div className={HUB_SIDEBAR_SHELL_BRAND_TAGLINE_CLASS}>{brandTagline}</div>
           ) : null}

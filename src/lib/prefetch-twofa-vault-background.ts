@@ -9,16 +9,14 @@ import {
 import { dedupeTwofaAccounts } from "../features/twofa/twofa-upsert-accounts";
 import { filterTwofaPendingDeletes } from "../features/twofa/twofa-sync-pending";
 
-let inFlight = false;
 let lastRunAt = 0;
 const MIN_INTERVAL_MS = 45_000;
 
 /** Warm 2FA vault localStorage + silent cloud delta before first tab open. */
 export function prefetchTwofaVaultBackground(): void {
-  if (inFlight || !isTwofaSupabaseConfigured || !isTwofaCloudAvailable()) return;
+  if (!isTwofaSupabaseConfigured || !isTwofaCloudAvailable()) return;
   const now = Date.now();
   if (now - lastRunAt < MIN_INTERVAL_MS) return;
-  inFlight = true;
 
   void (async () => {
     try {
@@ -37,8 +35,6 @@ export function prefetchTwofaVaultBackground(): void {
       lastRunAt = Date.now();
     } catch {
       /* auth not ready */
-    } finally {
-      inFlight = false;
     }
   })();
 }

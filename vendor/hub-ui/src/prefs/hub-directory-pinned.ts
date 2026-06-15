@@ -5,6 +5,23 @@ const STORAGE_KEYS: Record<HubDirectoryPinScope, string> = {
   "hub-tools": "hub:pinned-tools",
 };
 
+const PURGE_FLAG = "hub:directory-pinned-purged-v1";
+
+/** One-shot cleanup after pin UI removal — clears legacy local/session storage keys. */
+export function purgeHubDirectoryPinnedStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (localStorage.getItem(PURGE_FLAG) === "1") return;
+    for (const key of Object.values(STORAGE_KEYS)) {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    }
+    localStorage.setItem(PURGE_FLAG, "1");
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
 const legacyMigrated = new Set<HubDirectoryPinScope>();
 
 function migrateLegacyDashboardPins(): void {

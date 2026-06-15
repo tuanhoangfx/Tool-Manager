@@ -1,48 +1,209 @@
+@import "../../../vendor/hub-ui/src/styles/hub-add-modal.css";
+
 /* Not type=password — avoids Chrome login autofill on ID + pass pair */
 .twofa-add-field-masked {
   -webkit-text-security: disc;
   text-security: disc;
 }
 
-/*
- * Add modal — fixed body height (Bulk tab is tallest).
- * Tab swap hides panels; shell + TOC slot stay the same size (Hub detail modal golden).
- */
 .modal-shell.hub-tool-detail-modal.twofa-add-modal {
-  --overview-toc-w: 11.5rem;
-  --twofa-add-modal-body-h: 20rem;
-  --twofa-add-modal-toc-bulk-slot-h: 5.75rem;
-  min-height: calc(var(--twofa-add-modal-body-h) + 8.75rem);
+  --hub-add-modal-body-h: 20rem;
+  --hub-add-modal-toc-bulk-slot-h: 0;
+  height: calc(var(--hub-add-modal-body-h) + 8.75rem);
 }
 
-.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__body {
-  flex: 1 1 auto;
-  min-height: var(--twofa-add-modal-body-h);
-}
-
-.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__layout {
-  min-height: var(--twofa-add-modal-body-h);
-  align-items: stretch;
-}
-
+.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__body,
+.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__layout,
 .modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__content,
-.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__scroll {
-  min-height: var(--twofa-add-modal-body-h);
+.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__scroll,
+.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-add-modal__panels {
+  height: var(--hub-add-modal-body-h);
+  min-height: var(--hub-add-modal-body-h);
 }
 
-.modal-shell.hub-tool-detail-modal.twofa-add-modal .hub-tool-detail-modal__scroll {
-  flex: 1 1 auto;
-}
-
-/* Reserve Bulk sub-TOC height on Single tab — no TOC rail jump. */
-.twofa-add-modal__toc-sections {
-  min-height: var(--twofa-add-modal-toc-bulk-slot-h);
-}
-
-.twofa-add-modal__panels {
-  min-height: var(--twofa-add-modal-body-h);
-}
-
-.twofa-add-modal__panel--hidden {
+.twofa-add-modal .hub-add-modal__toc-sections {
   display: none;
+}
+
+/* Bulk section — summary centered in header (Credentials title style) */
+.twofa-bulk-input-section .hub-tool-detail-section__header {
+  position: relative;
+}
+
+.twofa-bulk-section-summary {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.twofa-bulk-section-summary__sep {
+  margin: 0 0.35rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.twofa-bulk-section-summary__item--valid {
+  color: rgb(110, 231, 183);
+}
+
+.twofa-bulk-section-summary__item--invalid {
+  color: rgb(251, 113, 133);
+}
+
+.twofa-bulk-section-summary__item--skip,
+.twofa-bulk-section-summary__item--muted {
+  color: var(--muted);
+}
+
+.twofa-bulk-input-section .hub-tool-detail-section__header-actions {
+  width: 0;
+  overflow: visible;
+}
+
+/* Bulk paste frame — data left, status + format right */
+.twofa-bulk-input-frame {
+  --twofa-bulk-gutter-w: 15rem;
+  --twofa-bulk-status-w: 1.125rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 11rem;
+  padding: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.65rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.twofa-bulk-input-frame__editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--twofa-bulk-gutter-w);
+  flex: 1;
+  min-height: 9.5rem;
+  overflow: hidden;
+}
+
+.twofa-bulk-input-frame__gutter {
+  overflow: hidden;
+  width: var(--twofa-bulk-gutter-w);
+  min-width: var(--twofa-bulk-gutter-w);
+  flex-shrink: 0;
+  padding: 0.45rem 0.35rem 0.45rem 0.4rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  user-select: none;
+}
+
+.twofa-bulk-input-frame__gutter-row {
+  display: grid;
+  grid-template-columns: var(--twofa-bulk-status-w) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.625rem;
+}
+
+.twofa-bulk-line-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--twofa-bulk-status-w);
+  height: var(--twofa-bulk-status-w);
+  border-radius: 0.3rem;
+  border: 1px solid transparent;
+  flex-shrink: 0;
+  justify-self: center;
+}
+
+.twofa-bulk-line-badge--empty {
+  opacity: 0;
+}
+
+.twofa-bulk-line-badge--valid {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(16, 185, 129, 0.15);
+  color: rgb(110, 231, 183);
+}
+
+.twofa-bulk-line-badge--invalid {
+  border-color: rgba(251, 113, 133, 0.35);
+  background: rgba(244, 63, 94, 0.12);
+  color: rgb(251, 113, 133);
+}
+
+.twofa-bulk-line-badge--action {
+  cursor: pointer;
+  padding: 0;
+}
+
+.twofa-bulk-line-badge--action:hover {
+  background: rgba(244, 63, 94, 0.22);
+}
+
+.twofa-bulk-line-badge--skip {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+}
+
+.twofa-bulk-line-format {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 0.3rem;
+  border: 1px solid transparent;
+  padding: 0 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.twofa-bulk-line-format--valid {
+  border-color: rgba(129, 140, 248, 0.28);
+  background: rgba(99, 102, 241, 0.12);
+  color: rgb(165, 180, 252);
+}
+
+.twofa-bulk-line-format--invalid {
+  border-color: rgba(251, 113, 133, 0.35);
+  background: rgba(244, 63, 94, 0.1);
+  color: rgb(251, 113, 133);
+}
+
+.twofa-bulk-line-format--skip {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+}
+
+.twofa-bulk-line-format--empty {
+  min-width: 0;
+  opacity: 0;
+}
+
+.twofa-bulk-input-frame__textarea {
+  width: 100%;
+  min-height: 9.5rem;
+  resize: none;
+  border: 0;
+  background: transparent;
+  padding: 0.45rem 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.625rem;
+  box-shadow: none;
+}
+
+.twofa-bulk-input-frame__textarea:focus {
+  outline: none;
+  box-shadow: none;
 }

@@ -243,13 +243,7 @@ body.hub-modal-open {
   outline-offset: 1px;
 }
 
-.hub-tool-detail-modal__content .hub-users-row:hover {
-  background: transparent;
-}
-
-.hub-tool-detail-modal__content .hub-users-row.is-selected:hover {
-  background: rgba(99, 102, 241, 0.08);
-}
+/* Directory row hover — hub-directory-table.css (modal read-only + bulk select scopes) */
 
 /* Stacked section frames — gap between siblings (TocHighlightContent or HubToolDetailSections). */
 .hub-tool-detail-modal__sections {

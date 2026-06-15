@@ -2,6 +2,7 @@ import { createElement, type ReactNode } from "react";
 import {
   Activity,
   AlertTriangle,
+  AlertCircle,
   Archive,
   BarChart3,
   BookOpen,
@@ -37,9 +38,11 @@ import {
   Link2,
   List,
   ListOrdered,
+  Loader2,
   Lock,
   Mail,
   MessageSquare,
+  Network,
   Package,
   PanelTop,
   Pencil,
@@ -134,6 +137,8 @@ const REGISTRY: Record<SemanticIconKey, SemanticIconMeta> = {
   "settings.headerStats": { icon: LayoutDashboard, className: "text-orange-300" },
   "settings.table": { icon: LayoutList, className: "text-violet-300", tone: "violet" },
   "settings.shortcuts": { icon: Keyboard, className: "text-indigo-300", tone: "indigo" },
+  "notify.alerts": { icon: AlertTriangle, className: "text-amber-300", tone: "amber" },
+  "notify.shortcuts": { icon: Keyboard, className: "text-indigo-300", tone: "indigo" },
   "kpi.schema.fields": { icon: Database, className: "text-indigo-300", tone: "indigo" },
   "kpi.schema.groups": { icon: Layers, className: "text-emerald-300", tone: "emerald" },
   "kpi.schema.input": { icon: Pencil, className: "text-amber-300", tone: "amber" },
@@ -228,6 +233,12 @@ const REGISTRY: Record<SemanticIconKey, SemanticIconMeta> = {
   "col.directory.friends": { icon: UserRound, className: "text-sky-300", tone: "sky" },
   "col.directory.gender": { icon: ScrollText, className: "text-violet-300", tone: "violet" },
   "col.directory.created": { icon: CalendarClock, className: "text-violet-300", tone: "violet" },
+  "profile.status.ready": { icon: CheckCircle2, className: "text-emerald-400", tone: "emerald" },
+  "profile.status.opening": { icon: Loader2, className: "text-cyan-400", tone: "cyan" },
+  "profile.status.running": { icon: Play, className: "text-emerald-400", tone: "emerald" },
+  "profile.status.failed": { icon: AlertCircle, className: "text-rose-400", tone: "rose" },
+  "profile.proxy.local": { icon: Globe2, className: "text-sky-400", tone: "sky" },
+  "profile.proxy.remote": { icon: Network, className: "text-cyan-400", tone: "cyan" },
 };
 
 /** Directory table header tone classes — paired with `col.directory.*` semantic keys. */

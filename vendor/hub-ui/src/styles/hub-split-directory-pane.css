@@ -1,0 +1,81 @@
+/* HubSplitDirectoryPane — unified outer frame + inner table chrome (P0004 Users parity) */
+
+.hub-split-directory-pane__body {
+  overflow: hidden;
+}
+
+.hub-split-directory-pane__body > .hub-paginated-table-shell,
+.hub-split-directory-pane__body > .gpm-workflow-directory-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+}
+
+.hub-split-directory-pane__body > .gpm-workflow-directory-shell > .hub-paginated-table-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+}
+
+.hub-split-directory-pane__body .hub-paginated-table-shell > .hub-users-table-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.hub-split-directory-pane__body .hub-users-table-wrap {
+  min-width: 0;
+  margin-bottom: 0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  --hub-directory-thead-surface: rgba(255, 255, 255, 0.02);
+  --hub-directory-thead-border: rgba(255, 255, 255, 0.08);
+  background: var(--hub-directory-thead-surface);
+}
+
+.hub-split-directory-pane__body .hub-table-pager {
+  flex-shrink: 0;
+  margin-top: 4px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.hub-split-directory-pane--fixed-rows .hub-split-directory-pane__body {
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.hub-split-directory-pane--fixed-rows .hub-split-directory-pane__body > .hub-paginated-table-shell,
+.hub-split-directory-pane--fixed-rows .hub-split-directory-pane__body > .gpm-workflow-directory-shell {
+  flex: 0 0 auto;
+  min-height: auto;
+  overflow: visible;
+}
+
+.hub-split-directory-pane--fixed-rows .hub-paginated-table-shell > .hub-users-table-wrap,
+.hub-split-directory-pane--fixed-rows .gpm-workflow-directory-shell > .hub-paginated-table-shell {
+  flex: 0 0 auto;
+  min-height: auto;
+}
+
+.hub-split-directory-pane--fixed-rows .hub-users-table-wrap {
+  overflow: visible;
+}
+
+.hub-split-directory-pane--fixed-rows table.hub-users-table {
+  min-width: 0;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.hub-split-directory-pane--fixed-rows .hub-table-pager {
+  margin-top: 4px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Split head/body paint + gutter — SSOT hub-directory-table.css only */

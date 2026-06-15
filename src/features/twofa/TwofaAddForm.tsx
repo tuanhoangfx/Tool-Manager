@@ -1,92 +1,33 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Boxes, FileSpreadsheet, Globe, KeyRound, LockKeyhole, Upload, User } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Boxes, Globe, KeyRound, LockKeyhole, User } from "lucide-react";
 import {
+  HubAddModalTocNav,
   HubFormFieldLabel,
   HubToolDetailModal,
   HubToolDetailModalPrimaryAction,
   HubToolDetailModalSecondaryAction,
   HubToolDetailSection,
-  HubTocSectionNav,
   HUB_TOOL_DETAIL_FORM_GRID_2_CLASS,
   HUB_TOOL_DETAIL_SCROLL_ROOT,
-  HUB_TOOL_DETAIL_SECTIONS_CLASS,
 } from "@tool-workspace/hub-ui";
 import { generateCode } from "./totp";
 import type { TwofaAccount, TwofaDraft } from "./types";
 import {
-  formatTwofaBulkLine,
-  parseTwofaBulkFile,
+  getTwofaBulkLineStatuses,
   parseTwofaBulkText,
-  TWOFA_BULK_FORMAT_HINT,
+  summarizeTwofaBulkLineStatuses,
   validateTwofaBulkRows,
 } from "./parse-twofa-bulk";
 import { isBrowserCode, normalizeBrowserCode } from "./twofa-browser-code";
-import { TWOFA_ADD_TABS, TWOFA_BULK_SECTIONS, twofaBulkSectionTitle } from "./twofa-add-toc";
+import { TWOFA_ADD_TABS, twofaBulkSectionTitle } from "./twofa-add-toc";
 import type { TwofaAddManyResult } from "./useTwofaAccounts";
+import { TwofaBulkInputFrame } from "./TwofaBulkInputFrame";
+import { TwofaBulkSectionSummary } from "./TwofaBulkSectionSummary";
 import "./twofa-add-form.css";
 
 type Tab = "single" | "bulk";
 
 const TWOFA_ID_PREFIX = "twofa-";
-
-function TwofaAddTocNav({
-  tab,
-  onTabChange,
-  showBulkSections,
-}: {
-  tab: Tab;
-  onTabChange: (next: Tab) => void;
-  showBulkSections: boolean;
-}) {
-  const bulkNavItems = useMemo(
-    () =>
-      TWOFA_BULK_SECTIONS.filter((item) => item.id !== "bulk-preview" || showBulkSections).map(
-        (item) => ({ id: item.id, label: item.label, emoji: item.emoji }),
-      ),
-    [showBulkSections],
-  );
-
-  return (
-    <nav className="hub-toc-nav twofa-add-modal__toc" aria-label="Add mode">
-      <ul className="hub-toc-nav__list space-y-0.5" role="tablist">
-        {TWOFA_ADD_TABS.map((item) => {
-          const active = tab === item.id;
-          return (
-            <li key={item.id}>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={active}
-                className={`hub-toc-nav__item group relative z-[1] min-h-[var(--overview-toc-row-h,2rem)] w-full cursor-pointer text-left text-[13px] transition-colors${
-                  active ? " is-active" : ""
-                }`}
-                onClick={() => onTabChange(item.id as Tab)}
-              >
-                <span className="hub-toc-nav__label flex min-w-0 items-center gap-1.5 truncate rounded-lg px-2 py-1 font-medium text-[var(--muted)] transition-all duration-200 group-hover:text-[var(--text)]">
-                  <span className="shrink-0 text-[12px] leading-none opacity-90" aria-hidden>
-                    {item.emoji}
-                  </span>
-                  <span className="truncate">{item.label}</span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      {tab === "bulk" && bulkNavItems.length ? (
-        <div className="twofa-add-modal__toc-sections mt-3 border-t border-white/5 pt-3">
-          <HubTocSectionNav
-            items={bulkNavItems}
-            sectionIdPrefix={TWOFA_ID_PREFIX}
-            scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
-          />
-        </div>
-      ) : (
-        <div className="twofa-add-modal__toc-sections mt-3 border-t border-white/5 pt-3" aria-hidden />
-      )}
-    </nav>
-  );
-}
 
 export type TwofaAddFormProps = {
   active: boolean;
@@ -110,7 +51,6 @@ export function TwofaAddForm({
   onSaveSingle,
   onImportMany,
 }: TwofaAddFormProps) {
-  const fileRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>("single");
   const [service, setService] = useState("");
   const [browser, setBrowser] = useState("");
@@ -118,14 +58,12 @@ export function TwofaAddForm({
   const [password, setPassword] = useState("");
   const [secret, setSecret] = useState("");
   const [bulkText, setBulkText] = useState("");
-  const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!active) return;
     setError(null);
-    setFileName(null);
     setTab("single");
     if (mode === "edit" && initial) {
       setService(initial.service);
@@ -142,7 +80,6 @@ export function TwofaAddForm({
       setSecret(initialDraft?.secret ?? "");
       setBulkText("");
     }
-    if (fileRef.current) fileRef.current.value = "";
   }, [
     active,
     mode,
@@ -160,19 +97,21 @@ export function TwofaAddForm({
   ]);
 
   const parsed = useMemo(() => parseTwofaBulkText(bulkText), [bulkText]);
+  const bulkSummary = useMemo(
+    () => summarizeTwofaBulkLineStatuses(getTwofaBulkLineStatuses(bulkText)),
+    [bulkText],
+  );
   const previewCount = useMemo(
     () => validateTwofaBulkRows(parsed.rows).valid.length,
     [parsed.rows],
   );
-  const canTryBulkImport = Boolean(bulkText.trim() || fileName);
+  const canTryBulkImport = Boolean(bulkText.trim());
 
   const sectionIds = useMemo(() => {
     if (mode === "edit") return [`${TWOFA_ID_PREFIX}single`];
     if (tab === "single") return [`${TWOFA_ID_PREFIX}single`];
-    const ids = [`${TWOFA_ID_PREFIX}bulk-paste`, `${TWOFA_ID_PREFIX}bulk-file`];
-    if (previewCount > 0) ids.push(`${TWOFA_ID_PREFIX}bulk-preview`);
-    return ids;
-  }, [mode, previewCount, tab]);
+    return [`${TWOFA_ID_PREFIX}bulk-input`];
+  }, [mode, tab]);
 
   if (!active) return null;
 
@@ -206,17 +145,13 @@ export function TwofaAddForm({
     onClose();
   };
 
-  const onImportBulk = async () => {
+  const onImportBulk = () => {
     setBusy(true);
     setError(null);
     try {
-      const file = fileRef.current?.files?.[0];
-      const result =
-        file && fileName
-          ? await parseTwofaBulkFile(file)
-          : bulkText.trim()
-            ? parsed
-            : { rows: [], errors: [{ line: 0, message: "Paste rows or choose a file." }] };
+      const result = bulkText.trim()
+        ? parsed
+        : { rows: [], errors: [{ line: 0, message: "Paste at least one row." }] };
       const { valid, invalid } = validateTwofaBulkRows(result.rows);
       const allErrors = [...result.errors, ...invalid];
       if (!valid.length) {
@@ -234,28 +169,6 @@ export function TwofaAddForm({
         return;
       }
       if (total > 0) onClose();
-    } catch {
-      setError("Could not read file. Use .xlsx, .csv, or paste text.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const onFileChange = async (file: File | null) => {
-    if (!file) return;
-    setFileName(file.name);
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await parseTwofaBulkFile(file);
-      setBulkText(result.rows.map((r) => formatTwofaBulkLine(r)).join("\n"));
-      if (result.errors.length) {
-        setError(`${result.errors.length} row(s) skipped while reading file.`);
-      }
-    } catch {
-      setError("Could not parse Excel file.");
-      setFileName(null);
-      if (fileRef.current) fileRef.current.value = "";
     } finally {
       setBusy(false);
     }
@@ -357,59 +270,14 @@ export function TwofaAddForm({
   );
 
   const bulkPanel = (
-    <div className={HUB_TOOL_DETAIL_SECTIONS_CLASS}>
-      <HubToolDetailSection
-        id={`${TWOFA_ID_PREFIX}bulk-paste`}
-        title={twofaBulkSectionTitle("bulk-paste")}
-      >
-        <textarea
-          className="field auth-gate-field w-full min-h-[120px] font-mono text-[11px] leading-relaxed"
-          placeholder={TWOFA_BULK_FORMAT_HINT}
-          value={bulkText}
-          onChange={(e) => {
-            setBulkText(e.target.value);
-            setFileName(null);
-            if (fileRef.current) fileRef.current.value = "";
-          }}
-        />
-      </HubToolDetailSection>
-      <HubToolDetailSection
-        id={`${TWOFA_ID_PREFIX}bulk-file`}
-        title={twofaBulkSectionTitle("bulk-file")}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".xlsx,.xls,.csv,.txt"
-            className="hidden"
-            onChange={(e) => void onFileChange(e.target.files?.[0] ?? null)}
-          />
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[.04] px-2.5 py-1.5 text-[11px] font-medium text-[var(--text)] transition-colors hover:bg-white/[.08]"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload size={14} aria-hidden />
-            Excel / CSV
-          </button>
-          {fileName ? (
-            <span className="inline-flex items-center gap-1 text-[11px] text-[var(--muted)]">
-              <FileSpreadsheet size={12} className="text-emerald-300" />
-              {fileName}
-            </span>
-          ) : null}
-        </div>
-      </HubToolDetailSection>
-      {previewCount > 0 ? (
-        <HubToolDetailSection
-          id={`${TWOFA_ID_PREFIX}bulk-preview`}
-          title={twofaBulkSectionTitle("bulk-preview")}
-        >
-          <p className="text-xs tabular-nums text-emerald-300">{previewCount} valid row(s)</p>
-        </HubToolDetailSection>
-      ) : null}
-    </div>
+    <HubToolDetailSection
+      id={`${TWOFA_ID_PREFIX}bulk-input`}
+      className="twofa-bulk-input-section"
+      title={twofaBulkSectionTitle("bulk-input")}
+      headerActions={<TwofaBulkSectionSummary summary={bulkSummary} />}
+    >
+      <TwofaBulkInputFrame value={bulkText} disabled={busy} onChange={setBulkText} />
+    </HubToolDetailSection>
   );
 
   const formBody = (
@@ -422,14 +290,14 @@ export function TwofaAddForm({
       {mode === "edit" ? (
         singlePanel
       ) : (
-        <div className="twofa-add-modal__panels">
+        <div className="hub-add-modal__panels">
           <div
-            className={`twofa-add-modal__panel${tab === "single" ? "" : " twofa-add-modal__panel--hidden"}`}
+            className={`hub-add-modal__panel${tab === "single" ? "" : " hub-add-modal__panel--hidden"}`}
           >
             {singlePanel}
           </div>
           <div
-            className={`twofa-add-modal__panel${tab === "bulk" ? "" : " twofa-add-modal__panel--hidden"}`}
+            className={`hub-add-modal__panel${tab === "bulk" ? "" : " hub-add-modal__panel--hidden"}`}
           >
             {bulkPanel}
           </div>
@@ -446,7 +314,7 @@ export function TwofaAddForm({
       {tab === "bulk" && mode === "add" ? (
         <HubToolDetailModalPrimaryAction
           label={busy ? "Please wait…" : previewCount > 0 ? `Import (${previewCount})` : "Import"}
-          onClick={() => void onImportBulk()}
+          onClick={onImportBulk}
           disabled={busy || !canTryBulkImport}
           busy={busy}
         />
@@ -472,22 +340,24 @@ export function TwofaAddForm({
       titleId="twofa-add-modal-title"
       headerIcon={KeyRound}
       headerIconClassName="text-indigo-300"
-      shellClassName={`twofa-add-modal${isAdd ? "" : " hub-tool-detail-modal--fit"}`}
+      shellClassName={`hub-add-modal twofa-add-modal${isAdd ? "" : " hub-tool-detail-modal--fit"}`}
       size={isAdd ? "detail" : "compact"}
       sectionIds={sectionIds}
       scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
       toc={
         isAdd ? (
-          <TwofaAddTocNav
-            tab={tab}
+          <HubAddModalTocNav
+            tabs={TWOFA_ADD_TABS}
+            activeTab={tab}
             onTabChange={setTab}
-            showBulkSections={previewCount > 0}
+            sectionIdPrefix={TWOFA_ID_PREFIX}
+            scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
           />
         ) : undefined
       }
       footer={hubFooter}
     >
-      <div className="twofa-add-modal__main">{formBody}</div>
+      <div className="hub-add-modal__main">{formBody}</div>
     </HubToolDetailModal>
   );
 }

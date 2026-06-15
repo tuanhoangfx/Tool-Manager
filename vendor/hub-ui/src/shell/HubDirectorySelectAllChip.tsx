@@ -38,7 +38,7 @@ export function HubDirectorySelectAllChip({
       label={label}
       title={title}
       tone={active ? "indigo" : "neutral"}
-      selectedCount={selectedCount > 0 && !allVisibleSelected ? selectedCount : undefined}
+      selectedCount={selectedCount > 0 ? selectedCount : undefined}
       onClick={onToggleSelectAll}
     />
   );

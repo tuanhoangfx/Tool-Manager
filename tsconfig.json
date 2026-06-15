@@ -24,8 +24,8 @@
       "@dev/hub-identity/*": ["vendor/hub-identity/src/*"],
       "@tool-workspace/hub-identity": ["vendor/hub-identity/src/index.ts"],
       "@tool-workspace/hub-identity/*": ["vendor/hub-identity/src/*"],
-      "@tool-workspace/hub-ui": ["../../packages/hub-ui/src/index.ts"],
-      "@tool-workspace/hub-ui/*": ["../../packages/hub-ui/src/*"]
+      "@tool-workspace/hub-ui": ["vendor/hub-ui/src/index.ts"],
+      "@tool-workspace/hub-ui/*": ["vendor/hub-ui/src/*"]
     }
   },
   "include": ["src", "eslint.config.js", "vite.config.ts"]

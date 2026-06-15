@@ -19,7 +19,7 @@ function prefetchTab(screen: WorkspaceNavScreen) {
   if (screen === "system") prefetchSystemTab();
 }
 
-/** Prefetch lazy chunks only — tabs mount via `visited` in WorkspaceApp (no eager DOM mount). */
+/** Prefetch lazy chunks on boot; WorkspaceApp pre-visits priority tabs once session is ready. */
 export function WorkspaceEagerTabPrefetch() {
   const ranRef = useRef(false);
 

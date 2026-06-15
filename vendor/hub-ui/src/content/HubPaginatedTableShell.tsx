@@ -23,8 +23,15 @@ export function HubPaginatedTableShell<T>({
 }: HubPaginatedTableShellProps<T>) {
   const resolvedPageSize = useHubTablePageSize(pageSize);
   const pagination = useHubTablePagination(items, { resetKey, pageSize: resolvedPageSize });
-  const body = (
-    <>
+
+  return (
+    <div
+      className={
+        className
+          ? `hub-paginated-table-shell min-h-0 min-w-0 ${className}`
+          : "hub-paginated-table-shell min-h-0 min-w-0"
+      }
+    >
       {children(pagination.pageItems)}
       <HubTablePager
         pageIndex={pagination.pageIndex}
@@ -37,8 +44,6 @@ export function HubPaginatedTableShell<T>({
         pageSize={resolvedPageSize}
         ariaLabel={ariaLabel}
       />
-    </>
+    </div>
   );
-
-  return className ? <div className={className}>{body}</div> : body;
 }

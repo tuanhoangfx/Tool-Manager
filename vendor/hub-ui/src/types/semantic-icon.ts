@@ -158,7 +158,15 @@ export type SemanticIconKey =
   | "col.directory.groups"
   | "col.directory.friends"
   | "col.directory.gender"
-  | "col.directory.created";
+  | "col.directory.created"
+  | "profile.status.ready"
+  | "profile.status.opening"
+  | "profile.status.running"
+  | "profile.status.failed"
+  | "profile.proxy.local"
+  | "profile.proxy.remote"
+  | "notify.alerts"
+  | "notify.shortcuts";
 
 /** @deprecated Analytics tab removed — resolve via `SEMANTIC_ICON_ALIASES` in hub-ui. */
 export type DeprecatedSemanticIconKey =

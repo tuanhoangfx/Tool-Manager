@@ -82,7 +82,9 @@ export function getResolvedNoteCookieMembers(noteId: string | null | undefined):
 }
 
 /** Synchronous hit after hover prefetch or prior detail open. */
-export function getCachedNoteCookieMembers(noteId: string | null | undefined): MembersResult | undefined {
+export function getCachedNoteCookieMembers(
+  noteId: string | null | undefined,
+): Extract<MembersResult, { ok: true }> | undefined {
   const hit = getResolvedNoteCookieMembers(noteId);
   return hit?.ok ? hit : undefined;
 }

@@ -4,7 +4,7 @@
 **Clone:** `node Tool/scripts/hub-ui-stack.cjs P00xx <screen>`  
 **Agent tab:** Kind **Pattern** (ready goldens only)
 
-**Deferred** (không có row Agent — chuẩn hóa sau): `dashboard`, `inbox-split` → `deferredPatterns[]` trong catalog.
+**Deferred** (không có row Agent — chuẩn hóa sau): `dashboard` → `deferredPatterns[]` trong catalog.
 
 ---
 
@@ -17,6 +17,7 @@
 | `system-panels` | screen | P0004/system |
 | `workspace-composer` | screen | P0020/notes |
 | `inbox-split` | screen | P0016/inbox |
+| `split-directory-filter-pane` | screen-part | P0001/profiles-pane |
 | `split-pane-scroll` | primitive | packages/hub-ui/split-pane-scroll |
 | `auth-gate` | modal | hub-ui/auth (V2) |
 | `user-access-modal` | modal | P0004/users |
@@ -184,7 +185,125 @@ P0016 wrappers: `ConsoleLoadingView`, `ConsolePaneLoading`. P0004: `AppScreenLoa
 - Editor textarea: `overflow: hidden` on `.notes-editor__textarea` — long content scrolls on `.notes-editor__body.hub-split-scroll`, not nested scrollbars.
 - Import: `@import "…/hub-split-scroll.css"` in tool `hub-ui-styles.css` (after `hub-shell-layout.css`).
 
-**Virtual list (Notes / Inbox rail)**
+---
+
+## Split directory pane (golden — hub-ui)
+
+**Canonical source:** `packages/hub-ui/src/shell/HubSplitDirectoryPane.tsx`, `HubSplitDirectoryFilterBar.tsx`, `hub-split-directory-pane.css`.
+
+### Pattern A — `split-directory-filter-pane` (filter **inside** pane)
+
+**When:** Split layout where search/filter belongs to **one pane only** (not full screen width).
+
+| Context | Filter component | Golden |
+|---------|------------------|--------|
+| Profiles table (left) | `ProfileFilterPane` → `HubSplitDirectoryFilterBar` | P0001 Profiles |
+| Workflow rail (right) | `WorkflowFilterPane variant="rail"` | P0001 Profiles rail |
+| Scripts workflow list (left) | `WorkflowFilterPane variant="panel"` + bulk row | P0001 Scripts |
+
+**Do not** put `FilterBar` on `HubDirectoryScreen` for these — screen header stays chrome-only (`HubListChromeHeader`).
+
+**Page size SSOT**
+
+```tsx
+// useProfiles / useWorkflows
+const pageSize = useHubTablePageSize();
+const setPageSize = (size) => patchHubListPrefs({ tpage: patchHubTablePageSizeValue(size) });
+
+// FilterPane toolbar + table
+<DirectorySearchToolbar showTablePageSize tablePageSize={pageSize} onTablePageSizeChange={setPageSize} />
+<HubDirectoryTableShell pageSize={pageSize} resetKey={hubDirectoryListResetKey(...)} />
+```
+
+**List reset key:** always `hubDirectoryListResetKey(search, filterValues, sortKey, sortDir)` — **never** manual pipe strings.
+
+**Shared hooks (tool-local):** P0001 `useWorkflowDirectoryFilters`, profile filter state in `ProfileFilterPane`.
+
+### Pattern B — `inbox-split` / `workspace-composer` (filter **screen-level**)
+
+**When:** Master-detail with FilterBar spanning full width above split body.
+
+| Context | Shell | Filter location |
+|---------|-------|-----------------|
+| Inbox | `HubSplitWorkspaceScreen` | `FilterBar` on screen chrome |
+| Notes | `HubSplitWorkspaceScreen` | `directoryToolbar` / `filterToolbar` on screen |
+
+See **inbox-split** / **workspace-composer** catalog entries — **not** the same as Pattern A.
+
+### HubSplitDirectoryPane variants
+
+| Context | Component | Scroll |
+|---------|-----------|--------|
+| Split workspace left pane (Profiles table) | `HubSplitDirectoryPane` + embedded filter | `scroll` on panel |
+| Compact rail (Workflow picker) | `HubSplitDirectoryPane variant="rail" fixedRows={5}` | **none** — pager navigates pages |
+| Scripts left pane | `HubSplitDirectoryPane variant="panel" scroll` | panel scroll |
+
+**Structure**
+
+```
+HubSplitDirectoryPane scroll? fixedRows?
+  ├─ hub-split-directory-pane__filters → HubSplitDirectoryFilterBar (frameless)
+  │    └─ toolbar: DirectorySearchToolbar (tablePageSize + onTablePageSizeChange when paginated)
+  └─ hub-split-directory-pane__body
+       └─ HubDirectoryTableShell flushWrap
+            └─ inner .hub-users-table-wrap (border + bg rgba white 2%)
+```
+
+**Rules**
+
+- Outer pane: one `rounded-2xl border border-white/5 bg-[var(--panel)]`.
+- FilterBar: `frameless` — no nested panel chrome.
+- Table: `flushWrap` on shell; inner wrap gets golden border via CSS.
+- **One scroll layer** — panel uses `scroll` (body `hub-split-scroll--panel`); rail uses `fixedRows` (no scrollbars).
+- Never nest `hub-split-scroll` + `hub-directory-table-scroll` in same subtree.
+
+**Golden refs:** P0001 `ProfileFilterPane.tsx`, `WorkflowFilterPane.tsx`, `WorkflowRailPanel.tsx`, `WorkflowDirectoryPanel.tsx`.
+
+---
+
+## Directory table scroll (golden — split head/body)
+
+**Canonical source:** `packages/hub-ui/src/table/HubDirectoryTableShell.tsx`, `DirectorySplitScrollTable.tsx`, `directory-table-scroll.ts`, `styles/hub-directory-table.css`.
+
+### When to split
+
+| Wrap class | Component | Scrollbar |
+|------------|-----------|-----------|
+| `HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS` | `DirectoryInlineTable` | **None** — page scroll on `.hub-main` (P0004 Hub/Users, P0020 2FA/Cookie) |
+| `HUB_DIRECTORY_TABLE_SCROLL_CLASS` | `DirectoryInlineTable` | Wrap scroll + sticky `<thead>` (legacy / explicit opt-in) |
+| `HUB_DIRECTORY_TABLE_SCROLL_FLEX_CLASS` | `DirectorySplitScrollTable` + `--flex-pane` | Body only (`.hub-directory-table-body-scroll`) |
+| Modal / rail (no `hub-directory-table-scroll`) | `DirectoryInlineTable` | None or outer pane |
+
+**Import SSOT (never hand-concat wrap strings in tools):**
+
+```tsx
+import {
+  HUB_DIRECTORY_TABLE_SCROLL_CLASS,
+  HUB_DIRECTORY_TABLE_SCROLL_FLEX_CLASS,
+} from "@tool-workspace/hub-ui";
+
+// Flex-pane (Profiles table, Scripts workflow list)
+wrapClassName={HUB_DIRECTORY_TABLE_SCROLL_FLEX_CLASS}
+```
+
+### Rules
+
+- **Split only in flex-pane** (`--flex-pane`) — standalone directory screens use sticky `<thead>` on one table; never add `hub-directory-table-split` outside `HubSplitDirectoryPane`.
+- **One paint layer** — header track + body track live in `hub-directory-table.css` only; no tool-local `::after` gutter hacks or duplicate split paint in `hub-split-directory-pane.css`.
+- **Flex-pane pad:** `--hub-directory-split-scrollbar-pad: var(--hub-split-scroll-size, 10px)` + `scrollbar-gutter: stable` on body scroll; JS sync skips inline style when `--flex-pane` is present.
+- **Vendor parity:** after hub-ui edits run `node Tool/scripts/sync-hub-ui-vendor.cjs --tool P00xx` and `hub-ui-vendor-export-gate.mjs --code P00xx`.
+
+**Do not**
+
+- Concat `"hub-directory-table-scroll hub-directory-table-scroll--flex-pane"` locally — use `HUB_DIRECTORY_TABLE_SCROLL_FLEX_CLASS`.
+- Add `head::after` or triple borders on split tables.
+- Nest `hub-split-scroll` overflow + `hub-directory-table-scroll` on the same subtree.
+
+**Golden refs:** P0001 `gpm-directory-table.ts`, `GpmProfileDirectoryTable.tsx`, `GpmWorkflowDirectoryTable.tsx`.
+
+---
+
+## Virtual list (Notes / Inbox rail)
 
 | Constant | Value | Location |
 |----------|-------|----------|
@@ -460,6 +579,68 @@ One semantic key maps icon + tone across **badge**, **KPI strip**, **tab header 
 
 ---
 
+## Directory status labels (golden — hub-ui)
+
+**Canonical source:** `packages/hub-ui/src/shell/HubUsersStatusLabel.tsx`, `hub-users-table.css`, `hub-directory-table.css`.
+
+| Component / pattern | When |
+|---------------------|------|
+| `HubUsersStatusLabel` | Enum status (Connected, Listed, Idle) — `tone`: `online` \| `offline` \| `idle` \| `active` |
+| `HubUsersOnOffLabel` | Boolean **On/Off** (RAG, toggles) |
+| `hub-users-tool-badge` + `compactIconSize(11)` | Icon chip (Ready, model, tool count) |
+
+**Rules**
+
+- Import from `@tool-workspace/hub-ui` — **no** per-feature `*RagBadge`, `*OnOffBadge`, or ad-hoc status wrappers.
+- Do **not** use `MetricBadge` or toggle Lucide icons for directory boolean columns.
+- Table: wrap in `hub-users-role-cell` when column is status/role styled.
+- Card: same components inside `HubDirectoryCardMetaRow`.
+
+**Golden refs:** P0016 `channel-ui.tsx`, `GroupDirectoryTable.tsx`, `PersonalityDirectoryTable.tsx`.
+
+---
+
+## Directory table column contract (golden — hub-ui)
+
+**Canonical source:** `packages/hub-ui/examples/GoldenDirectoryTable.tsx` · P0016 `FacebookAccountDirectoryTable.tsx` · P0004 Users.
+
+| Piece | Contract |
+|-------|----------|
+| Meta | `directory-column-meta.ts` — **unique `colClass` + `width` per key** (weights; `buildDirectoryColumns` scales visible set to 100%) |
+| Columns | `buildDirectoryColumns(keys, meta)` — never hand-roll `COLUMNS` array |
+| Colgroup | `buildDirectoryColgroup(columns, { includeSelect: true })` — inline `style.width` per col |
+| Body | `DirectoryTableBodyCell` — `td.colClass` must match colgroup |
+| Shell | `HubDirectoryTableShell` + `hubDirectoryTableClass("default")` |
+| Select | `data-hub-directory-select`; select col **36px** th/td + **3%** colgroup track |
+| Width tiers | Fixed chrome (status/timestamp/count) → **rem/px** via `HUB_DIRECTORY_COLUMN_WIDTH_REGISTRY`; fluid (name/path) → **%** via variant CSS |
+| Bulk colgroup | `buildDirectoryColgroupForShell({ showSelect: true })` — **no inline %** on data cols (2FA parity) |
+| Read-only colgroup | Inline `%` / rem from meta OK (no select column) |
+| Gate | `directory-table-col-parity.mjs` — fixed roles must not use `%` in meta; `directory-table-width-matrix.mjs` — Playwright bands |
+
+**Pre-ship checklist**
+
+- [ ] Meta registry with `width` for every visible key
+- [ ] `buildDirectoryColumns` + `buildDirectoryColgroup`
+- [ ] Body cells via `DirectoryTableBodyCell` (no hardcoded `td` class drift)
+- [ ] Screen: `ViewToggle` + `HubPaginatedCardGrid` + `useHubDirectorySelection` + `listResetKey`
+- [ ] `node Tool/scripts/directory-table-col-parity.mjs --code P00xx` passes
+
+Do **not** add per-domain CSS variants (`fb-accounts`, `directory-7`) for width — use column `width` SSOT only. Variant CSS is for min-width / actions padding only.
+
+## Directory table select column (golden — hub-ui)
+
+**Canonical source:** `HubDirectoryTableShell` sets `data-hub-directory-select` on `<table>`; `buildDirectoryColgroup({ includeSelect: true })`; `hub-directory-table.css`.
+
+| Piece | Contract |
+|-------|----------|
+| Shell | `data-hub-directory-select` when checkbox column shown |
+| Colgroup | `buildDirectoryColgroupForShell` — select colgroup **3%**; th/td **36px** |
+| CSS | `hub-directory-table.css` + variant CSS — fixed rem/px chrome; fluid % content |
+
+Do **not** fork select column width per tool — use shell + meta helpers only.
+
+---
+
 ## Directory card shell (golden — hub-ui)
 
 **Canonical source:** `packages/hub-ui/src/content/HubDirectoryCardShell.tsx` → fan-out via `node Tool/scripts/sync-hub-ui-vendor.cjs`.
@@ -587,7 +768,7 @@ Pass as `filterRowActions` on `HubDirectoryScreen` — `FilterBar` aligns end (`
 - **25 rows/page** default (`HUB_TABLE_PAGE_SIZE` / `readHubTablePageSize`) — E0001 `route-table-pager` visual parity (prev/next + `Page X of Y · Showing A–B of N`).
 - **Page size** 25/50/100 via Settings → Display → Page size (`tpage` URL param, `useHubTablePageSize()` in shells).
 - Pass `resetKey` when filter/search changes (e.g. `` `${query}|${JSON.stringify(filterValues)}` ``); omit for auto signature from list head/tail.
-- Pager sits **below** the table (or card grid); hidden when `totalCount ≤ pageSize`.
+- Pager sits **below** the table (or card grid); **always visible** by default (even `totalCount ≤ pageSize`). Host may opt-in hide via `configureDirectoryPager({ hideWhenSinglePage: () => true })`.
 - Card directory views use `HubPaginatedCardGrid` (or `HubPaginatedTableShell` when the child supplies its own grid).
 - **Select all** in directory tables applies to **current page only** (`hubTogglePageSelectAll` / `hubPageAllSelected`); label `"Select all on this page"`.
 - Import CSS via `@import "@tool-workspace/hub-ui/styles/hub-users-table.css"` (`.hub-table-pager` tokens).

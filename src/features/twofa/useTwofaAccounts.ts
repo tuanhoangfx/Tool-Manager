@@ -76,6 +76,7 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
   const syncGeneration = useRef(0);
   const pendingSilentSync = useRef(false);
   const pendingFullSync = useRef(false);
+  const bootSyncDoneRef = useRef(false);
   const vaultUserIdRef = useRef<string | null>(getTwofaStorageUserId());
   const lastFullSyncEmitRef = useRef(0);
   const applyAccountsRef = useRef<(next: TwofaAccount[], opts?: { skipBroadcast?: boolean }) => void>(
@@ -197,11 +198,10 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
   useTwofaRealtime(syncFromRealtime, isTwofaCloudAvailable() && tabActive);
 
   useEffect(() => {
-    if (!isTwofaCloudAvailable() || !tabActive) return;
+    if (!isTwofaCloudAvailable()) return;
 
     let sessionSyncTimer = 0;
     let pendingSyncFull: boolean | null = null;
-    let bootSyncDone = false;
 
     const needsFullSync = (uid: string | null) => Boolean(uid && !hasTwofaSyncWatermark(uid));
 
@@ -225,14 +225,14 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
         }
         const userChanged = reloadForVaultUser();
         const full = opts?.forceFull || userChanged || needsFullSync(uid);
-        if (bootSyncDone && !full) return;
+        if (bootSyncDoneRef.current && !full) return;
         scheduleSessionSync(full);
       });
     };
 
     const onTwofaSession = () => onVaultSession({ forceFull: true });
     const onDataBoxSession = () => {
-      if (bootSyncDone) return;
+      if (bootSyncDoneRef.current) return;
       onVaultSession();
     };
 
@@ -240,12 +240,13 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
     window.addEventListener("p0020:databox-session", onDataBoxSession);
 
     const onFocus = () => {
-      if (!bootSyncDone) return;
+      if (!bootSyncDoneRef.current || !tabActive) return;
       void syncFromCloud({ silent: true, reconcile: true });
     };
-    window.addEventListener("focus", onFocus);
+    if (tabActive) window.addEventListener("focus", onFocus);
 
     const boot = async () => {
+      if (bootSyncDoneRef.current) return;
       const uid = await resolveVaultUserId();
       if (uid) {
         if (uid !== vaultUserIdRef.current) {
@@ -258,7 +259,7 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
       } else {
         reloadForVaultUser();
       }
-      bootSyncDone = true;
+      bootSyncDoneRef.current = true;
     };
     const idleId =
       typeof window.requestIdleCallback === "function"

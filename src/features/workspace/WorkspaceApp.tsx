@@ -21,7 +21,7 @@ import {
   prefetchNotesListBackground,
   prefetchWorkspaceTabsBackground,
 } from "../../lib/hub-background-prefetch";
-import { WorkspaceEagerTabPrefetch } from "../../lib/workspace-eager-tabs";
+import { EAGER_PRIORITY_SCREENS, WorkspaceEagerTabPrefetch } from "../../lib/workspace-eager-tabs";
 import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
 import { NotesAuthGate } from "../notes/NotesAuthGate";
 import { WorkspaceShellTabFrame } from "./WorkspaceShellTabFrame";
@@ -76,6 +76,17 @@ function WorkspaceAppInner() {
   useEffect(() => {
     if (!session) return;
     prefetchWorkspaceTabsBackground(session);
+    setVisited((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const tab of EAGER_PRIORITY_SCREENS) {
+        if (!next.has(tab)) {
+          next.add(tab);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
   }, [session]);
 
   useEffect(() => {
@@ -102,6 +113,8 @@ function WorkspaceAppInner() {
 
   const needsAuthGate = !session && !authLoading && !offline;
   const authGateVariant = authVariantForNav(activeNav);
+  /** 2FA is local-first — do not block the tab on Data Box auth boot (deep link /twofa). */
+  const authBootBlocking = !session && authLoading && activeNav !== "twofa";
 
   return (
     <HubAppLogProvider
@@ -120,7 +133,7 @@ function WorkspaceAppInner() {
         <HubLoaderRoot />
         {needsAuthGate ? (
           <NotesAuthGate variant={authGateVariant} />
-        ) : !session && authLoading ? (
+        ) : authBootBlocking ? (
           <div className="flex flex-1 items-center justify-center p-6 text-[12px] text-[var(--muted)]">
             Signing in…
           </div>

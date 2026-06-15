@@ -20,6 +20,7 @@ const COLUMNS = [
     role: "name" as const,
     colClass: "hub-users-col--folder-name",
     headerAlign: "start" as const,
+    width: "70%",
   },
   {
     key: "noteCount" as const,
@@ -27,6 +28,7 @@ const COLUMNS = [
     role: "tools" as const,
     colClass: "hub-users-col--folder-notes",
     headerAlign: "center" as const,
+    width: "3.75rem",
   },
 ];
 

@@ -37,6 +37,7 @@ export {
   useCrossTabVaultReload,
   type UseCrossTabVaultReloadOptions,
 } from "./useCrossTabVaultReload";
+export { useDelayedTrue } from "./useDelayedTrue";
 export {
   useVirtualWindow,
   virtualWindowStride,

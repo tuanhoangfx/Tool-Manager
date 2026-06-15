@@ -98,6 +98,8 @@ export type FilterBarProps = {
   shortcutScope?: string;
   /** Hub dashboard-style row: filters only, no search field or F shortcut. */
   hideSearch?: boolean;
+  /** Inside HubSplitDirectoryPane — parent owns border/bg; no nested panel chrome. */
+  frameless?: boolean;
 };
 
 export function FilterBar({
@@ -117,6 +119,7 @@ export function FilterBar({
   embedded = false,
   shortcutScope = "default",
   hideSearch = false,
+  frameless = false,
 }: FilterBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const clearAllRef = useRef<() => void>(() => {});
@@ -192,7 +195,13 @@ export function FilterBar({
   if (layout === "hub") {
     const stickyTop = headerPinned ? "top-[var(--app-tab-header-sticky-h)]" : "top-0";
     const panel = (
-      <div className="space-y-2 rounded-2xl border border-white/5 bg-[var(--panel)] p-3">
+      <div
+        className={
+          frameless
+            ? "space-y-2"
+            : "space-y-2 rounded-2xl border border-white/5 bg-[var(--panel)] p-3"
+        }
+      >
         <div className="flex flex-wrap items-center gap-2">
           {hideSearch ? null : searchField}
           {toolbar ? <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">{toolbar}</div> : null}

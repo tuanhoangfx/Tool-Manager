@@ -1,22 +1,5 @@
 /* P0020 table extensions ΓÇö base skin from vendor/hub-ui hub-users-table.css */
 
-table.hub-users-table th.hub-users-col--select,
-table.hub-users-table td.hub-users-col--select {
-  padding: 6px 4px;
-  box-sizing: border-box;
-}
-
-.hub-users-select-all,
-.hub-users-select-row {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  margin: 0 auto;
-  padding: 0;
-  cursor: pointer;
-}
-
 .hub-users-role-badge--owner {
   border-color: rgba(129, 140, 248, 0.28);
   background: rgba(99, 102, 241, 0.13);
@@ -88,16 +71,7 @@ table.hub-users-table--twofa .hub-users-th-text {
   pointer-events: none;
 }
 
-table.hub-users-table--twofa col.hub-users-col--select {
-  width: 36px;
-}
-
-table.hub-users-table--twofa th.hub-users-col--select,
-table.hub-users-table--twofa td.hub-users-col--select {
-  width: 36px;
-  max-width: 36px;
-  min-width: 36px;
-}
+/* twofa select column width — hub-directory-table.css (--twofa variant) */
 
 table.hub-users-table--twofa th.hub-users-col--twofa-service,
 table.hub-users-table--twofa th.hub-users-col--twofa-account,

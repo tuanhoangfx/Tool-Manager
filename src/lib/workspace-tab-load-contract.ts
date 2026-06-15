@@ -40,7 +40,7 @@ export const WORKSPACE_TAB_LOAD_CONTRACT: readonly TabLoadContractEntry[] = [
     eager: false,
     lazyChunk: true,
     chunkPrefetch: "boot+session",
-    dataWarmers: ["prefetchTwofaVaultBackground", "prefetchTwofaAuth (main)"],
+    dataWarmers: ["prefetchTwofaVaultBackground", "prefetchTwofaAuth (main+boot)", "EAGER_PRIORITY_SCREENS pre-visit"],
     tabActiveHooks: ["useTwofaAccounts", "analyticsActive", "TwofaTotpTickProvider", "useTwofaRealtime"],
     sharedCode: ["useCrossTabVaultReload", "useVirtualWindow", "createKeyedClientCache (detail N/A)"],
     virtualWindow: true,

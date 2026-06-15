@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import {
+  HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS,
   HubDirectoryTableShell,
-  buildDirectoryColgroup,
+  buildDirectoryColgroupForShell,
   hubDirectoryTableClass,
   type HubSortDir,
 } from "@tool-workspace/hub-ui";
@@ -11,15 +12,16 @@ import { renderCookieRoutesDirectoryBodyCell } from "./cookie-routes-directory-c
 import type { CookieVaultRow } from "./useCookieVaultMap";
 
 const ROUTE_COLUMNS = [
-  { key: "updated" as const, label: "Status", role: "status" as const, colClass: "min-w-[220px]" },
-  { key: "title" as const, label: "Route", role: "route" as const, colClass: "" },
-  { key: "platform" as const, label: "URL / ID", role: "url" as const, colClass: "" },
-  { key: "created" as const, label: "Vault", role: "vault" as const, colClass: "w-28" },
+  { key: "updated" as const, label: "Status", role: "status" as const, colClass: "min-w-[220px]", width: "6.5rem" },
+  { key: "title" as const, label: "Route", role: "route" as const, colClass: "", width: "28%" },
+  { key: "platform" as const, label: "URL / ID", role: "url" as const, colClass: "", width: "22%" },
+  { key: "created" as const, label: "Vault", role: "vault" as const, colClass: "w-28", width: "5rem" },
   {
     key: "owner" as const,
     label: "Owner / Browser",
     role: "source" as const,
     colClass: "w-36",
+    width: "6.25rem",
     sortable: false as const,
   },
 ] as const;
@@ -31,6 +33,7 @@ const SHELL_COLUMNS = ROUTE_COLUMNS.map((col) => ({
   label: col.label,
   role: col.role,
   colClass: col.colClass,
+  width: col.width,
   sortable: !("sortable" in col && col.sortable === false),
 }));
 
@@ -81,7 +84,7 @@ export function CookieRoutesDirectoryTable(props: TableProps) {
   } = props;
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const colgroup = useMemo(
-    () => buildDirectoryColgroup(SHELL_COLUMNS, { includeSelect: true }),
+    () => buildDirectoryColgroupForShell(SHELL_COLUMNS, { showSelect: true }),
     [],
   );
   const emptyMessage =
@@ -93,7 +96,7 @@ export function CookieRoutesDirectoryTable(props: TableProps) {
       resetKey={resetKey}
       ariaLabel="Route table pages"
       tableClassName={`${hubDirectoryTableClass("default")} hub-users-table--cookie-routes min-w-[980px]`}
-      wrapClassName="overflow-hidden"
+      wrapClassName={HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS}
       colgroup={colgroup}
       columns={SHELL_COLUMNS}
       sortKey={sortKey}

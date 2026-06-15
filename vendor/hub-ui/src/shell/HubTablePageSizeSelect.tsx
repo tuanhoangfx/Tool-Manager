@@ -10,7 +10,13 @@ import {
 import { patchHubListPrefs } from "../lib/hub-url-prefs";
 
 /** Directory table/card pager — URL `tpage` (25 / 50 / 100). */
-export function HubTablePageSizeSelect({ value }: { value?: number }) {
+export function HubTablePageSizeSelect({
+  value,
+  onChange,
+}: {
+  value?: number;
+  onChange?: (size: number) => void;
+}) {
   const pageSize = useHubTablePageSize(value);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -27,6 +33,7 @@ export function HubTablePageSizeSelect({ value }: { value?: number }) {
 
   function pick(next: number) {
     patchHubListPrefs({ tpage: patchHubTablePageSizeValue(next) });
+    onChange?.(next);
     setOpen(false);
   }
 

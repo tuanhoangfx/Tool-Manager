@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-06-15 - Hub-ui vendor sync + directory column width SSOT
+
+- Version: `4.3.32`
+- Timestamp: 2026-06-15 15:45 (UTC+7)
+- Commit: `59382ef`
+- Type: Patch
+- Status: Committed
+
+### Changes
+
+- Sync hub-ui vendor (notify icons, column width narrowing, `HubTablePageSizeSelect` onChange).
+- Add `width` to Cookie/Notes/2FA directory tables; fix `getCachedNoteCookieMembers` return type.
+- `tsconfig` hub-ui paths → `vendor/hub-ui` for Vercel standalone build.
+
+### Verification
+
+- `pnpm exec tsc --noEmit` pass.
+
+---
+## 2026-06-13 - E0001 CWS v1.1.3 published — badge + install docs sync
+
+- Version: `4.3.31`
+- Timestamp: 2026-06-13 (UTC+7)
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- `extensionCwsBuildInfo.ts` → `published` (E0001 v1.1.3 approved on Chrome Web Store).
+- Download modal Update row: **Live on Store** for v1.1.3; no In review chip.
+- Install section unchanged: dual guides (Store + GitHub ZIP).
+
+### Verification
+
+- Deploy databox.infi.io.vn → Cookie Auto FAB → Published + Live on Store
+
+---
 ## 2026-06-13 - Cookie extension download modal — Store + GitHub ZIP
 
 - Version: `4.3.30`

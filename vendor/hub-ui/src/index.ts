@@ -237,6 +237,14 @@ export { EntityRankMiniChart, type EntityRankRow } from "./shell/EntityRankMiniC
 export { MiniDonut, type DonutItem } from "./shell/MiniDonut";
 export { MetricBadge, RegistryMetricBadge, type MetricBadgeProps, type MetricBadgeTone } from "./shell/MetricBadge";
 export {
+  HubUsersStatusLabel,
+  HubUsersOnOffLabel,
+  type HubUsersStatusLabelProps,
+  type HubUsersStatusTone,
+} from "./shell/HubUsersStatusLabel";
+export { HubDirectoryIconCell, type HubDirectoryIconCellProps } from "./shell/HubDirectoryIconCell";
+export { HubDirectoryToolBadge, type HubDirectoryToolBadgeProps } from "./shell/HubDirectoryToolBadge";
+export {
   HubDirectoryMetricBadge,
   HubDirectoryMetricStrip,
   type HubDirectoryMetricItem,
@@ -274,18 +282,34 @@ export {
   type HubPaginatedCardGridProps,
 } from "./content/HubPaginatedCardGrid";
 export { HubTablePager, type HubTablePagerProps } from "./content/HubTablePager";
+export {
+  DirectoryRelativeTimeCell,
+  type DirectoryRelativeTimeCellProps,
+} from "./content/DirectoryRelativeTimeCell";
+export { formatHubRelativeTime } from "./lib/format-hub-relative-time";
+export { useRelativeNow } from "./lib/use-relative-now";
+export {
+  configureDirectoryPager,
+  directoryPagerChangeEvent,
+  directoryPagerHideWhenSinglePage,
+} from "./table/directory-pager-config";
 export { HubTableColumnHeader, type HubTableColumnHeaderProps } from "./content/HubTableColumnHeader";
 export { HubSortIndicator, type HubSortDir } from "./table/HubSortIndicator";
 export {
   directoryTableSortReducer,
   useDirectoryTableSort,
 } from "./table/useDirectoryTableSort";
-export { HUB_DIRECTORY_TABLE_SCROLL_CLASS } from "./table/directory-table-scroll";
+export {
+  HUB_DIRECTORY_TABLE_SCROLL_CLASS,
+  HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS,
+  HUB_DIRECTORY_TABLE_SCROLL_FLEX_CLASS,
+} from "./table/directory-table-scroll";
 export {
   readHubDirectoryPinnedIds,
   toggleHubDirectoryPinnedId,
   pinHubDirectoryIds,
   sortHubDirectoryPinnedFirst,
+  purgeHubDirectoryPinnedStorage,
   type HubDirectoryPinScope,
 } from "./prefs/hub-directory-pinned";
 export {
@@ -294,6 +318,41 @@ export {
   type HubDirectoryTableShellProps,
   type HubDirectoryTableStaticColumn,
 } from "./table/HubDirectoryTableShell";
+export {
+  DirectoryTableBodyCell,
+  type DirectoryTableBodyCellProps,
+} from "./table/DirectoryTableBodyCell";
+export {
+  buildDirectoryColgroup,
+  buildDirectoryColgroupForShell,
+  buildDirectoryColumns,
+  scaleDirectoryColumnWidths,
+  validateDirectoryColumns,
+  hubDirectoryTableClass,
+  HUB_DIRECTORY_TABLE_BASE_CLASS,
+  HUB_DIRECTORY_TABLE_WRAP_CLASS,
+  HUB_DIRECTORY_USER_TABLE_WRAP_CLASS,
+  HUB_DIRECTORY_SELECT_COL_WIDTH,
+  HUB_DIRECTORY_SELECT_COLGROUP_WIDTH,
+  HUB_MODAL_DIRECTORY_TABLE_WRAP_CLASS,
+  type DirectoryColgroupOptions,
+  type DirectoryColgroupForShellOptions,
+  type HubDirectoryColumnDef,
+  type HubDirectoryColumnMetaInput,
+  type HubDirectoryTableVariant,
+} from "./table/hub-directory-table-meta";
+export {
+  HUB_DIRECTORY_COLUMN_WIDTH_REGISTRY,
+  HUB_DIRECTORY_FIXED_COL_WIDTH_BANDS,
+  HUB_DIRECTORY_SELECT_WIDTH_SPEC,
+  isFixedDirectoryColumnRole,
+  isFixedDirectoryColumnWidth,
+  isFluidDirectoryColumnWidth,
+  resolveDirectoryColumnWidthSpec,
+  validateDirectoryColumnWidthMeta,
+  type HubDirectoryColumnWidthKind,
+  type HubDirectoryColumnWidthSpec,
+} from "./table/hub-directory-column-width-registry";
 export {
   HUB_ROUTE_ACCESS_TABLE_CLASS,
   HUB_ROUTE_ACCESS_TABLE_WRAP_CLASS,
@@ -587,6 +646,10 @@ export {
   type HubToolDetailModalProps,
   type HubToolDetailModalTocLayoutProps,
 } from "./shell/HubToolDetailModal";
+export {
+  HubToolDetailModalFooterActions,
+  type HubToolDetailModalFooterActionsProps,
+} from "./shell/HubToolDetailModalFooterActions";
 export { HubFormFieldLabel, type HubFormFieldLabelProps } from "./shell/HubFormFieldLabel";
 export { HubOpsFormField, type HubOpsFormFieldProps } from "./shell/HubOpsFormField";
 export { HubModalFilterField, type HubModalFilterFieldProps } from "./shell/HubModalFilterField";
@@ -606,6 +669,16 @@ export {
   HUB_MODAL_DIRECTORY_EMPTY_FILTERED_CLASS,
   type HubModalDirectorySectionProps,
 } from "./shell/HubModalDirectorySection";
+export {
+  HubSplitDirectoryPane,
+  HUB_SPLIT_DIRECTORY_PANE_CLASS,
+  type HubSplitDirectoryPaneProps,
+  type HubSplitDirectoryPaneVariant,
+} from "./shell/HubSplitDirectoryPane";
+export {
+  HubSplitDirectoryFilterBar,
+  type HubSplitDirectoryFilterBarProps,
+} from "./shell/HubSplitDirectoryFilterBar";
 export { HubRouteAboutSummary, type HubRouteAboutSummaryProps } from "./route-detail/HubRouteAboutSummary";
 export {
   HubToolDetailIdentityHeader,
@@ -621,6 +694,11 @@ export {
 export { scrollToHubTocSection, findHubTocScrollContainer } from "./shell/hub-toc-scroll";
 export { resolveActiveTocSection, useHubTocSectionSpy } from "./shell/hub-toc-section-spy";
 export { HubTocSectionNav, type HubTocNavItem } from "./shell/HubTocSectionNav";
+export {
+  HubAddModalTocNav,
+  type HubAddModalTabItem,
+  type HubAddModalTocNavProps,
+} from "./shell/HubAddModalTocNav";
 export { HubHintTooltip } from "./shell/HubHintTooltip";
 export { HubHeaderPanelButton, type HubHeaderPanelButtonProps } from "./shell/HubHeaderPanelButton";
 export { HubUsageLogPanel, type HubLogEntry, type HubLogQuickAction, type HubUsageLogPanelProps } from "./shell/HubUsageLogPanel";
@@ -632,6 +710,14 @@ export {
   type HubAppLogProviderProps,
 } from "./shell/HubAppLogProvider";
 export { HubLogButton, type HubLogButtonProps, type HubLogButtonVariant, type HubLogExtraSection } from "./shell/HubLogButton";
+export {
+  HubNotifyPanel,
+  type HubNotifyAlert,
+  type HubNotifyAlertSeverity,
+  type HubNotifyPanelProps,
+  type HubNotifyQuickAction,
+} from "./shell/HubNotifyPanel";
+export { HubHeaderOpsPanels, type HubHeaderOpsPanelsProps } from "./shell/HubHeaderOpsPanels";
 export { HubNotifyButton, type HubNotifyButtonProps } from "./shell/HubNotifyButton";
 export { HubFilterRowButton, type HubFilterRowButtonProps, type HubFilterRowTone } from "./shell/HubFilterRowButton";
 export {

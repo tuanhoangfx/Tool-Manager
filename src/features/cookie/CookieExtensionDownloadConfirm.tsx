@@ -3,8 +3,8 @@ import {
   Archive,
   Download,
   ExternalLink,
-  FolderOpen,
   Package,
+  RefreshCw,
   ShoppingBag,
   Tag,
 } from "lucide-react";
@@ -27,9 +27,10 @@ import {
   EXTENSION_CHROME_WEB_STORE_URL,
   EXTENSION_GITHUB_ZIP_LABEL,
   EXTENSION_HEADER_LABEL,
+  getChromeWebStoreListingChipStatus,
+  getChromeWebStoreUpdateStatus,
   getExtensionInstallLabel,
   hasChromeWebStoreInstall,
-  isChromeWebStoreLive,
 } from "./extensionInstall";
 import { CookieExtensionInstallSteps } from "./CookieExtensionInstallSteps";
 import { EXTENSION_DOWNLOAD_TOC, extensionDownloadSectionTitle } from "./extension-download-toc";
@@ -73,7 +74,7 @@ function CwsListingChip({ status }: { status: ExtensionCwsListingStatus }) {
     return (
       <span
         className="cookie-dl-modal__cws-chip cookie-dl-modal__cws-chip--review"
-        title="Chrome Web Store listing is pending review"
+        title="New version pending Chrome Web Store review"
       >
         <span className="cookie-dl-modal__cws-chip-dot" aria-hidden />
         In review
@@ -100,6 +101,10 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
   const [zipBusy, setZipBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const listingChipStatus = getChromeWebStoreListingChipStatus();
+  const updateStatus = getChromeWebStoreUpdateStatus();
+  const updateVersion = preview.version || EXTENSION_BUILD.version;
+
   const sectionIds = useMemo(
     () => EXTENSION_DOWNLOAD_TOC.map(({ id }) => `${ID_PREFIX}${id}`),
     [],
@@ -123,13 +128,9 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
   }, [bundled, open]);
 
   const onStoreInstall = () => {
-    if (zipBusy) return;
-    if (isChromeWebStoreLive() && EXTENSION_CHROME_WEB_STORE_URL) {
-      window.open(EXTENSION_CHROME_WEB_STORE_URL, "_blank", "noopener,noreferrer");
-      onClose();
-      return;
-    }
-    void onGithubDownload();
+    if (zipBusy || !EXTENSION_CHROME_WEB_STORE_URL) return;
+    window.open(EXTENSION_CHROME_WEB_STORE_URL, "_blank", "noopener,noreferrer");
+    onClose();
   };
 
   const onGithubDownload = () => {
@@ -139,7 +140,6 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
       try {
         const latest = await fetchLatestExtensionRelease();
         await triggerExtensionZipDownload(latest);
-        if (!isChromeWebStoreLive()) onClose();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Download failed.");
       } finally {
@@ -147,6 +147,30 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
       }
     })();
   };
+
+  const footer = hasChromeWebStoreInstall() ? (
+    <>
+      <HubToolDetailModalSecondaryAction
+        label={zipBusy ? "Please wait…" : EXTENSION_GITHUB_ZIP_LABEL}
+        onClick={onGithubDownload}
+        disabled={zipBusy}
+      />
+      <HubToolDetailModalPrimaryAction
+        label={EXTENSION_CHROME_WEB_STORE_LABEL}
+        onClick={onStoreInstall}
+        disabled={zipBusy}
+        icon={ShoppingBag}
+      />
+    </>
+  ) : (
+    <HubToolDetailModalPrimaryAction
+      label="Confirm download"
+      onClick={onGithubDownload}
+      disabled={zipBusy}
+      busy={zipBusy}
+      icon={Download}
+    />
+  );
 
   return (
     <HubToolDetailModal
@@ -157,31 +181,7 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
       headerImageUrl={E0001_ICON_URL}
       sectionIds={sectionIds}
       scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
-      footer={
-        isChromeWebStoreLive() ? (
-          <>
-            <HubToolDetailModalSecondaryAction
-              label={zipBusy ? "Please wait…" : EXTENSION_GITHUB_ZIP_LABEL}
-              onClick={onGithubDownload}
-              disabled={zipBusy}
-            />
-            <HubToolDetailModalPrimaryAction
-              label={EXTENSION_CHROME_WEB_STORE_LABEL}
-              onClick={onStoreInstall}
-              disabled={zipBusy}
-              icon={ShoppingBag}
-            />
-          </>
-        ) : (
-          <HubToolDetailModalPrimaryAction
-            label="Confirm download"
-            onClick={onGithubDownload}
-            disabled={zipBusy}
-            busy={zipBusy}
-            icon={Download}
-          />
-        )
-      }
+      footer={footer}
       toc={
         <TocSectionNav
           items={EXTENSION_DOWNLOAD_TOC}
@@ -216,33 +216,36 @@ export function CookieExtensionDownloadConfirm({ open, onClose }: Props) {
               <FieldRow icon={Package} iconClass="text-amber-300" label="Package">
                 <span className="font-mono text-[11px] break-all">{preview.zipName}</span>
               </FieldRow>
-              <FieldRow icon={FolderOpen} iconClass="text-emerald-300" label="Install">
+              <FieldRow icon={ShoppingBag} iconClass="text-emerald-300" label="Install">
                 {getExtensionInstallLabel()}
               </FieldRow>
               {hasChromeWebStoreInstall() && EXTENSION_CHROME_WEB_STORE_URL ? (
-                <FieldRow icon={ShoppingBag} iconClass="text-emerald-300" label="Chrome Store">
-                  <span className="cookie-dl-modal__store-cell">
-                    <CwsListingChip status={EXTENSION_CWS_LISTING_STATUS} />
-                    <a
-                      href={EXTENSION_CHROME_WEB_STORE_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="cookie-dl-modal__latest-link cookie-dl-modal__store-link"
-                    >
-                      <ExternalLink size={13} aria-hidden />
-                      <span>Install from Chrome Web Store</span>
-                    </a>
-                    <button
-                      type="button"
-                      className="cookie-dl-modal__latest-link cookie-dl-modal__github-dl"
-                      onClick={onGithubDownload}
-                      disabled={zipBusy}
-                    >
-                      <Download size={13} aria-hidden />
-                      <span>{zipBusy ? "Downloading…" : EXTENSION_GITHUB_ZIP_LABEL}</span>
-                    </button>
-                  </span>
-                </FieldRow>
+                <>
+                  <FieldRow icon={ShoppingBag} iconClass="text-emerald-300" label="Chrome Store">
+                    <span className="cookie-dl-modal__store-cell">
+                      <CwsListingChip status={listingChipStatus} />
+                      <a
+                        href={EXTENSION_CHROME_WEB_STORE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="cookie-dl-modal__latest-link cookie-dl-modal__store-link"
+                      >
+                        <ExternalLink size={13} aria-hidden />
+                        <span className="font-mono text-[11px] break-all">{EXTENSION_CHROME_WEB_STORE_URL}</span>
+                      </a>
+                    </span>
+                  </FieldRow>
+                  <FieldRow icon={RefreshCw} iconClass="text-sky-300" label="Update">
+                    <span className="cookie-dl-modal__latest-row">
+                      <span className="font-semibold tabular-nums text-sky-200">v{updateVersion}</span>
+                      {updateStatus ? (
+                        <CwsListingChip status={updateStatus} />
+                      ) : EXTENSION_CWS_LISTING_STATUS === "published" ? (
+                        <span className="text-[11px] text-emerald-200/90">Live on Store</span>
+                      ) : null}
+                    </span>
+                  </FieldRow>
+                </>
               ) : null}
             </tbody>
           </table>

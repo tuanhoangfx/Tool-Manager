@@ -29,6 +29,10 @@ export type DirectorySearchToolbarProps = {
   timeRange?: TimeRange;
   /** Pager rows (`tpage`) — golden on all paginated directory tables. */
   showTablePageSize?: boolean;
+  /** Shell SSOT — when set, passed to `HubTablePageSizeSelect` (table + toolbar stay in sync). */
+  tablePageSize?: number;
+  /** Optional host callback after URL `tpage` patch (reset pager, side effects). */
+  onTablePageSizeChange?: (size: number) => void;
   /** When false, omit the Refresh button (e.g. Inbox uses a custom Sync menu). */
   showRefresh?: boolean;
   /** When false, omit shown/total chip (e.g. Todo row-1 period-only). */
@@ -53,6 +57,8 @@ export function DirectorySearchToolbar({
   showTimeRange = true,
   timeRange,
   showTablePageSize = true,
+  tablePageSize,
+  onTablePageSizeChange,
   showRefresh = true,
   showResultCount = true,
   trailing,
@@ -66,7 +72,9 @@ export function DirectorySearchToolbar({
         <ViewToggle value={viewMode} onChange={onViewModeChange} />
       ) : null}
       {showTimeRange ? <HubTimeRangeSelect value={period} /> : null}
-      {showTablePageSize ? <HubTablePageSizeSelect /> : null}
+      {showTablePageSize ? (
+        <HubTablePageSizeSelect value={tablePageSize} onChange={onTablePageSizeChange} />
+      ) : null}
       {showResultCount ? (
         <HubResultCount icon={countIcon} shown={shown} total={total} label={countLabel} />
       ) : null}

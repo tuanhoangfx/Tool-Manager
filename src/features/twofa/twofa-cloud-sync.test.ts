@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { filterPendingUploads } from "./twofa-cloud-sync";
+import { filterPendingUploads, rowSetsFromDbRows } from "./twofa-cloud-sync";
 import type { TwofaAccount } from "./types";
+import type { TwofaDbRow } from "./twofa-cloud-delta";
 
 function account(id: string): TwofaAccount {
   return {
@@ -35,5 +36,39 @@ describe("filterPendingUploads", () => {
     const local = [account("row-1200"), account("row-1499")];
     const pending = filterPendingUploads(local, { activeIds, tombstoneIds: new Set() });
     expect(pending).toHaveLength(0);
+  });
+});
+
+describe("rowSetsFromDbRows", () => {
+  it("classifies active and tombstoned ids from one scan", () => {
+    const rows: TwofaDbRow[] = [
+      {
+        id: "a1",
+        service: "Gmail",
+        browser: null,
+        account: "a@test.com",
+        password: null,
+        secret: "S1",
+        created_at: "2026-06-01T00:00:00.000Z",
+        updated_at: "2026-06-01T00:00:00.000Z",
+        last_used_at: null,
+        deleted_at: null,
+      },
+      {
+        id: "t1",
+        service: "Gmail",
+        browser: null,
+        account: "b@test.com",
+        password: null,
+        secret: "S2",
+        created_at: "2026-06-01T00:00:00.000Z",
+        updated_at: "2026-06-02T00:00:00.000Z",
+        last_used_at: null,
+        deleted_at: "2026-06-02T00:00:00.000Z",
+      },
+    ];
+    const sets = rowSetsFromDbRows(rows);
+    expect([...sets.activeIds]).toEqual(["a1"]);
+    expect([...sets.tombstoneIds]).toEqual(["t1"]);
   });
 });

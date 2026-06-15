@@ -6,7 +6,7 @@ Canonical SSOT for Tool Hub JWT cache, dual sign-in, and workspace auth boot.
 
 | Path | Role |
 |------|------|
-| `Tool/packages/hub-identity` | **Canonical** — edit here |
+| `packages/hub-identity` | **Canonical** — edit here |
 | `Tool/*/vendor/hub-identity` | Vendored copies for each tool |
 | `x1z10:hub-identity-v2` | Browser localStorage JWT (cross-tab) |
 
