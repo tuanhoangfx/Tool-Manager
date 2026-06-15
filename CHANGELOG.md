@@ -6,7 +6,8 @@
 - Timestamp: 2026-06-15 15:45 (UTC+7)
 - Commit: `59382ef`
 - Type: Patch
-- Status: Committed
+- Status: Verified
+- Release: https://databox.infi.io.vn
 
 ### Changes
 
