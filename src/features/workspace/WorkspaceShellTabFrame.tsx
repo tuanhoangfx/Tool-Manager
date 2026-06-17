@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import type { HubDirectoryToolbarSelectionProps } from "@tool-workspace/hub-ui";
 import type { KpiTileData, TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
@@ -27,6 +28,9 @@ export function WorkspaceShellTabFrame({
   const [screenFilters, setScreenFilters] = useState<FilterDef[]>([]);
   const [screenFilterValues, setScreenFilterValues] = useState<FilterValues>({});
   const [screenToolbar, setScreenToolbar] = useState<ReactNode>(null);
+  const [screenFilterSelectionToolbar, setScreenFilterSelectionToolbar] = useState<
+    HubDirectoryToolbarSelectionProps | undefined
+  >(undefined);
   const [screenFilterToolbar, setScreenFilterToolbar] = useState<ReactNode>(null);
   const [screenCenterStats, setScreenCenterStats] = useState<TabHeaderStatItem[]>([]);
   const [directoryKpis, setDirectoryKpis] = useState<KpiTileData[] | undefined>(undefined);
@@ -36,6 +40,7 @@ export function WorkspaceShellTabFrame({
 
   return (
     <div
+      hidden={!active}
       className={active ? "flex min-h-0 min-w-0 flex-1 flex-col" : "hidden"}
       aria-hidden={!active}
     >
@@ -50,6 +55,8 @@ export function WorkspaceShellTabFrame({
         setToolbar={setScreenToolbar}
         filterToolbar={screenFilterToolbar}
         setFilterToolbar={setScreenFilterToolbar}
+        filterSelectionToolbar={screenFilterSelectionToolbar}
+        setFilterSelectionToolbar={setScreenFilterSelectionToolbar}
         centerStats={screenCenterStats}
         setCenterStats={setScreenCenterStats}
         directoryKpis={directoryKpis}
@@ -67,6 +74,7 @@ export function WorkspaceShellTabFrame({
           filterValues={screenFilterValues}
           onFilterValuesChange={setScreenFilterValues}
           toolbar={screenToolbar}
+          filterSelectionToolbar={screenFilterSelectionToolbar}
           filterRowActions={screenFilterToolbar}
           centerStats={screenCenterStats}
           filterShortcutScope={scope}

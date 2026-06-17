@@ -4,6 +4,8 @@ import { initHubUserZoom, mountHubApp } from "@tool-workspace/hub-ui";
 import App from "./App";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { setupHubUi } from "./lib/hub-ui-setup";
+/** Pin auth context module before lazy tab chunks (HMR / split graph). */
+import "./features/notes/AuthSessionProvider";
 
 initHubUserZoom();
 import { isPublicShareEntry, migratePublicShareUrl } from "./features/notes/shareUtils";

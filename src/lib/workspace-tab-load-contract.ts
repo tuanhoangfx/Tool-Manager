@@ -50,7 +50,7 @@ export const WORKSPACE_TAB_LOAD_CONTRACT: readonly TabLoadContractEntry[] = [
     eager: false,
     lazyChunk: true,
     chunkPrefetch: "boot+session",
-    dataWarmers: ["prefetchCookieBootBackground", "cookieRouteMembersPrefetch"],
+    dataWarmers: ["prefetchCookieBootBackground", "prefetchCookieMembersBackground", "cookieRouteMembersPrefetch"],
     tabActiveHooks: [
       "useNotesCookieRealtime",
       "useNotes (enabled)",

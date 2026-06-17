@@ -14,6 +14,259 @@ body,
   min-height: 100dvh;
 }
 
+/* Sheet: split pane — align frames with header edges (Hub tab chrome + body flex) */
+.hub-main.hub-main--sheet {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: none;
+  padding-bottom: 0;
+  scroll-padding-top: 0;
+  scrollbar-gutter: auto;
+  --sheet-split-pane-inset-bottom: 0.625rem;
+}
+
+.hub-main.hub-main--sheet > div {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hub-main--sheet .hub-tab-chrome-stack,
+.hub-main--sheet .sheet-workspace > div {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hub-main--sheet .hub-tab-content-zone {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hub-main--sheet .hub-tab-body-zone--split {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: var(--sheet-split-pane-inset-bottom, 0.625rem);
+  box-sizing: border-box;
+}
+
+.hub-tab-body-zone--split > .sheet-workspace__body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--hub-chrome-content-gap, 0.75rem);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sheet-workspace {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sheet-workspace__body {
+  min-height: 0;
+  flex: 1;
+}
+
+.hub-main--sheet .sheet-workspace__body > .hub-split-directory-pane.sheet-rail {
+  flex: 0 0 auto;
+  align-self: stretch;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.hub-main--sheet .sheet-workspace__body > .hub-split-directory-pane.sheet-panel {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+}
+
+/* Sheet panes — align filter chrome + table tops (rail row2 = time range, panel row2 = filters) */
+.hub-main--sheet .hub-split-directory-pane__body {
+  padding-top: 0.5rem;
+}
+
+.hub-main--sheet .hub-split-directory-pane__filters .space-y-2 > div:first-child,
+.hub-main--sheet .hub-split-directory-pane__filters .space-y-2 > div:nth-child(2) {
+  min-height: var(--hub-control-h);
+}
+
+/* Sheet rail — fixed rows, no inner scroll collapse (GPM workflow rail parity) */
+.hub-main--sheet .sheet-rail.hub-split-directory-pane--fixed-rows table.hub-users-table {
+  min-width: 0;
+  width: 100%;
+}
+
+.hub-main--sheet .sheet-rail .sheet-directory-table-wrap--rail {
+  overflow: visible;
+}
+
+:root {
+  --sheet-rail-width: var(--notes-rail-width, 22rem);
+}
+
+.hub-split-directory-pane.sheet-rail {
+  width: var(--sheet-rail-width);
+  min-width: var(--sheet-rail-width);
+  max-width: min(var(--sheet-rail-width), 40vw);
+}
+
+.hub-main--sheet .sheet-panel table.sheet-grid-table thead .hub-users-th-label {
+  white-space: nowrap;
+}
+
+.hub-main--sheet .sheet-panel .sheet-grid-shell {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* Sheet split grid — head/body column parity + resize hit target (split-scroll golden) */
+.hub-main--sheet .sheet-panel .sheet-grid-split .hub-directory-table-head {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hub-main--sheet .sheet-panel .sheet-grid-split .hub-directory-table-head::-webkit-scrollbar {
+  display: none;
+  height: 0;
+}
+
+.hub-main--sheet .sheet-panel .sheet-grid-split .hub-directory-table-head table.sheet-grid-table.sheet-grid-table--sized,
+.hub-main--sheet .sheet-panel .sheet-grid-split .hub-directory-table-head table.sheet-grid-table.sheet-grid-table--wide {
+  width: max-content;
+  min-width: 100%;
+  table-layout: fixed;
+}
+
+.hub-main--sheet .sheet-panel table.sheet-grid-table thead th {
+  position: relative;
+  overflow: visible;
+}
+
+.hub-main--sheet .sheet-panel table.sheet-grid-table thead th .hub-users-th-btn {
+  pointer-events: none;
+}
+
+/* Sheet grid — dynamic columns inside golden pane chrome */
+table.sheet-grid-table.sheet-grid-table--wrap {
+  table-layout: auto;
+  width: 100%;
+}
+
+table.sheet-grid-table.sheet-grid-table--wrap th,
+table.sheet-grid-table.sheet-grid-table--wrap td {
+  min-width: 7.5rem;
+  max-width: 28rem;
+}
+
+table.sheet-grid-table.sheet-grid-table--wrap.sheet-grid-table--sized {
+  table-layout: fixed;
+}
+
+table.sheet-grid-table.sheet-grid-table--wrap.sheet-grid-table--sized th,
+table.sheet-grid-table.sheet-grid-table--wrap.sheet-grid-table--sized td {
+  min-width: 0;
+  max-width: none;
+}
+
+table.sheet-grid-table.sheet-grid-table--fill {
+  width: 100%;
+  table-layout: fixed;
+}
+
+table.sheet-grid-table.sheet-grid-table--fill:not(.sheet-grid-table--wide):not(.sheet-grid-table--sized) th,
+table.sheet-grid-table.sheet-grid-table--fill:not(.sheet-grid-table--wide):not(.sheet-grid-table--sized) td {
+  min-width: 5rem;
+}
+
+table.sheet-grid-table.sheet-grid-table--fill.sheet-grid-table--wide {
+  width: max-content;
+  min-width: 100%;
+}
+
+table.sheet-grid-table.sheet-grid-table--align-left th,
+table.sheet-grid-table.sheet-grid-table--align-left td {
+  text-align: left;
+}
+
+table.sheet-grid-table.sheet-grid-table--align-center th,
+table.sheet-grid-table.sheet-grid-table--align-center td {
+  text-align: center;
+}
+
+table.sheet-grid-table.sheet-grid-table--align-right th,
+table.sheet-grid-table.sheet-grid-table--align-right td {
+  text-align: right;
+}
+
+.sheet-grid-col-resize {
+  pointer-events: auto;
+  z-index: 5;
+  touch-action: none;
+}
+
+.sheet-grid-col-resize::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  top: 22%;
+  bottom: 22%;
+  width: 2px;
+  border-radius: 1px;
+  background: rgba(129, 140, 248, 0.22);
+  transition: background 0.12s ease;
+}
+
+.sheet-grid-col-resize:hover::after {
+  background: rgba(129, 140, 248, 0.55);
+}
+
+table.sheet-grid-table .sheet-grid-td {
+  padding: 6px 10px;
+  vertical-align: top;
+}
+
+table.sheet-grid-table .sheet-grid-cell {
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+table.sheet-grid-table:not(.sheet-grid-table--wrap) .sheet-grid-cell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+}
+
+table.sheet-grid-table .sheet-grid-cell--wrap {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.sheet-grid-empty {
+  animation: anim-fade 0.2s ease-out;
+}
+
+
 /* Notes: split pane — no main scroll (Hub tab chrome + body flex) */
 .hub-main.hub-main--notes {
   display: flex;

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import {
-  HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS,
   HubDirectoryTableShell,
+  buildDirectoryColgroup,
   buildDirectoryColgroupForShell,
   hubDirectoryTableClass,
   type HubSortDir,
@@ -57,6 +57,7 @@ type TableProps = {
   selectedIds: string[];
   selectedBindingId?: string | null;
   vaultByKey: Record<string, CookieVaultRow>;
+  shareCounts?: Record<string, number>;
   sortKey: CookieListSort;
   sortDir: HubSortDir;
   onSort: (key: CookieListSort) => void;
@@ -75,6 +76,7 @@ export function CookieRoutesDirectoryTable(props: TableProps) {
     selectedIds,
     selectedBindingId,
     vaultByKey,
+    shareCounts = {},
     sortKey,
     sortDir,
     onSort,
@@ -83,10 +85,27 @@ export function CookieRoutesDirectoryTable(props: TableProps) {
     onToggleSelect,
   } = props;
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-  const colgroup = useMemo(
-    () => buildDirectoryColgroupForShell(SHELL_COLUMNS, { showSelect: true }),
-    [],
+  const allVisibleSelected = useMemo(
+    () => rows.length > 0 && rows.every((row) => selectedSet.has(row.binding.id)),
+    [rows, selectedSet],
   );
+  const onToggleSelectAll = useMemo(
+    () => () => {
+      if (rows.length === 0) return;
+      const shouldSelectAll = !allVisibleSelected;
+      for (const row of rows) {
+        const id = row.binding.id;
+        const checked = selectedSet.has(id);
+        if (shouldSelectAll && !checked) onToggleSelect(id, true);
+        if (!shouldSelectAll && checked) onToggleSelect(id, false);
+      }
+    },
+    [allVisibleSelected, onToggleSelect, rows, selectedSet],
+  );
+  const colgroup = useMemo(() => {
+    void buildDirectoryColgroup(SHELL_COLUMNS);
+    return buildDirectoryColgroupForShell(SHELL_COLUMNS, { showSelect: true });
+  }, []);
   const emptyMessage =
     totalRowCount === 0 ? "No active routes — click Add route." : "No routes match search or filters.";
 
@@ -96,7 +115,7 @@ export function CookieRoutesDirectoryTable(props: TableProps) {
       resetKey={resetKey}
       ariaLabel="Route table pages"
       tableClassName={`${hubDirectoryTableClass("default")} hub-users-table--cookie-routes min-w-[980px]`}
-      wrapClassName={HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS}
+      wrapClassName="overflow-hidden"
       colgroup={colgroup}
       columns={SHELL_COLUMNS}
       sortKey={sortKey}
@@ -108,6 +127,8 @@ export function CookieRoutesDirectoryTable(props: TableProps) {
       getRowKey={(row) => row.binding.id}
       selectedIds={selectedSet}
       onToggleSelect={(id) => onToggleSelect(id, !selectedSet.has(id))}
+      onToggleSelectAll={onToggleSelectAll}
+      allVisibleSelected={allVisibleSelected}
       selectAllLabel="Select all routes on this page"
       emptyMessage={loading ? "Loading routes…" : emptyMessage}
       onRowClick={(row) => {
@@ -118,7 +139,7 @@ export function CookieRoutesDirectoryTable(props: TableProps) {
         cookieRowClassName(row.binding.id, selectedSet, selectedBindingId)
       }
       renderRowCells={(row) =>
-        SHELL_COLUMNS.map((col) => renderCookieRoutesDirectoryBodyCell(col, row, vaultByKey))
+        SHELL_COLUMNS.map((col) => renderCookieRoutesDirectoryBodyCell(col, row, vaultByKey, shareCounts))
       }
     />
   );

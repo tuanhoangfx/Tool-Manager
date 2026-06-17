@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { ClipboardList, Cookie, FileText, Gauge, KeyRound, Settings2 } from "lucide-react";
+import { ClipboardList, Cookie, FileText, Gauge, KeyRound, Settings2, Table2 } from "lucide-react";
 import {
   HubLoadingView as HubLoadingViewBase,
   HubScreenChunkFallback,
@@ -15,6 +15,7 @@ export function HubLoadingView(props: HubLoadingViewProps) {
 
 export const WORKSPACE_LOADING_PRESETS = {
   notes: { icon: FileText, ariaLabel: "Loading notes" },
+  sheet: { icon: Table2, ariaLabel: "Loading sheet" },
   todo: { icon: ClipboardList, ariaLabel: "Loading todo" },
   twofa: { icon: KeyRound, ariaLabel: "Loading 2FA" },
   cookie: { icon: Cookie, ariaLabel: "Loading cookie auto" },

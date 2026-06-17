@@ -3,6 +3,7 @@ import type { WorkspaceNavScreen } from "./workspace-screen";
 
 const { prefetch, prefetchAll, prefetchIdle } = createModulePrefetch<WorkspaceNavScreen>({
   notes: async () => {},
+  sheet: () => import("../features/sheet/SheetWorkspaceScreen"),
   todo: () => import("../features/todo/TodoScreen"),
   twofa: () => import("../features/twofa/TwofaManagerScreen"),
   cookie: () => import("../features/cookie/CookieSyncScreen"),

@@ -1,4 +1,5 @@
 import { ToastContainer, ToastProvider } from "./components/toast";
+import { AuthSessionProvider } from "./features/notes/AuthSessionProvider";
 import { PublicShareScreen } from "./features/notes/PublicShareScreen";
 import { isPublicShareEntry, migratePublicShareUrl } from "./features/notes/shareUtils";
 import { WorkspaceApp } from "./features/workspace/WorkspaceApp";
@@ -19,5 +20,9 @@ export default function App() {
   if (typeof window !== "undefined" && isPublicShareEntry()) {
     return <PublicShareApp />;
   }
-  return <WorkspaceApp />;
+  return (
+    <AuthSessionProvider>
+      <WorkspaceApp />
+    </AuthSessionProvider>
+  );
 }

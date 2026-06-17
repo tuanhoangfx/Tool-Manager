@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
+import { AppErrorBoundary } from "../../components/AppErrorBoundary";
 
 type Props = {
   tabId: WorkspaceNavScreen;
@@ -14,10 +15,11 @@ export function WorkspaceVisitedTabPanel({ tabId, active, visited, children, cla
   if (!visited.has(tabId)) return null;
   return (
     <div
+      hidden={!active}
       className={active ? className ?? "flex min-h-0 min-w-0 flex-1 flex-col" : `hidden ${className ?? ""}`.trim()}
       aria-hidden={!active}
     >
-      {children}
+      <AppErrorBoundary label={`P0020 tab:${tabId}`}>{children}</AppErrorBoundary>
     </div>
   );
 }

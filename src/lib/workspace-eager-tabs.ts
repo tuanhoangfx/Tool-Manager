@@ -3,8 +3,8 @@ import type { WorkspaceNavScreen } from "./workspace-screen";
 import { prefetchWorkspaceTab } from "./workspace-tab-prefetch";
 import { prefetchSystemTab } from "./system-tab-prefetch";
 
-/** Warm on boot — same screen user likely opens after Notes. */
-const EAGER_PRIORITY_SCREENS: WorkspaceNavScreen[] = ["todo", "twofa"];
+/** Warm on boot — high-traffic tabs after Notes (include sheet — no stagger delay). */
+const EAGER_PRIORITY_SCREENS: WorkspaceNavScreen[] = ["sheet", "todo", "twofa"];
 
 /** Remaining lazy tabs — staggered to avoid chunk/API storm (P0016 ConsoleEagerTabMount parity). */
 const EAGER_TAB_STAGGER: { screen: WorkspaceNavScreen; delayMs: number }[] = [

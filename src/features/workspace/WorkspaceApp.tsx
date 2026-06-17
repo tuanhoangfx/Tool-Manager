@@ -7,12 +7,12 @@ import type { WorkspaceNavScreen, WorkspaceScreen } from "../../lib/workspace-sc
 import { NAV_SCREENS } from "../../lib/workspace-screen";
 import { readNoteIdFromUrl } from "../../lib/note-url";
 import { useHubNavigation } from "../hub/useHubNavigation";
-import { AuthSessionProvider } from "../notes/AuthSessionProvider";
-import { useNotesAuth } from "../notes/useNotesAuth";
+import { useNotesAuth } from "../notes/AuthSessionProvider";
 import { useExtensionSessionRelay } from "../notes/useExtensionSessionRelay";
 import { NotesWorkspaceScreen } from "../notes/NotesWorkspaceScreen";
 import {
   CookieSyncScreen,
+  SheetWorkspaceScreen,
   SystemDesignTemplateScreen,
   TodoScreen,
   TwofaManagerScreen,
@@ -21,7 +21,8 @@ import {
   prefetchNotesListBackground,
   prefetchWorkspaceTabsBackground,
 } from "../../lib/hub-background-prefetch";
-import { EAGER_PRIORITY_SCREENS, WorkspaceEagerTabPrefetch } from "../../lib/workspace-eager-tabs";
+import { prefetchWorkspaceTab } from "../../lib/workspace-tab-prefetch";
+import { WorkspaceEagerTabPrefetch } from "../../lib/workspace-eager-tabs";
 import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
 import { NotesAuthGate } from "../notes/NotesAuthGate";
 import { WorkspaceShellTabFrame } from "./WorkspaceShellTabFrame";
@@ -47,6 +48,7 @@ function navScreen(screen: WorkspaceScreen): WorkspaceNavScreen {
 }
 
 const NOTES_SCREENS = new Set<WorkspaceScreen>(["notes", "edit"]);
+const SHEET_SCREENS = new Set<WorkspaceScreen>(["sheet"]);
 
 function WorkspaceAppInner() {
   const { session, loading: authLoading, offline } = useNotesAuth();
@@ -57,6 +59,7 @@ function WorkspaceAppInner() {
   useHubActiveScreenSync(activeNav);
   const activeScreenId = resolveHubActiveScreenId(activeNav);
   const isNotesLayout = NOTES_SCREENS.has(screen);
+  const isSheetLayout = SHEET_SCREENS.has(screen);
   const [visited, setVisited] = useState<Set<WorkspaceNavScreen>>(() => new Set([activeNav]));
 
   useEffect(() => {
@@ -71,21 +74,17 @@ function WorkspaceAppInner() {
 
   useEffect(() => {
     prefetchNotesListBackground();
-  }, []);
+    prefetchWorkspaceTab(activeNav);
+  }, [activeNav]);
 
   useEffect(() => {
     if (!session) return;
     prefetchWorkspaceTabsBackground(session);
+    prefetchWorkspaceTab("system");
     setVisited((prev) => {
       const next = new Set(prev);
-      let changed = false;
-      for (const tab of EAGER_PRIORITY_SCREENS) {
-        if (!next.has(tab)) {
-          next.add(tab);
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
+      for (const tab of NAV_SCREENS) next.add(tab);
+      return next;
     });
   }, [session]);
 
@@ -109,7 +108,9 @@ function WorkspaceAppInner() {
 
   const mainClass = isNotesLayout
     ? "hub-main hub-main--notes flex-1 min-h-0 min-w-0 flex-col overflow-hidden"
-    : "hub-main flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden";
+    : isSheetLayout
+      ? "hub-main hub-main--sheet flex-1 min-h-0 min-w-0 flex-col overflow-hidden"
+      : "hub-main flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden";
 
   const needsAuthGate = !session && !authLoading && !offline;
   const authGateVariant = authVariantForNav(activeNav);
@@ -152,6 +153,12 @@ function WorkspaceAppInner() {
             </Suspense>
           </WorkspaceVisitedTabPanel>
 
+          <WorkspaceVisitedTabPanel tabId="sheet" active={screen === "sheet"} visited={visited}>
+            <Suspense fallback={<WorkspaceLoadingView screen="sheet" enabled={screen === "sheet"} />}>
+              <SheetWorkspaceScreen tabActive={screen === "sheet"} />
+            </Suspense>
+          </WorkspaceVisitedTabPanel>
+
           <WorkspaceVisitedTabPanel tabId="twofa" active={screen === "twofa"} visited={visited}>
             <WorkspaceShellTabFrame screen="twofa" active={screen === "twofa"}>
               <Suspense fallback={<WorkspaceLoadingView screen="twofa" enabled={screen === "twofa"} />}>
@@ -187,9 +194,7 @@ function WorkspaceAppInner() {
 export function WorkspaceApp() {
   return (
     <ToastProvider>
-      <AuthSessionProvider>
-        <WorkspaceAppInner />
-      </AuthSessionProvider>
+      <WorkspaceAppInner />
     </ToastProvider>
   );
 }

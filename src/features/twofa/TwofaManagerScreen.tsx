@@ -19,12 +19,12 @@ import {
   directoryChartBandNode,
   kpiTilesSignature,
   hubDirectoryListResetKey,
-  DirectorySearchToolbar,
   HubDirectoryBulkActionBar,
   useHubDirectorySelection,
   useDirectoryBandSync,
   useDirectoryTableSort,
 } from "@tool-workspace/hub-ui";
+import { WorkspaceDirectorySearchToolbar } from "../workspace/WorkspaceDirectorySearchToolbar";
 import {
   DEFAULT_TWOFA_CHART_KEYS,
   DEFAULT_TWOFA_HEADER_STAT_KEYS,
@@ -56,7 +56,7 @@ import {
 } from "./twofa-toast-messages";
 import { readTwofaTableColumns, type TwofaTableColumnKey } from "./twofa-table-prefs";
 import { sortableTwofaValue } from "./twofa-sort";
-import { useNotesAuth } from "../notes/useNotesAuth";
+import { useNotesAuth } from "../notes/AuthSessionProvider";
 
 function visibleSet(set: Set<string> | null, defaults: Set<string>) {
   return set ?? defaults;
@@ -291,14 +291,9 @@ function TwofaManagerScreenBody({
         setDedupePreviewError(error);
         return;
       }
-      if (preview.totalRemoved === 0) {
-        setDedupeModalOpen(false);
-        pushToast(twofaDedupeToast(0), "info");
-        return;
-      }
       setDedupePreview(preview);
     });
-  }, [previewDedupe, pushToast]);
+  }, [previewDedupe]);
 
   const handleDedupeConfirm = useCallback(() => {
     setDedupeRunning(true);
@@ -441,17 +436,19 @@ function TwofaManagerScreenBody({
 
   const directoryToolbar = useMemo(
     () => (
-      <DirectorySearchToolbar
+      <WorkspaceDirectorySearchToolbar
+        screen="twofa"
         workspacePeriod={{ scope: "twofa", defaultRange: "all", inactiveKeys: ["all"] }}
         showTimeRange={false}
         showRefresh={false}
+        showTablePageSize
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        showTablePageSize
         countIcon={Shield}
         shown={displayedAccounts.length}
         total={accounts.length}
         countLabel="accounts"
+        showResultCount={viewMode === "card"}
         trailing={
           <TwofaCloudSyncTrailing
             filteredTotal={displayedAccounts.length}
@@ -525,6 +522,14 @@ function TwofaManagerScreenBody({
   useP0020DirectoryChrome({
     active: Boolean(shellMode && tabActive),
     toolbar: directoryToolbar,
+    filterSelectionToolbar:
+      viewMode !== "card"
+        ? {
+            visibleCount: sortedDisplayedAccounts.length,
+            selectedCount: selectedIds.size,
+            noun: "accounts",
+          }
+        : undefined,
     filterToolbar: directoryFilterToolbar,
     centerStats: directoryCenterStats,
   });

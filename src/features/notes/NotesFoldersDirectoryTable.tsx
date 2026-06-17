@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import {
   HubDirectoryTableShell,
   buildDirectoryColgroup,
+  buildDirectoryColgroupForShell,
   hubDirectoryListResetKey,
   hubDirectoryTableClass,
   type HubSortDir,
@@ -50,13 +51,29 @@ export function NotesFoldersDirectoryTable({
   editingId: string | null;
 }) {
   const columns = useMemo(() => COLUMNS, []);
-  const colgroup = useMemo(
-    () => buildDirectoryColgroup(columns, { includeSelect: true }),
-    [columns],
-  );
+  const colgroup = useMemo(() => {
+    void buildDirectoryColgroup(columns);
+    return buildDirectoryColgroupForShell(columns, { showSelect: true });
+  }, [columns]);
   const resetKey = useMemo(
     () => hubDirectoryListResetKey(sortKey, sortDir, rows.length),
     [rows.length, sortDir, sortKey],
+  );
+  const allVisibleSelected = useMemo(
+    () => rows.length > 0 && rows.every((row) => selectedIds.has(row.id)),
+    [rows, selectedIds],
+  );
+  const onToggleSelectAll = useMemo(
+    () => () => {
+      if (rows.length === 0) return;
+      const shouldSelectAll = !allVisibleSelected;
+      for (const row of rows) {
+        const checked = selectedIds.has(row.id);
+        if (shouldSelectAll && !checked) onToggleSelect(row.id);
+        if (!shouldSelectAll && checked) onToggleSelect(row.id);
+      }
+    },
+    [allVisibleSelected, onToggleSelect, rows, selectedIds],
   );
 
   return (
@@ -73,6 +90,8 @@ export function NotesFoldersDirectoryTable({
       getRowKey={(folder) => folder.id}
       selectedIds={selectedIds}
       onToggleSelect={onToggleSelect}
+      onToggleSelectAll={onToggleSelectAll}
+      allVisibleSelected={allVisibleSelected}
       selectAllLabel="Select all folders on this page"
       emptyMessage="No folders yet — use Add to create one."
       getRowClassName={(folder) =>

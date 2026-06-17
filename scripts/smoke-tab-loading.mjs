@@ -137,10 +137,10 @@ const STATIC_CHECKS = [
     invert: false,
   },
   {
-    id: "no-eager-all-nav-screens",
+    id: "eager-all-nav-screens-after-session",
     file: path.join(root, "src", "features", "workspace", "WorkspaceApp.tsx"),
     pattern: /for \(const tab of NAV_SCREENS\)/,
-    invert: true,
+    invert: false,
   },
   {
     id: "hub-loading-enabled-prop",
@@ -173,9 +173,9 @@ const STATIC_CHECKS = [
     invert: false,
   },
   {
-    id: "cookie-cold-skeleton-guard",
+    id: "cookie-instant-directory",
     file: path.join(root, "src", "features", "cookie", "CookieAutoSyncTable.tsx"),
-    pattern: /coldNotesLoad/,
+    pattern: /prefetchNoteCookieMembersBatch/,
     invert: false,
   },
   {
