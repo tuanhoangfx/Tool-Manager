@@ -2,6 +2,25 @@
 
 ## 2026-06-18 - P0020 version sync
 
+- Version: `4.3.35`
+- Timestamp: 2026-06-18 20:01 (UTC+7)
+- Type: Patch
+- Status: Verified
+- Release: https://databox.infi.io.vn
+
+### Changes
+
+- Sheet: grid sessionStorage cache, hover/adjacent preload, header gap fix, directory variants.
+- 2FA typography: Account/Service/Password → Inter 12px weight 400 (Sheet parity).
+- `vercel-env-ship --fast` + env hash skip; UI_PATTERNS SSOT sync.
+
+### Verification
+
+- `vercel-env-ship.mjs --fast` — prod v4.3.35, env keys OK
+
+---
+## 2026-06-18 - P0020 version sync
+
 - Version: `4.3.34`
 - Timestamp: 2026-06-18 17:40 (UTC+7)
 - Type: Patch

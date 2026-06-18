@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { readJson } = require("../../scripts/lib/version-sync-lib.cjs");
+const { readJson } = require("../../../scripts/lib/version-sync-lib.cjs");
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
