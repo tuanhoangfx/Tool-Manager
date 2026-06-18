@@ -210,6 +210,13 @@ export function buildDirectoryColgroupForShell(
   });
 }
 
+export const HUB_DIRECTORY_FRAME_CLASS = "hub-directory-frame";
+export const HUB_DIRECTORY_FRAME_TABLE_CLASS = "hub-directory-frame-table";
+
+export function hubDirectoryFrameTableClass(variant: HubDirectoryTableVariant = "6"): string {
+  return `${hubDirectoryTableClass(variant)} hub-users-table--sheet ${HUB_DIRECTORY_FRAME_TABLE_CLASS}`;
+}
+
 export function hubDirectoryTableClass(variant: HubDirectoryTableVariant = "default"): string {
   if (variant === "default") return HUB_DIRECTORY_TABLE_BASE_CLASS;
   if (variant === "groups") {

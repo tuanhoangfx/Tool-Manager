@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { HubTablePager } from "./HubTablePager";
-import { useHubTablePagination } from "../table/hub-table-pagination";
+import { useHubTablePagination, type HubServerPaginationControl } from "../table/hub-table-pagination";
 import { useHubTablePageSize } from "../table/hub-table-page-size";
 
 export type HubPaginatedTableShellProps<T> = {
@@ -11,6 +11,8 @@ export type HubPaginatedTableShellProps<T> = {
   className?: string;
   /** Hide pager when total rows ≤ page size (rail / compact lists). */
   hideWhenSinglePage?: boolean;
+  /** Pre-sliced page rows + SQL total — pager uses host pageIndex (P0003 profiles). */
+  serverPagination?: HubServerPaginationControl;
   children: (pageItems: readonly T[]) => ReactNode;
 };
 
@@ -22,10 +24,15 @@ export function HubPaginatedTableShell<T>({
   ariaLabel,
   className,
   hideWhenSinglePage,
+  serverPagination,
   children,
 }: HubPaginatedTableShellProps<T>) {
   const resolvedPageSize = useHubTablePageSize(pageSize);
-  const pagination = useHubTablePagination(items, { resetKey, pageSize: resolvedPageSize });
+  const pagination = useHubTablePagination(items, {
+    resetKey,
+    pageSize: resolvedPageSize,
+    server: serverPagination,
+  });
 
   return (
     <div

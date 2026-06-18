@@ -1,0 +1,104 @@
+/* Golden directory frame tables — profile pane + workflow rail (P0001/P0003 SSOT). */
+
+.hub-directory-frame table.hub-users-table.hub-directory-frame-table {
+  font-size: var(--hub-table-body-size, 12px);
+  line-height: var(--hub-table-body-line-height, 1.45);
+}
+
+.hub-directory-frame table.hub-directory-frame-table th {
+  font-size: var(--hub-table-header-size, 12px);
+  font-weight: 700;
+  padding: 8px 10px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.hub-directory-frame table.hub-directory-frame-table td {
+  padding: 6px 10px;
+  font-size: var(--hub-table-body-size, 12px);
+  line-height: var(--hub-table-body-line-height, 1.45);
+  vertical-align: top;
+}
+
+.hub-directory-frame .hub-directory-frame-table .hub-users-th-text {
+  font-size: var(--hub-table-header-size, 12px);
+  font-weight: 700;
+}
+
+.hub-directory-frame .hub-directory-frame-table .hub-users-name-title,
+.hub-directory-frame .hub-directory-frame-table .hub-directory-table-body-text,
+.hub-directory-frame .hub-directory-frame-table .hub-directory-icon-cell__label {
+  display: block;
+  font-size: var(--hub-table-body-size, 12px);
+  font-weight: 400;
+  line-height: var(--hub-table-body-line-height, 1.45);
+  color: var(--text);
+}
+
+.hub-directory-frame .hub-directory-frame-table .hub-users-status {
+  font-size: var(--hub-table-body-size, 12px);
+  font-weight: 400;
+  line-height: var(--hub-table-body-line-height, 1.45);
+  color: var(--text);
+  text-transform: none;
+}
+
+.hub-directory-frame .hub-directory-frame-table .hub-users-status-dot {
+  width: 7px;
+  height: 7px;
+}
+
+/* fixedRows — exact N rows, pager below */
+.hub-directory-frame.hub-split-directory-pane--fixed-rows .hub-split-directory-pane__body {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.hub-directory-frame.hub-split-directory-pane--fixed-rows table.hub-directory-frame-table {
+  min-width: 0;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.hub-directory-frame.hub-split-directory-pane--fixed-rows .hub-paginated-table-shell {
+  flex: 0 0 auto;
+  min-height: auto;
+  overflow: visible;
+}
+
+.hub-directory-frame.hub-split-directory-pane--fixed-rows .hub-paginated-table-shell > .hub-users-table-wrap {
+  flex: 0 0 auto;
+  min-height: auto;
+  overflow: hidden;
+}
+
+.hub-directory-frame.hub-split-directory-pane--fixed-rows .hub-table-pager {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  padding-top: 0;
+}
+
+/* Panel scroll — when pane does not pin fixed row count */
+.hub-directory-frame:not(.hub-split-directory-pane--fixed-rows) .hub-split-directory-pane__body .hub-paginated-table-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hub-directory-frame:not(.hub-split-directory-pane--fixed-rows)
+  .hub-paginated-table-shell
+  > .hub-users-table-wrap.hub-directory-table-scroll--flex-pane {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hub-directory-frame:not(.hub-split-directory-pane--fixed-rows) .hub-paginated-table-shell > .hub-table-pager {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  margin-top: 4px;
+  position: relative;
+  z-index: 2;
+}

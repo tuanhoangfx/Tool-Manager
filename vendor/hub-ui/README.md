@@ -1,6 +1,6 @@
 # @tool-workspace/hub-ui
 
-Shared Hub UI for P0004, P0006, P0020, P0008. **Design source:** `Tool/P0004-Tool-Hub`.
+Shared Hub UI for P0004, P0016, P0020, P0008. **Design source:** `Tool/P0004-Tool-Hub`.
 
 **Monorepo:** `E:\Dev\pnpm-workspace.yaml` gom `packages/*` + `Tool/P0004-Tool-Hub` · `P0016-ChatCenter` · `P0020-Data-Box`. Chạy `pnpm install` tại **`E:\Dev`** sau khi đổi `workspace:*` deps.
 
@@ -65,7 +65,7 @@ Chạy sync script sau mỗi lần sửa hub-ui (Next.js deploy only): `node Too
 
 Theme tokens: copy từ P0004 qua `sync-hub-theme-from-p0004.cjs --target <app>/src`.
 
-**Theme file naming:** tools import `src/theme/p0008-globals.css` (legacy filename from P0008 Sales Console). Canonical alias: **`hub-theme-tokens.css`** — same file, same `:root` / `.theme-hub` tokens (`--app-tab-header-px`, `--hub-control-h`, …). **Not** the hub-ui package path; hub-ui SSOT is `packages/hub-ui`.
+**Theme file naming:** tools import `src/theme/hub-console-globals.css` (P0016) or legacy `p0008-globals.css` alias in older apps. Canonical tokens live in that file's `:root` / `.theme-hub` (`--app-tab-header-px`, `--hub-control-h`, …). **Not** the hub-ui package path; hub-ui SSOT is `packages/hub-ui`.
 
 ---
 
@@ -81,7 +81,7 @@ setupHubUi(); // configureFilterIcons + configureHubChromePrefs
 <HubLoaderRoot />
 ```
 
-`hub-ui-setup.ts` — wire filter icons + URL prefs (xem P0006 `apps/console/src/lib/hub-ui-setup.ts`).
+`hub-ui-setup.ts` — wire filter icons + URL prefs (xem P0016 `src/lib/hub-ui-setup.ts`).
 
 ### Boot guard (`index.html` + `main.tsx`)
 
@@ -118,7 +118,7 @@ import {
   type KpiTileData,
 } from "@tool-workspace/hub-ui";
 
-// Wrapper giống P0006 TabScreenChrome.tsx:
+// Wrapper giống P0016 TabScreenChrome.tsx:
 <HubTabChrome header={<AppTabHeader … />} filterBar={<FilterBar layout="hub" … />}>
   <HubTabScreenBody
     kpis={kpis}

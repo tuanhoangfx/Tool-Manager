@@ -1,19 +1,22 @@
 import { useState } from "react";
 import { KeyRound } from "lucide-react";
+import { HUB_DIRECTORY_CARD_ICON_GLYPH_PX, compactIconSize } from "@tool-workspace/hub-ui";
 import { resolveTwofaPlatformIcon } from "./twofa-platform-icon";
 
-/** Same footprint as Cookie route table icons (`h-4 w-4`). */
 const ICON_PX = 16;
+const COMPACT_ICON_PX = HUB_DIRECTORY_CARD_ICON_GLYPH_PX;
 
 type Props = {
   service: string;
   className?: string;
+  compact?: boolean;
 };
 
-export function TwofaPlatformIcon({ service, className = "" }: Props) {
+export function TwofaPlatformIcon({ service, className = "", compact = false }: Props) {
   const hit = resolveTwofaPlatformIcon(service);
   const [imgFailed, setImgFailed] = useState(false);
   const title = hit?.label ?? service;
+  const iconPx = compact ? compactIconSize(COMPACT_ICON_PX) : ICON_PX;
 
   if (hit && !imgFailed) {
     return (
@@ -25,8 +28,8 @@ export function TwofaPlatformIcon({ service, className = "" }: Props) {
           src={hit.src}
           alt=""
           className="twofa-platform-icon__img"
-          width={ICON_PX}
-          height={ICON_PX}
+          width={iconPx}
+          height={iconPx}
           loading="lazy"
           referrerPolicy="no-referrer"
           onError={() => setImgFailed(true)}
@@ -44,7 +47,7 @@ export function TwofaPlatformIcon({ service, className = "" }: Props) {
       aria-hidden
     >
       {hit && imgFailed ? (
-        <KeyRound size={11} className="opacity-75" aria-hidden />
+        <KeyRound size={compact ? iconPx : 11} className="opacity-75" aria-hidden />
       ) : (
         <span className="twofa-platform-icon__initials">{initials}</span>
       )}

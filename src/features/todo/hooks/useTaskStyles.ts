@@ -27,8 +27,8 @@ export const useTaskStyles = (task: Task) => {
         if (isArchived) containerClasses.push(TODO_HUB.taskCardArchived);
         if (task.priority === 'high' && !isArchived) containerClasses.push(TODO_HUB.taskCardHigh);
 
-        let titleClass = 'font-bold break-words text-[var(--text)] ';
-        let descClass = 'break-words text-sm text-[var(--muted)] ';
+        let titleClass = `${TODO_HUB.taskCardTitle} text-sm font-medium leading-snug text-[var(--text)] `;
+        let descClass = 'text-sm leading-snug break-words text-[var(--muted)] ';
 
         if (isCancelled) {
             titleClass += 'text-[var(--muted)] line-through';

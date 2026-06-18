@@ -1,8 +1,13 @@
 /* Hub app shell — P0004 p0008-globals parity */
+@import "./hub-directory-card-leading.css";
+
 :root,
 .theme-hub {
   --hub-compact-scale: 0.9;
   --hub-control-h: 31px;
+  --hub-metric-badge-h: 22px;
+  --hub-directory-card-icon-box-px: 22px;
+  --hub-directory-card-glyph-px: 14px;
   --hub-sidebar-width: 15rem;
   --app-tab-header-py: 0.75rem;
   --app-tab-header-px: 1.5rem;

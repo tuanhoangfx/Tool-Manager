@@ -13,7 +13,8 @@ type Props = {
   onNotesDensityChange?: (d: NotesListDensity) => void;
   notesSort?: NotesListSort;
   onNotesSortChange?: (sort: NotesListSort) => void;
-  notesFolderSettings?: ReactNode;
+  notesFolderManageSettings?: ReactNode;
+  notesFolderTagSection?: ReactNode;
   /** Rare tab-specific actions before Log / Notify (e.g. Todo admin view toggle). */
   trailing?: ReactNode;
   /** Optional Notify bell — Todo task notifications. */
@@ -40,7 +41,8 @@ export function WorkspaceHeaderActions({
   onNotesDensityChange,
   notesSort,
   onNotesSortChange,
-  notesFolderSettings,
+  notesFolderManageSettings,
+  notesFolderTagSection,
   trailing,
   notify,
   logQuickActions,
@@ -66,7 +68,8 @@ export function WorkspaceHeaderActions({
         onNotesDensityChange={onNotesDensityChange}
         notesSort={notesSort}
         onNotesSortChange={onNotesSortChange}
-        notesFolderSettings={notesFolderSettings}
+        notesFolderManageSettings={notesFolderManageSettings}
+        notesFolderTagSection={notesFolderTagSection}
         todoSettingsExtras={todoSettingsExtras}
         todoSettingsFooterActions={todoSettingsFooterActions}
       />

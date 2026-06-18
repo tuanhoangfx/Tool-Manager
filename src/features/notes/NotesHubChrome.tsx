@@ -38,7 +38,8 @@ type Props = {
   sort: NotesListSort;
   onSortChange: (sort: NotesListSort) => void;
   filterToolbar?: ReactNode;
-  folderSettingsPanel?: ReactNode;
+  folderManageSettingsPanel?: ReactNode;
+  folderTagSection?: ReactNode;
   children: ReactNode;
 };
 
@@ -57,7 +58,8 @@ export function NotesHubChrome({
   sort,
   onSortChange,
   filterToolbar,
-  folderSettingsPanel,
+  folderManageSettingsPanel,
+  folderTagSection,
   children,
 }: Props) {
   const [prefs, setPrefs] = useState(readNotesListPrefs);
@@ -137,7 +139,8 @@ export function NotesHubChrome({
               onNotesDensityChange={onDensityChange}
               notesSort={sort}
               onNotesSortChange={onSortChange}
-              notesFolderSettings={folderSettingsPanel}
+              notesFolderManageSettings={folderManageSettingsPanel}
+              notesFolderTagSection={folderTagSection}
             />
           }
           pinSticky={headerChrome.pinSticky}
@@ -163,9 +166,10 @@ export function NotesHubChrome({
           shown={shown}
           total={notes.length}
           countLabel="notes"
+          showResultCount
         />
       }
-      filterRowActions={filterToolbar}
+      filterRowActions={filterToolbar ?? null}
     >
       {children}
     </HubSplitWorkspaceScreen>

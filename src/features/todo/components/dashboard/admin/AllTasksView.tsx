@@ -233,6 +233,7 @@ const AllTasksView: React.FC<AllTasksViewProps> = ({ profile, lastDataChange, al
                                 onUpdateStatus={onUpdateStatus}
                                 onClearCancelledTasks={onClearCancelledTasks}
                                 lastDataChange={lastDataChange}
+                                searchTerm={filters.searchTerm}
                             />
                         ))}
                     </div>

@@ -397,6 +397,7 @@ Checks: `session-in-start-rail`, `center-stats-always-visible`, `grid-three-colu
 |-----|-------------|
 | `NavIconTone` | Per menu item — assign once in nav registry (`items[]`, `NAV_STRUCTURE`, `SYSTEM_TAB_ITEMS`) |
 | `navIconClass(tone, active)` | Icon color (idle 75% · hover · active) |
+| `HUB_CHROME_ICON_PX` + `compactIconSize` | **14px** base glyph — sidebar screen/group/subnav, `AppTabHeader` title, directory card leading |
 | `navDotClass` / `navRailClass` | System-style subnav dot + vertical connector |
 | `HubSidebarNavGroup` / `NavGroupSubNav` | Expandable group header + dot/rail subnav list |
 | `NavScreenGroupConfig` / `NavViewGroupConfig` | Sidebar nav registry — screen children vs URL sub-view children |
@@ -698,7 +699,9 @@ Do **not** fork select column width per tool — use shell + meta helpers only.
 | `HubDirectoryInteractiveCard` | Whole card opens detail on click/keyboard (Hub tools, Users) |
 | `HubDirectoryCardCheckbox` | Bulk-select — **top-right corner**; `stopPropagation` on label (never inside a `<button>`) |
 | `HubDirectoryCardMetaRow` | Meta line — tinted Lucide icon + truncated text (`min-h-[var(--hub-card-meta-min-h)]` stack) |
-| `HubDirectoryCardHeader` | Header block — `leading` avatar/icon + `badges` + `title` + optional `trailing` |
+| `HubDirectoryCardHeader` | Header block — `leading` avatar/icon + `badges` + `title` + optional `trailing` (`items-center` — icon aligns with badge row) |
+| `HubDirectoryCardLeadingIcon` | **SSOT** Lucide leading tile — `HUB_DIRECTORY_CARD_ICON_BOX_PX` **22** · glyph **`HUB_CHROME_ICON_PX` (14)** · matches `MetricBadge` `h-[22px]` / `--hub-metric-badge-h` |
+| `HubDirectoryCardLeadingTile` | Same 22px box for favicon / platform logo / custom glyph (`children`) + optional status dot |
 | `HubDirectorySelectAllChip` | Filter row 2 **actions** — **Card view only**; first slot before bulk CTAs; uses `HubBulkActionButton` + `ListChecks` icon |
 | `HubDirectoryToolbarSelection` | Design **V2 Spectrum Bar** — stacked `x/y` + % hue fill; **table** → `searchTrailing` · **card** → `row2Trailing` after bulk actions |
 | `HubBulkActionButton` | Filter row 2 bulk CTAs — Pin / Refresh / Edit / Sync (count badge + tooltip) |
@@ -715,6 +718,22 @@ Do **not** fork select column width per tool — use shell + meta helpers only.
 - Selected: `ring-2 ring-inset ring-indigo-400/35 bg-indigo-500/5` (`HUB_DIRECTORY_CARD_SELECTED`)
 - **Do not** change `border-color` on select — avoids white `currentColor` border artifact
 - Detail open: `isDetail` + `detailRingClass` (e.g. `ring-emerald-500/40` on Users)
+
+**Leading icon (mandatory — card header row)**
+
+| Token / component | Value | Rule |
+|-------------------|-------|------|
+| `HUB_DIRECTORY_CARD_ICON_BOX_PX` | `22` | Box height/width — same as `MetricBadge` chip row |
+| `HUB_CHROME_ICON_PX` | `14` | Sidebar, tab header, directory card leading glyph (via `compactIconSize`) |
+| `HUB_DIRECTORY_CARD_ICON_GLYPH_PX` | `14` | Alias of `HUB_CHROME_ICON_PX` — Lucide / img inside leading tile |
+| `--hub-directory-card-icon-box-px` | `22px` | CSS token in `hub-shell-layout.css` — box size (zoom-safe) |
+| `--hub-directory-card-glyph-px` | `14px` | CSS token — img / glyph inside leading tile |
+| `HubDirectoryCardLeadingIcon` | Lucide + `navIconClass` | Dashboard screens, channel cards, any nav-tone icon |
+| `HubDirectoryCardLeadingTile` | `children` | Site favicon, 2FA platform logo, custom marks |
+| `HubToolAvatar` / `HubCardAvatar` `size="sm"` | 22px box | Tool catalog, System Agent/Supabase cards |
+
+- **Do not** use `h-8 w-8`, `h-9 w-9`, or `h-10 w-10` in `HubDirectoryCardHeader` `leading` — causes misalignment with badge + title.
+- Status dot: `h-1.5 w-1.5` at `-right-0.5 -top-0.5` with `ring-2 ring-[var(--panel)]`.
 
 **Structure — interactive card (Hub / Users)**
 

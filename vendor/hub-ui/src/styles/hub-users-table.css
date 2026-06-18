@@ -679,13 +679,14 @@ table.hub-users-table--hub-tools .hub-users-col--hub-code > span {
 }
 
 .hub-users-avatar-marker {
+  box-sizing: border-box;
   display: grid;
-  width: 22px;
-  height: 22px;
+  width: var(--hub-directory-card-icon-box-px, 22px);
+  height: var(--hub-directory-card-icon-box-px, 22px);
   flex: 0 0 auto;
   place-items: center;
   border: 1px solid rgba(129, 140, 248, 0.18);
-  border-radius: 7px;
+  border-radius: 8px;
   background: rgba(99, 102, 241, 0.12);
   color: #a5b4fc;
   font-size: 8px;
@@ -1477,3 +1478,4 @@ table.hub-users-table--folders {
 table.hub-users-table--cookie-routes {
   font-size: var(--hub-table-body-size, 12px);
 }
+

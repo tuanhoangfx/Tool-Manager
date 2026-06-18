@@ -327,7 +327,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
   };
 
   const combinedComments = [...comments, ...tempNewComments, ...optimisticComments];
-  const taskIdDisplay = editingTaskId ? `#${editingTaskId.toString().padStart(4, "0")}` : "";
+  const taskIdDisplay = editingTaskId ? editingTaskId.toString().padStart(4, "0") : "";
 
   const taskRecord = task && "id" in task ? (task as Task) : null;
   const creatorProfile = taskRecord

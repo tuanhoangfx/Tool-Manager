@@ -425,6 +425,19 @@ table.sheet-grid-table.sheet-grid-table--align-right td {
   backdrop-filter: blur(8px);
 }
 
+.notes-rail__row--pinned {
+  background-image: linear-gradient(135deg, rgba(139, 92, 246, 0.08), transparent 55%);
+}
+
+.notes-rail__title-leading,
+.notes-rail__meta-leading {
+  flex-shrink: 0;
+}
+
+.notes-rail__pin--on {
+  filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.45));
+}
+
 .notes-editor {
   background:
     radial-gradient(circle at 8% 0%, rgba(79, 70, 229, 0.10), transparent 34%),

@@ -30,6 +30,7 @@ interface TaskColumnProps {
     onUpdateStatus: (task: Task, status: Task['status']) => Promise<boolean>;
     onSortChange: (newConfig: SortConfig) => void;
     onClearCancelledTasks?: (tasks: Task[]) => void;
+    searchTerm?: string;
 }
 
 const TaskColumn: React.FC<TaskColumnProps> = ({
@@ -51,6 +52,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
     onUpdateStatus,
     onSortChange,
     onClearCancelledTasks,
+    searchTerm = "",
 }) => {
     const { t } = useSettings();
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -110,6 +112,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
                             assignee={task.assignee}
                             creator={task.creator}
                             lastDataChange={lastDataChange}
+                            searchTerm={searchTerm}
                         />
                     </VirtualItem>
                 ))}

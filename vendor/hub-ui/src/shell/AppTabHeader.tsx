@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ElementType, type ReactNode } from "react";
 import { ChevronDown, Clock } from "lucide-react";
 import { usePageSessionSeconds } from "../hooks/usePageSessionSeconds";
+import { compactIconSize, HUB_CHROME_ICON_PX } from "../ui-scale";
 import "./app-tab-header.css";
 
 export type TabTitleMenuItem = {
@@ -81,7 +82,7 @@ function TitleWithMenu({
         onClick={() => setOpen((v) => !v)}
         className="inline-flex max-w-full items-center gap-1 rounded-lg py-0.5 pr-1 text-left transition-colors hover:bg-white/[.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-400/50"
       >
-        <TitleIcon size={16} className={`shrink-0 ${titleIconClass}`} aria-hidden />
+        <TitleIcon size={compactIconSize(HUB_CHROME_ICON_PX)} className={`shrink-0 ${titleIconClass}`} aria-hidden />
         <span className="flex min-w-0 flex-col leading-tight">
           <span className="text-base font-semibold tracking-tight text-[var(--text)]">{title}</span>
           {active ? (
@@ -231,7 +232,7 @@ export function AppTabHeader({
           />
         ) : (
           <>
-            <TitleIcon size={16} className={`shrink-0 ${titleIconClass}`} aria-hidden />
+            <TitleIcon size={compactIconSize(HUB_CHROME_ICON_PX)} className={`shrink-0 ${titleIconClass}`} aria-hidden />
             <h1 className="min-w-0 truncate text-base font-semibold leading-none tracking-tight text-[var(--text)]">
               {title}
             </h1>

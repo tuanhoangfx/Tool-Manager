@@ -1,6 +1,7 @@
 import {
   HubDirectoryCardCheckbox,
   HubDirectoryCardHeader,
+  HubDirectoryCardLeadingTile,
   HubDirectoryCardMetaRow,
   HubDirectoryInteractiveCard,
 } from "@tool-workspace/hub-ui";
@@ -45,9 +46,9 @@ export function TwofaAccountCard({
       <div className="flex flex-1 flex-col p-4 pr-10">
         <HubDirectoryCardHeader
           leading={
-            <div className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/[.04]">
-              <TwofaPlatformIcon service={account.service} />
-            </div>
+            <HubDirectoryCardLeadingTile>
+              <TwofaPlatformIcon service={account.service} compact />
+            </HubDirectoryCardLeadingTile>
           }
           title={account.service}
         />

@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { shouldSyncSheetTabTitle } from "./sheet-tab-title";
+import { cleanSheetGvizTitle, shouldSyncSheetTabTitle } from "./sheet-tab-title";
+
+describe("cleanSheetGvizTitle", () => {
+  it("strips Google Sheets suffix", () => {
+    expect(cleanSheetGvizTitle("Infi Docs - Google Sheets")).toBe("Infi Docs");
+  });
+
+  it("keeps emoji tab titles", () => {
+    expect(cleanSheetGvizTitle("🌐 Web")).toBe("🌐 Web");
+  });
+});
 
 describe("shouldSyncSheetTabTitle", () => {
   it("syncs auto titles", () => {

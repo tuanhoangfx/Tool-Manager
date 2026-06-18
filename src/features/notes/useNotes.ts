@@ -6,7 +6,7 @@ import { readNotesListStaleCache, writeNotesListClientCache } from "../../lib/no
 import { createNoteRow, deleteNoteRow, fetchNotesList, type NoteDeleteResult } from "./notesRepository";
 import { useNotesRealtimeUiRefresh } from "./notes-realtime-pref";
 import { readNotesListPrefs } from "./notes-list-prefs";
-import { generateSyncId, mergeNoteRowForList, sortNoteRows, toListItem } from "./noteUtils";
+import { generateSyncId, mergeNoteRowForList, patchNotePinForList, sortNoteRows, toListItem } from "./noteUtils";
 import type { NoteRow } from "./types";
 import { getOfflineMode } from "../../lib/offlineMode";
 import { deleteOfflineNote, listOfflineNotes, upsertOfflineNote } from "./offlineNotesRepository";
@@ -142,6 +142,22 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean; e
     [userId],
   );
 
+  const patchNotePinInList = useCallback(
+    (noteId: string, pinned: boolean) => {
+      if (!userId) return;
+      setRows((prev) => {
+        const idx = prev.findIndex((r) => r.id === noteId);
+        if (idx < 0) return prev;
+        const next = [...prev];
+        next[idx] = patchNotePinForList(prev[idx], pinned);
+        const sorted = sortNoteRows(next, readNotesListPrefs().sort);
+        writeNotesListClientCache(userId, sorted);
+        return sorted;
+      });
+    },
+    [userId],
+  );
+
   const createNote = useCallback(async () => {
     if (!session?.user?.id) throw new Error("Not signed in");
     if (getOfflineMode()) {
@@ -227,6 +243,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean; e
     error,
     refresh,
     mergeNoteInList,
+    patchNotePinInList,
     createNote,
     deleteNote,
   };

@@ -2,8 +2,10 @@ import { Cookie, FileText, Link2, RefreshCw, UserRound } from "lucide-react";
 import {
   HubDirectoryCardCheckbox,
   HubDirectoryCardHeader,
+  HubDirectoryCardLeadingTile,
   HubDirectoryCardMetaRow,
   HubDirectoryInteractiveCard,
+  HUB_DIRECTORY_CARD_ICON_GLYPH_PX,
 } from "@tool-workspace/hub-ui";
 import { formatTimestampCompact } from "../../lib/format-timestamp";
 import type { CookieAutoRow } from "./cookieAutoRow";
@@ -66,29 +68,22 @@ export function CookieRouteCard({
       >
         <HubDirectoryCardHeader
           leading={
-            <div className="relative">
-              <div className="relative grid h-9 w-9 place-items-center overflow-hidden rounded-xl border border-white/10 bg-white/[.04] text-indigo-200">
-                {icon ? (
-                  <img
-                    src={icon.src}
-                    alt={icon.label}
-                    className="relative h-5 w-5 object-contain"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <Cookie size={16} className="opacity-75" />
-                )}
-              </div>
-              <span
-                className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-[var(--panel)]"
-                style={{ background: statusDot.color }}
-                title={statusDot.title}
-              />
-            </div>
+            <HubDirectoryCardLeadingTile statusColor={statusDot.color} statusTitle={statusDot.title}>
+              {icon ? (
+                <img
+                  src={icon.src}
+                  alt={icon.label}
+                  className="hub-directory-card-leading-glyph object-contain"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                <Cookie size={HUB_DIRECTORY_CARD_ICON_GLYPH_PX} className="hub-directory-card-leading-glyph text-indigo-200 opacity-75" />
+              )}
+            </HubDirectoryCardLeadingTile>
           }
           badges={
             <span className="rounded border border-white/10 bg-white/[.04] px-1.5 py-0.5 text-[9px] font-medium text-indigo-200">

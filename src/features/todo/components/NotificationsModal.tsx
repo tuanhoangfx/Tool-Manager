@@ -14,7 +14,7 @@ import type { Notification } from "../types";
 import { formatAbsoluteDateTime } from "../lib/taskUtils";
 import Avatar from "./common/Avatar";
 import { buildTodoMultiFilterDef } from "../todo-hub-filter-helpers";
-import CopyIdButton from "./common/CopyIdButton";
+import { TaskIdBadgeInline } from "./common/TaskIdBadge";
 import GenericListModal from "./GenericListModal";
 import { useCachedSupabaseQuery } from "../hooks/useCachedSupabaseQuery";
 import type { Session } from '@supabase/supabase-js';
@@ -260,7 +260,7 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, onClose
                             <div className="flex-grow">
                                 <p className="text-sm text-gray-700 dark:text-gray-300 leading-snug">
                                     {content}
-                                    {notification.data.task_id && <CopyIdButton id={notification.data.task_id} isInline />}
+                                    {notification.data.task_id && <TaskIdBadgeInline id={notification.data.task_id} />}
                                 </p>
                                 <time className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{formatAbsoluteDateTime(notification.created_at, language, timezone)}</time>
                             </div>

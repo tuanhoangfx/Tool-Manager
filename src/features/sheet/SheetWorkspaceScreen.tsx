@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Table2, Trash2, Upload } from "lucide-react";
 import {
+  HubBulkActionButton,
+  HubDirectoryBulkActionRail,
   HubSplitDirectoryFilterBar,
   HubSplitDirectoryPane,
-  HubFilterRowButton,
   useDirectoryTimeRange,
   useHubTablePageSize,
   type FilterValues,
@@ -15,6 +16,7 @@ import {
   addSheetSource,
   loadSheetSources,
   removeSheetSource,
+  sheetSourceDedupeKey,
   updateSheetSourceHeaderRowIndex,
   updateSheetSourceLastSynced,
   updateSheetSourceTitle,
@@ -40,11 +42,14 @@ import { buildHeaderRowCandidates, type SheetHeaderRowCandidate } from "./sheet-
 import { fetchSheetTabTitle, shouldSyncSheetTabTitle } from "./sheet-tab-title";
 import { applySheetMainFilters, buildSheetMainFilterDefs } from "./sheet-main-filters";
 import { deleteSheetGridCache, hydrateSheetGridCache, writeSheetGridCache } from "./sheet-grid-cache";
+import { deleteSheetGridCsvIdb, readSheetGridCsvIdb, writeSheetGridCsvIdb } from "./sheet-grid-idb-cache";
 import { prefetchAdjacentSheetGrids, prefetchSheetGrid } from "./sheet-grid-preload";
 import { setupSheetFilterIcons } from "./sheet-filter-icons";
 import { countSheetSearchMatches } from "./sheet-search-highlight";
 import { sheetTextIncludesQuery } from "./sheet-search-fold";
 import { SheetSearchMatchChip } from "./SheetSearchMatchChip";
+import { useNotesAuth } from "../notes/AuthSessionProvider";
+import { useSheetSourcesCloud } from "./useSheetSourcesCloud";
 
 setupSheetFilterIcons();
 
@@ -68,6 +73,7 @@ async function refreshSheetTabTitles(sources: SheetSource[]): Promise<SheetSourc
 }
 
 export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean }) {
+  const { session } = useNotesAuth();
   const [sources, setSources] = useState<SheetSource[]>(() => loadSheetSources());
   const [activeId, setActiveId] = useState<string | null>(() => sources[0]?.id ?? null);
   const [busy, setBusy] = useState(false);
@@ -89,6 +95,25 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   const gridCacheRef = useRef<Map<string, SheetGridData>>(hydrateSheetGridCache());
   const activeIdRef = useRef(activeId);
   activeIdRef.current = activeId;
+
+  const onCloudSources = useCallback((next: SheetSource[]) => {
+    setSources((prevSources) => {
+      setActiveId((cur) => {
+        if (!cur) return next[0]?.id ?? null;
+        if (next.some((s) => s.id === cur)) return cur;
+        const old = prevSources.find((s) => s.id === cur);
+        if (old) {
+          const key = sheetSourceDedupeKey(old);
+          const match = next.find((s) => sheetSourceDedupeKey(s) === key);
+          if (match) return match.id;
+        }
+        return next[0]?.id ?? null;
+      });
+      return next;
+    });
+  }, []);
+
+  useSheetSourcesCloud(session, tabActive, onCloudSources);
 
   useEffect(() => {
     if (!tabActive) return;
@@ -178,8 +203,22 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   const loadActive = useCallback(async () => {
     if (!active) return;
     const loadId = active.id;
-    setBusy(true);
     setError(null);
+
+    const idbSnap = await readSheetGridCsvIdb(loadId);
+    if (idbSnap && loadId === activeIdRef.current) {
+      rawCsvRef.current = idbSnap.csv;
+      setHeaderRowCandidates(buildHeaderRowCandidates(idbSnap.csv));
+      const stale = parseCsvToGrid(idbSnap.csv, {
+        headerRowIndex: active.headerRowIndex ?? idbSnap.headerRowIndex,
+      });
+      gridCacheRef.current.set(loadId, stale.grid);
+      writeSheetGridCache(loadId, stale.grid);
+      setGrid(stale.grid);
+      setGridSheetId(loadId);
+    }
+
+    setBusy(true);
     try {
       const res = await fetch(active.csvUrl, { method: "GET" });
       if (!res.ok) throw new Error(`Fetch failed (${res.status}).`);
@@ -193,6 +232,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       const parsed = parseCsvToGrid(csv, { headerRowIndex: active.headerRowIndex });
       if (loadId !== activeIdRef.current) return;
       applyParsedGrid(loadId, parsed);
+      void writeSheetGridCsvIdb(loadId, csv, parsed.headerRowIndex);
       updateSheetSourceLastSynced(active.id);
       setSources((prev) =>
         prev.map((s) => (s.id === active.id ? { ...s, lastSyncedAt: new Date().toISOString() } : s)),
@@ -212,6 +252,10 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       }
     } catch (e) {
       if (loadId !== activeIdRef.current) return;
+      if (idbSnap) {
+        setError("Không tải được Google Sheet — đang hiển thị bản lưu offline.");
+        return;
+      }
       const msg = e instanceof Error ? e.message : String(e ?? "Load failed.");
       setError(msg);
       setGrid(null);
@@ -279,6 +323,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     removeSheetSource(active.id);
     gridCacheRef.current.delete(active.id);
     deleteSheetGridCache(active.id);
+    void deleteSheetGridCsvIdb(active.id);
     const next = loadSheetSources();
     setSources(next);
     setActiveId(next[0]?.id ?? null);
@@ -446,21 +491,23 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
 
   const sheetBulkActions = useMemo(
     () => (
-      <>
-        <HubFilterRowButton
-          icon={<Upload size={12} />}
+      <HubDirectoryBulkActionRail>
+        <HubBulkActionButton
+          icon={<Upload size={14} aria-hidden />}
           label="Import"
-          tone="cyan"
+          title="Import spreadsheet source"
+          tone="sky"
           onClick={() => setImportOpen(true)}
         />
-        <HubFilterRowButton
-          icon={<Trash2 size={12} />}
+        <HubBulkActionButton
+          icon={<Trash2 size={14} aria-hidden />}
           label="Remove"
+          title="Remove selected source"
           tone="rose"
           disabled={!active}
           onClick={onRemove}
         />
-      </>
+      </HubDirectoryBulkActionRail>
     ),
     [active, onRemove],
   );

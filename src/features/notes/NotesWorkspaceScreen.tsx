@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useHubPageShortcuts } from "@tool-workspace/hub-ui";
+import { HubDirectoryBulkActionBar, useHubPageShortcuts } from "@tool-workspace/hub-ui";
 import type { FilterValues } from "../../components/sales-shell";
 import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
 import { useAppToast } from "../../components/toast";
@@ -20,7 +20,12 @@ import { NotesHubChrome } from "./NotesHubChrome";
 import { NotesWorkspaceToolbar } from "./NotesWorkspaceToolbar";
 import { NotesListRail } from "./NotesListRail";
 import { noteMatchesFolderFilter, useNoteFolders, mergeDisplayFolders, getEffectiveNoteFolderIds, getUserFolderIds } from "./noteFolders";
-import { NotesFoldersSettingsPanel } from "./NotesFoldersSettingsPanel";
+import { NotesFolderManageSettingsPanel } from "./NotesFolderManageSettingsPanel";
+import { NotesFolderTagSection } from "./NotesFolderTagSection";
+import {
+  NotesFolderManageProvider,
+} from "./NotesFolderManageContext";
+import { updateNoteRow } from "./notesRepository";
 import { filterNotes } from "./notes-filters";
 import { readNotesListPrefs, type NotesListDensity } from "./notes-list-prefs";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
@@ -63,6 +68,7 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     error: listError,
     refresh: refreshNotesList,
     mergeNoteInList,
+    patchNotePinInList,
     createNote,
     deleteNote,
   } = useNotes(session);
@@ -659,18 +665,22 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     title,
   ]);
 
-  const onPinnedToggle = async () => {
-    if (routeLocked) {
+  const onNotePinToggle = async (noteId: string) => {
+    if (cookieRouteNoteIds.has(noteId)) {
       pushToast("Pin is disabled while a Cookie Bridge route is active.", "info");
       return;
     }
-    const next = !pinned;
-    setPinned(next);
+    const item = notes.find((n) => n.id === noteId);
+    if (!item) return;
+    const next = !item.pinned;
+    if (noteId === selectedId) setPinned(next);
+    patchNotePinInList(noteId, next);
     try {
-      await persistCurrentNote({ pinned: next });
-      pushToast(next ? "Pinned note" : "Unpinned note", "success");
+      const { error } = await updateNoteRow(noteId, { pinned: next });
+      if (error) throw error;
     } catch (err) {
-      setPinned(!next);
+      patchNotePinInList(noteId, item.pinned);
+      if (noteId === selectedId) setPinned(item.pinned);
       pushToast(errorMessage(err, "Pin update failed"), "error");
     }
   };
@@ -766,33 +776,17 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     );
   }
 
-  const folderSettingsPanel = session ? (
-    <NotesFoldersSettingsPanel
+  const folderManageSettingsPanel = session ? <NotesFolderManageSettingsPanel /> : null;
+
+  const folderTagSection = session ? (
+    <NotesFolderTagSection
       folders={displayFolders}
-      noteFolders={folders.noteFolders}
-      cookieRouteNoteIds={cookieRouteNoteIds}
-      notes={notes}
       selectedNoteId={selectedId}
       selectedNoteFolderIds={selectedNoteFolderIds}
-      onCreateFolder={async (name, color) => {
-        const folder = await folders.createFolder(name, color);
-        if (folder) pushToast(`Folder created: ${folder.name}`, "success");
-      }}
+      cookieRouteNoteIds={cookieRouteNoteIds}
       onToggleNoteFolder={async (folderId, enabled) => {
         if (!selectedId) return;
         await folders.toggleNoteFolder(selectedId, folderId, enabled);
-      }}
-      onRenameFolder={async (folderId, name) => {
-        await folders.renameFolder(folderId, name);
-        pushToast("Folder renamed", "success");
-      }}
-      onSetFolderColor={async (folderId, color) => {
-        await folders.setFolderColor(folderId, color);
-        pushToast("Folder color updated", "success");
-      }}
-      onDeleteFolder={async (folderId) => {
-        await folders.deleteFolder(folderId);
-        pushToast("Folder deleted", "success");
       }}
     />
   ) : null;
@@ -800,7 +794,6 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
   const workspaceToolbar = session ? (
     <NotesWorkspaceToolbar
       note={note}
-      pinned={pinned}
       shareAccess={shareAccess}
       shareDraftAccess={shareDraftAccess}
       shareDraftPassword={shareDraftPassword}
@@ -815,7 +808,6 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
       onNew={() => void onNew()}
       onSave={() => void onSave()}
       onDelete={requestDeleteNote}
-      onPinnedToggle={() => void onPinnedToggle()}
       onHistoryHover={() => {
         if (getOfflineMode() || !versions.length) return;
         prefetchHistoryVersions(versions, selectedVersionId);
@@ -832,9 +824,35 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     />
   ) : null;
 
+  const filterToolbar = session ? (
+    <HubDirectoryBulkActionBar>{workspaceToolbar}</HubDirectoryBulkActionBar>
+  ) : null;
+
   if (!session) return null;
 
   return (
+    <NotesFolderManageProvider
+      folders={displayFolders}
+      noteFolders={folders.noteFolders}
+      cookieRouteNoteIds={cookieRouteNoteIds}
+      notes={notes}
+      onCreateFolder={async (name, color) => {
+        const folder = await folders.createFolder(name, color);
+        if (folder) pushToast(`Folder created: ${folder.name}`, "success");
+      }}
+      onRenameFolder={async (folderId, name) => {
+        await folders.renameFolder(folderId, name);
+        pushToast("Folder renamed", "success");
+      }}
+      onSetFolderColor={async (folderId, color) => {
+        await folders.setFolderColor(folderId, color);
+        pushToast("Folder color updated", "success");
+      }}
+      onDeleteFolder={async (folderId) => {
+        await folders.deleteFolder(folderId);
+        pushToast("Folder deleted", "success");
+      }}
+    >
     <div className="notes-workspace anim-fade flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <NotesHubChrome
         query={query}
@@ -849,8 +867,9 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
         onDensityChange={setDensity}
         sort={prefs.sort}
         onSortChange={(next) => setPrefs((p) => ({ ...p, sort: next }))}
-        filterToolbar={workspaceToolbar}
-        folderSettingsPanel={folderSettingsPanel}
+        filterToolbar={filterToolbar}
+        folderManageSettingsPanel={folderManageSettingsPanel}
+        folderTagSection={folderTagSection}
       >
         <NotesListRail
           notes={sortedFiltered}
@@ -863,6 +882,7 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
           displayFolders={displayFolders}
           noteFolders={folders.noteFolders}
           onSelect={pickNote}
+          onPinToggle={(id) => void onNotePinToggle(id)}
         />
         {noteError && selectedId ? (
           <div className="flex flex-1 items-center justify-center p-6 text-sm text-rose-200">{noteError}</div>
@@ -958,6 +978,7 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
         onClose={() => setPendingDeleteVersionId(null)}
       />
     </div>
+    </NotesFolderManageProvider>
   );
 }
 

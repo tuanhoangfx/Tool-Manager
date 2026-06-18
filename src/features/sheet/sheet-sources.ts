@@ -20,6 +20,18 @@ export type SheetSource = {
 };
 
 const STORAGE_KEY = "p0020:sheet:sources:v1";
+export const SHEET_SOURCES_CHANGE_EVENT = "sheet-sources-change";
+
+export type SheetSourcesChangeDetail = {
+  action: "upsert" | "delete";
+  sourceId: string;
+  source?: SheetSource;
+};
+
+function notifySheetSourcesChange(detail: SheetSourcesChangeDetail) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(SHEET_SOURCES_CHANGE_EVENT, { detail }));
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -121,12 +133,16 @@ export function addSheetSource(opts: {
   });
   const next = [row, ...loadSheetSources()];
   saveSheetSources(next);
+  notifySheetSourcesChange({ action: "upsert", sourceId: row.id, source: row });
   return row;
 }
 
 export function removeSheetSource(id: string) {
-  const next = loadSheetSources().filter((s) => s.id !== id);
+  const prev = loadSheetSources();
+  const removed = prev.find((s) => s.id === id);
+  const next = prev.filter((s) => s.id !== id);
   saveSheetSources(next);
+  if (removed) notifySheetSourcesChange({ action: "delete", sourceId: id, source: removed });
 }
 
 export function updateSheetSourceTitle(id: string, title: string, titleSource?: SheetTitleSource) {
@@ -137,6 +153,8 @@ export function updateSheetSourceTitle(id: string, title: string, titleSource?: 
     return patch;
   });
   saveSheetSources(next);
+  const updated = next.find((s) => s.id === id);
+  if (updated) notifySheetSourcesChange({ action: "upsert", sourceId: id, source: updated });
 }
 
 export function updateSheetSourceHeaderRowIndex(id: string, headerRowIndex: number) {
@@ -145,9 +163,13 @@ export function updateSheetSourceHeaderRowIndex(id: string, headerRowIndex: numb
     s.id === id ? { ...s, headerRowIndex: Math.floor(headerRowIndex) } : s,
   );
   saveSheetSources(next);
+  const updated = next.find((s) => s.id === id);
+  if (updated) notifySheetSourcesChange({ action: "upsert", sourceId: id, source: updated });
 }
 
 export function updateSheetSourceLastSynced(id: string, at = nowIso()) {
   const next = loadSheetSources().map((s) => (s.id === id ? { ...s, lastSyncedAt: at } : s));
   saveSheetSources(next);
+  const updated = next.find((s) => s.id === id);
+  if (updated) notifySheetSourcesChange({ action: "upsert", sourceId: id, source: updated });
 }

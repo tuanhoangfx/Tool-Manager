@@ -1,6 +1,11 @@
-import { Eye, History, Lock, PenLine, Pin, Plus, Save, Share2, Trash2, Check } from "lucide-react";
+import { Eye, History, Lock, PenLine, Plus, Save, Share2, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import {
+  HubBulkActionButton,
+  HubDirectoryBulkActionRail,
+  type HubBulkActionTone,
+} from "@tool-workspace/hub-ui";
 import { useAppToast } from "../../components/toast";
 import { shareAccessLabel, type NoteShareAccess } from "./shareAccess";
 import { buildShareUrl } from "./shareUtils";
@@ -8,7 +13,6 @@ import type { NoteRow } from "./types";
 
 type Props = {
   note: NoteRow | null;
-  pinned: boolean;
   shareAccess: NoteShareAccess;
   shareDraftAccess: NoteShareAccess;
   shareDraftPassword: string;
@@ -23,7 +27,6 @@ type Props = {
   onNew: () => void;
   onSave: () => void;
   onDelete: () => void;
-  onPinnedToggle: () => void;
   onHistoryToggle?: () => void;
   onHistoryHover?: () => void;
   onShareDraftAccessChange: (access: NoteShareAccess) => void;
@@ -31,11 +34,13 @@ type Props = {
   onShareSave: () => void;
   onShareCancel: () => void;
   onShareMenuOpen?: () => void;
+  /** Render buttons only — share one `HubDirectoryBulkActionRail` with folder bulk. */
+  embedded?: boolean;
 };
 
+/** Filter row 2 — golden HubBulkActionButton rail (parity with 2FA directory bulk bar). */
 export function NotesWorkspaceToolbar({
   note,
-  pinned,
   shareAccess,
   shareDraftAccess,
   shareDraftPassword,
@@ -43,14 +48,12 @@ export function NotesWorkspaceToolbar({
   creating,
   saveAcknowledged,
   routeLocked = false,
-  historyOpen = false,
   historyDisabled = false,
   historyVersionCount = 0,
   historyBadgePulse = false,
   onNew,
   onSave,
   onDelete,
-  onPinnedToggle,
   onHistoryToggle,
   onHistoryHover,
   onShareDraftAccessChange,
@@ -58,6 +61,7 @@ export function NotesWorkspaceToolbar({
   onShareSave,
   onShareCancel,
   onShareMenuOpen,
+  embedded = false,
 }: Props) {
   const [shareOpen, setShareOpen] = useState(false);
   const shareWrapRef = useRef<HTMLDivElement>(null);
@@ -84,35 +88,41 @@ export function NotesWorkspaceToolbar({
   const shareDirty =
     shareDraftAccess !== shareAccess || shareDraftPassword.trim().length > 0;
 
-  return (
-    <div className="flex flex-wrap items-center justify-end gap-1.5">
-      <ToolbarButton icon={<Plus size={12} />} label={creating ? "Creating…" : "New"} tone="indigo" disabled={creating} onClick={onNew} />
-      <ToolbarButton
-        icon={<Save size={12} />}
-        label={saving ? "Saving…" : "Save"}
+  const shareTone: HubBulkActionTone =
+    shareAccess === "edit" ? "indigo" : shareAccess === "view" ? "sky" : "neutral";
+
+  const buttons = (
+    <>
+      <HubBulkActionButton
+        icon={<Plus size={14} aria-hidden />}
+        label={creating ? "Creating…" : "New"}
+        title="Create a new note"
+        tone="indigo"
+        disabled={creating}
+        onClick={onNew}
+      />
+      <HubBulkActionButton
+        icon={<Save size={14} aria-hidden />}
+        label={saving ? "Saving…" : saveAcknowledged && !saving ? "Saved" : "Save"}
+        title="Save note"
         tone="emerald"
         disabled={!hasNote || saving}
         onClick={onSave}
-        trailing={
-          saveAcknowledged && !saving ? (
-            <Check size={11} className="text-emerald-300 anim-pop" aria-hidden />
-          ) : null
-        }
-      />
-      <ToolbarButton
-        icon={<Pin size={12} />}
-        label={pinned ? "Pinned" : "Pin"}
-        tone="violet"
-        active={pinned}
-        disabled={!hasNote || routeLocked}
-        onClick={onPinnedToggle}
       />
       <div ref={shareWrapRef} className="relative">
-        <ToolbarButton
-          icon={shareAccess === "edit" ? <PenLine size={12} /> : shareAccess === "view" ? <Eye size={12} /> : <Lock size={12} />}
+        <HubBulkActionButton
+          icon={
+            shareAccess === "edit" ? (
+              <PenLine size={14} aria-hidden />
+            ) : shareAccess === "view" ? (
+              <Eye size={14} aria-hidden />
+            ) : (
+              <Lock size={14} aria-hidden />
+            )
+          }
           label={shareAccessLabel(shareAccess)}
-          tone={shareAccess === "edit" ? "violet" : shareAccess === "view" ? "cyan" : "indigo"}
-          active={linkActive}
+          title="Share note"
+          tone={shareTone}
           disabled={!hasNote || routeLocked}
           onClick={() => openShareMenu(!shareOpen)}
         />
@@ -134,79 +144,31 @@ export function NotesWorkspaceToolbar({
           />
         ) : null}
       </div>
-      <ToolbarButton icon={<Trash2 size={12} />} label="Delete" tone="rose" disabled={!hasNote} onClick={onDelete} />
-      <div
-        className="relative"
-        onMouseEnter={() => onHistoryHover?.()}
-        onFocus={() => onHistoryHover?.()}
-      >
-        <ToolbarButton
-          icon={<History size={12} />}
+      <HubBulkActionButton
+        icon={<Trash2 size={14} aria-hidden />}
+        label="Delete"
+        title="Delete note"
+        tone="rose"
+        disabled={!hasNote}
+        onClick={onDelete}
+      />
+      <div onMouseEnter={() => onHistoryHover?.()} onFocus={() => onHistoryHover?.()}>
+        <HubBulkActionButton
+          icon={<History size={14} aria-hidden />}
           label="History"
-          tone="indigo"
-          active={historyOpen}
+          title={historyDisabled ? "History unavailable offline" : "Note version history"}
+          tone={historyBadgePulse ? "emerald" : "indigo"}
           disabled={!hasNote || historyDisabled}
+          selectedCount={hasNote && historyVersionCount > 0 ? historyVersionCount : undefined}
           onClick={() => onHistoryToggle?.()}
         />
-        {hasNote && historyVersionCount > 0 ? (
-          <span
-            className={`pointer-events-none absolute -right-1 -top-1 flex h-[15px] min-w-[15px] items-center justify-center rounded-full border px-0.5 text-[9px] font-bold leading-none ${
-              historyBadgePulse
-                ? "border-emerald-400/50 bg-emerald-500/90 text-white anim-pop"
-                : "border-indigo-400/35 bg-indigo-500/85 text-indigo-50"
-            }`}
-            aria-hidden
-          >
-            {historyVersionCount > 99 ? "99+" : historyVersionCount}
-          </span>
-        ) : null}
       </div>
-    </div>
+    </>
   );
-}
 
-type ToolbarTone = "cyan" | "emerald" | "indigo" | "rose" | "violet";
+  if (embedded) return buttons;
 
-function ToolbarButton({
-  icon,
-  label,
-  tone,
-  active,
-  disabled,
-  onClick,
-  trailing,
-}: {
-  icon: ReactNode;
-  label: string;
-  tone: ToolbarTone;
-  active?: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  trailing?: ReactNode;
-}) {
-  const toneClass = {
-    cyan: "border-cyan-400/30 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/16",
-    emerald: "border-emerald-400/30 bg-emerald-400/10 text-emerald-100 hover:bg-emerald-400/16",
-    indigo: "border-indigo-400/30 bg-indigo-400/12 text-indigo-100 hover:bg-indigo-400/18",
-    rose: "border-rose-400/30 bg-rose-400/10 text-rose-100 hover:bg-rose-400/16",
-    violet: "border-violet-400/30 bg-violet-400/10 text-violet-100 hover:bg-violet-400/16",
-  }[tone];
-
-  return (
-    <button
-      type="button"
-      className={`inline-flex h-7 items-center gap-1 rounded-lg border px-2 text-[10px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${toneClass} ${
-        active ? "ring-1 ring-current/30" : ""
-      }`}
-      disabled={disabled}
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onClick}
-    >
-      {icon}
-      <span className="hidden sm:inline">{label}</span>
-      {trailing}
-    </button>
-  );
+  return <HubDirectoryBulkActionRail>{buttons}</HubDirectoryBulkActionRail>;
 }
 
 function ShareMenu({

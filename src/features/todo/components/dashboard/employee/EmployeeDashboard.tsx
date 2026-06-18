@@ -173,6 +173,7 @@ const EmployeeDashboard: React.FC<TaskDashboardProps> = ({
                         onUpdateStatus={onUpdateStatus}
                         onClearCancelledTasks={onClearCancelledTasks}
                         lastDataChange={lastDataChange}
+                        searchTerm={filters.searchTerm}
                     />
                 ))}
             </div>

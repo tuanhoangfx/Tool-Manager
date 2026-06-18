@@ -10,6 +10,14 @@ function decodeHtmlText(s: string) {
     .replaceAll("&#39;", "'");
 }
 
+/** Strip Google suffix from gviz `<title>` (tab or spreadsheet label). */
+export function cleanSheetGvizTitle(raw: string): string {
+  return raw
+    .replace(/\s*[-–—]\s*Google\s+Sheets\s*$/i, "")
+    .replace(/\s*[-–—]\s*Google\s+Drive\s*$/i, "")
+    .trim();
+}
+
 /** Tab title from gviz HTML `<title>` (e.g. "🌐 Web"). */
 export async function fetchSheetTabTitle(source: Pick<SheetSource, "rawUrl" | "gid">): Promise<string | null> {
   try {
@@ -21,7 +29,7 @@ export async function fetchSheetTabTitle(source: Pick<SheetSource, "rawUrl" | "g
     if (!res.ok) return null;
     const html = await res.text();
     const m = html.match(/<title>([^<]+)<\/title>/i);
-    const title = m?.[1] ? decodeHtmlText(m[1]).trim() : "";
+    const title = m?.[1] ? cleanSheetGvizTitle(decodeHtmlText(m[1])) : "";
     return title || null;
   } catch {
     return null;

@@ -9,6 +9,7 @@ import {
   HubFilterDropdownCircle,
   HubFilterDropdownTrigger,
   compactIconSize,
+  multiFilterTriggerTitle,
 } from "@tool-workspace/hub-ui";
 
 import type { NoteFolder } from "./noteFolders";
@@ -98,6 +99,10 @@ export function NotesNoteFolderFilter({
     displayCount === 1 ? filterDef.options.find((o) => o.value === effectiveFolderIds[0]) : undefined;
 
   const buttonLabel = folderFilterButtonLabel("Folder", displayCount, soleOpt?.label, true);
+  const buttonTitle =
+    displayCount > 1
+      ? multiFilterTriggerTitle(effectiveFolderIds, filterDef.options) ?? "Tag note with folders"
+      : soleOpt?.label ?? "Tag note with folders";
 
   const toggleUser = (folderId: string) => {
     if (disabled) return;
@@ -220,10 +225,9 @@ export function NotesNoteFolderFilter({
         active={displayCount > 0}
         open={open}
         label={buttonLabel}
-        count={displayCount}
         iconColor={soleOpt?.color}
         disabled={disabled}
-        title="Tag note with folders"
+        title={buttonTitle}
         onClick={() => setOpen((v) => !v)}
       />
 

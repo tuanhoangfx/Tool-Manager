@@ -38,7 +38,7 @@ export function TodoHubBadge(props: Props) {
   if (props.kind === "priority") {
     return (
       <span className={PRIORITY_CLASS[props.priority]}>
-        {props.icon ? <span aria-hidden>{props.icon}</span> : null}
+        {props.icon ? <span className="todo-hub-badge__icon" aria-hidden>{props.icon}</span> : null}
         <span className="truncate">{props.label}</span>
       </span>
     );

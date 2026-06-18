@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react";
-import { HubFilterRowButton } from "@tool-workspace/hub-ui";
+import { HubBulkActionButton, HubDirectoryBulkActionRail } from "@tool-workspace/hub-ui";
 import type { Translation } from "./types";
 
 type Props = {
@@ -7,14 +7,17 @@ type Props = {
   onAddTask: () => void;
 };
 
-/** Row 2 trailing — New task CTA (golden Notes "New" on filter row). */
+/** Row 2 trailing — New task CTA (golden HubBulkActionButton rail). */
 export function TodoFilterRowActions({ onAddTask }: Pick<Props, "onAddTask">) {
   return (
-    <HubFilterRowButton
-      icon={<Plus size={12} />}
-      label="New"
-      tone="indigo"
-      onClick={onAddTask}
-    />
+    <HubDirectoryBulkActionRail>
+      <HubBulkActionButton
+        icon={<Plus size={14} aria-hidden />}
+        label="New task"
+        title="Create a new task"
+        tone="indigo"
+        onClick={onAddTask}
+      />
+    </HubDirectoryBulkActionRail>
   );
 }

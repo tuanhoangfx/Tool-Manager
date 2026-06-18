@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Check } from "lucide-react";
+import { HubCopyTickWrap, useHubCopyFlash } from "@tool-workspace/hub-ui";
 import type { TwofaAccount } from "./types";
 import { generateCode, normalizeSecret, secondsRemaining } from "./totp";
 import { useTwofaTotpTick } from "./twofa-totp-tick";
@@ -14,13 +14,7 @@ function maskLabel(value: string): string {
 }
 
 function useCopyFlash() {
-  const [copied, setCopied] = useState(false);
-  useEffect(() => {
-    if (!copied) return;
-    const timer = window.setTimeout(() => setCopied(false), 1400);
-    return () => window.clearTimeout(timer);
-  }, [copied]);
-  return { copied, flash: () => setCopied(true) };
+  return useHubCopyFlash();
 }
 
 function useMaskPasswordPref() {
@@ -49,21 +43,22 @@ function TwofaCopyControl({
   const { copied, flash } = useCopyFlash();
 
   return (
-    <button
-      type="button"
-      className={`twofa-copy-control ${className}`}
-      title={title}
-      onClick={(e) => {
-        e.stopPropagation();
-        void navigator.clipboard?.writeText(value).then(() => {
-          flash();
-          onCopied?.();
-        });
-      }}
-    >
-      <span className="twofa-copy-control__value min-w-0">{display}</span>
-      {copied ? <Check size={10} className="twofa-copy-control__tick shrink-0 text-emerald-400" aria-hidden /> : null}
-    </button>
+    <HubCopyTickWrap copied={copied} className="twofa-copy-control-wrap">
+      <button
+        type="button"
+        className={`twofa-copy-control ${className}`}
+        title={title}
+        onClick={(e) => {
+          e.stopPropagation();
+          void navigator.clipboard?.writeText(value).then(() => {
+            flash();
+            onCopied?.();
+          });
+        }}
+      >
+        <span className="twofa-copy-control__value min-w-0">{display}</span>
+      </button>
+    </HubCopyTickWrap>
   );
 }
 
@@ -173,21 +168,22 @@ export const TwofaCodeCell = memo(function TwofaCodeCell({
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <button
-        type="button"
-        className={CODE_CHIP_CLASS}
-        title="Copy code"
-        onClick={(e) => {
-          e.stopPropagation();
-          void navigator.clipboard?.writeText(code).then(() => {
-            flash();
-            onUsed(account.id);
-          });
-        }}
-      >
-        <span className="whitespace-nowrap">{code}</span>
-        {copied ? <Check size={10} className="shrink-0 text-emerald-300" aria-hidden /> : null}
-      </button>
+      <HubCopyTickWrap copied={copied} className="twofa-copy-control-wrap" tickClassName="text-emerald-300">
+        <button
+          type="button"
+          className={CODE_CHIP_CLASS}
+          title="Copy code"
+          onClick={(e) => {
+            e.stopPropagation();
+            void navigator.clipboard?.writeText(code).then(() => {
+              flash();
+              onUsed(account.id);
+            });
+          }}
+        >
+          <span className="whitespace-nowrap">{code}</span>
+        </button>
+      </HubCopyTickWrap>
     </div>
   );
 });

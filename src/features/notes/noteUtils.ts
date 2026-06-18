@@ -156,6 +156,11 @@ export function mergeNoteRowForList(existing: NoteRow, saved: NoteRow): NoteRow 
   };
 }
 
+/** Pin toggle — metadata only; must not change list "Edited …" label. */
+export function patchNotePinForList(existing: NoteRow, pinned: boolean): NoteRow {
+  return { ...existing, pinned };
+}
+
 export function toListItem(row: NoteRow): NoteListItem {
   const { syncLabel, syncTone } = syncMeta(row.sync_status, row.synced_at);
   return {

@@ -1,4 +1,4 @@
-import { AlertCircle, CalendarPlus, CheckCircle2, Clock3, Globe2, Hash, Pin } from "lucide-react";
+import { AlertCircle, CalendarPlus, CheckCircle2, Clock3, Globe2, Hash, Pin, RefreshCw } from "lucide-react";
 import { CopyMetaChip, MetaChip, type MetaTone } from "@tool-workspace/hub-ui";
 import { NoteEditorTitleOnlyBadge } from "./NoteEditorRouteTitleActions";
 import { formatNoteTimestamp } from "./noteUtils";
@@ -11,6 +11,8 @@ type Props = {
   routeLocked?: boolean;
 };
 
+const NOTE_COPY_CHIP_CLASS = "text-[11px] leading-[1.25]";
+
 /** Editor header meta chips (sync, domain, pin, id). */
 export function NoteEditorMetaStrip({ note, loading, hideDomain = false, routeLocked = false }: Props) {
   if (!note && !loading && !routeLocked) return null;
@@ -18,6 +20,9 @@ export function NoteEditorMetaStrip({ note, loading, hideDomain = false, routeLo
   const syncTone: MetaTone =
     note?.sync_status === "synced" ? "emerald" : note?.sync_status === "error" ? "rose" : "amber";
   const syncStatusLabel = note ? syncStatusShort(note.sync_status) : "";
+  const syncId = note?.sync_id?.trim() ?? "";
+  const slug = note?.slug?.trim() ?? "";
+  const noteId = note?.id?.trim() ?? "";
 
   return (
     <div className="ml-auto flex min-h-[1.625rem] min-w-[5.5rem] shrink-0 flex-wrap items-center justify-end gap-1.5">
@@ -44,14 +49,34 @@ export function NoteEditorMetaStrip({ note, loading, hideDomain = false, routeLo
           className="max-w-[9.5rem]"
         />
       ) : null}
-      {note?.id ? (
+      {slug ? (
         <CopyMetaChip
           icon={<Hash size={11} />}
-          label={note.id}
-          value={note.id}
+          label={slug.length > 18 ? `${slug.slice(0, 16)}…` : slug}
+          value={slug}
+          tone="violet"
+          title="Copy slug"
+          className={`max-w-[10rem] ${NOTE_COPY_CHIP_CLASS}`}
+        />
+      ) : null}
+      {syncId ? (
+        <CopyMetaChip
+          icon={<RefreshCw size={11} />}
+          label={syncId.length > 14 ? `${syncId.slice(0, 12)}…` : syncId}
+          value={syncId}
+          tone="cyan"
+          title="Copy sync ID"
+          className={`max-w-[11rem] font-mono ${NOTE_COPY_CHIP_CLASS}`}
+        />
+      ) : null}
+      {noteId ? (
+        <CopyMetaChip
+          icon={<Hash size={11} />}
+          label={noteId.length > 12 ? `${noteId.slice(0, 8)}…` : noteId}
+          value={noteId}
           tone="indigo"
           title="Copy note ID"
-          className="ml-0.5 max-w-[13rem] font-mono text-[9px] tracking-tight"
+          className={`max-w-[11rem] font-mono ${NOTE_COPY_CHIP_CLASS}`}
         />
       ) : null}
     </div>

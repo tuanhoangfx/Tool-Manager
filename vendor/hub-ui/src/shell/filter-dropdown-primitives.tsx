@@ -22,8 +22,22 @@ export function folderFilterButtonLabel(
   showAllLabel = true,
 ): string {
   if (selectedCount === 0) return showAllLabel ? `All ${label}` : label;
-  if (selectedCount === 1) return `${label}: ${soleName ?? "1"}`;
-  return `${label}: ${selectedCount} selected`;
+  if (selectedCount === 1) return soleName ?? label;
+  return `${selectedCount} selected`;
+}
+
+type FilterOptionLike = { value: string; label: string };
+
+/** Hover title when multi-select label is abbreviated (`2 selected`). */
+export function multiFilterTriggerTitle(
+  selectedValues: readonly string[],
+  options: ReadonlyArray<FilterOptionLike>,
+): string | undefined {
+  if (selectedValues.length <= 1) return undefined;
+  const names = selectedValues
+    .map((v) => options.find((o) => o.value === v)?.label ?? v)
+    .filter((name) => name.trim().length > 0);
+  return names.length ? names.join(", ") : undefined;
 }
 
 type HubFilterDropdownTriggerProps = {
@@ -70,11 +84,7 @@ export function HubFilterDropdownTrigger({
         />
       )}
       <span className="min-w-0 max-w-[12rem] truncate">{label}</span>
-      {count != null && count > 1 ? (
-        <span className="grid h-4 min-w-[var(--hub-count-badge-min-w)] shrink-0 place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white">
-          {count}
-        </span>
-      ) : null}
+
       <ChevronDown
         size={compactIconSize(12)}
         className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`}

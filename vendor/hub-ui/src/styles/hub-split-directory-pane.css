@@ -10,6 +10,16 @@
   overflow: hidden;
 }
 
+.hub-split-directory-pane__body > .hub-split-directory-pane__kpi-band {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-bottom: 0.5rem;
+}
+
+.hub-split-directory-pane__body > .hub-split-directory-pane__kpi-band .hub-kpi-strip {
+  min-height: var(--hub-kpi-strip-min-h);
+}
+
 .hub-split-directory-pane__body > .hub-paginated-table-shell,
 .hub-split-directory-pane__body > .gpm-workflow-directory-shell {
   display: flex;

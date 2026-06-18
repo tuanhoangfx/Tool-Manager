@@ -27,7 +27,8 @@ type Props = {
 
 function syncTextareaHeight(el: HTMLTextAreaElement | null) {
   if (!el) return;
-  const body = el.closest(".notes-editor__body");
+  const body = el.closest(".notes-editor__body") as HTMLElement | null;
+  const scrollTop = body?.scrollTop ?? 0;
   const panel = body?.querySelector(".fm-cookie-panel");
   const panelH = panel?.getBoundingClientRect().height ?? 0;
   const gap = panel ? 12 : 0;
@@ -35,6 +36,7 @@ function syncTextareaHeight(el: HTMLTextAreaElement | null) {
   el.style.height = "auto";
   el.style.minHeight = `${fillMin}px`;
   el.style.height = `${Math.max(el.scrollHeight, fillMin)}px`;
+  if (body) body.scrollTop = scrollTop;
 }
 
 function isEditorChromeTarget(target: EventTarget | null): boolean {

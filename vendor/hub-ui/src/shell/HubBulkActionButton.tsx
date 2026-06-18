@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { HUB_SHELL_LABEL_TYPO_CLASS } from "./hub-typography";
+import { HUB_DIRECTORY_TOOLBAR_TYPO_CLASS } from "./hub-typography";
 
 export type HubBulkActionTone = "indigo" | "amber" | "emerald" | "rose" | "sky" | "neutral";
 
@@ -10,7 +10,7 @@ const TONE_CLASS: Record<HubBulkActionTone, string> = {
   rose: "border-rose-500/35 bg-rose-500/15 text-rose-100 hover:bg-rose-500/25",
   sky: "border-sky-500/30 bg-sky-500/12 text-sky-100 hover:bg-sky-500/20",
   neutral:
-    "border-white/10 bg-white/5 text-[var(--muted)] hover:bg-white/10 hover:text-[var(--text)]",
+    "border-white/10 bg-[var(--panel-2)] text-[var(--text)] hover:bg-white/5",
 };
 
 const BADGE_CLASS: Record<HubBulkActionTone, string> = {
@@ -22,7 +22,7 @@ const BADGE_CLASS: Record<HubBulkActionTone, string> = {
   neutral: "bg-white/80 text-[#0f1220]",
 };
 
-export const HUB_BULK_ACTION_BTN_CLASS = `inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 rounded-lg px-3 ${HUB_SHELL_LABEL_TYPO_CLASS} transition-colors disabled:cursor-not-allowed disabled:opacity-40`;
+export const HUB_BULK_ACTION_BTN_CLASS = `inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 rounded-lg border px-3 ${HUB_DIRECTORY_TOOLBAR_TYPO_CLASS} transition-colors disabled:cursor-not-allowed disabled:opacity-40`;
 
 export type HubBulkActionCountBadgeProps = {
   count: number;
@@ -67,9 +67,13 @@ export function HubBulkActionButton({
       disabled={disabled}
       onClick={onClick}
       title={title}
-      className={`${HUB_BULK_ACTION_BTN_CLASS} border ${TONE_CLASS[tone]}`}
+      className={`${HUB_BULK_ACTION_BTN_CLASS} ${TONE_CLASS[tone]}`}
     >
-      <span className={iconSpinning ? "[&_svg]:animate-spin" : ""}>{icon}</span>
+      <span
+        className={`shrink-0 opacity-90 [&_svg]:size-[13px] ${iconSpinning ? "[&_svg]:animate-spin" : ""}`}
+      >
+        {icon}
+      </span>
       {label}
       {selectedCount != null && selectedCount > 0 ? (
         <HubBulkActionCountBadge count={selectedCount} tone={tone} />

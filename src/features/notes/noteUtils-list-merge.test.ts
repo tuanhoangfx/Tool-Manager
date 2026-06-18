@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeNoteRowForList, sortNoteRows } from "./noteUtils";
+import { mergeNoteRowForList, patchNotePinForList, sortNoteRows } from "./noteUtils";
 import type { NoteRow } from "./types";
 
 function row(overrides: Partial<NoteRow> & Pick<NoteRow, "id">): NoteRow {
@@ -42,6 +42,15 @@ describe("mergeNoteRowForList", () => {
     expect(merged.updated_at).toBe("2026-06-02T12:00:00Z");
     expect(merged.body_md).toBe("");
     expect(merged.cookie_snapshot).toBeNull();
+  });
+});
+
+describe("patchNotePinForList", () => {
+  it("toggles pin without changing updated_at", () => {
+    const existing = row({ id: "a", pinned: false, updated_at: "2026-06-01T12:00:00Z" });
+    const patched = patchNotePinForList(existing, true);
+    expect(patched.pinned).toBe(true);
+    expect(patched.updated_at).toBe("2026-06-01T12:00:00Z");
   });
 });
 

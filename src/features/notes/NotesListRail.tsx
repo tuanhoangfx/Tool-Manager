@@ -1,4 +1,4 @@
-import { useEffect, useState, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Cookie, Pin } from "lucide-react";
 import { resolveCookieSiteIcon } from "../cookie/cookieSiteIcon";
 import type { NotesCookieRouteIndex } from "../cookie/useNotesCookieRouteIndex";
@@ -22,6 +22,7 @@ type Props = {
   displayFolders: NoteFolder[];
   noteFolders: Record<string, string[]>;
   onSelect: (id: string) => void;
+  onPinToggle: (id: string) => void;
 };
 
 /** Left TOC rail — title, relative edit/sync time, folder dot, cookie route icon. */
@@ -36,17 +37,36 @@ export function NotesListRail({
   displayFolders,
   noteFolders,
   onSelect,
+  onPinToggle,
 }: Props) {
   const compact = density === "compact";
   const rowHeight = NOTES_LIST_ROW_HEIGHT[compact ? "compact" : "comfortable"];
   const { scrollRef, enabled, visible, totalHeight, offsetY, scrollNoteIntoView } =
     useNotesListVirtualWindow(notes, rowHeight);
 
+  /** Scroll selected row into view once per selection — not on list refresh/autosave. */
+  const scrollAnchorRef = useRef<{ selectedId: string | null; done: boolean }>({
+    selectedId: null,
+    done: false,
+  });
+
   useLayoutEffect(() => {
-    if (!selectedId) return;
+    if (!selectedId) {
+      scrollAnchorRef.current = { selectedId: null, done: false };
+      return;
+    }
+
+    if (scrollAnchorRef.current.selectedId !== selectedId) {
+      scrollAnchorRef.current = { selectedId, done: false };
+    }
+
+    if (scrollAnchorRef.current.done) return;
+
     const index = notes.findIndex((n) => n.id === selectedId);
     if (index < 0) return;
-    scrollNoteIntoView(selectedId, index);
+
+    scrollNoteIntoView(selectedId, index, "auto");
+    scrollAnchorRef.current.done = true;
   }, [notes, scrollNoteIntoView, selectedId]);
 
   useEffect(() => {
@@ -89,6 +109,7 @@ export function NotesListRail({
                   displayFolders={displayFolders}
                   noteFolders={noteFolders}
                   onSelect={onSelect}
+                  onPinToggle={onPinToggle}
                 />
               ))}
             </ul>
@@ -106,6 +127,7 @@ export function NotesListRail({
                 displayFolders={displayFolders}
                 noteFolders={noteFolders}
                 onSelect={onSelect}
+                onPinToggle={onPinToggle}
               />
             ))}
           </ul>
@@ -129,6 +151,7 @@ function NoteListRow({
   displayFolders,
   noteFolders,
   onSelect,
+  onPinToggle,
 }: {
   note: NoteListItem;
   active: boolean;
@@ -138,7 +161,9 @@ function NoteListRow({
   displayFolders: NoteFolder[];
   noteFolders: Record<string, string[]>;
   onSelect: (id: string) => void;
+  onPinToggle: (id: string) => void;
 }) {
+  const [pinPulse, setPinPulse] = useState(false);
   const routeDomain = cookieRouteByNoteId?.get(n.id) ?? null;
   const primaryFolder = getPrimaryFolderForListNote(
     n.id,
@@ -148,6 +173,7 @@ function NoteListRow({
     displayFolders,
   );
   const isCookieRoute = cookieRouteNoteIds.has(n.id);
+  const pinDisabled = isCookieRoute;
   const timeLabel = noteEditorTocLabel(n, isCookieRoute);
 
   return (
@@ -158,54 +184,120 @@ function NoteListRow({
         onMouseEnter={() => prefetchNoteDetail(n.id)}
         onFocus={() => prefetchNoteDetail(n.id)}
         onClick={() => onSelect(n.id)}
-        className={`flex w-full items-start gap-1.5 rounded-lg border text-left transition-all ${
-          compact ? "px-1.5 py-1" : "px-2 py-1.5"
+        className={`notes-rail__row relative w-full rounded-lg border text-left transition-all ${
+          compact ? "px-1.5 py-1 pr-7" : "px-2 py-1.5 pr-8"
         } ${
           active
             ? "border-indigo-400/45 bg-indigo-500/15 ring-1 ring-indigo-400/25"
             : "border-transparent bg-white/[.02] hover:border-white/10 hover:bg-white/[.05]"
-        }`}
+        } ${n.pinned ? "notes-rail__row--pinned" : ""}`}
       >
-        {primaryFolder ? (
-          <NotesFolderListDot color={primaryFolder.color} title={primaryFolder.name} />
-        ) : (
+        <span className="notes-rail__body block min-w-0">
           <span
-            className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
-              n.syncTone === "emerald"
-                ? "bg-emerald-400"
-                : n.syncTone === "rose"
-                  ? "bg-rose-400"
-                  : "bg-amber-400"
-            }`}
-            title={n.syncLabel}
-            aria-hidden
-          />
-        )}
-        <span className="min-w-0 flex-1">
-          <span
-            className={`hub-directory-rail-title block truncate font-medium text-[var(--text)] ${
+            className={`hub-directory-rail-title notes-rail__title flex min-w-0 items-center gap-1 font-medium text-[var(--text)] ${
               compact ? "hub-directory-rail-title--compact" : ""
             }`}
           >
-            {displayNoteTitle(n.title)}
+            <span className="notes-rail__title-leading inline-flex w-4 shrink-0 items-center justify-center">
+              {routeDomain ? <CookieRouteMark domain={routeDomain} compact={compact} /> : null}
+            </span>
+            <span className="min-w-0 flex-1 truncate">{displayNoteTitle(n.title)}</span>
           </span>
           {timeLabel ? (
             <span
-              className={`hub-directory-rail-meta notes-rail__time mt-0.5 block truncate font-medium text-violet-300/75 ${
+              className={`hub-directory-rail-meta notes-rail__time mt-0.5 flex min-w-0 items-center gap-1 truncate font-medium text-violet-300/75 ${
                 compact ? "hub-directory-rail-meta--compact" : ""
               }`}
               title={isCookieRoute ? n.synced_at ?? undefined : n.updated_at}
             >
-              {timeLabel}
+              <span className="notes-rail__meta-leading inline-flex w-4 shrink-0 items-center justify-center">
+                {primaryFolder ? (
+                  <NotesFolderListDot color={primaryFolder.color} title={primaryFolder.name} />
+                ) : (
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      n.syncTone === "emerald"
+                        ? "bg-emerald-400"
+                        : n.syncTone === "rose"
+                          ? "bg-rose-400"
+                          : "bg-amber-400"
+                    }`}
+                    title={n.syncLabel}
+                    aria-hidden
+                  />
+                )}
+              </span>
+              <span className="min-w-0 flex-1 truncate">{timeLabel}</span>
             </span>
           ) : null}
         </span>
-        <span className="flex shrink-0 items-center gap-1 pt-0.5">
-          {routeDomain ? <CookieRouteMark domain={routeDomain} compact={compact} /> : null}
-          {n.pinned ? <Pin size={11} className="text-violet-300" aria-label="Pinned" /> : null}
-        </span>
+        <NoteRowPinButton
+          pinned={n.pinned}
+          disabled={pinDisabled}
+          pulse={pinPulse}
+          compact={compact}
+          onToggle={() => {
+            setPinPulse(true);
+            onPinToggle(n.id);
+            window.setTimeout(() => setPinPulse(false), 320);
+          }}
+        />
       </button>
     </li>
+  );
+}
+
+function NoteRowPinButton({
+  pinned,
+  disabled,
+  pulse,
+  compact,
+  onToggle,
+}: {
+  pinned: boolean;
+  disabled: boolean;
+  pulse: boolean;
+  compact: boolean;
+  onToggle: () => void;
+}) {
+  const size = compact ? 11 : 12;
+
+  return (
+    <span
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-label={disabled ? "Pin disabled for Cookie Bridge routes" : pinned ? "Unpin note" : "Pin note"}
+      aria-pressed={pinned}
+      title={
+        disabled
+          ? "Pin is disabled while a Cookie Bridge route is active"
+          : pinned
+            ? "Unpin note"
+            : "Pin note"
+      }
+      className={`notes-rail__pin absolute right-1 top-1 z-[1] inline-flex items-center justify-center rounded-md p-0.5 transition-colors ${
+        disabled ? "cursor-not-allowed opacity-35" : "cursor-pointer hover:bg-violet-500/15"
+      } ${pinned ? "notes-rail__pin--on" : ""} ${pulse ? "anim-pop" : ""}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (disabled) return;
+        onToggle();
+      }}
+      onKeyDown={(e) => {
+        if (disabled) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggle();
+        }
+      }}
+    >
+      <Pin
+        size={size}
+        className={pinned ? "fill-violet-300/90 text-violet-300" : "text-white/30"}
+        aria-hidden
+      />
+    </span>
   );
 }
 

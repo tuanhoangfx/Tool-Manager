@@ -60,7 +60,7 @@ export {
   type DirectoryTableColumnsSettingsProps,
 } from "./prefs/DirectoryTableColumnsSettings";
 export { DirectoryTableColumnsResetAction } from "./prefs/DirectoryTableColumnsResetAction";
-export { compactIconSize, HUB_COMPACT_SCALE } from "./ui-scale";
+export { compactIconSize, HUB_CHROME_ICON_PX, HUB_COMPACT_SCALE } from "./ui-scale";
 export { deployLabel } from "./lib/deploy-label";
 export { formatTabHeaderTimestamp } from "./lib/tab-header-timestamp";
 export {
@@ -166,6 +166,7 @@ export {
   HubFilterDropdownCircle,
   HubFilterDropdownTrigger,
   folderFilterButtonLabel,
+  multiFilterTriggerTitle,
   hubFilterTriggerClass,
 } from "./shell/filter-dropdown-primitives";
 export { enrichFilterDefs } from "./lib/filter-option-counts";
@@ -265,6 +266,7 @@ export {
   type HubDirectoryMetricTone,
 } from "./shell/HubDirectoryMetricStrip";
 export { HubCopyBadge, type HubCopyBadgeProps } from "./shell/HubCopyBadge";
+export { HubCopyTickWrap, type HubCopyTickWrapProps } from "./shell/HubCopyTickWrap";
 export {
   HubInlineCopyControl,
   useHubCopyFlash,
@@ -351,6 +353,9 @@ export {
   scaleDirectoryColumnWidths,
   validateDirectoryColumns,
   hubDirectoryTableClass,
+  hubDirectoryFrameTableClass,
+  HUB_DIRECTORY_FRAME_CLASS,
+  HUB_DIRECTORY_FRAME_TABLE_CLASS,
   HUB_DIRECTORY_TABLE_BASE_CLASS,
   HUB_DIRECTORY_TABLE_WRAP_CLASS,
   HUB_DIRECTORY_USER_TABLE_WRAP_CLASS,
@@ -517,6 +522,7 @@ export {
   hubTogglePageSelectAllByPredicate,
   paginateHubTableItems,
   useHubTablePagination,
+  type HubServerPaginationControl,
   type HubTablePaginationState,
 } from "./table/hub-table-pagination";
 export {
@@ -556,6 +562,16 @@ export {
   HubDirectoryCardHeader,
   type HubDirectoryCardHeaderProps,
 } from "./content/HubDirectoryCardHeader";
+export {
+  HubDirectoryCardLeadingIcon,
+  HUB_DIRECTORY_CARD_ICON_BOX_PX,
+  HUB_DIRECTORY_CARD_ICON_GLYPH_PX,
+  type HubDirectoryCardLeadingIconProps,
+} from "./content/HubDirectoryCardLeadingIcon";
+export {
+  HubDirectoryCardLeadingTile,
+  type HubDirectoryCardLeadingTileProps,
+} from "./content/HubDirectoryCardLeadingTile";
 export { HubTabScreenBody } from "./content/HubTabScreenBody";
 export { HubDirectoryScreen, type HubDirectoryScreenProps } from "./templates/HubDirectoryScreen";
 export {
@@ -777,6 +793,7 @@ export {
 } from "./shell/HubDirectoryBulkActions";
 export {
   HUB_ANALYTICS_CAPTION_TYPO_CLASS,
+  HUB_DIRECTORY_TOOLBAR_TYPO_CLASS,
   HUB_SHELL_LABEL_TYPO_CLASS,
 } from "./shell/hub-typography";
 export {
@@ -810,6 +827,11 @@ export {
   HubDirectoryBulkActionRail,
   type HubDirectoryBulkActionRailProps,
 } from "./shell/HubDirectoryBulkActionRail";
+export {
+  HubDirectoryCrudBulkActions,
+  type HubDirectoryCrudBulkActionsProps,
+  type HubDirectoryCrudBulkExtraAction,
+} from "./shell/HubDirectoryCrudBulkActions";
 export { HubAuthGate, type HubAuthGateProps } from "./auth/HubAuthGate";
 export { HubAuthGateOverlay, type HubAuthGateOverlayProps } from "./auth/HubAuthGateOverlay";
 export { HubAuthGateModal, type HubAuthGateModalProps } from "./auth/HubAuthGateModal";

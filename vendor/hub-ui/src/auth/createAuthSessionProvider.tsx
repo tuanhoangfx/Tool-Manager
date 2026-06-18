@@ -20,25 +20,26 @@ export function createAuthSessionProvider<TState>(
   hookName: string,
 ): AuthSessionProviderBundle<TState> {
   const registry = authContextRegistry();
-  let Context = registry.get(hookName) as Context<TState | null> | undefined;
-  if (!Context) {
-    Context = createContext<TState | null>(null);
-    Context.displayName = `${hookName}Context`;
-    registry.set(hookName, Context as Context<unknown>);
+  let existing = registry.get(hookName) as Context<TState | null> | undefined;
+  if (!existing) {
+    existing = createContext<TState | null>(null);
+    existing.displayName = `${hookName}Context`;
+    registry.set(hookName, existing as Context<unknown>);
   }
+  const AuthContext = existing;
 
   function AuthSessionProvider({ children }: { children: ReactNode }) {
     const value = useAuthState();
-    return <Context.Provider value={value}>{children}</Context.Provider>;
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
   }
 
   function useAuth(): TState {
-    const ctx = useContext(Context);
+    const ctx = useContext(AuthContext);
     if (!ctx) {
       throw new Error(`${hookName} must be used within AuthSessionProvider`);
     }
     return ctx;
   }
 
-  return { AuthSessionProvider, useAuth, Context };
+  return { AuthSessionProvider, useAuth, Context: AuthContext };
 }

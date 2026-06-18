@@ -1,4 +1,4 @@
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { HubDirectoryCrudBulkActions } from "@tool-workspace/hub-ui";
 
 type Props = {
   hasSelection: boolean;
@@ -10,7 +10,7 @@ type Props = {
   onDelete: () => void;
 };
 
-/** P0004 Users row-2 bulk actions — Share / Edit / Revoke access. */
+/** Cookie route access modal — Share / Edit / Revoke via golden bulk rail. */
 export function CookieRouteAccessBulkActionBar({
   hasSelection,
   selectedCount,
@@ -24,44 +24,22 @@ export function CookieRouteAccessBulkActionBar({
   const deleteEnabled = canManage && hasSelection;
 
   return (
-    <div className="hub-bulk-action-bar">
-      <button
-        type="button"
-        disabled={!canManage || shareBusy}
-        onClick={onAdd}
-        title={canManage ? "Share access by User ID or email" : "Owner or manager only"}
-        className="hub-bulk-action-btn hub-bulk-action-btn--add"
-      >
-        <Plus size={14} aria-hidden />
-        Share
-      </button>
-      <button
-        type="button"
-        disabled={!editEnabled}
-        onClick={onEdit}
-        title={
-          !canManage
-            ? "Owner or manager only"
-            : selectedCount > 1
-              ? "Select one member to edit"
-              : "Edit access (Load or Sync)"
-        }
-        className="hub-bulk-action-btn hub-bulk-action-btn--edit"
-      >
-        <Pencil size={14} aria-hidden />
-        Edit
-        {hasSelection ? <span className="hub-bulk-action-count">{selectedCount}</span> : null}
-      </button>
-      <button
-        type="button"
-        disabled={!deleteEnabled}
-        onClick={onDelete}
-        title={canManage ? "Revoke access for selected members" : "Owner or manager only"}
-        className="hub-bulk-action-btn hub-bulk-action-btn--delete"
-      >
-        <Trash2 size={14} aria-hidden />
-        Delete
-      </button>
-    </div>
+    <HubDirectoryCrudBulkActions
+      hasSelection={hasSelection}
+      selectedCount={selectedCount}
+      onPrimary={onAdd}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      primaryLabel="Share"
+      primaryTitle={canManage ? "Share access by User ID or email" : "Owner or manager only"}
+      primaryDisabled={!canManage || shareBusy}
+      editDisabled={!editEnabled}
+      deleteDisabled={!deleteEnabled}
+      editTitle="Edit access (Load or Sync)"
+      editTitleWhenMulti="Select one member to edit"
+      editTitleWhenNone={canManage ? "Select members to edit" : "Owner or manager only"}
+      deleteTitle="Revoke access for selected members"
+      deleteTitleWhenNone={canManage ? "Select members to revoke" : "Owner or manager only"}
+    />
   );
 }

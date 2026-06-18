@@ -1,5 +1,14 @@
 /* 2FA table — Design V1 Platform Mirror (locked) */
 
+.twofa-copy-control-wrap.hub-copy-tick-wrap {
+  max-width: 100%;
+}
+
+.twofa-copy-control-wrap.hub-copy-tick-wrap:has(.twofa-copy-control--browser) {
+  width: 100%;
+  justify-content: center;
+}
+
 .twofa-copy-control {
   display: inline-flex;
   max-width: 100%;
@@ -28,7 +37,6 @@
 
 .twofa-copy-control--browser {
   justify-content: center;
-  width: 100%;
 }
 
 .twofa-browser-badge {

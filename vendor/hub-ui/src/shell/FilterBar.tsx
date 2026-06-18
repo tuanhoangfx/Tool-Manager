@@ -31,6 +31,7 @@ import {
   HUB_FILTER_DROPDOWN_ROW_CLASS,
   HubFilterDropdownCircle,
   hubFilterTriggerClass,
+  multiFilterTriggerTitle,
 } from "./filter-dropdown-primitives";
 import { compactIconSize } from "../ui-scale";
 import { registerHubSearchClear, registerHubSearchFocus } from "../keyboard/hub-keyboard-shortcuts";
@@ -380,9 +381,9 @@ export function HubMultiFilterDropdown({
     if (selected.length === 0) return filter.showAllLabel ? `All ${filter.label}` : filter.label;
     if (selected.length === 1) {
       const opt = filter.options.find((o) => o.value === selected[0]);
-      return `${filter.label}: ${opt?.label ?? selected[0]}`;
+      return opt?.label ?? selected[0];
     }
-    return `${filter.label}: ${selected.length} selected`;
+    return `${selected.length} selected`;
   })();
 
   const triggerIcon = resolveFilterTriggerIcon(filter, selected);
@@ -390,12 +391,19 @@ export function HubMultiFilterDropdown({
     selected.length === 1 ? filter.options.find((o) => o.value === selected[0])?.iconSrc : undefined;
   const allIcon = resolveFilterAllIcon(filter.key);
   const showTotalOnTrigger = selected.length === 0 && filter.totalCount !== undefined;
+  const resolvedTriggerTitle =
+    triggerTitle ??
+    (selected.length > 1
+      ? multiFilterTriggerTitle(selected, filter.options)
+      : selected.length === 1
+        ? filter.options.find((o) => o.value === selected[0])?.label
+        : undefined);
 
   return (
     <div ref={ref} className={`relative ${className}`.trim()}>
       <button
         type="button"
-        title={triggerTitle}
+        title={resolvedTriggerTitle}
         onClick={() => setOpen((v) => !v)}
         className={hubFilterTriggerClass(selected.length > 0)}
       >
@@ -408,11 +416,7 @@ export function HubMultiFilterDropdown({
         {showTotalOnTrigger ? (
           <span className="shrink-0 tabular-nums text-[10px] font-medium text-[var(--muted)]">{filter.totalCount}</span>
         ) : null}
-        {selected.length > 1 ? (
-          <span className="grid h-4 min-w-[var(--hub-count-badge-min-w)] place-items-center rounded-full bg-indigo-500 px-1 text-[9px] font-bold text-white">
-            {selected.length}
-          </span>
-        ) : null}
+
         <ChevronDown size={compactIconSize(12)} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 

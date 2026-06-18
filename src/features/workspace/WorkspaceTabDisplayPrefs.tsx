@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { FolderOpen } from "lucide-react";
 import {
-  Section,
   compactIconSize,
 } from "@tool-workspace/hub-ui";
 import { DisplayPrefs } from "../../components/sales-shell";
@@ -111,7 +110,8 @@ type Props = {
   onNotesSortChange?: (sort: NotesListSort) => void;
   cookieSort?: CookieListSort;
   onCookieSortChange?: (sort: CookieListSort) => void;
-  notesFolderSettings?: ReactNode;
+  notesFolderManageSettings?: ReactNode;
+  notesFolderTagSection?: ReactNode;
   todoSettingsExtras?: ReactNode;
   todoSettingsFooterActions?: ReactNode;
 };
@@ -126,7 +126,8 @@ export function WorkspaceTabDisplayPrefs({
   onNotesSortChange,
   cookieSort = readCookieListPrefs().sort,
   onCookieSortChange,
-  notesFolderSettings,
+  notesFolderManageSettings,
+  notesFolderTagSection,
   todoSettingsExtras,
   todoSettingsFooterActions,
 }: Props) {
@@ -180,15 +181,20 @@ export function WorkspaceTabDisplayPrefs({
           <>
             <NotesSortExtras sort={notesSort} onSortChange={onNotesSortChange} />
             <NotesSaveBehaviorSettings />
-            {notesFolderSettings ? (
-              <Section
-                label="Folders"
-                icon={<FolderOpen size={compactIconSize(12)} className="text-amber-300" />}
-              >
-                {notesFolderSettings}
-              </Section>
-            ) : null}
+            {notesFolderTagSection}
           </>
+        }
+        toolSections={
+          notesFolderManageSettings
+            ? [
+                {
+                  id: "notes-folders",
+                  label: "Manage folders",
+                  icon: <FolderOpen size={compactIconSize(12)} className="text-amber-300" aria-hidden />,
+                  body: notesFolderManageSettings,
+                },
+              ]
+            : []
         }
         headerStatLabel={() => "Notes header"}
         scope="tab"

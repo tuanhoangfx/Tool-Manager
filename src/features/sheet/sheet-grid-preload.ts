@@ -1,5 +1,6 @@
 import { parseCsvToGrid } from "./sheet-csv-grid";
 import { writeSheetGridCache } from "./sheet-grid-cache";
+import { writeSheetGridCsvIdb } from "./sheet-grid-idb-cache";
 import type { SheetGridData } from "./sheet-grid-types";
 import type { SheetSource } from "./sheet-sources";
 
@@ -11,8 +12,9 @@ async function fetchSheetGrid(source: SheetSource): Promise<SheetGridData | null
   const csv = await res.text();
   const trimmed = csv.trimStart();
   if (trimmed.startsWith("<!") || /^<html[\s>]/i.test(trimmed)) return null;
-  const { grid } = parseCsvToGrid(csv, { headerRowIndex: source.headerRowIndex });
+  const { grid, headerRowIndex } = parseCsvToGrid(csv, { headerRowIndex: source.headerRowIndex });
   writeSheetGridCache(source.id, grid);
+  void writeSheetGridCsvIdb(source.id, csv, headerRowIndex);
   return grid;
 }
 

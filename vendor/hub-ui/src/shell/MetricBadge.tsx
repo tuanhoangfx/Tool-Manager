@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { FilterIconMeta, BadgeSpec, MetricBadgeTone } from "../types/filter-badge";
 
 export type { MetricBadgeTone };
@@ -16,7 +17,7 @@ const TONE_DOT: Partial<Record<MetricBadgeTone, string>> = {
 };
 
 export type MetricBadgeProps = {
-  label: string;
+  label: ReactNode;
   iconMeta?: FilterIconMeta | null;
   tone?: MetricBadgeTone;
   /** Schema / link groups: full Tailwind border+bg+text classes */

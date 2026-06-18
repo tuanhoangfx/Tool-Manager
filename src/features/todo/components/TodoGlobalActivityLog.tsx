@@ -17,7 +17,7 @@ import type { ActivityLog, Task } from "../types";
 import { formatAbsoluteDateTime } from "../lib/taskUtils";
 import { formatActivityLogMessage } from "../lib/activity-log-format";
 import Avatar from "./common/Avatar";
-import CopyIdButton from "./common/CopyIdButton";
+import { TaskIdBadgeInline } from "./common/TaskIdBadge";
 import { useCachedSupabaseQuery } from "../hooks/useCachedSupabaseQuery";
 
 type Props = {
@@ -124,7 +124,7 @@ export function TodoGlobalActivityLog({ session, onLogClick, taskIdFilter = null
                 <div className="min-w-0 flex-1">
                   <p className="text-xs leading-snug text-[var(--text)]">
                     {message}
-                    {log.task_id ? <CopyIdButton id={log.task_id} isInline /> : null}
+                    {log.task_id ? <TaskIdBadgeInline id={log.task_id} /> : null}
                   </p>
                   <time className="text-[10px] tabular-nums text-[var(--muted)]">
                     {formatAbsoluteDateTime(log.created_at, language, timezone)}

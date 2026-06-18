@@ -3,7 +3,7 @@ import { HubPaginatedTableShell } from "../content/HubPaginatedTableShell";
 import { HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS } from "./directory-table-scroll";
 import { DirectoryInlineTable } from "./DirectoryInlineTable";
 import { DirectorySplitScrollTable } from "./DirectorySplitScrollTable";
-import { hubPageAllSelected, hubTogglePageSelectAll } from "./hub-table-pagination";
+import { hubPageAllSelected, hubTogglePageSelectAll, type HubServerPaginationControl } from "./hub-table-pagination";
 import { HubTableColumnHeader, type HubTableColumnHeaderProps } from "../content/HubTableColumnHeader";
 import type { HubTableColumnRole } from "./hub-table-column-meta";
 import { HubSortIndicator, type HubSortDir } from "./HubSortIndicator";
@@ -56,6 +56,10 @@ export type HubDirectoryTableShellProps<TItem, TSortKey extends string> = {
   canSelectRow?: (item: TItem) => boolean;
   /** Hide pager when total rows ≤ page size. */
   hideWhenSinglePage?: boolean;
+  /** Server-side page slice — see HubPaginatedTableShell.serverPagination. */
+  serverPagination?: HubServerPaginationControl;
+  /** Extra classes on HubPaginatedTableShell root (sheet grid: flex column). */
+  paginatedShellClassName?: string;
   renderRowCells: (item: TItem) => ReactNode;
   renderStaticCells?: (item: TItem) => ReactNode;
 };
@@ -100,6 +104,8 @@ export function HubDirectoryTableShell<TItem, TSortKey extends string>({
   getRowClassName,
   canSelectRow,
   hideWhenSinglePage,
+  serverPagination,
+  paginatedShellClassName,
   renderRowCells,
   renderStaticCells,
 }: HubDirectoryTableShellProps<TItem, TSortKey>) {
@@ -121,6 +127,8 @@ export function HubDirectoryTableShell<TItem, TSortKey extends string>({
       pageSize={pageSize}
       resetKey={resetKey}
       hideWhenSinglePage={hideWhenSinglePage}
+      serverPagination={serverPagination}
+      className={paginatedShellClassName}
     >
       {(pageItems) => {
         const allPageSelected = hubPageAllSelected(pageItems, getRowKey, selectedIds, canSelectRow);

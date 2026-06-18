@@ -7,7 +7,9 @@ import PriorityIndicator from "./common/PriorityIndicator";
 import Avatar from "./common/Avatar";
 import { PROJECT_COLORS } from "../constants";
 import { DataChange } from "../app-types";
-import CopyIdButton from "./common/CopyIdButton";
+import { TaskIdBadge } from "./common/TaskIdBadge";
+import { TaskSearchHighlightText } from "./common/TaskSearchHighlightText";
+import { getTaskSearchHighlight } from "../lib/taskSearchHighlight";
 import { useTaskStyles } from "../hooks/useTaskStyles";
 import { useLiveDuration } from "../hooks/useLiveDuration";
 import { supabase } from "../lib/supabase";
@@ -27,6 +29,7 @@ interface TaskCardProps {
     assignee?: Profile | null;
     creator?: Profile | null;
     lastDataChange: DataChange | null;
+    searchTerm?: string;
 }
 
 const formatDuration = (ms: number) => {
@@ -80,6 +83,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     assignee,
     creator,
     lastDataChange,
+    searchTerm = "",
 }) => {
     const { t, timezone, language } = useSettings();
     const { addToast } = useToasts();
@@ -88,6 +92,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
     const allUsers = useTodoUsers();
 
     const styles = useTaskStyles(task);
+    const searchHighlight = getTaskSearchHighlight(searchTerm);
     const frozenMs = styles.isArchived
         ? Math.max(0, new Date(task.updated_at).getTime() - new Date(task.created_at).getTime())
         : undefined;
@@ -227,12 +232,25 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 }
             }}
         >
-            {/* Row 1: ID, Actions */}
-            <div className="flex justify-between items-center gap-2">
-                <CopyIdButton id={task.id} />
+            {/* Row 1: ID + Title (left) | Actions (right) */}
+            <div className={TODO_HUB.taskCardHeader}>
+                <div className={TODO_HUB.taskCardHeaderMain}>
+                    <div className={TODO_HUB.taskCardTitleRow}>
+                        <TaskIdBadge id={task.id} highlightTerms={searchHighlight?.idTerms} />
+                        <span className={styles.titleClassName}>
+                            <TaskSearchHighlightText
+                              text={task.title}
+                              terms={searchHighlight?.titleTerms ?? []}
+                            />
+                            {isMultiAssignee && !styles.isArchived && (
+                                <TodoHubBadge kind="count">{completedCount}/{assignees.length}</TodoHubBadge>
+                            )}
+                        </span>
+                    </div>
+                </div>
                 
                 <div 
-                    className="flex items-center gap-0.5 flex-shrink-0"
+                    className={TODO_HUB.taskCardActions}
                     draggable="false"
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -259,22 +277,16 @@ const TaskCard: React.FC<TaskCardProps> = ({
                 </div>
             </div>
             
-            {/* Row 2: Title */}
-            <h4 className={styles.titleClassName}>
-                {task.title}
-                {isMultiAssignee && !styles.isArchived && (
-                    <TodoHubBadge kind="count">{completedCount}/{assignees.length}</TodoHubBadge>
-                )}
-            </h4>
-
-            {/* Row 3: Description */}
+            {/* Row 2: Description */}
             {task.description && (
-                <p className={styles.descriptionClassName}>{task.description}</p>
+                <div className={TODO_HUB.taskCardBody}>
+                    <p className={styles.descriptionClassName}>{task.description}</p>
+                </div>
             )}
 
-            {/* Row 4: Priority, Project (left) | Comments, Attachments, Assignee (right) */}
-            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
+            {/* Row 3: Priority, Project (left) | Comments, Attachments, Assignee (right) */}
+            <div className={TODO_HUB.taskCardBadges}>
+                <div className={TODO_HUB.taskCardBadgesLeft}>
                     <PriorityIndicator priority={task.priority} />
                     <TodoHubBadge
                       kind="project"
@@ -283,7 +295,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                       extraCount={task.project_ids && task.project_ids.length > 1 ? task.project_ids.length - 1 : undefined}
                     />
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
+                <div className={TODO_HUB.taskCardBadgesRight}>
                     {task.task_comments && task.task_comments.length > 0 && (
                         <TodoHubBadge kind="meta" title={`${task.task_comments.length} ${t.comments}`}>
                             <ChatBubbleIcon size={12} />
@@ -325,23 +337,23 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
 
             {/* Row 5: Creation/Completion Time, Total Logged Time, Due Date */}
-            <div className="mt-1 flex items-center justify-between border-t border-white/5 pt-2 text-xs text-[var(--muted)]">
+            <div className={TODO_HUB.taskCardFooter}>
                 {styles.isArchived ? (
                     <span className="tabular-nums flex items-center gap-1" title={t.completionDate}>
                         {styles.isDone ? (
-                            <span className="text-sm" role="img" aria-label="flag">🚩</span>
+                            <span className={TODO_HUB.taskCardEmoji} role="img" aria-label="flag">🚩</span>
                         ) : ( 
-                            <span className="text-sm" role="img" aria-label="prohibited">🚫</span>
+                            <span className={TODO_HUB.taskCardEmoji} role="img" aria-label="prohibited">🚫</span>
                         )}
                         {formatExactTime(task.updated_at, timezone)}
                     </span>
                 ) : (
                     <span className="tabular-nums flex items-center gap-1" title={t.creationTime}>
-                        <span role="img" aria-label="rocket" className="text-sm">🚀</span>
+                        <span className={TODO_HUB.taskCardEmoji} role="img" aria-label="rocket">🚀</span>
                         {formatExactTime(task.created_at, timezone)}
                     </span>
                 )}
-                <div className="flex items-center gap-3">
+                <div className={TODO_HUB.taskCardFooterMeta}>
                     <div className={`${TODO_HUB.metaChip} font-mono text-[var(--text)]`} title={t.totalTimeLogged}>
                         <ClockIcon size={12} className={task.status === 'inprogress' ? 'text-sky-400' : ''}/>
                         <span>{formatDuration(duration)}</span>
@@ -349,9 +361,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
                     {task.due_date && (
                         <div title={t.dueDateLabel} className={styles.dueDateClassName}>
                             {styles.isOverdue ? (
-                                <span className="animate-gentle-shake text-sm">⏰</span>
+                                <span className={`${TODO_HUB.taskCardEmoji} animate-gentle-shake`}>⏰</span>
                             ) : styles.isToday ? (
-                                <span className="animate-gentle-shake text-sm">🔥</span>
+                                <span className={`${TODO_HUB.taskCardEmoji} animate-gentle-shake`}>🔥</span>
                             ) : (
                                 <CalendarIcon size={12} />
                             )}

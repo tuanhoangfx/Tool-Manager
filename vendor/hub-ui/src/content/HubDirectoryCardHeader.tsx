@@ -40,7 +40,7 @@ export function HubDirectoryCardHeader({
   className = "",
 }: HubDirectoryCardHeaderProps) {
   return (
-    <div className={["mb-3 flex shrink-0 items-start gap-2.5", className].filter(Boolean).join(" ")}>
+    <div className={["mb-3 flex shrink-0 items-center gap-2.5", className].filter(Boolean).join(" ")}>
       {leading ? <div className="shrink-0">{leading}</div> : null}
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
