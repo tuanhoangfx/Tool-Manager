@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import type { HubDirectoryToolbarSelectionProps } from "@tool-workspace/hub-ui";
+import type { HubDirectoryToolbarSelectionProps, HubViewMode } from "@tool-workspace/hub-ui";
 import type { KpiTileData, TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
@@ -31,6 +31,9 @@ export function WorkspaceShellTabFrame({
   const [screenFilterSelectionToolbar, setScreenFilterSelectionToolbar] = useState<
     HubDirectoryToolbarSelectionProps | undefined
   >(undefined);
+  const [screenDirectoryViewMode, setScreenDirectoryViewMode] = useState<HubViewMode | undefined>(
+    undefined,
+  );
   const [screenFilterToolbar, setScreenFilterToolbar] = useState<ReactNode>(null);
   const [screenCenterStats, setScreenCenterStats] = useState<TabHeaderStatItem[]>([]);
   const [directoryKpis, setDirectoryKpis] = useState<KpiTileData[] | undefined>(undefined);
@@ -57,6 +60,8 @@ export function WorkspaceShellTabFrame({
         setFilterToolbar={setScreenFilterToolbar}
         filterSelectionToolbar={screenFilterSelectionToolbar}
         setFilterSelectionToolbar={setScreenFilterSelectionToolbar}
+        directoryViewMode={screenDirectoryViewMode}
+        setDirectoryViewMode={setScreenDirectoryViewMode}
         centerStats={screenCenterStats}
         setCenterStats={setScreenCenterStats}
         directoryKpis={directoryKpis}
@@ -75,6 +80,7 @@ export function WorkspaceShellTabFrame({
           onFilterValuesChange={setScreenFilterValues}
           toolbar={screenToolbar}
           filterSelectionToolbar={screenFilterSelectionToolbar}
+          directoryViewMode={screenDirectoryViewMode}
           filterRowActions={screenFilterToolbar}
           centerStats={screenCenterStats}
           filterShortcutScope={scope}

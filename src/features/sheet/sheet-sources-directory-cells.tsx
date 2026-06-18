@@ -7,6 +7,7 @@ import { DIRECTORY_CELL_TRUNCATE } from "../../lib/directory-cell-format";
 import { sheetSourceAccentColor } from "./sheet-source-accent";
 import type { SheetSource } from "./sheet-sources";
 import type { SheetSourceSortKey } from "./SheetSourcesDirectoryTable";
+import { SheetHighlightedText } from "./sheet-search-highlight";
 
 function sheetSourceSyncAt(row: SheetSource): string {
   return row.lastSyncedAt ?? row.createdAt;
@@ -15,6 +16,7 @@ function sheetSourceSyncAt(row: SheetSource): string {
 export function renderSheetSourcesDirectoryBodyCell(
   col: HubDirectoryColumnDef<SheetSourceSortKey>,
   row: SheetSource,
+  searchQuery = "",
 ) {
   const { key, colClass } = col;
   if (key === "title") {
@@ -28,7 +30,7 @@ export function renderSheetSourcesDirectoryBodyCell(
             aria-hidden
           />
           <span className={`hub-users-name-title ${DIRECTORY_CELL_TRUNCATE}`} title={row.title}>
-            {row.title}
+            <SheetHighlightedText text={row.title} query={searchQuery} />
           </span>
         </div>
       </DirectoryTableBodyCell>

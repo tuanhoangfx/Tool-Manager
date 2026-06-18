@@ -674,7 +674,7 @@ Do **not** fork select column width per tool — use shell + meta helpers only.
 | `HubDirectoryCardMetaRow` | Meta line — tinted Lucide icon + truncated text (`min-h-[var(--hub-card-meta-min-h)]` stack) |
 | `HubDirectoryCardHeader` | Header block — `leading` avatar/icon + `badges` + `title` + optional `trailing` |
 | `HubDirectorySelectAllChip` | Filter row 2 **actions** — **Card view only**; first slot before bulk CTAs; uses `HubBulkActionButton` + `ListChecks` icon |
-| `HubDirectoryToolbarSelection` | Always `x/y`; tier colors **0%** · **≥50%** · **max** — toolbar row-1 or trailing `row2Actions` (P0003 bulk row) |
+| `HubDirectoryToolbarSelection` | Design **V2 Spectrum Bar** — stacked `x/y` + % hue fill; **table** → `searchTrailing` · **card** → `row2Trailing` after bulk actions |
 | `HubBulkActionButton` | Filter row 2 bulk CTAs — Pin / Refresh / Edit / Sync (count badge + tooltip) |
 
 **Variants (`variant` prop)**

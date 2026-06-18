@@ -1,3 +1,9 @@
+import type { CSSProperties } from "react";
+import {
+  accentForToolbarSelectionPct,
+  accentSoftForToolbarSelectionPct,
+} from "./hubDirectoryToolbarSelectionAccent";
+
 export type HubDirectoryToolbarSelectionProps = {
   visibleCount: number;
   selectedCount: number;
@@ -5,17 +11,7 @@ export type HubDirectoryToolbarSelectionProps = {
   noun?: string;
 };
 
-type SelectionTier = "none" | "partial" | "half" | "max";
-
-function resolveSelectionTier(selectedCount: number, visibleCount: number): SelectionTier {
-  if (selectedCount <= 0) return "none";
-  if (selectedCount >= visibleCount) return "max";
-  const pct = (selectedCount / visibleCount) * 100;
-  if (pct >= 50) return "half";
-  return "partial";
-}
-
-/** Toolbar-row selection chip — V5+ always `x/y`, tier colors at 0% · 50% · max. */
+/** Toolbar-row selection chip — Design V2 Spectrum Bar: stacked x/y + % hue bar. */
 export function HubDirectoryToolbarSelection({
   visibleCount,
   selectedCount,
@@ -25,24 +21,29 @@ export function HubDirectoryToolbarSelection({
   const safeSelected = Math.max(0, Math.min(selectedCount, safeVisible || selectedCount));
   const denom = safeVisible > 0 ? safeVisible : Math.max(safeSelected, 1);
   const pct = denom > 0 ? Math.round((safeSelected / denom) * 100) : 0;
-  const tier = resolveSelectionTier(safeSelected, denom);
+  const accent = accentForToolbarSelectionPct(pct);
+  const accentSoft = accentSoftForToolbarSelectionPct(pct);
 
   return (
     <span
       role="status"
-      className={`hub-directory-toolbar-selection hub-directory-toolbar-selection--tier-${tier}`}
-      title={`${safeSelected} of ${denom} ${noun} selected`}
+      className="hub-directory-toolbar-selection"
+      style={
+        {
+          "--hub-toolbar-selection-accent": accent,
+          "--hub-toolbar-selection-accent-soft": accentSoft,
+        } as CSSProperties
+      }
+      title={`${safeSelected} of ${denom} ${noun} (${pct}%)`}
       aria-live="polite"
       aria-label={`${safeSelected} of ${denom} selected`}
     >
-      <span className="hub-directory-toolbar-selection__glow" aria-hidden />
-      <span className="hub-directory-toolbar-selection__track" aria-hidden>
-        <span className="hub-directory-toolbar-selection__fill" style={{ width: `${pct}%` }} />
-      </span>
-      <span className="hub-directory-toolbar-selection__count">
+      <span className="hub-directory-toolbar-selection__nums">
         <span className="hub-directory-toolbar-selection__selected">{safeSelected}</span>
-        <span className="hub-directory-toolbar-selection__sep">/</span>
-        <span className="hub-directory-toolbar-selection__visible">{denom}</span>
+        <span className="hub-directory-toolbar-selection__den">/{denom}</span>
+      </span>
+      <span className="hub-directory-toolbar-selection__bar" aria-hidden>
+        <span className="hub-directory-toolbar-selection__fill" style={{ width: `${pct}%` }} />
       </span>
     </span>
   );

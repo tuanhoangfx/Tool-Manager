@@ -789,6 +789,10 @@ export {
   type HubDirectoryToolbarSelectionProps,
 } from "./shell/HubDirectoryToolbarSelection";
 export {
+  buildHubDirectorySelectionSlots,
+  type HubDirectorySelectionSlots,
+} from "./shell/hubDirectorySelectionSlots";
+export {
   HubDirectoryBulkActionBar,
   type HubDirectoryBulkActionBarProps,
 } from "./shell/HubDirectoryBulkActionBar";

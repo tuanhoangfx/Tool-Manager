@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-06-18 - P0020 version sync
+
+- Version: `4.3.33`
+- Timestamp: 2026-06-18 06:36 (UTC+7)
+- Type: Patch
+- Status: Committed
+
+### Changes
+
+- Align CHANGELOG with package.json v4.3.33.
+
+### Verification
+
+- pending
+
+---
 ## 2026-06-15 - Hub-ui vendor sync + directory column width SSOT
 
 - Version: `4.3.32`

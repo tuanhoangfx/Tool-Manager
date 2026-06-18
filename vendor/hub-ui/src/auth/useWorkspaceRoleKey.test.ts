@@ -31,6 +31,7 @@ function mockProfileClient(role: string | Promise<string>) {
       on: vi.fn().mockReturnThis(),
       subscribe: vi.fn(),
     })),
+    getChannels: vi.fn(() => []),
     removeChannel: vi.fn(),
   };
 }

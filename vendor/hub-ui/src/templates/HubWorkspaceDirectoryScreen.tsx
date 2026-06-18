@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { HubDirectoryScreen } from "./HubDirectoryScreen";
 import type { FilterDef, FilterValues } from "../shell/FilterBar";
+import type { HubDirectoryToolbarSelectionProps } from "../shell/HubDirectoryToolbarSelection";
+import type { HubViewMode } from "../shell/ViewToggle";
 import { subscribeHubListPrefs } from "../lib/hub-url-prefs";
 import type { KpiTileData } from "../shell/KpiStrip";
 
@@ -23,6 +25,8 @@ export type HubWorkspaceDirectoryScreenProps = {
   filterPlaceholder?: string;
   filterShortcutScope?: string;
   directoryToolbar?: ReactNode;
+  filterSelectionToolbar?: HubDirectoryToolbarSelectionProps;
+  directoryViewMode?: HubViewMode;
   /** Row 2 leading — before filter dropdowns (e.g. active bot selector). */
   filterRowLeading?: ReactNode;
   filterRowActions?: ReactNode;
@@ -50,6 +54,8 @@ export function HubWorkspaceDirectoryScreen({
   filterPlaceholder,
   filterShortcutScope = "default",
   directoryToolbar,
+  filterSelectionToolbar,
+  directoryViewMode,
   filterRowLeading,
   filterRowActions,
   kpis,
@@ -101,6 +107,8 @@ export function HubWorkspaceDirectoryScreen({
       filterPlaceholder={filterPlaceholder}
       filterShortcutScope={filterShortcutScope}
       directoryToolbar={directoryToolbar}
+      filterSelectionToolbar={filterSelectionToolbar}
+      directoryViewMode={directoryViewMode}
       filterRowLeading={filterRowLeading}
       filterRowActions={filterRowActions}
       kpis={kpis}

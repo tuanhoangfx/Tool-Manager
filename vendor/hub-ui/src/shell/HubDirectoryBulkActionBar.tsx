@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { HubDirectorySelectAllChip, type HubDirectorySelectAllChipProps } from "./HubDirectorySelectAllChip";
 
 export type HubDirectoryBulkActionBarProps = {
-  /** Card-view select-all — table view uses `DirectorySearchToolbar.selectionToolbar`. */
+  /** Card-view select-all chip — `x/y` count uses `filterSelectionToolbar` + `directoryViewMode="card"`. */
   selectAll?: HubDirectorySelectAllChipProps | null;
   children?: ReactNode;
 };

@@ -38,11 +38,17 @@ import type { SheetSourceSortKey } from "./SheetSourcesDirectoryTable";
 import { parseCsvToGrid } from "./sheet-csv-grid";
 import { fetchSheetTabTitle, shouldSyncSheetTabTitle } from "./sheet-tab-title";
 import { applySheetMainFilters, buildSheetMainFilterDefs } from "./sheet-main-filters";
+import { setupSheetFilterIcons } from "./sheet-filter-icons";
+import { countSheetSearchMatches } from "./sheet-search-highlight";
+import { sheetTextIncludesQuery } from "./sheet-search-fold";
+import { SheetSearchMatchChip } from "./SheetSearchMatchChip";
+
+setupSheetFilterIcons();
 
 function rowMatchesSheetQuery(row: string[], query: string): boolean {
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   if (!q) return true;
-  return row.some((cell) => String(cell ?? "").toLowerCase().includes(q));
+  return row.some((cell) => sheetTextIncludesQuery(String(cell ?? ""), q));
 }
 
 async function refreshSheetTabTitles(sources: SheetSource[]): Promise<SheetSource[]> {
@@ -106,11 +112,11 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
 
   const filteredSources = useMemo(() => {
     let list = filterSheetSourcesByTimeRange(sources, railTimeRange);
-    const q = railQuery.trim().toLowerCase();
+    const q = railQuery.trim();
     if (!q) return list;
     return list.filter((s) => {
-      const hay = `${s.title}\n${s.gid}\n${s.rawUrl}\n${s.csvUrl}`.toLowerCase();
-      return hay.includes(q);
+      const hay = `${s.title}\n${s.gid}\n${s.rawUrl}\n${s.csvUrl}`;
+      return sheetTextIncludesQuery(hay, q);
     });
   }, [railQuery, railTimeRange, sources]);
 
@@ -127,6 +133,11 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   const hiddenCols = useMemo(() => new Set(gridPrefs.hidden), [gridPrefs.hidden]);
 
   const filteredRowCount = displayGrid?.rows.length ?? 0;
+
+  const searchMatchCount = useMemo(() => {
+    if (!displayGrid || !sheetQuery.trim()) return 0;
+    return countSheetSearchMatches(displayGrid.rows, sheetQuery);
+  }, [displayGrid, sheetQuery]);
 
   const loadActive = useCallback(async () => {
     if (!active) return;
@@ -439,6 +450,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
               filters={mainFilterDefs}
               values={filterValues}
               onValuesChange={setFilterValues}
+              searchTrailing={sheetQuery.trim() ? <SheetSearchMatchChip count={searchMatchCount} /> : null}
               toolbar={sheetToolbar}
               row2Leading={sheetFilterRowLeading}
               row2Actions={sheetBulkActions}
@@ -449,6 +461,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
             data={displayGrid}
             pageSize={pageSize}
             prefs={gridPrefs}
+            searchQuery={sheetQuery}
             onWidthsChange={onWidthsChange}
             onCopyCell={onCopyCell}
             resetKey={`${activeId ?? ""}:${sheetQuery}:${JSON.stringify(filterValues)}:${gridPrefs.hidden.join(",")}:${gridPrefs.wrap ? "w" : "n"}:${gridPrefs.columnFit ?? "equal"}:${gridPrefs.textAlign ?? "center"}:${Object.keys(gridPrefs.widths).join(",")}`}

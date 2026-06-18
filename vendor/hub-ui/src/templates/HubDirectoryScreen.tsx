@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import { FilterBar, type FilterDef, type FilterValues } from "../shell/FilterBar";
-import {
-  HubDirectoryToolbarSelection,
-  type HubDirectoryToolbarSelectionProps,
-} from "../shell/HubDirectoryToolbarSelection";
+import type { HubDirectoryToolbarSelectionProps } from "../shell/HubDirectoryToolbarSelection";
+import { buildHubDirectorySelectionSlots } from "../shell/hubDirectorySelectionSlots";
+import type { HubViewMode } from "../shell/ViewToggle";
 import type { SettingsExtraTab } from "../display-prefs/types";
 import type { TabHeaderStatItem } from "../shell/AppTabHeader";
 import type { KpiTileData } from "../shell/KpiStrip";
@@ -31,8 +30,10 @@ export type HubDirectoryScreenProps = {
   /** FilterBar keyboard focus scope (e.g. `library`, `bots`). */
   filterShortcutScope?: string;
   filterToolbar?: ReactNode;
-  /** Table view — `x/y` selection chip beside search (replaces toolbar-trailing placement). */
+  /** `x/y` selection chip — table: beside search · card: filter row-2 trailing. */
   filterSelectionToolbar?: HubDirectoryToolbarSelectionProps;
+  /** Placement for `filterSelectionToolbar` (default `table`). */
+  directoryViewMode?: HubViewMode;
   /** Row 2 leading — before filter dropdowns (e.g. active bot selector). */
   filterRowLeading?: ReactNode;
   filterRowActions?: ReactNode;
@@ -66,6 +67,7 @@ export function HubDirectoryScreen({
   filterShortcutScope = "default",
   filterToolbar,
   filterSelectionToolbar,
+  directoryViewMode = "table",
   filterRowLeading,
   filterRowActions,
   directoryToolbar,
@@ -75,6 +77,7 @@ export function HubDirectoryScreen({
   const { searchPin, headerPin, stackChrome } = useHubChromePrefs();
   const showFilterBar = Boolean(onQueryChange);
   const noopFilterValues = onFilterValuesChange ?? (() => {});
+  const selectionSlots = buildHubDirectorySelectionSlots(filterSelectionToolbar, directoryViewMode);
 
   const filterBar = showFilterBar ? (
     <FilterBar
@@ -89,9 +92,7 @@ export function HubDirectoryScreen({
       onQueryChange={onQueryChange!}
       values={filterValues}
       onValuesChange={noopFilterValues}
-      searchTrailing={
-        filterSelectionToolbar ? <HubDirectoryToolbarSelection {...filterSelectionToolbar} /> : undefined
-      }
+      searchTrailing={selectionSlots.searchTrailing}
       toolbar={
         directoryToolbar || filterToolbar ? (
           <>
@@ -102,6 +103,7 @@ export function HubDirectoryScreen({
       }
       row2Leading={filterRowLeading}
       row2Actions={filterRowActions}
+      row2Trailing={selectionSlots.row2Trailing}
     />
   ) : undefined;
 

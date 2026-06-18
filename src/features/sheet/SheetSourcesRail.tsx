@@ -88,6 +88,7 @@ export function SheetSourcesRail({
         onSelect={onSelect}
         pageSize={pageSize}
         resetKey={resetKey}
+        searchQuery={query}
         emptyMessage={totalCount === 0 ? "No sheets — Import." : "No sheets match search or filters."}
       />
     </HubSplitDirectoryPane>

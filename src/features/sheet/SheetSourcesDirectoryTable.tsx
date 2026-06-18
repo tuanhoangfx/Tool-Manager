@@ -61,6 +61,7 @@ export function SheetSourcesDirectoryTable({
   onSelect,
   pageSize,
   resetKey,
+  searchQuery = "",
   emptyMessage = "No sheets match search or filters.",
 }: {
   rows: SheetSource[];
@@ -71,6 +72,7 @@ export function SheetSourcesDirectoryTable({
   onSelect: (id: string) => void;
   pageSize?: number;
   resetKey?: string | number | boolean | null;
+  searchQuery?: string;
   emptyMessage?: string;
 }) {
   const columns = useMemo(() => COLUMNS, []);
@@ -98,7 +100,7 @@ export function SheetSourcesDirectoryTable({
       getRowClassName={(row) =>
         ` hub-users-row--static${row.id === activeId ? " is-detail" : ""}`
       }
-      renderRowCells={(row) => columns.map((col) => renderSheetSourcesDirectoryBodyCell(col, row))}
+      renderRowCells={(row) => columns.map((col) => renderSheetSourcesDirectoryBodyCell(col, row, searchQuery))}
     />
   );
 }

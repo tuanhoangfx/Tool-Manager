@@ -31,6 +31,7 @@ export function buildSheetMainFilterDefs(grid: SheetGridData | null): FilterDef[
   const platformIdx = findColumnIndex(grid.header, /^platform$/);
   const categoryIdx = findColumnIndex(grid.header, /^category$/);
   const questionIdx = findColumnIndex(grid.header, /^question$/);
+  const answerIdx = findColumnIndex(grid.header, /^answer$/);
   const defs: FilterDef[] = [];
 
   const platforms = uniqueColumnValues(grid.rows, platformIdx);
@@ -52,11 +53,20 @@ export function buildSheetMainFilterDefs(grid: SheetGridData | null): FilterDef[
   }
 
   const questions = uniqueColumnValues(grid.rows, questionIdx, 16);
-  if (questionIdx >= 0 && questions.length > 1 && categories.length <= 1) {
+  if (questionIdx >= 0 && questions.length > 1) {
     defs.push({
       key: "question",
       label: "Question",
       options: questions.map((value) => ({ value, label: value })),
+    });
+  }
+
+  const answers = uniqueColumnValues(grid.rows, answerIdx, 16);
+  if (answerIdx >= 0 && answers.length > 1) {
+    defs.push({
+      key: "answer",
+      label: "Answer",
+      options: answers.map((value) => ({ value, label: value })),
     });
   }
 
@@ -71,9 +81,11 @@ export function applySheetMainFilters(
   const platformIdx = findColumnIndex(header, /^platform$/);
   const categoryIdx = findColumnIndex(header, /^category$/);
   const questionIdx = findColumnIndex(header, /^question$/);
+  const answerIdx = findColumnIndex(header, /^answer$/);
   const platformSel = new Set((values.platform as string[] | undefined) ?? []);
   const categorySel = new Set((values.category as string[] | undefined) ?? []);
   const questionSel = new Set((values.question as string[] | undefined) ?? []);
+  const answerSel = new Set((values.answer as string[] | undefined) ?? []);
 
   return rows.filter((row) => {
     if (platformSel.size > 0 && platformIdx >= 0) {
@@ -84,6 +96,9 @@ export function applySheetMainFilters(
     }
     if (questionSel.size > 0 && questionIdx >= 0) {
       if (!questionSel.has(String(row[questionIdx] ?? "").trim())) return false;
+    }
+    if (answerSel.size > 0 && answerIdx >= 0) {
+      if (!answerSel.has(String(row[answerIdx] ?? "").trim())) return false;
     }
     return true;
   });

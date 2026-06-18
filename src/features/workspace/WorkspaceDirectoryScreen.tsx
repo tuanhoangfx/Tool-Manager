@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { HubWorkspaceDirectoryScreen, useHubChromePrefs, WorkspaceTabHeader } from "@tool-workspace/hub-ui";
-import type { HubDirectoryToolbarSelectionProps } from "@tool-workspace/hub-ui";
+import type { HubDirectoryToolbarSelectionProps, HubViewMode } from "@tool-workspace/hub-ui";
 import type { KpiTileData } from "../../components/sales-shell";
 import type { TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
@@ -16,6 +16,7 @@ type Props = {
   onQueryChange: (q: string) => void;
   toolbar?: ReactNode;
   filterSelectionToolbar?: HubDirectoryToolbarSelectionProps;
+  directoryViewMode?: HubViewMode;
   filterRowActions?: ReactNode;
   centerStats?: TabHeaderStatItem[];
   filters?: FilterDef[];
@@ -37,6 +38,7 @@ export function WorkspaceDirectoryScreen({
   onQueryChange,
   toolbar,
   filterSelectionToolbar,
+  directoryViewMode,
   filterRowActions,
   centerStats = [],
   filters = [],
@@ -86,6 +88,7 @@ export function WorkspaceDirectoryScreen({
       filterShortcutScope={filterShortcutScope}
       directoryToolbar={toolbar}
       filterSelectionToolbar={filterSelectionToolbar}
+      directoryViewMode={directoryViewMode}
       filterRowActions={filterRowActions}
       kpis={kpis}
       charts={charts}

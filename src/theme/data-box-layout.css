@@ -127,41 +127,80 @@ body,
   max-width: min(var(--sheet-rail-width), 40vw);
 }
 
-.hub-main--sheet .sheet-panel table.sheet-grid-table thead .hub-users-th-label {
-  white-space: nowrap;
-}
-
 .hub-main--sheet .sheet-panel .sheet-grid-shell {
   flex: 1 1 0;
   min-height: 0;
 }
 
-/* Sheet split grid — head/body column parity + resize hit target (split-scroll golden) */
-.hub-main--sheet .sheet-panel .sheet-grid-split .hub-directory-table-head {
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+.hub-main--sheet .sheet-panel .hub-split-directory-pane__body .hub-users-table-wrap.hub-directory-table-scroll:not(.hub-directory-table-split) {
+  max-height: none;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
 }
 
-.hub-main--sheet .sheet-panel .sheet-grid-split .hub-directory-table-head::-webkit-scrollbar {
-  display: none;
-  height: 0;
-}
-
-.hub-main--sheet .sheet-panel .sheet-grid-split .hub-directory-table-head table.sheet-grid-table.sheet-grid-table--sized,
-.hub-main--sheet .sheet-panel .sheet-grid-split .hub-directory-table-head table.sheet-grid-table.sheet-grid-table--wide {
-  width: max-content;
-  min-width: 100%;
-  table-layout: fixed;
-}
-
-.hub-main--sheet .sheet-panel table.sheet-grid-table thead th {
+/* Golden thead — opaque panel base blocks row bleed; subtle surface tint on top */
+.hub-main--sheet .sheet-panel .hub-users-table-wrap:not(.hub-directory-table-split) table.sheet-grid-table thead {
   position: relative;
+  z-index: 4;
+}
+
+.hub-main--sheet .sheet-panel .hub-users-table-wrap:not(.hub-directory-table-split) table.sheet-grid-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  vertical-align: middle;
+  background-color: var(--panel, #121830);
+  background-image: linear-gradient(
+    var(--hub-directory-thead-surface, rgba(255, 255, 255, 0.02)),
+    var(--hub-directory-thead-surface, rgba(255, 255, 255, 0.02))
+  );
+  box-shadow: 0 1px 0 var(--hub-directory-thead-border, rgba(255, 255, 255, 0.08));
+}
+
+.hub-main--sheet .sheet-panel table.sheet-grid-table thead .hub-users-th-label {
+  white-space: nowrap;
+}
+
+.hub-main--sheet .sheet-panel table.sheet-grid-table thead th.sheet-grid-th {
   overflow: visible;
 }
 
-.hub-main--sheet .sheet-panel table.sheet-grid-table thead th .hub-users-th-btn {
+.hub-main--sheet .sheet-panel table.sheet-grid-table tbody {
+  position: relative;
+  z-index: 1;
+}
+
+.hub-main--sheet .sheet-search-highlight {
+  border-radius: 0.15rem;
+  background: rgba(99, 102, 241, 0.38);
+  color: rgb(224, 231, 255);
+  padding: 0 0.1rem;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.hub-main--sheet .sheet-search-match-chip {
+  display: inline-flex;
+  height: var(--hub-control-h);
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 0 0.65rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgb(199, 210, 254);
+  white-space: nowrap;
+}
+
+.hub-main--sheet .sheet-search-match-chip__icon {
+  color: rgba(165, 180, 252, 0.95);
+}
+
+.hub-main--sheet .sheet-panel table.sheet-grid-table thead th.sheet-grid-th .hub-users-th-btn {
   pointer-events: none;
 }
 
@@ -217,26 +256,25 @@ table.sheet-grid-table.sheet-grid-table--align-right td {
   text-align: right;
 }
 
-.sheet-grid-col-resize {
-  pointer-events: auto;
-  z-index: 5;
-  touch-action: none;
-}
-
-.sheet-grid-col-resize::after {
+.hub-main--sheet .sheet-panel table.sheet-grid-table thead th.sheet-grid-th--resizable::after {
   content: "";
   position: absolute;
-  right: 4px;
-  top: 22%;
-  bottom: 22%;
+  top: 18%;
+  right: 0;
+  bottom: 18%;
   width: 2px;
   border-radius: 1px;
-  background: rgba(129, 140, 248, 0.22);
+  background: rgba(129, 140, 248, 0.35);
+  pointer-events: none;
   transition: background 0.12s ease;
 }
 
-.sheet-grid-col-resize:hover::after {
-  background: rgba(129, 140, 248, 0.55);
+.hub-main--sheet .sheet-panel table.sheet-grid-table thead th.sheet-grid-th--resizable:hover::after {
+  background: rgba(129, 140, 248, 0.7);
+}
+
+.sheet-grid-col-resize {
+  display: none;
 }
 
 table.sheet-grid-table .sheet-grid-td {

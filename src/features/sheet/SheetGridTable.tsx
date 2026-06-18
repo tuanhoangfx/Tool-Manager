@@ -1,9 +1,10 @@
 /** read-only-directory — dynamic CSV columns; copy-on-click cells. */
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
-  DirectorySplitScrollTable,
+  DirectoryInlineTable,
   DirectoryTableBodyCell,
   HubPaginatedTableShell,
+  HubTableColumnHeader,
   hubDirectoryTableClass,
 } from "@tool-workspace/hub-ui";
 import { SHEET_DIRECTORY_TABLE_WRAP_PANEL_CLASS } from "./sheet-directory-table";
@@ -13,6 +14,8 @@ import {
   type SheetGridColumnPrefs,
 } from "./sheet-grid-prefs";
 import type { SheetGridData } from "./sheet-grid-types";
+import { resolveSheetGridHeaderRole } from "./sheet-grid-header-role";
+import { SheetHighlightedText } from "./sheet-search-highlight";
 
 export type { SheetGridData } from "./sheet-grid-types";
 
@@ -20,6 +23,7 @@ export function SheetGridTable({
   data,
   pageSize,
   prefs,
+  searchQuery = "",
   onWidthsChange,
   onCopyCell,
   resetKey,
@@ -27,6 +31,7 @@ export function SheetGridTable({
   data: SheetGridData | null;
   pageSize: number;
   prefs: SheetGridColumnPrefs;
+  searchQuery?: string;
   onWidthsChange: (widths: Record<string, number>) => void;
   onCopyCell: (value: string) => void;
   resetKey: string;
@@ -34,7 +39,6 @@ export function SheetGridTable({
   const resizeRef = useRef<{ index: number; startX: number; startW: number; base: Record<string, number> } | null>(
     null,
   );
-  const splitScrollRef = useRef<HTMLDivElement>(null);
   const dragWidthsRef = useRef<Record<string, number> | null>(null);
   const [dragWidths, setDragWidths] = useState<Record<string, number> | null>(null);
   const widthsRef = useRef(prefs.widths);
@@ -48,6 +52,8 @@ export function SheetGridTable({
     () => data?.header.map((_, i) => i).filter((i) => !hidden.has(i)) ?? [],
     [data?.header, hidden],
   );
+
+  const lastVisibleIndex = visibleIndices[visibleIndices.length - 1];
 
   const effectiveWidths = dragWidths ?? prefs.widths;
   const weighted = prefs.columnFit === "weighted";
@@ -69,18 +75,42 @@ export function SheetGridTable({
     [colWidth, sizedColumns],
   );
 
+  const seedWidthsFromRow = useCallback(
+    (row: HTMLTableRowElement | null, base: Record<string, number>) => {
+      const next = { ...base };
+      const ths = row?.querySelectorAll("th");
+      visibleIndices.forEach((colIndex, idx) => {
+        if (colIndex === lastVisibleIndex) return;
+        const key = String(colIndex);
+        const saved = next[key];
+        if (typeof saved === "number" && saved >= SHEET_GRID_MIN_COL_WIDTH) return;
+        const measured = ths?.[idx]?.getBoundingClientRect().width;
+        next[key] =
+          measured != null && measured >= SHEET_GRID_MIN_COL_WIDTH
+            ? Math.round(measured)
+            : SHEET_GRID_DEFAULT_COL_WIDTH;
+      });
+      return next;
+    },
+    [lastVisibleIndex, visibleIndices],
+  );
+
   const onResizePointerDown = useCallback(
-    (index: number, e: ReactPointerEvent<HTMLSpanElement>) => {
-      if (index === visibleIndices[visibleIndices.length - 1]) return;
+    (index: number, e: ReactPointerEvent<HTMLTableCellElement>) => {
+      if (index === lastVisibleIndex) return;
+      const th = e.currentTarget;
+      const rect = th.getBoundingClientRect();
+      const fromRight = rect.right - e.clientX;
+      if (fromRight > 16 || fromRight < 0) return;
       e.preventDefault();
       e.stopPropagation();
-      const base = { ...widthsRef.current };
-      const th = e.currentTarget.closest("th");
-      const measured = th?.getBoundingClientRect().width;
+      const row = th.closest("tr");
+      const base = seedWidthsFromRow(row, { ...widthsRef.current });
+      const measured = th.getBoundingClientRect().width;
       const startW =
         typeof base[String(index)] === "number" && base[String(index)]! >= SHEET_GRID_MIN_COL_WIDTH
           ? base[String(index)]!
-          : measured != null && measured >= SHEET_GRID_MIN_COL_WIDTH
+          : measured >= SHEET_GRID_MIN_COL_WIDTH
             ? Math.round(measured)
             : SHEET_GRID_DEFAULT_COL_WIDTH;
       const pointerId = e.pointerId;
@@ -105,6 +135,7 @@ export function SheetGridTable({
         if (ev.pointerId !== pointerId) return;
         document.removeEventListener("pointermove", onMove);
         document.removeEventListener("pointerup", onUp);
+        document.body.removeEventListener("pointercancel", onUp);
         resizeRef.current = null;
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
@@ -116,9 +147,24 @@ export function SheetGridTable({
 
       document.addEventListener("pointermove", onMove);
       document.addEventListener("pointerup", onUp);
+      document.body.addEventListener("pointercancel", onUp);
     },
-    [onWidthsChange, visibleIndices],
+    [lastVisibleIndex, onWidthsChange, seedWidthsFromRow],
   );
+
+  const onThPointerMove = useCallback(
+    (index: number, e: ReactPointerEvent<HTMLTableCellElement>) => {
+      if (index === lastVisibleIndex || resizeRef.current) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const fromRight = rect.right - e.clientX;
+      e.currentTarget.style.cursor = fromRight <= 16 && fromRight >= 0 ? "col-resize" : "";
+    },
+    [lastVisibleIndex],
+  );
+
+  const onThPointerLeave = useCallback((e: ReactPointerEvent<HTMLTableCellElement>) => {
+    if (!resizeRef.current) e.currentTarget.style.cursor = "";
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -128,22 +174,6 @@ export function SheetGridTable({
       document.body.style.userSelect = "";
     };
   }, []);
-
-  useEffect(() => {
-    const root = splitScrollRef.current;
-    if (!root) return;
-    const body = root.querySelector<HTMLElement>(".hub-directory-table-body-scroll");
-    const head = root.querySelector<HTMLElement>(".hub-directory-table-head");
-    if (!body || !head) return;
-
-    const syncHeadScroll = () => {
-      head.scrollLeft = body.scrollLeft;
-    };
-
-    syncHeadScroll();
-    body.addEventListener("scroll", syncHeadScroll, { passive: true });
-    return () => body.removeEventListener("scroll", syncHeadScroll);
-  }, [data?.header.length, visibleIndices.length, sizedColumns, wrap, resetKey]);
 
   if (!data) {
     return (
@@ -157,9 +187,7 @@ export function SheetGridTable({
     ? `${hubDirectoryTableClass("default")} sheet-grid-table sheet-grid-table--wrap${sizedColumns ? " sheet-grid-table--sized" : ""} ${alignClass}`
     : `${hubDirectoryTableClass("default")} sheet-grid-table sheet-grid-table--fill${sizedColumns && !wrap ? " sheet-grid-table--wide" : ""} ${alignClass}`;
 
-  const wrapClassName = `hub-users-table-wrap hub-directory-table-split ${SHEET_DIRECTORY_TABLE_WRAP_PANEL_CLASS}`;
-
-  const lastVisibleIndex = visibleIndices[visibleIndices.length - 1];
+  const wrapClassName = `hub-users-table-wrap ${SHEET_DIRECTORY_TABLE_WRAP_PANEL_CLASS}`;
 
   const renderColgroup = () => (
     <colgroup>
@@ -176,22 +204,25 @@ export function SheetGridTable({
 
   const headRow = (
     <tr>
-      {visibleIndices.map((i) => (
-        <th key={String(i)} className="relative" scope="col">
-          <span className="hub-users-th-btn hub-users-th-btn--static">
-            <span className="hub-users-th-label">{data.header[i]}</span>
-          </span>
-          {i !== lastVisibleIndex ? (
-            <span
-              role="separator"
-              aria-orientation="vertical"
-              aria-label={`Resize ${data.header[i]} column`}
-              className="sheet-grid-col-resize absolute right-0 top-0 h-full w-4 cursor-col-resize touch-none"
-              onPointerDown={(e) => onResizePointerDown(i, e)}
-            />
-          ) : null}
-        </th>
-      ))}
+      {visibleIndices.map((i) => {
+        const resizable = i !== lastVisibleIndex;
+        return (
+          <th
+            key={String(i)}
+            className={`sheet-grid-th${resizable ? " sheet-grid-th--resizable" : ""}`}
+            scope="col"
+            onPointerDown={resizable ? (e) => onResizePointerDown(i, e) : undefined}
+            onPointerMove={resizable ? (e) => onThPointerMove(i, e) : undefined}
+            onPointerLeave={resizable ? onThPointerLeave : undefined}
+          >
+            <span className="hub-users-th-btn hub-users-th-btn--static">
+              <span className="hub-users-th-label">
+                <HubTableColumnHeader label={data.header[i] ?? ""} role={resolveSheetGridHeaderRole(data.header[i] ?? "")} />
+              </span>
+            </span>
+          </th>
+        );
+      })}
     </tr>
   );
 
@@ -224,7 +255,7 @@ export function SheetGridTable({
                     onClick={() => onCopyCell(row[c] ?? "")}
                   >
                     <span className={wrap ? "sheet-grid-cell sheet-grid-cell--wrap" : "sheet-grid-cell truncate"}>
-                      {row[c] ?? ""}
+                      <SheetHighlightedText text={row[c] ?? ""} query={searchQuery} />
                     </span>
                   </DirectoryTableBodyCell>
                 ))}
@@ -233,18 +264,16 @@ export function SheetGridTable({
           );
 
         return (
-          <div ref={splitScrollRef} className="sheet-grid-split min-h-0 min-w-0 flex flex-1 flex-col">
-            <DirectorySplitScrollTable
-              wrapClassName={wrapClassName}
-              tableClassName={tableClass}
-              showSelect={false}
-              colgroup={renderColgroup()}
-              headRow={headRow}
-              bodyRows={bodyRows}
-              emptyMessage="No rows match search or filters."
-              hasRows={pageRows.length > 0}
-            />
-          </div>
+          <DirectoryInlineTable
+            wrapClassName={wrapClassName}
+            tableClassName={tableClass}
+            showSelect={false}
+            colgroup={renderColgroup()}
+            headRow={headRow}
+            bodyRows={bodyRows}
+            emptyMessage="No rows match search or filters."
+            hasRows={pageRows.length > 0}
+          />
         );
       }}
     </HubPaginatedTableShell>

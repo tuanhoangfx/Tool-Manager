@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { HubDirectoryToolbarSelectionProps } from "@tool-workspace/hub-ui";
+import type { HubDirectoryToolbarSelectionProps, HubViewMode } from "@tool-workspace/hub-ui";
 import type { KpiTileData, TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
 
@@ -14,6 +14,8 @@ type Ctx = {
   setToolbar: (toolbar: ReactNode) => void;
   filterSelectionToolbar?: HubDirectoryToolbarSelectionProps;
   setFilterSelectionToolbar: (toolbar: HubDirectoryToolbarSelectionProps | undefined) => void;
+  directoryViewMode?: HubViewMode;
+  setDirectoryViewMode: (mode: HubViewMode | undefined) => void;
   filterToolbar: ReactNode;
   setFilterToolbar: (toolbar: ReactNode) => void;
   centerStats: TabHeaderStatItem[];
@@ -39,6 +41,8 @@ export function WorkspaceSearchProvider({
   setToolbar,
   filterSelectionToolbar,
   setFilterSelectionToolbar,
+  directoryViewMode,
+  setDirectoryViewMode,
   filterToolbar,
   setFilterToolbar,
   centerStats,
@@ -61,6 +65,8 @@ export function WorkspaceSearchProvider({
   setToolbar: (toolbar: ReactNode) => void;
   filterSelectionToolbar?: HubDirectoryToolbarSelectionProps;
   setFilterSelectionToolbar: (toolbar: HubDirectoryToolbarSelectionProps | undefined) => void;
+  directoryViewMode?: HubViewMode;
+  setDirectoryViewMode: (mode: HubViewMode | undefined) => void;
   filterToolbar: ReactNode;
   setFilterToolbar: (toolbar: ReactNode) => void;
   centerStats: TabHeaderStatItem[];
@@ -86,6 +92,8 @@ export function WorkspaceSearchProvider({
         setToolbar,
         filterSelectionToolbar,
         setFilterSelectionToolbar,
+        directoryViewMode,
+        setDirectoryViewMode,
         filterToolbar,
         setFilterToolbar,
         centerStats,
@@ -114,6 +122,8 @@ const noopCtx: Ctx = {
   setToolbar: () => {},
   filterSelectionToolbar: undefined,
   setFilterSelectionToolbar: () => {},
+  directoryViewMode: undefined,
+  setDirectoryViewMode: () => {},
   filterToolbar: null,
   setFilterToolbar: () => {},
   centerStats: [],

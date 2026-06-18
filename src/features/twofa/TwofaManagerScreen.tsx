@@ -522,14 +522,12 @@ function TwofaManagerScreenBody({
   useP0020DirectoryChrome({
     active: Boolean(shellMode && tabActive),
     toolbar: directoryToolbar,
-    filterSelectionToolbar:
-      viewMode !== "card"
-        ? {
-            visibleCount: sortedDisplayedAccounts.length,
-            selectedCount: selectedIds.size,
-            noun: "accounts",
-          }
-        : undefined,
+    filterSelectionToolbar: {
+      visibleCount: sortedDisplayedAccounts.length,
+      selectedCount: selectedIds.size,
+      noun: "accounts",
+    },
+    directoryViewMode: viewMode,
     filterToolbar: directoryFilterToolbar,
     centerStats: directoryCenterStats,
   });

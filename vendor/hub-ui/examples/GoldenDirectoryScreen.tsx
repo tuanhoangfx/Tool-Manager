@@ -80,7 +80,7 @@ export function GoldenDirectoryScreen() {
       filterShortcutScope="default"
       sectionRuleLabel="Items"
       filterRowActions={
-        <HubDirectoryBulkActionBar>{/* bulk CTAs — selection: DirectorySearchToolbar.selectionToolbar */}</HubDirectoryBulkActionBar>
+        <HubDirectoryBulkActionBar>{/* bulk CTAs — selection: filterSelectionToolbar + directoryViewMode */}</HubDirectoryBulkActionBar>
       }
     >
       <GoldenDirectoryTable

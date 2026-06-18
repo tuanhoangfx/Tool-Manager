@@ -22,7 +22,7 @@ export function HubNotifyButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="btn btn-ghost relative inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 px-2.5 disabled:cursor-not-allowed disabled:opacity-50"
+      className="hub-header-panel-btn relative inline-flex h-[var(--hub-control-h)] shrink-0 items-center gap-1.5 rounded-lg px-2.5 disabled:cursor-not-allowed disabled:opacity-50"
       title={title}
       aria-label={badge ? `${title} (${unreadCount} unread)` : title}
     >

@@ -65,6 +65,8 @@ Chạy sync script sau mỗi lần sửa hub-ui (Next.js deploy only): `node Too
 
 Theme tokens: copy từ P0004 qua `sync-hub-theme-from-p0004.cjs --target <app>/src`.
 
+**Theme file naming:** tools import `src/theme/p0008-globals.css` (legacy filename from P0008 Sales Console). Canonical alias: **`hub-theme-tokens.css`** — same file, same `:root` / `.theme-hub` tokens (`--app-tab-header-px`, `--hub-control-h`, …). **Not** the hub-ui package path; hub-ui SSOT is `packages/hub-ui`.
+
 ---
 
 ## 3. Bootstrap (một lần trong `main.tsx`)
