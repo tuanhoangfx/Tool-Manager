@@ -1,14 +1,13 @@
-
-import React, { useMemo } from 'react';
+import React, { useMemo, type ReactNode } from 'react';
 import { HubMultiFilterDropdown } from '@tool-workspace/hub-ui';
 import { useSettings } from '../../context/SettingsContext';
 import { Task, Profile, Project } from '../../types';
-import { resolveTodoProfile } from "../../todo-resolve-profile";
 import StatusPrioritySelect, { CustomSelectOption } from '../common/StatusPrioritySelect';
 import { PROJECT_COLORS } from '../../constants';
 import CustomDatePicker from '../common/CustomDatePicker';
 import { TODO_HUB } from '../../styles/todo-hub-classes';
 import { buildTodoMultiFilterDef, profileFilterOptions } from '../../todo-hub-filter-helpers';
+import { todoProfileAssigneeTooltip } from '../../todo-profile-display';
 
 interface TaskDetailsFormProps {
     taskData: {
@@ -23,6 +22,7 @@ interface TaskDetailsFormProps {
     allUsers: Profile[];
     userProjects: Project[];
     validationError: 'title' | 'assignee' | null;
+    commentsPanel?: ReactNode;
 }
 
 function handleProjectSelection(prev: string[], ids: string[]): string[] {
@@ -31,7 +31,14 @@ function handleProjectSelection(prev: string[], ids: string[]): string[] {
     return ids;
 }
 
-const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({ taskData, onFieldChange, allUsers, userProjects, validationError }) => {
+const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({
+    taskData,
+    onFieldChange,
+    allUsers,
+    userProjects,
+    validationError,
+    commentsPanel,
+}) => {
     const { t } = useSettings();
 
     const projectFilterDef = useMemo(
@@ -47,13 +54,16 @@ const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({ taskData, onFieldChan
         [userProjects, t.personalProject, t.project],
     );
 
-    const assigneeFilterDef = useMemo(() => {
-        const users = allUsers.map((user) => {
-            const profile = resolveTodoProfile(user.id, user, allUsers);
-            return { ...profile, full_name: profile.full_name || profile.email || 'Unknown' };
-        });
-        return buildTodoMultiFilterDef('assignee', t.assignee, profileFilterOptions(users));
-    }, [allUsers, t.assignee]);
+    const assigneeFilterDef = useMemo(
+        () => buildTodoMultiFilterDef('assignee', t.assignee, profileFilterOptions(allUsers, { compactTrigger: true })),
+        [allUsers, t.assignee],
+    );
+
+    const assigneeTriggerTitle = useMemo(() => {
+        if (taskData.assigneeIds.length !== 1) return undefined;
+        const user = allUsers.find((u) => u.id === taskData.assigneeIds[0]);
+        return user ? todoProfileAssigneeTooltip(user) : undefined;
+    }, [allUsers, taskData.assigneeIds]);
 
     const priorityConfig: { [key in Task['priority']]: CustomSelectOption } = {
         low: { label: t.low, icon: '💤', color: 'text-green-400' },
@@ -74,52 +84,56 @@ const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({ taskData, onFieldChan
                     className={`${TODO_HUB.fieldTitle} ${validationError === 'title' ? 'border-red-500 ring-2 ring-red-500/50 animate-shake' : ''}`}
                 />
             </div>
-            <div>
-                <textarea
-                    id="description"
-                    placeholder={t.descriptionLabel}
-                    rows={4}
-                    value={taskData.description}
-                    onChange={e => onFieldChange('description', e.target.value)}
-                    className={`${TODO_HUB.field} sm:text-sm`}
-                />
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                 <div className="flex flex-col">
-                    <label className={TODO_HUB.labelHiddenMd}>{t.project}</label>
-                    <HubMultiFilterDropdown
-                        filter={projectFilterDef}
-                        selected={taskData.projectIds}
-                        onChange={(ids) => onFieldChange('projectIds', handleProjectSelection(taskData.projectIds, ids))}
+            <div className={TODO_HUB.detailsSplit}>
+                <div className={TODO_HUB.detailsSplitDescription}>
+                    <label htmlFor="description" className={`${TODO_HUB.labelSection} sm:text-sm`}>
+                        {t.descriptionLabel}
+                    </label>
+                    <textarea
+                        id="description"
+                        placeholder={t.descriptionLabel}
+                        rows={6}
+                        value={taskData.description}
+                        onChange={e => onFieldChange('description', e.target.value)}
+                        className={`${TODO_HUB.field} sm:text-sm`}
                     />
-                </div>
-                <div className={`flex flex-col ${validationError === 'assignee' ? 'ring-2 ring-red-500/50 rounded-md animate-shake' : ''}`}>
-                    <label className={TODO_HUB.labelHiddenMd}>{t.assignee}</label>
-                    <HubMultiFilterDropdown
-                        filter={assigneeFilterDef}
-                        selected={taskData.assigneeIds}
-                        onChange={(ids) => onFieldChange('assigneeIds', ids)}
-                    />
-                </div>
-                <div>
-                    <label htmlFor="dueDate" className={TODO_HUB.labelHiddenMd}>{t.dueDateLabel}</label>
-                    <div className="w-full">
+                    <div className={TODO_HUB.taskDetailFilterRow}>
+                        <HubMultiFilterDropdown
+                            className="w-full min-w-0"
+                            triggerFormat="value"
+                            filter={projectFilterDef}
+                            selected={taskData.projectIds}
+                            onChange={(ids) => onFieldChange('projectIds', handleProjectSelection(taskData.projectIds, ids))}
+                        />
+                        <div className={validationError === 'assignee' ? 'min-w-0 w-full ring-2 ring-red-500/50 rounded-md animate-shake' : 'min-w-0 w-full'}>
+                            <HubMultiFilterDropdown
+                                className="w-full min-w-0"
+                                triggerFormat="value"
+                                triggerTitle={assigneeTriggerTitle}
+                                filter={assigneeFilterDef}
+                                selected={taskData.assigneeIds}
+                                onChange={(ids) => onFieldChange('assigneeIds', ids)}
+                            />
+                        </div>
                         <CustomDatePicker
                             value={taskData.dueDate}
                             onChange={(val) => onFieldChange('dueDate', val)}
                             placeholder={t.dueDateLabel}
-                            className="w-full"
+                            className="w-full min-w-0"
+                            compactTrigger
                         />
+                        <div className="min-w-0 w-full">
+                            <StatusPrioritySelect
+                                value={taskData.priority}
+                                onChange={(val) => onFieldChange('priority', val)}
+                                options={priorityConfig}
+                            />
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <label className={TODO_HUB.labelHiddenMd}>{t.priority}</label>
-                    <StatusPrioritySelect
-                        value={taskData.priority}
-                        onChange={(val) => onFieldChange('priority', val)}
-                        options={priorityConfig}
-                    />
-                </div>
+                {commentsPanel ? (
+                    <div className={TODO_HUB.detailsSplitComments}>{commentsPanel}</div>
+                ) : null}
             </div>
         </div>
     );

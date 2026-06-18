@@ -162,7 +162,7 @@ export function NotesFoldersSettingsPanel({
                         ? "Auto — new notes stay here for 24h"
                         : isUnorganizedFolder(folder.id)
                           ? "Auto — notes without a custom folder after New"
-                          : "Auto — note has a Cookie Auto route"
+                          : "Auto — note has a Cookie Bridge route"
                       : undefined
                   }
                   className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all ${

@@ -1,7 +1,7 @@
 import { newId } from "./storage";
 import type { TwofaAccount, TwofaDraft } from "./types";
 import { normalizeSecret } from "./totp";
-import { twofaIdentityKey } from "./twofa-identity";
+import { twofaDedupeKey, twofaIdentityKey } from "./twofa-identity";
 
 export type TwofaUpsertOutcome = {
   accounts: TwofaAccount[];
@@ -138,36 +138,70 @@ export type TwofaDedupeServiceCount = {
   count: number;
 };
 
+export type TwofaDedupeGroup = {
+  key: string;
+  keptId: string;
+  kept: TwofaAccount;
+  removed: TwofaAccount[];
+};
+
 export type TwofaDedupePreview = {
   totalRemoved: number;
   byService: TwofaDedupeServiceCount[];
+  /** Sample groups for UI preview. Sorted by removed count desc, then newest. */
+  groups: TwofaDedupeGroup[];
 };
 
-function buildTwofaDedupePreview(accounts: TwofaAccount[], removedIds: string[]): TwofaDedupePreview {
-  const idSet = new Set(removedIds);
-  const byServiceMap = new Map<string, number>();
+function buildTwofaDedupePreview(accounts: TwofaAccount[]): TwofaDedupePreview {
+  const groups = new Map<string, TwofaAccount[]>();
   for (const row of accounts) {
-    if (!idSet.has(row.id)) continue;
-    const service = row.service.trim() || "Others";
-    byServiceMap.set(service, (byServiceMap.get(service) ?? 0) + 1);
+    const key = twofaDedupeKey(row.service, row.account, row.secret, row.browser);
+    const list = groups.get(key) ?? [];
+    list.push(row);
+    groups.set(key, list);
   }
+
+  const removedIds = new Set<string>();
+  const byServiceMap = new Map<string, number>();
+  const previewGroups: TwofaDedupeGroup[] = [];
+
+  for (const [key, group] of groups.entries()) {
+    if (group.length <= 1) continue;
+    const winner = group.reduce((best, row) =>
+      Date.parse(row.updatedAt) >= Date.parse(best.updatedAt) ? row : best,
+    );
+    const removed = group.filter((row) => row.id !== winner.id);
+    previewGroups.push({ key, keptId: winner.id, kept: winner, removed });
+    for (const row of removed) {
+      removedIds.add(row.id);
+      const svc = row.service.trim() || "Others";
+      byServiceMap.set(svc, (byServiceMap.get(svc) ?? 0) + 1);
+    }
+  }
+
+  previewGroups.sort((a, b) => {
+    const byCount = b.removed.length - a.removed.length;
+    if (byCount) return byCount;
+    return Date.parse(b.kept.updatedAt) - Date.parse(a.kept.updatedAt);
+  });
+
   const byService = [...byServiceMap.entries()]
     .map(([service, count]) => ({ service, count }))
     .sort((a, b) => b.count - a.count || a.service.localeCompare(b.service));
-  return { totalRemoved: removedIds.length, byService };
+
+  return { totalRemoved: removedIds.size, byService, groups: previewGroups.slice(0, 24) };
 }
 
 /** Preview duplicate removal counts by service — no mutation. */
 export function previewTwofaDedupe(accounts: TwofaAccount[]): TwofaDedupePreview {
-  const { removedIds } = dedupeTwofaAccounts(accounts);
-  return buildTwofaDedupePreview(accounts, removedIds);
+  return buildTwofaDedupePreview(accounts);
 }
 
 /** Collapse duplicate identities in an account list — keep newest updatedAt per key. */
 export function dedupeTwofaAccounts(accounts: TwofaAccount[]): TwofaDedupeResult {
   const groups = new Map<string, TwofaAccount[]>();
   for (const row of accounts) {
-    const key = twofaIdentityKey(row.service, row.account, row.secret, row.browser);
+    const key = twofaDedupeKey(row.service, row.account, row.secret, row.browser);
     const list = groups.get(key) ?? [];
     list.push(row);
     groups.set(key, list);

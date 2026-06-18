@@ -1,5 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { probeCookieSchemaHealth } from "../features/cookie/cookieSchemaHealth";
+import { loadCookieBindings } from "../features/cookie/cookieBridge";
+import { prefetchNoteCookieMembersBatch } from "../features/cookie/cookieRouteMembersPrefetch";
 import { cookieSchemaCache } from "./cookie-boot-cache";
 import { ensureDataBoxAuth } from "./ensure-data-box-auth";
 import { writeNotesListClientCache } from "./notes-list-cache";
@@ -19,6 +21,7 @@ import {
 
 let notesPrefetchInFlight = false;
 let cookieBootPrefetchInFlight = false;
+let cookieMembersPrefetchInFlight = false;
 let todoProfilePrefetchInFlight = false;
 
 /** Warm notes list cache on boot (stale-while-revalidate; same pattern as Hub quota prefetch). */
@@ -76,6 +79,7 @@ export function prefetchWorkspaceTabsBackground(session?: Session | null): void 
   prefetchTodoTasksBackground(session);
   prefetchTwofaVaultBackground();
   prefetchCookieBootBackground();
+  prefetchCookieMembersBackground();
 }
 
 export function prefetchCookieBootBackground() {
@@ -90,6 +94,31 @@ export function prefetchCookieBootBackground() {
       /* auth not ready */
     } finally {
       cookieBootPrefetchInFlight = false;
+    }
+  })();
+}
+
+/** Warm share-count members cache for owner routes (Kalodata + other cookie routes). */
+export function prefetchCookieMembersBackground() {
+  if (cookieMembersPrefetchInFlight || !isSupabaseConfigured || getOfflineMode()) return;
+  cookieMembersPrefetchInFlight = true;
+  void (async () => {
+    try {
+      const session = await ensureDataBoxAuth();
+      if (!session) return;
+      const ownerNoteIds = Array.from(
+        new Set(
+          loadCookieBindings()
+            .filter((b) => b.enabled && b.noteId?.trim())
+            .filter((b) => b.accessRole !== "member" && b.canManage !== false)
+            .map((b) => b.noteId.trim()),
+        ),
+      );
+      if (ownerNoteIds.length) prefetchNoteCookieMembersBatch(ownerNoteIds);
+    } catch {
+      /* auth not ready */
+    } finally {
+      cookieMembersPrefetchInFlight = false;
     }
   })();
 }

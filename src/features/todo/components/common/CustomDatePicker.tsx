@@ -17,6 +17,8 @@ interface CustomDatePickerProps {
   className?: string;
   min?: string;
   max?: string;
+  /** Trigger label uses DD/MM/YY (modal filter row). */
+  compactTrigger?: boolean;
 }
 
 const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
@@ -24,6 +26,7 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   onChange,
   placeholder,
   className,
+  compactTrigger = false,
 }) => {
   const { t, language } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
@@ -127,11 +130,26 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     );
   };
 
-  const formatDateDisplay = (dateString: string) => {
+  const formatDateFull = (dateString: string) => {
     if (!dateString) return "";
     const [y, m, d] = dateString.split("-");
+    if (!y || !m || !d) return dateString;
     return `${d}/${m}/${y}`;
   };
+
+  const formatDateCompact = (dateString: string) => {
+    if (!dateString) return "";
+    const [y, m, d] = dateString.split("-");
+    if (!y || !m || !d) return dateString;
+    return `${d}/${m}/${y.slice(-2)}`;
+  };
+
+  const triggerLabel = value
+    ? compactTrigger
+      ? formatDateCompact(value)
+      : formatDateFull(value)
+    : placeholder || "Select date";
+  const triggerTitle = value && compactTrigger ? formatDateFull(value) : undefined;
 
   const panel =
     isOpen && panelPos ? (
@@ -211,7 +229,8 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
       <HubFilterDropdownTrigger
         active={Boolean(value)}
         open={isOpen}
-        label={value ? formatDateDisplay(value) : placeholder || "Select date"}
+        label={triggerLabel}
+        title={triggerTitle}
         icon={<Calendar size={compactIconSize(12)} className="shrink-0 opacity-75" aria-hidden />}
         onClick={() => setIsOpen(!isOpen)}
         className="w-full justify-between"

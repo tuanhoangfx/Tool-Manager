@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useNotesAuth } from "../notes/useNotesAuth";
+import { useNotesAuth } from "../notes/AuthSessionProvider";
 import { useModalManager } from "./hooks/useModalManager";
 import { useNotifications } from "./hooks/useNotifications";
 import type { TaskCounts, TodoAdminView } from "./app-types";
@@ -27,7 +27,7 @@ function boardActionsEqual(a: TodoBoardActions, b: TodoBoardActions) {
 }
 
 function TodoScreenInner({ tabActive }: Props) {
-  const { session, loading, offline, hubEmail } = useNotesAuth();
+  const { session, loading, offline, hubEmail, hubUserId } = useNotesAuth();
   const { modals } = useModalManager();
   const { unreadCount, setUnreadCount } = useNotifications(session, tabActive);
   const [adminView, setAdminView] = useState<TodoAdminView>("myTasks");
@@ -86,6 +86,8 @@ function TodoScreenInner({ tabActive }: Props) {
         setUnreadCount={setUnreadCount}
         onBoardActions={handleBoardActions}
         onProfileRole={handleProfileChange}
+        hubUserId={hubUserId}
+        hubEmail={hubEmail}
       />
     </TodoHubChrome>
   );

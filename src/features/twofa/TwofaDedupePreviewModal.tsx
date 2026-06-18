@@ -7,6 +7,7 @@ import {
 import type { TwofaDedupePreview } from "./twofa-upsert-accounts";
 import { TwofaPlatformIcon } from "./TwofaPlatformIcon";
 import "./twofa-dedupe-preview.css";
+import { fmtHubDate } from "./twofa-time";
 
 type Props = {
   open: boolean;
@@ -29,6 +30,7 @@ export function TwofaDedupePreviewModal({
 }: Props) {
   const maxCount = preview?.byService[0]?.count ?? 1;
   const total = preview?.totalRemoved ?? 0;
+  const groups = preview?.groups ?? [];
 
   return (
     <HubToolDetailModal
@@ -67,38 +69,95 @@ export function TwofaDedupePreviewModal({
           </p>
         ) : error ? (
           <p className="py-4 text-center text-rose-300">{error}</p>
-        ) : preview && total > 0 ? (
+        ) : preview ? (
           <>
-            <p className="mb-4 text-center leading-relaxed">
-              Found <strong className="text-[var(--text)]">{total}</strong> duplicate account
-              {total === 1 ? "" : "s"} to remove. Keeps the newest entry per identity (platform + account
-              + browser).
-            </p>
-            <div className="twofa-dedupe-preview-modal__list" role="list">
-              {preview.byService.map((row) => {
-                const width = Math.max(12, Math.round((row.count / maxCount) * 100));
-                return (
-                  <div key={row.service} className="twofa-dedupe-preview-modal__row" role="listitem">
-                    <span className="twofa-dedupe-preview-modal__service">
-                      <TwofaPlatformIcon service={row.service} />
-                      <span className="truncate">{row.service}</span>
-                    </span>
-                    <span className="twofa-dedupe-preview-modal__bar-wrap" aria-hidden>
-                      <span
-                        className="twofa-dedupe-preview-modal__bar"
-                        style={{ width: `${width}%` }}
-                      />
-                    </span>
-                    <span className="twofa-dedupe-preview-modal__count tabular-nums">{row.count}</span>
-                  </div>
-                );
-              })}
-            </div>
+            {total > 0 ? (
+              <>
+                <p className="mb-4 text-center leading-relaxed">
+                  Found <strong className="text-[var(--text)]">{total}</strong> duplicate account
+                  {total === 1 ? "" : "s"} to remove. Keeps the newest entry per dedupe key.
+                </p>
+                <div className="twofa-dedupe-preview-modal__list" role="list" aria-label="Duplicate counts by service">
+                  {preview.byService.map((row) => {
+                    const width = Math.max(12, Math.round((row.count / maxCount) * 100));
+                    return (
+                      <div key={row.service} className="twofa-dedupe-preview-modal__row" role="listitem">
+                        <span className="twofa-dedupe-preview-modal__service">
+                          <TwofaPlatformIcon service={row.service} />
+                          <span className="truncate">{row.service}</span>
+                        </span>
+                        <span className="twofa-dedupe-preview-modal__bar-wrap" aria-hidden>
+                          <span
+                            className="twofa-dedupe-preview-modal__bar"
+                            style={{ width: `${width}%` }}
+                          />
+                        </span>
+                        <span className="twofa-dedupe-preview-modal__count tabular-nums">{row.count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {groups.length ? (
+                  <>
+                    <p className="mt-5 mb-2 text-xs font-semibold text-[var(--text)]">
+                      Preview (kept vs removed)
+                    </p>
+                    <div className="twofa-dedupe-preview-modal__groups" role="list" aria-label="Duplicate groups preview">
+                      {groups.map((g) => (
+                        <div key={g.key} className="twofa-dedupe-preview-modal__group" role="listitem">
+                          <div className="twofa-dedupe-preview-modal__group-col">
+                            <div className="twofa-dedupe-preview-modal__pill twofa-dedupe-preview-modal__pill--kept">
+                              Kept
+                            </div>
+                            <DedupeRowCard row={g.kept} />
+                          </div>
+                          <div className="twofa-dedupe-preview-modal__group-col">
+                            <div className="twofa-dedupe-preview-modal__pill twofa-dedupe-preview-modal__pill--removed">
+                              Removed ({g.removed.length})
+                            </div>
+                            <div className="twofa-dedupe-preview-modal__removed-stack">
+                              {g.removed.map((r) => (
+                                <DedupeRowCard key={r.id} row={r} />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <p className="py-4 text-center text-[var(--text)]">No duplicate accounts found.</p>
+            )}
           </>
         ) : (
-          <p className="py-4 text-center">No duplicate accounts found.</p>
+          <p className="py-4 text-center">No preview available.</p>
         )}
       </div>
     </HubToolDetailModal>
+  );
+}
+
+function DedupeRowCard({ row }: { row: { service: string; account: string; browser?: string; secret: string; updatedAt: string } }) {
+  const browser = row.browser?.trim();
+  return (
+    <div className="twofa-dedupe-preview-modal__card">
+      <div className="twofa-dedupe-preview-modal__card-title">
+        <TwofaPlatformIcon service={row.service} />
+        <span className="truncate text-[var(--text)]">{row.service}</span>
+        <span className="twofa-dedupe-preview-modal__muted truncate">— {row.account}</span>
+        {browser ? <span className="twofa-dedupe-preview-modal__badge">{browser}</span> : null}
+      </div>
+      <div className="twofa-dedupe-preview-modal__card-meta">
+        <span className="twofa-dedupe-preview-modal__muted">Updated</span>
+        <span className="twofa-dedupe-preview-modal__mono">{fmtHubDate(row.updatedAt)}</span>
+        <span className="twofa-dedupe-preview-modal__muted">Secret</span>
+        <span className="twofa-dedupe-preview-modal__mono twofa-dedupe-preview-modal__secret" title={row.secret}>
+          {row.secret}
+        </span>
+      </div>
+    </div>
   );
 }

@@ -18,6 +18,7 @@ import type { CookieVaultRow } from "./useCookieVaultMap";
 export type CookieRouteCardProps = {
   row: CookieAutoRow;
   vault?: CookieVaultRow;
+  shareCount?: number;
   checked: boolean;
   onOpen: () => void;
   onSelect: () => void;
@@ -28,6 +29,7 @@ export type CookieRouteCardProps = {
 export function CookieRouteCard({
   row,
   vault,
+  shareCount,
   checked,
   onOpen,
   onSelect,
@@ -133,6 +135,7 @@ export function CookieRouteCard({
             syncStatus={status}
             noteSyncedAt={note?.synced_at}
             vaultCookieCount={vault?.cookie_count}
+            shareCount={shareCount}
           />
         </div>
       </div>

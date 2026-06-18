@@ -1,4 +1,4 @@
-export type DesignFeatureId = never;
+export type DesignFeatureId = "sheet-workspace";
 
 export type ActiveDesignFeature = {
   id: DesignFeatureId;
@@ -7,10 +7,21 @@ export type ActiveDesignFeature = {
   project: string;
 };
 
-const FEATURES: ActiveDesignFeature[] = [];
+const FEATURES: ActiveDesignFeature[] = [
+  {
+    id: "sheet-workspace",
+    title: "Sheet Workspace",
+    subtitle: "5 layout-direction variants",
+    project: "P0020-Data-Box",
+  },
+];
 
 export function listActiveDesignFeatures(): ActiveDesignFeature[] {
   return FEATURES;
+}
+
+export function getActiveDesignFeature(id: DesignFeatureId): ActiveDesignFeature | null {
+  return FEATURES.find((f) => f.id === id) ?? null;
 }
 
 export const ACTIVE_DESIGN_COUNT = FEATURES.length;

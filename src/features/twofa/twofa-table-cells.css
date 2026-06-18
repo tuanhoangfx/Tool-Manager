@@ -79,10 +79,9 @@
 }
 
 .twofa-copy-control--secret .twofa-copy-control__value {
-  white-space: normal;
-  word-break: break-all;
-  overflow: visible;
-  text-overflow: unset;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .twofa-code-badge {

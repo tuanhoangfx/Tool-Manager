@@ -306,7 +306,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                         {isMultiAssignee ? (
                             <div className="flex -space-x-1.5">
                                 {assignees.slice(0, 3).map((a, i) => {
-                                    const assigneeProfile = allUsers.find(u => u.id === a.user_id) || { full_name: '?', avatar_url: null };
+                                    const assigneeProfile = allUsers.find(u => u.id === a.user_id) || { full_name: null, avatar_url: null, role: 'employee' as const };
                                     return (
                                         <div key={i} className={`rounded-full ring-2 ${a.completed_at ? 'ring-green-500/70' : 'ring-[var(--panel)]'}`}>
                                             <Avatar user={assigneeProfile} title={assigneeProfile.full_name || 'Assignee'} size={20} />

@@ -23,6 +23,7 @@ export function renderCookieRoutesDirectoryBodyCell(
   col: HubDirectoryColumnDef<CookieRouteTableSortKey>,
   row: CookieAutoRow,
   vaultByKey: Record<string, CookieVaultRow>,
+  shareCounts: Record<string, number> = {},
 ) {
   const { binding, note, lines } = row;
   const status = note?.sync_status ?? "pending";
@@ -42,6 +43,7 @@ export function renderCookieRoutesDirectoryBodyCell(
             syncStatus={status}
             noteSyncedAt={note?.synced_at}
             vaultCookieCount={vault?.cookie_count}
+            shareCount={shareCounts[binding.noteId]}
           />
         </DirectoryTableBodyCell>
       );

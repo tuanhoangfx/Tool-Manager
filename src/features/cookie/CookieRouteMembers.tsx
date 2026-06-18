@@ -13,7 +13,7 @@ import {
 import { accessFiltersWithCounts, filterAccessRows } from "./access-filter-counts";
 import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
 import type { CookieVaultRow } from "./useCookieVaultMap";
-import { useNotesAuth } from "../notes/useNotesAuth";
+import { useNotesAuth } from "../notes/AuthSessionProvider";
 import type { CookieBinding } from "./cookieBridge";
 import {
   revokeNoteCookieMember,
@@ -145,25 +145,69 @@ export function CookieRouteMembers({
     setSyncByEmail(nextSyncEmail);
   }, [binding.domain, binding.noteId]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { force?: boolean }) => {
     if (!binding.noteId) return;
     const seq = ++loadSeqRef.current;
     setMembersLoading(true);
     setError(null);
     try {
-      const membersRes = await fetchNoteCookieMembers(binding.noteId, { refresh: true });
+      const membersPromise = fetchNoteCookieMembers(
+        binding.noteId,
+        opts?.force ? { refresh: true } : undefined,
+      );
+      const publishPromise =
+        canShare && session?.user?.id
+          ? getCookieRoutePublishStatus(session, binding)
+          : Promise.resolve(null);
+      const activityPromise =
+        binding.noteId?.trim() && binding.domain?.trim()
+          ? listCookieRouteActivityCached(binding.noteId, cookieRouteDomainKey(binding.domain))
+          : Promise.resolve({ ok: false as const, error: "missing_route" });
+
+      const [membersRes, publishRes, activityRes] = await Promise.all([
+        membersPromise,
+        publishPromise,
+        activityPromise,
+      ]);
+
       if (seq !== loadSeqRef.current) return;
+
       if (!membersRes.ok) {
         setMembers([]);
         if (binding.accessRole !== "member" && !getOfflineMode()) setError(membersRes.error);
       } else {
         setMembers(membersRes.members);
       }
-      void loadActivity();
+
+      if (canShare && session?.user?.id) {
+        setCloudPublished(publishRes && publishRes.ok ? publishRes.published : false);
+      }
+
+      if (activityRes.ok) {
+        const nextLoadId: Record<string, string> = {};
+        const nextLoadEmail: Record<string, string> = {};
+        const nextSyncId: Record<string, string> = {};
+        const nextSyncEmail: Record<string, string> = {};
+        for (const row of activityRes.activities) {
+          if (row.user_id && row.last_load_at) nextLoadId[row.user_id] = row.last_load_at;
+          if (row.user_email && row.last_load_at) nextLoadEmail[row.user_email] = row.last_load_at;
+          if (row.user_id && row.last_sync_at) nextSyncId[row.user_id] = row.last_sync_at;
+          if (row.user_email && row.last_sync_at) nextSyncEmail[row.user_email] = row.last_sync_at;
+        }
+        setLoadByUserId(nextLoadId);
+        setLoadByEmail(nextLoadEmail);
+        setSyncByUserId(nextSyncId);
+        setSyncByEmail(nextSyncEmail);
+      } else {
+        setLoadByUserId({});
+        setLoadByEmail({});
+        setSyncByUserId({});
+        setSyncByEmail({});
+      }
     } finally {
       if (seq === loadSeqRef.current) setMembersLoading(false);
     }
-  }, [binding.accessRole, binding.noteId, loadActivity]);
+  }, [binding.accessRole, binding.domain, binding.noteId, canShare, session]);
 
   const loadRef = useRef(load);
   loadRef.current = load;
@@ -177,21 +221,6 @@ export function CookieRouteMembers({
     setSyncByEmail({});
     void loadRef.current();
   }, [binding.noteId]);
-
-  useEffect(() => {
-    if (!canShare || !session?.user?.id || !binding.noteId?.trim()) {
-      setCloudPublished(null);
-      return;
-    }
-    let cancelled = false;
-    void getCookieRoutePublishStatus(session, binding).then((res) => {
-      if (cancelled) return;
-      setCloudPublished(res.ok ? res.published : false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [binding, canShare, session]);
 
   const shareBlocked = cloudPublished === false;
   const granteePreview = useMemo(() => formatGranteeSharePreview(shareEmail), [shareEmail]);
@@ -407,7 +436,7 @@ export function CookieRouteMembers({
     } else if (published) {
       onToast?.(`Shared with ${displayGranteeUser(res.member)}. Recipient can refresh routes immediately.`, "success");
     }
-    await load();
+    await load({ force: true });
     window.dispatchEvent(new CustomEvent("p0020-cookie-route-shared", { detail: { noteId: binding.noteId } }));
     onShared?.();
   }, [
@@ -440,7 +469,7 @@ export function CookieRouteMembers({
     invalidateCookieRouteActivity(binding.noteId, binding.domain);
     invalidateNoteCookieMembersCache(binding.noteId);
     onToast?.("Access updated.", "success");
-    await load();
+    await load({ force: true });
     window.dispatchEvent(new CustomEvent("p0020-cookie-route-shared", { detail: { noteId: binding.noteId } }));
     onShared?.();
   }, [binding.noteId, editAccess, editBusy, editingMember, load, onShared, onToast]);
@@ -466,7 +495,7 @@ export function CookieRouteMembers({
     invalidateCookieRouteActivity(binding.noteId, binding.domain);
     invalidateNoteCookieMembersCache(binding.noteId);
     onToast?.(`Revoked access for ${ok} member(s).`, "success");
-    await load();
+    await load({ force: true });
     window.dispatchEvent(new CustomEvent("p0020-cookie-route-shared", { detail: { noteId: binding.noteId } }));
     onShared?.();
   }, [binding.noteId, load, onShared, onToast, pendingRevokeIds]);

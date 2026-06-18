@@ -41,6 +41,7 @@ export type NoteCookieMemberRow = {
 
 type RpcEnvelope<T> = ({ ok: true } & T) | { ok: false; error: string };
 type RpcVoid = { ok: true } | { ok: false; error: string };
+type RpcCounts = { note_id: string; member_count: number };
 
 function rpcError(error: unknown, fallback: string) {
   const message = error && typeof error === "object" && "message" in error ? String(error.message) : String(error ?? "");
@@ -77,6 +78,35 @@ export async function listNoteCookieMembers(noteId: string): Promise<RpcEnvelope
     return { ok: true, members: (data.members ?? []) as NoteCookieMemberRow[] };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err ?? "Load members failed.");
+    return { ok: false, error: message };
+  }
+}
+
+export async function listNoteCookieMemberCounts(
+  noteIds: readonly string[],
+): Promise<RpcEnvelope<{ counts: RpcCounts[] }>> {
+  const ids = Array.from(
+    new Set(noteIds.map((id) => id.trim()).filter(Boolean)),
+  );
+  if (ids.length === 0) return { ok: true, counts: [] };
+
+  let session;
+  try {
+    session = await withMembersRpcTimeout(ensureDataBoxAuth(), MEMBERS_AUTH_TIMEOUT_MS);
+  } catch {
+    return { ok: false, error: "Sign in timed out — reload the page and try again." };
+  }
+  if (!session) return { ok: false, error: "Sign in to load share counts." };
+
+  try {
+    const { data, error } = await withMembersRpcTimeout(
+      supabase.rpc("note_cookie_member_counts_batch", { p_note_ids: ids }),
+    );
+    if (error) return { ok: false, error: rpcError(error, "Load share counts failed.") };
+    if (!data || data.ok !== true) return { ok: false, error: envelopeError(data, "Load share counts failed.") };
+    return { ok: true, counts: (data.counts ?? []) as RpcCounts[] };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err ?? "Load share counts failed.");
     return { ok: false, error: message };
   }
 }

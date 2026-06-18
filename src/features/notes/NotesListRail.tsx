@@ -212,7 +212,7 @@ function NoteListRow({
 function CookieRouteMark({ domain, compact }: { domain: string; compact: boolean }) {
   const site = resolveCookieSiteIcon(domain);
   const [imgFailed, setImgFailed] = useState(false);
-  const title = `Cookie Auto route · ${domain}`;
+  const title = `Cookie Bridge route · ${domain}`;
   const box = compact ? "h-3.5 w-3.5" : "h-4 w-4";
 
   if (site && !imgFailed) {

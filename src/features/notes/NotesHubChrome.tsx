@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Pin, StickyNote } from "lucide-react";
 import {
-  DirectorySearchToolbar,
   HubSplitWorkspaceScreen,
   useHubChromePrefs,
   WorkspaceTabHeader,
 } from "@tool-workspace/hub-ui";
+import { WorkspaceDirectorySearchToolbar } from "../workspace/WorkspaceDirectorySearchToolbar";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
 import { readHubListPrefs, subscribeHubListPrefs } from "../../lib/url-prefs";
+import { hubTabHeaderChromeProps } from "../../lib/hub-tab-header-chrome";
 import { readWorkspacePeriod, type WorkspacePeriodPrefs } from "../../lib/hub-workspace-period";
 import { DEFAULT_NOTES_HEADER_STAT_KEYS } from "./notes-display-prefs";
 import {
@@ -62,7 +63,8 @@ export function NotesHubChrome({
   const [prefs, setPrefs] = useState(readNotesListPrefs);
   const [hubPrefs, setHubPrefs] = useState(readHubListPrefs);
   const [period, setPeriod] = useState<WorkspacePeriodPrefs>(() => readWorkspacePeriod("notes", "all"));
-  const { searchPin, headerPin, stackChrome } = useHubChromePrefs();
+  const { headerPin, searchPin, stackChrome } = useHubChromePrefs();
+  const headerChrome = hubTabHeaderChromeProps(true, { headerPin, searchPin, stackChrome });
   const version = useMemo(() => workspaceVersionLine(), []);
 
   useEffect(() => subscribeHubListPrefs(() => {
@@ -138,9 +140,9 @@ export function NotesHubChrome({
               notesFolderSettings={folderSettingsPanel}
             />
           }
-          pinSticky={stackChrome ? false : headerPin}
-          dividerBelow={stackChrome ? false : !searchPin}
-          embedded={stackChrome}
+          pinSticky={headerChrome.pinSticky}
+          dividerBelow={headerChrome.dividerBelow}
+          embedded={headerChrome.embedded}
         />
       }
       filters={hubFilters}
@@ -151,12 +153,12 @@ export function NotesHubChrome({
       filterPlaceholder="Search notes, domain, slug, sync ID…"
       filterShortcutScope="notes"
       directoryToolbar={
-        <DirectorySearchToolbar
+        <WorkspaceDirectorySearchToolbar
+          screen="notes"
           workspacePeriod={{ scope: "notes", defaultRange: "all", inactiveKeys: ["all"] }}
           showTimeRange={false}
           showRefresh={false}
           showViewToggle={false}
-          showTablePageSize={false}
           countIcon={StickyNote}
           shown={shown}
           total={notes.length}

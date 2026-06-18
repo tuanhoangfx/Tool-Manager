@@ -1,6 +1,6 @@
 import { ClipboardList } from "lucide-react";
 import type { ReactNode } from "react";
-import { DirectorySearchToolbar } from "@tool-workspace/hub-ui";
+import { WorkspaceDirectorySearchToolbar } from "../workspace/WorkspaceDirectorySearchToolbar";
 
 type Props = {
   leading?: ReactNode;
@@ -8,15 +8,15 @@ type Props = {
   total: number;
 };
 
-/** Todo FilterBar row-1 toolbar — golden DirectorySearchToolbar (period · view toggle · count). */
+/** Todo FilterBar row-1 toolbar — period · Display · count. */
 export function TodoDirectoryToolbar({ leading, shown, total }: Props) {
   return (
-    <DirectorySearchToolbar
+    <WorkspaceDirectorySearchToolbar
+      screen="todo"
       leading={leading}
       workspacePeriod={{ scope: "todo", defaultRange: "last30Days", inactiveKeys: ["all"] }}
       showTimeRange={false}
       showViewToggle={false}
-      showTablePageSize={false}
       showRefresh={false}
       countIcon={ClipboardList}
       shown={shown}

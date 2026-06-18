@@ -34,6 +34,8 @@ type Props = {
   setUnreadCount: React.Dispatch<React.SetStateAction<number>>;
   onBoardActions?: (actions: { onDeleteTask: (task: Task) => void; onUpdateStatus: (task: Task, status: Task["status"]) => Promise<boolean> }) => void;
   onProfileRole?: (role: string | null) => void;
+  hubUserId?: string | null;
+  hubEmail?: string | null;
 };
 
 export function TodoAppCore({
@@ -47,6 +49,8 @@ export function TodoAppCore({
   setUnreadCount,
   onBoardActions,
   onProfileRole,
+  hubUserId,
+  hubEmail,
 }: Props) {
   const { addToast } = useToasts();
   const { t } = useSettings();
@@ -61,6 +65,7 @@ export function TodoAppCore({
     session,
     lastDataChange,
     tabActive,
+    { hubUserId, hubEmail },
   );
   const chrome = useTodoChrome();
 

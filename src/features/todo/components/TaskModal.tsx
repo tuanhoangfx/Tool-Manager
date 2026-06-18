@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { History, LayoutList } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import {
-  HubDetailModal,
-  TabButton,
-  compactIconSize,
+  HubToolDetailModal,
+  HubToolDetailModalPrimaryAction,
+  HubToolDetailModalSecondaryAction,
+  HubToolDetailSection,
+  HUB_TOOL_DETAIL_SCROLL_ROOT,
+  HUB_TOOL_DETAIL_SECTIONS_CLASS,
 } from "@tool-workspace/hub-ui";
 
 import { SpinnerIcon, ChevronRightIcon } from "./Icons";
@@ -12,16 +15,20 @@ import { Task, TaskAttachment, Profile, TaskComment, ProjectMember, Project, Tas
 import { supabase } from "../lib/supabase";
 import { useToasts } from "../context/ToastContext";
 import { formatAbsoluteDateTime } from "../lib/taskUtils";
-import { resolveTodoProfile } from "../todo-resolve-profile";
+import { resolveTodoProfile, resolveTodoProfileLabel } from "../todo-resolve-profile";
 import Avatar from "./common/Avatar";
+import { TocSectionNav } from "../../overview/TocSectionNav";
 
 import TaskDetailsForm from "./task-modal/TaskDetailsForm";
 import AttachmentSection from "./task-modal/AttachmentSection";
 import CommentSection, { TempComment } from "./task-modal/CommentSection";
 import TaskStatusStepper from "./task-modal/TaskStatusStepper";
 import { TaskActivityLogPanel } from "./task-modal/TaskActivityLogPanel";
-
-type TaskModalTab = "details" | "activity";
+import {
+  TASK_MODAL_ACTIVITY_TOC_ITEM,
+  TASK_MODAL_TOC,
+  taskModalSectionTitle,
+} from "./task-modal/task-modal-toc";
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -71,7 +78,6 @@ const TaskModal: React.FC<TaskModalProps> = ({
   const [validationError, setValidationError] = useState<"title" | "assignee" | null>(null);
   const [assignableUsers, setAssignableUsers] = useState<Profile[]>(allUsers);
   const [lastEditor, setLastEditor] = useState<{ profile: Profile; at: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<TaskModalTab>("details");
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -79,6 +85,13 @@ const TaskModal: React.FC<TaskModalProps> = ({
     () => userProjects.map((p) => p.projects).filter((p): p is Project => p !== null),
     [userProjects],
   );
+
+  const tocItems = useMemo(
+    () => (editingTaskId ? [...TASK_MODAL_TOC, TASK_MODAL_ACTIVITY_TOC_ITEM] : [...TASK_MODAL_TOC]),
+    [editingTaskId],
+  );
+
+  const sectionIds = useMemo(() => tocItems.map(({ id }) => `task-${id}`), [tocItems]);
 
   const fetchComments = useCallback(async (taskId: number) => {
     const { data, error } = await supabase
@@ -95,7 +108,6 @@ const TaskModal: React.FC<TaskModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setActiveTab("details");
       const currentTaskId = task && "id" in task ? task.id : null;
       if (currentTaskId !== editingTaskId) {
         if (task && "id" in task) {
@@ -333,14 +345,22 @@ const TaskModal: React.FC<TaskModalProps> = ({
     (lastEditor.profile.id !== creatorProfile?.id ||
       (updatedLabel && createdLabel && updatedLabel !== createdLabel));
 
+  const modalTitle = editingTaskId
+    ? openedFrom
+      ? t.editTask
+      : `${t.editTask} ${taskIdDisplay}`
+    : t.addNewTask;
+
   return (
-    <HubDetailModal
+    <HubToolDetailModal
       open={isOpen}
       onClose={onClose}
       ariaLabelledBy="task-modal-title"
-      shellClassName="w-full max-w-6xl"
+      shellClassName="task-modal w-full max-w-6xl"
+      scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
+      sectionIds={sectionIds}
       header={
-        <div className="user-access-modal__header">
+        <header className="user-access-modal__header">
           <div className="user-access-modal__header-main min-w-0 flex-nowrap items-center gap-2">
             {openedFrom ? (
               <>
@@ -350,8 +370,11 @@ const TaskModal: React.FC<TaskModalProps> = ({
                 <ChevronRightIcon size={12} className="shrink-0 opacity-50" aria-hidden />
               </>
             ) : null}
-            <h2 id="task-modal-title" className="min-w-0 truncate text-lg font-bold text-[var(--text)]">
-              {editingTaskId ? (openedFrom ? t.editTask : `${t.editTask} ${taskIdDisplay}`) : t.addNewTask}
+            <h2
+              id="task-modal-title"
+              className="user-access-modal__header-name min-w-0 truncate text-sm font-semibold text-[var(--text)]"
+            >
+              {modalTitle}
             </h2>
             {taskRecord && creatorProfile ? (
               <>
@@ -359,11 +382,11 @@ const TaskModal: React.FC<TaskModalProps> = ({
                   ·
                 </span>
                 <div className="hidden min-w-0 items-center gap-1.5 truncate text-xs text-[var(--muted)] md:flex">
-                  <Avatar user={creatorProfile} title={creatorProfile.full_name || ""} size={18} />
+                  <Avatar user={creatorProfile} title={resolveTodoProfileLabel(taskRecord.created_by, taskRecord.creator, allUsers)} size={18} />
                   <span className="truncate">
                     {t.createdBy}{" "}
                     <span className="text-[var(--text)]">
-                      {creatorProfile.full_name || creatorProfile.email}
+                      {resolveTodoProfileLabel(taskRecord.created_by, taskRecord.creator, allUsers)}
                     </span>
                     {createdLabel ? ` · ${createdLabel}` : ""}
                   </span>
@@ -379,7 +402,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
                     >
                       {t.lastEditedBy}{" "}
                       <span className="text-[var(--text)]">
-                        {lastEditor.profile.full_name || lastEditor.profile.email}
+                        {resolveTodoProfileLabel(lastEditor.profile.id, lastEditor.profile, allUsers)}
                       </span>
                     </span>
                   </>
@@ -387,95 +410,76 @@ const TaskModal: React.FC<TaskModalProps> = ({
               </>
             ) : null}
           </div>
-        </div>
+        </header>
+      }
+      toc={
+        <TocSectionNav
+          items={tocItems}
+          idPrefix="task-"
+          scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
+        />
       }
       footer={
-        <div className="hub-tool-detail-modal__footer">
-          <div className="hub-tool-detail-modal__footer-inner !justify-end">
-            <button type="button" onClick={onClose} className="hub-tool-detail-modal__secondary">
-              {t.cancel}
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleSaveClick()}
-              disabled={isSaving}
-              className="hub-tool-detail-modal__confirm min-w-[7rem]"
-            >
-              {isSaving ? <SpinnerIcon size={18} className="hub-tool-detail-modal__confirm-icon--busy" /> : t.save}
-            </button>
-          </div>
-        </div>
+        <>
+          <HubToolDetailModalSecondaryAction label={t.cancel} onClick={onClose} disabled={isSaving} />
+          <HubToolDetailModalPrimaryAction
+            label={t.save}
+            onClick={() => void handleSaveClick()}
+            disabled={isSaving}
+            busy={isSaving}
+            icon={isSaving ? undefined : ClipboardList}
+          />
+        </>
       }
     >
-      <div ref={modalRef} className="modal-shell__scroll flex min-h-0 flex-1 flex-col">
-        {editingTaskId ? (
-          <div className="border-b border-white/5 px-4 pt-3 md:px-6">
-            <div className="flex gap-1">
-              <TabButton
-                active={activeTab === "details"}
-                onClick={() => setActiveTab("details")}
-                icon={<LayoutList size={compactIconSize(12)} aria-hidden />}
-              >
-                Details
-              </TabButton>
-              <TabButton
-                active={activeTab === "activity"}
-                onClick={() => setActiveTab("activity")}
-                icon={<History size={compactIconSize(12)} aria-hidden />}
-              >
-                {t.activityLog}
-              </TabButton>
-            </div>
-          </div>
-        ) : null}
+      <div ref={modalRef} className={`min-w-0 ${HUB_TOOL_DETAIL_SECTIONS_CLASS}`}>
+        <HubToolDetailSection id="task-status" title={taskModalSectionTitle("status")}>
+          <TaskStatusStepper
+            currentStatus={formData.status}
+            onStatusChange={(s) => setFormData((prev) => ({ ...prev, status: s }))}
+          />
+        </HubToolDetailSection>
 
-        {activeTab === "activity" && editingTaskId ? (
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6">
-            <TaskActivityLogPanel taskId={editingTaskId} />
-          </div>
-        ) : (
-          <>
-            <div className="p-4 md:p-6">
-              <TaskStatusStepper
-                currentStatus={formData.status}
-                onStatusChange={(s) => setFormData((prev) => ({ ...prev, status: s }))}
+        <HubToolDetailSection id="task-details" title={taskModalSectionTitle("details")}>
+          <TaskDetailsForm
+            taskData={formData}
+            onFieldChange={(field, value) => setFormData((prev) => ({ ...prev, [field]: value }))}
+            allUsers={assignableUsers}
+            userProjects={projectsForSelect}
+            validationError={validationError}
+            commentsPanel={
+              <CommentSection
+                embedded
+                comments={combinedComments}
+                onPostComment={handlePostComment}
+                isPostingComment={isPostingComment}
+                allUsers={allUsers}
               />
-            </div>
+            }
+          />
+        </HubToolDetailSection>
 
-            <div className="grid grid-cols-1 gap-6 px-4 pb-6 md:grid-cols-2 md:px-6">
-              <div className="space-y-4">
-                <TaskDetailsForm
-                  taskData={formData}
-                  onFieldChange={(field, value) => setFormData((prev) => ({ ...prev, [field]: value }))}
-                  allUsers={assignableUsers}
-                  userProjects={projectsForSelect}
-                  validationError={validationError}
-                />
-                <AttachmentSection
-                  attachments={attachments}
-                  newFiles={newFiles}
-                  onAddNewFiles={(files) => setNewFiles((prev) => [...prev, ...files])}
-                  onRemoveNewFile={(index) => setNewFiles((prev) => prev.filter((_, i) => i !== index))}
-                  onRemoveExistingAttachment={(id) => {
-                    setDeletedAttachmentIds((prev) => [...prev, id]);
-                    setAttachments((prev) => prev.filter((att) => att.id !== id));
-                  }}
-                  isSaving={isSaving}
-                />
-              </div>
-              <div>
-                <CommentSection
-                  comments={combinedComments}
-                  onPostComment={handlePostComment}
-                  isPostingComment={isPostingComment}
-                  allUsers={allUsers}
-                />
-              </div>
-            </div>
-          </>
-        )}
+        <HubToolDetailSection id="task-attachments" title={taskModalSectionTitle("attachments")}>
+          <AttachmentSection
+            attachments={attachments}
+            newFiles={newFiles}
+            onAddNewFiles={(files) => setNewFiles((prev) => [...prev, ...files])}
+            onRemoveNewFile={(index) => setNewFiles((prev) => prev.filter((_, i) => i !== index))}
+            onRemoveExistingAttachment={(id) => {
+              setDeletedAttachmentIds((prev) => [...prev, id]);
+              setAttachments((prev) => prev.filter((att) => att.id !== id));
+            }}
+            isSaving={isSaving}
+          />
+        </HubToolDetailSection>
+
+        {editingTaskId ? (
+          <HubToolDetailSection id="task-activity" title={taskModalSectionTitle("activity")}>
+            <TaskActivityLogPanel taskId={editingTaskId} />
+          </HubToolDetailSection>
+        ) : null}
       </div>
-    </HubDetailModal>
+    </HubToolDetailModal>
   );
 };
 

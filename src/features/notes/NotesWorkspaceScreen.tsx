@@ -4,6 +4,7 @@ import type { FilterValues } from "../../components/sales-shell";
 import { ToolConfirmDialog } from "../../components/confirm/ToolConfirmDialog";
 import { useAppToast } from "../../components/toast";
 import { readNoteIdFromUrl } from "../../lib/note-url";
+import { removeBindingsForNote } from "../cookie/cookieBridge";
 import { useNoteCookieRouteLock } from "../cookie/useNoteCookieRouteLock";
 import { useNotesCookieRouteIndex } from "../cookie/useNotesCookieRouteIndex";
 import { NoteEditorPanel } from "./NoteEditorPanel";
@@ -34,8 +35,9 @@ import type { NoteSaveResult } from "./useNote";
 import { useNote } from "./useNote";
 import { useNoteVersions } from "./useNoteVersions";
 import { useNotes } from "./useNotes";
-import { useNotesAuth } from "./useNotesAuth";
-import { readNoteDetailStale, writeNoteDetailCache } from "../../lib/note-detail-cache";
+import { useNotesAuth } from "./AuthSessionProvider";
+import { readNoteDetailStale, removeNoteDetailCache, writeNoteDetailCache } from "../../lib/note-detail-cache";
+import { removeNoteRouteLockCache } from "../../lib/note-route-lock-cache";
 import { prefetchNoteDetailBatch } from "./noteDetailPrefetch";
 import { readNoteRouteLockStale } from "../../lib/note-route-lock-cache";
 import { prefetchCookieBootBackground } from "../../lib/hub-background-prefetch";
@@ -92,6 +94,7 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
     window.setTimeout(() => setSaveAcknowledged(false), 2500);
   }, []);
   const [pendingDeleteNote, setPendingDeleteNote] = useState(false);
+  const [deletingNote, setDeletingNote] = useState(false);
   const folders = useNoteFolders(session);
   const [dirty, setDirty] = useState(false);
   const [routeDetailDomain, setRouteDetailDomain] = useState<string | null>(null);
@@ -658,7 +661,7 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
 
   const onPinnedToggle = async () => {
     if (routeLocked) {
-      pushToast("Pin is disabled while a Cookie Auto route is active.", "info");
+      pushToast("Pin is disabled while a Cookie Bridge route is active.", "info");
       return;
     }
     const next = !pinned;
@@ -678,23 +681,51 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
   };
 
   const confirmDeleteNote = async () => {
-    if (!selectedId) return;
-    setPendingDeleteNote(false);
+    if (!selectedId || deletingNote) return;
+    const id = selectedId;
+    setDeletingNote(true);
     try {
-      await deleteNote(selectedId);
-      pushToast("Note deleted", "success");
+      const result = await deleteNote(id);
+      const localBindingsRemoved = removeBindingsForNote(id);
+      removeNoteDetailCache(id);
+      removeNoteRouteLockCache(id);
+      const bridgeRemoved = result.bridge_routes_removed;
+      if (bridgeRemoved > 0 && localBindingsRemoved > 0) {
+        pushToast(
+          `Note deleted. ${bridgeRemoved} cloud route${bridgeRemoved === 1 ? "" : "s"} and ${localBindingsRemoved} local binding${localBindingsRemoved === 1 ? "" : "s"} removed.`,
+          "success",
+          7000,
+        );
+      } else if (bridgeRemoved > 0) {
+        pushToast(
+          `Note deleted. ${bridgeRemoved} Cookie Bridge route${bridgeRemoved === 1 ? "" : "s"} removed.`,
+          "success",
+          6000,
+        );
+      } else if (localBindingsRemoved > 0) {
+        pushToast(
+          `Note deleted. ${localBindingsRemoved} local Cookie Bridge binding${localBindingsRemoved === 1 ? "" : "s"} removed.`,
+          "success",
+          6000,
+        );
+      } else {
+        pushToast("Note deleted", "success");
+      }
+      setPendingDeleteNote(false);
       setSelectedId(null);
       navigate({ replace: true });
     } catch (err) {
       pushToast(errorMessage(err, "Delete failed"), "error");
+    } finally {
+      setDeletingNote(false);
     }
   };
 
   const deleteNoteTitle = title.trim() || note?.title?.trim() || "this note";
   const deleteNoteMessage = routeLocked ? (
     <>
-      This note is linked to Cookie Auto route(s). Deleting <strong>{deleteNoteTitle}</strong> breaks sync. This cannot
-      be undone.
+      This note is linked to Cookie Bridge route(s). Deleting <strong>{deleteNoteTitle}</strong> removes cloud sync
+      routes and cannot be undone.
     </>
   ) : (
     <>
@@ -897,9 +928,12 @@ export function NotesWorkspaceScreen({ tabActive = true, navigate }: Props) {
         open={pendingDeleteNote}
         title="Delete note?"
         message={deleteNoteMessage}
-        confirmLabel="Delete note"
+        confirmLabel={deletingNote ? "Deleting…" : "Delete note"}
         onConfirm={() => void confirmDeleteNote()}
-        onClose={() => setPendingDeleteNote(false)}
+        onClose={() => {
+          if (deletingNote) return;
+          setPendingDeleteNote(false);
+        }}
       />
 
       <ToolConfirmDialog

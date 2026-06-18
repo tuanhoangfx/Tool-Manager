@@ -147,7 +147,48 @@ export async function updateNoteSyncId(noteId: string, syncId: string) {
   return supabase.from("notes").update({ sync_id: syncId }).eq("id", noteId).select(NOTES_DETAIL_SELECT).single();
 }
 
-export async function deleteNoteRow(noteId: string) {
+export type NoteDeleteResult = {
+  bridge_routes_removed: number;
+};
+
+export function isMissingNoteDeleteRpc(message: string): boolean {
+  return /note_delete/i.test(message) && /does not exist|42883|PGRST202/i.test(message);
+}
+
+export async function deleteNoteRow(noteId: string): Promise<{
+  data: NoteDeleteResult | null;
+  error: Error | null;
+}> {
   await requireDataBoxSession();
-  return supabase.from("notes").delete().eq("id", noteId);
+
+  const rpc = await supabase.rpc("note_delete", { p_note_id: noteId });
+  if (!rpc.error && rpc.data) {
+    const payload = rpc.data as {
+      ok?: boolean;
+      error?: string;
+      bridge_routes_removed?: number;
+    };
+    if (payload.ok) {
+      return {
+        data: { bridge_routes_removed: payload.bridge_routes_removed ?? 0 },
+        error: null,
+      };
+    }
+    const msg =
+      payload.error === "not_found"
+        ? "Note not found or delete not permitted"
+        : payload.error ?? "Delete failed";
+    return { data: null, error: new Error(msg) };
+  }
+
+  if (rpc.error && !isMissingNoteDeleteRpc(rpc.error.message ?? "")) {
+    return { data: null, error: rpc.error };
+  }
+
+  const { data, error } = await supabase.from("notes").delete().eq("id", noteId).select("id");
+  if (error) return { data: null, error };
+  if (!data?.length) {
+    return { data: null, error: new Error("Note not found or delete not permitted") };
+  }
+  return { data: { bridge_routes_removed: 0 }, error: null };
 }

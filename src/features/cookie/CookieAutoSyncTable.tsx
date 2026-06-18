@@ -14,7 +14,6 @@ import {
   CookieRouteModalSection,
 } from "./CookieRouteFormModal";
 import {
-  DirectorySearchToolbar,
   directoryChartBandNode,
   HubModalFilterField,
   HubFormFieldLabel,
@@ -27,6 +26,7 @@ import {
   useResolvedVisibleChartKeys,
   type HubSortDir,
 } from "@tool-workspace/hub-ui";
+import { WorkspaceDirectorySearchToolbar } from "../workspace/WorkspaceDirectorySearchToolbar";
 import {
   COOKIE_ROUTE_ADD_TOC,
   COOKIE_ROUTE_EDIT_TOC,
@@ -61,7 +61,7 @@ import {
   useResolvedVisibleKpiKeys,
 } from "../../components/sales-shell";
 import { useAppToast } from "../../components/toast";
-import { useNotesAuth } from "../notes/useNotesAuth";
+import { useNotesAuth } from "../notes/AuthSessionProvider";
 import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import type { NoteListItem } from "../notes/types";
 import { routeMatchesTimeRange } from "./cookie-route-activity";
@@ -95,8 +95,8 @@ import { CookieRouteCard } from "./CookieRouteCard";
 import { P0020DirectoryScreen } from "../workspace/P0020DirectoryScreen";
 import { sanitizeCookieFilterUrl, stripLegacyCookieFilterValues } from "./cookie-filter-icons";
 import { CookieRoutesDirectoryTable } from "./CookieRoutesDirectoryTable";
-import { CookieDirectorySkeleton } from "./CookieDirectorySkeleton";
 import type { CookieAutoRow } from "./cookieAutoRow";
+import { CookieDirectorySkeleton } from "./CookieDirectorySkeleton";
 
 const COOKIE_CHART_ORDER = ["status_bar", "platform_bar", "share_bar"] as const;
 import { COOKIE_ACCESS_SELECT_OPTIONS } from "./cookieAccessSelectOptions";
@@ -105,9 +105,12 @@ import { upsertNoteCookieMember } from "./noteCookieMembersRepository";
 import {
   fetchNoteCookieMembers,
   getCachedNoteCookieMembers,
+  getResolvedNoteCookieMembers,
   prefetchNoteCookieMembers,
+  prefetchNoteCookieMembersBatch,
   subscribeNoteCookieMembersCache,
 } from "./cookieRouteMembersPrefetch";
+import { listNoteCookieMemberCounts } from "./noteCookieMembersRepository";
 import { formatGranteeSharePreview } from "./grantee-display";
 import type { CookieVaultRow } from "./useCookieVaultMap";
 import { lookupVaultRow } from "./useCookieVaultMap";
@@ -553,20 +556,21 @@ export function CookieAutoSyncTable({
 
   useEffect(() => {
     setToolbar(
-      <DirectorySearchToolbar
+      <WorkspaceDirectorySearchToolbar
+        screen="cookie"
+        screenFilters={routeFiltersWithCounts}
         workspacePeriod={{ scope: "cookie", defaultRange: "all", inactiveKeys: ["all"] }}
         showTimeRange={false}
         showRefresh={false}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        showTablePageSize
         countIcon={Boxes}
         shown={sortedFilteredRows.length}
         total={rows.length}
         countLabel="routes"
       />,
     );
-  }, [rows.length, setToolbar, setViewMode, sortedFilteredRows.length, viewMode]);
+  }, [rows.length, routeFiltersWithCounts, setToolbar, setViewMode, sortedFilteredRows.length, viewMode]);
 
   useEffect(
     () => () => {
@@ -611,21 +615,42 @@ export function CookieAutoSyncTable({
       return;
     }
 
+    const cachedSeed: Record<string, number> = {};
+    for (const noteId of uniqueNoteIds) {
+      const hit = getResolvedNoteCookieMembers(noteId);
+      if (hit) cachedSeed[noteId] = hit.ok ? hit.members.length : 0;
+    }
+    if (Object.keys(cachedSeed).length) {
+      setShareCounts((prev) => ({ ...prev, ...cachedSeed }));
+    }
+
+    prefetchNoteCookieMembersBatch(uniqueNoteIds);
+
     const loadShareCounts = () => {
-      void Promise.all(
-        uniqueNoteIds.map(async (noteId) => {
-          const res = await fetchNoteCookieMembers(noteId);
-          const count = res.ok ? res.members.length : 0;
-          return [noteId, count] as const;
-        }),
-      ).then((entries) => {
+      void listNoteCookieMemberCounts(uniqueNoteIds).then((res) => {
         if (cancelled) return;
-        setShareCounts((prev) => {
-          const next = { ...prev };
-          for (const [noteId, count] of entries) {
-            next[noteId] = count;
-          }
-          return next;
+        if (res.ok) {
+          setShareCounts((prev) => {
+            const next = { ...prev };
+            for (const row of res.counts) next[row.note_id] = row.member_count;
+            return next;
+          });
+          return;
+        }
+        // Fallback when RPC not deployed yet.
+        void Promise.all(
+          uniqueNoteIds.map(async (noteId) => {
+            const r = await fetchNoteCookieMembers(noteId);
+            const count = r.ok ? r.members.length : 0;
+            return [noteId, count] as const;
+          }),
+        ).then((entries) => {
+          if (cancelled) return;
+          setShareCounts((prev) => {
+            const next = { ...prev };
+            for (const [noteId, count] of entries) next[noteId] = count;
+            return next;
+          });
         });
       });
     };
@@ -906,10 +931,9 @@ export function CookieAutoSyncTable({
     toolbarActionsKey,
   ]);
 
-  const coldNotesLoad = Boolean(loading && notes.length === 0);
-
   return (
     <>
+      {bindings.length === 0 && loading ? <CookieDirectorySkeleton /> : null}
       {modal?.type === "add" && onAdd ? (
         <CookieRouteFormModal
           toc={COOKIE_ROUTE_ADD_TOC}
@@ -1049,10 +1073,7 @@ export function CookieAutoSyncTable({
         </CookieRouteFormModal>
       ) : null}
 
-      {coldNotesLoad ? (
-        <CookieDirectorySkeleton />
-      ) : (
-        <P0020DirectoryScreen
+      <P0020DirectoryScreen
           items={sortedFilteredRows}
           viewMode={viewMode}
           resetKey={routeFilterResetKey}
@@ -1072,6 +1093,7 @@ export function CookieAutoSyncTable({
                 key={row.binding.id}
                 row={row}
                 vault={vault}
+                shareCount={shareCounts[row.binding.noteId]}
                 checked={checked}
                 onOpen={() => openRouteDetail(row.binding.id, row.binding.noteId)}
                 onSelect={() => onSelect?.(row.binding.id)}
@@ -1088,6 +1110,7 @@ export function CookieAutoSyncTable({
               selectedIds={selectedIds}
               selectedBindingId={selectedBindingId}
               vaultByKey={vaultByKey}
+              shareCounts={shareCounts}
               sortKey={listPrefs.sort}
               sortDir={cookieTableSortDir}
               onSort={handleCookieTableSort}
@@ -1097,7 +1120,6 @@ export function CookieAutoSyncTable({
             />
           }
         />
-      )}
 
       {detailRow ? (
         <CookieRouteDetailModal

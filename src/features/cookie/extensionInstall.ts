@@ -41,7 +41,7 @@ export function extensionReleaseZipUrl(version: string = getExtensionDownloadVer
 export const EXTENSION_RELEASE_ZIP = extensionReleaseZipUrl();
 
 /** Header CTA label (links to latest release page). */
-export const EXTENSION_HEADER_LABEL = "Cookie Auto Extension";
+export const EXTENSION_HEADER_LABEL = "Cookie Bridge Extension";
 
 export function hasChromeWebStoreInstall(): boolean {
   return Boolean(EXTENSION_CHROME_WEB_STORE_URL);
@@ -101,7 +101,7 @@ export const EXTENSION_STORE_INSTALL_STEPS: ExtensionInstallStep[] = [
     hint: "Add to Chrome — no Developer mode or ZIP extract",
     symbol: "Add to Chrome",
   },
-  { id: "link", title: "Link on Cookie Auto", hint: "Sign in here → Link extension on this tab" },
+  { id: "link", title: "Link on Cookie Bridge", hint: "Sign in here → Link extension on this tab" },
 ];
 
 export const EXTENSION_UNPACKED_INSTALL_STEPS: ExtensionInstallStep[] = [
@@ -110,7 +110,7 @@ export const EXTENSION_UNPACKED_INSTALL_STEPS: ExtensionInstallStep[] = [
   { id: "chrome", title: "Open extensions", hint: "Paste in Chrome address bar", symbol: "chrome://extensions" },
   { id: "devmode", title: "Developer mode", hint: "Toggle ON at the top-right", symbol: "ON" },
   { id: "unpacked", title: "Load unpacked", hint: "Select the extracted extension folder" },
-  { id: "link", title: "Link on Cookie Auto", hint: "Data Box → Cookie Auto → sign in & connect extension" },
+  { id: "link", title: "Link on Cookie Bridge", hint: "Data Box → Cookie Bridge → sign in & connect extension" },
 ];
 
 export function getExtensionInstallSteps(): ExtensionInstallStep[] {
@@ -121,5 +121,5 @@ export function getExtensionInstallSteps(): ExtensionInstallStep[] {
 export const EXTENSION_INSTALL_STEPS: ExtensionInstallStep[] = getExtensionInstallSteps();
 
 export const EXTENSION_INSTALL_HINT = hasChromeWebStoreInstall()
-  ? `${EXTENSION_CHROME_WEB_STORE_LABEL} or ${EXTENSION_GITHUB_ZIP_LABEL} → open Cookie Auto → Link extension`
-  : "Download latest ZIP → extract → chrome://extensions → Developer mode → Load unpacked → Link extension on Cookie Auto";
+  ? `${EXTENSION_CHROME_WEB_STORE_LABEL} or ${EXTENSION_GITHUB_ZIP_LABEL} → open Cookie Bridge → Link extension`
+  : "Download latest ZIP → extract → chrome://extensions → Developer mode → Load unpacked → Link extension on Cookie Bridge";

@@ -6,6 +6,7 @@ import { AdminView, DataChange } from '../app-types';
 import { subscribeHubIdentity } from '../../../lib/hub-identity-session';
 import { ensureWorkspaceAuthReady } from '../../../lib/workspace-profile';
 import { fetchWorkspaceUserDirectory } from '../../../lib/workspace-user-directory';
+import { warmWorkspaceRoleFromDirectory } from '../../../lib/workspace-role-ssot';
 import { useWorkspaceProfile } from '../../workspace/useWorkspaceProfile';
 import { supabase } from '../lib/supabase';
 
@@ -15,6 +16,7 @@ export const useProfileAndUsers = (
     session: Session | null,
     lastDataChange: DataChange | null,
     enabled = true,
+    hubIdentity?: { hubUserId?: string | null; hubEmail?: string | null },
 ) => {
     const { profile, loadingProfile, profileError, refreshProfile } = useWorkspaceProfile(session);
     const [allUsers, setAllUsers] = useState<Profile[]>([]);
@@ -37,6 +39,11 @@ export const useProfileAndUsers = (
                 const { users, warning } = await fetchWorkspaceUserDirectory(session);
                 setAllUsers(users);
                 setUsersWarning(warning);
+                warmWorkspaceRoleFromDirectory(users, {
+                    dataBoxUserId: session.user.id,
+                    hubUserId: hubIdentity?.hubUserId,
+                    hubEmail: hubIdentity?.hubEmail ?? session.user.email,
+                });
                 success = true;
             } catch (error: unknown) {
                 attempts++;
@@ -51,7 +58,7 @@ export const useProfileAndUsers = (
                 }
             }
         }
-    }, [session]);
+    }, [session, hubIdentity?.hubEmail, hubIdentity?.hubUserId]);
 
     const getProfile = useCallback(async (user: Session['user']) => {
         await refreshProfile(user);

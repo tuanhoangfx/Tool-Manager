@@ -1,5 +1,6 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import type { Profile } from "./types";
+import { syncTodoFilterProfileUsers } from "./todo-filter-icons";
 
 type Ctx = {
   allUsers: Profile[];
@@ -14,6 +15,10 @@ export function TodoUsersProvider({
   allUsers: Profile[];
   children: ReactNode;
 }) {
+  useEffect(() => {
+    syncTodoFilterProfileUsers(allUsers);
+  }, [allUsers]);
+
   return <TodoUsersContext.Provider value={{ allUsers }}>{children}</TodoUsersContext.Provider>;
 }
 

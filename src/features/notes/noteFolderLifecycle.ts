@@ -8,7 +8,7 @@ export const NEW_FOLDER_MS = 86_400_000;
 
 export const COOKIE_AUTO_FOLDER: NoteFolder = {
   id: COOKIE_AUTO_FOLDER_ID,
-  name: "Cookie Auto",
+  name: "Cookie Bridge",
   color: "#f59e0b",
 };
 
@@ -27,7 +27,7 @@ export const UNORGANIZED_FOLDER: NoteFolder = {
 const SYSTEM_FOLDER_IDS = new Set<string>([COOKIE_AUTO_FOLDER_ID, NEW_FOLDER_ID, UNORGANIZED_FOLDER_ID]);
 
 const RESERVED_FOLDER_NAMES = new Set(
-  [COOKIE_AUTO_FOLDER.name, NEW_FOLDER.name, UNORGANIZED_FOLDER.name].map((n) => n.toLowerCase()),
+  [COOKIE_AUTO_FOLDER.name, "Cookie Auto", NEW_FOLDER.name, UNORGANIZED_FOLDER.name].map((n) => n.toLowerCase()),
 );
 
 export function isSystemFolder(folderId: string): boolean {

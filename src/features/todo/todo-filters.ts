@@ -2,6 +2,7 @@ import type { FilterDef, FilterValues } from "@tool-workspace/hub-ui";
 import { PROJECT_COLORS } from "./constants";
 import type { Profile, Project } from "./types";
 import type { Translation } from "./types";
+import { profileFilterOptions } from "./todo-hub-filter-helpers";
 
 export interface TodoFilters {
   searchTerm: string;
@@ -41,10 +42,7 @@ export function buildTodoFilterDefs(
       key: "creator",
       label: "Creators",
       showAllLabel: true,
-      options: allUsers.map((u) => ({
-        value: u.id,
-        label: u.full_name || u.id,
-      })),
+      options: profileFilterOptions(allUsers),
     },
     {
       key: "priority",

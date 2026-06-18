@@ -22,7 +22,7 @@ export function NoteEditorRouteOpenButtons({ routes, onOpenRoute, noteId }: Open
       key={noteId ?? "no-note"}
       className="inline-flex shrink-0 flex-wrap items-center gap-1"
       role="group"
-      aria-label="Open Cookie Auto route detail"
+      aria-label="Open Cookie Bridge route detail"
     >
       {routes.map((route) => (
         <RouteDetailOpenButton

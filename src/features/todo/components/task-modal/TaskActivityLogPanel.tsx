@@ -7,6 +7,8 @@ import { formatAbsoluteDateTime } from "../../lib/taskUtils";
 import { formatActivityLogMessage } from "../../lib/activity-log-format";
 import Avatar from "../common/Avatar";
 import { useCachedSupabaseQuery } from "../../hooks/useCachedSupabaseQuery";
+import { useTodoUsers } from "../../TodoUsersContext";
+import { resolveTodoProfile, resolveTodoProfileLabel } from "../../todo-resolve-profile";
 
 type Props = {
   taskId: number;
@@ -15,11 +17,12 @@ type Props = {
 /** Task-scoped activity timeline — embedded in Task Detail modal. */
 export function TaskActivityLogPanel({ taskId }: Props) {
   const { t, language, timezone } = useSettings();
+  const allUsers = useTodoUsers();
 
   const fetchLogsQuery = useCallback(async () => {
     return supabase
       .from("activity_logs")
-      .select("*, profiles(id, full_name, avatar_url, role)")
+      .select("*, profiles(id, full_name, avatar_url, role, email)")
       .eq("task_id", taskId)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -49,13 +52,16 @@ export function TaskActivityLogPanel({ taskId }: Props) {
   return (
     <ul className="divide-y divide-white/5">
       {safeLogs.map((log: ActivityLog) => {
-        const message = formatActivityLogMessage(log, t);
+        const profile = resolveTodoProfile(log.user_id, log.profiles, allUsers);
+        const userLabel = resolveTodoProfileLabel(log.user_id, log.profiles, allUsers);
+        const message = formatActivityLogMessage(
+          { ...log, profiles: { full_name: userLabel } },
+          t,
+        );
         return (
           <li key={log.id} className="flex items-start gap-3 p-3">
             <div className="mt-0.5 shrink-0">
-              {log.profiles ? (
-                <Avatar user={log.profiles} title={log.profiles.full_name || ""} size={28} />
-              ) : null}
+              <Avatar user={profile} title={userLabel} size={28} />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm leading-snug text-[var(--text)]">{message}</p>

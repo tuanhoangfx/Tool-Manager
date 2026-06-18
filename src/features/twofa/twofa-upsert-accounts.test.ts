@@ -134,11 +134,22 @@ describe("dedupeTwofaAccounts", () => {
     const prev = [
       row("a", "Google", "user@gmail.com", SECRET, "2026-06-01T00:00:00.000Z"),
       row("b", "Google", "user@gmail.com", SECRET, "2026-06-05T00:00:00.000Z"),
-      row("c", "GitHub", "dev"),
+      row("c", "GitHub", "dev", "KBSSY3DPEHPK3PXP"),
     ];
     const { accounts, removedIds } = dedupeTwofaAccounts(prev);
     expect(accounts).toHaveLength(2);
     expect(accounts.find((r) => r.service === "Google")?.id).toBe("b");
+    expect(removedIds).toEqual(["a"]);
+  });
+
+  it("collapses same secret across different service labels", () => {
+    const prev = [
+      row("a", "Surfshark", "shadow@x.com", SECRET, "2026-06-01T00:00:00.000Z"),
+      row("b", "VPN Surfshark", "shadow@x.com", SECRET, "2026-06-05T00:00:00.000Z"),
+    ];
+    const { accounts, removedIds } = dedupeTwofaAccounts(prev);
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0]?.id).toBe("b");
     expect(removedIds).toEqual(["a"]);
   });
 });
@@ -148,10 +159,10 @@ describe("previewTwofaDedupe", () => {
     const prev = [
       row("a", "Gmail", "a@gmail.com", SECRET, "2026-06-01T00:00:00.000Z"),
       row("b", "Gmail", "a@gmail.com", SECRET, "2026-06-05T00:00:00.000Z"),
-      row("c", "ChatGPT", "x@y.com", SECRET, "2026-06-01T00:00:00.000Z"),
-      row("d", "ChatGPT", "x@y.com", SECRET, "2026-06-04T00:00:00.000Z"),
-      row("e", "ChatGPT", "z@y.com", SECRET, "2026-06-04T00:00:00.000Z"),
-      row("f", "ChatGPT", "z@y.com", SECRET, "2026-06-06T00:00:00.000Z"),
+      row("c", "ChatGPT", "x@y.com", "KBSSY3DPEHPK3PXP", "2026-06-01T00:00:00.000Z"),
+      row("d", "ChatGPT", "x@y.com", "KBSSY3DPEHPK3PXP", "2026-06-04T00:00:00.000Z"),
+      row("e", "ChatGPT", "z@y.com", "ZBSSY3DPEHPK3PXP", "2026-06-04T00:00:00.000Z"),
+      row("f", "ChatGPT", "z@y.com", "ZBSSY3DPEHPK3PXP", "2026-06-06T00:00:00.000Z"),
     ];
     const preview = previewTwofaDedupe(prev);
     expect(preview.totalRemoved).toBe(3);
@@ -159,5 +170,6 @@ describe("previewTwofaDedupe", () => {
       { service: "ChatGPT", count: 2 },
       { service: "Gmail", count: 1 },
     ]);
+    expect(preview.groups.length).toBeGreaterThan(0);
   });
 });

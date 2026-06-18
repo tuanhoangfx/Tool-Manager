@@ -12,6 +12,7 @@ import {
   dedupeTwofaAccounts,
   type TwofaDedupePreview,
 } from "./twofa-upsert-accounts";
+import { twofaDedupeKey } from "./twofa-identity";
 
 type CloudRowSets = {
   activeIds: Set<string>;
@@ -488,40 +489,60 @@ export async function deleteTwofaCloud(id: string): Promise<string | null> {
 export async function previewTwofaDedupeCombined(
   local: TwofaAccount[],
 ): Promise<{ preview: TwofaDedupePreview; error: string | null }> {
-  const removedIds = new Set<string>();
-  const serviceById = new Map<string, string>();
-
-  const scan = (accounts: TwofaAccount[]) => {
-    for (const row of accounts) {
-      serviceById.set(row.id, row.service.trim() || "Others");
-    }
-    const { removedIds: ids } = dedupeTwofaAccounts(accounts);
-    for (const id of ids) removedIds.add(id);
-  };
+  const all: TwofaAccount[] = [];
 
   const session = await ensureTwofaAuth();
   const client = getTwofaSupabase();
   if (session?.user?.id && client) {
     const remote = await fetchAllTwofaDbRows(session.user.id, null, true);
     if (remote.error) {
-      return { preview: { totalRemoved: 0, byService: [] }, error: remote.error };
+      return { preview: { totalRemoved: 0, byService: [], groups: [] }, error: remote.error };
     }
-    scan(remote.rows.map(twofaDbRowToAccount));
+    all.push(...remote.rows.map(twofaDbRowToAccount));
   }
 
-  scan(local);
+  all.push(...local);
 
+  // Build a combined preview without mutating either store.
+  // This shows cross-source duplicates side-by-side and which row would be kept.
+  const groups = new Map<string, TwofaAccount[]>();
+  for (const row of all) {
+    const key = twofaDedupeKey(row.service, row.account, row.secret, row.browser);
+    const list = groups.get(key) ?? [];
+    list.push(row);
+    groups.set(key, list);
+  }
+
+  const removedIds = new Set<string>();
   const byServiceMap = new Map<string, number>();
-  for (const id of removedIds) {
-    const service = serviceById.get(id) ?? "Others";
-    byServiceMap.set(service, (byServiceMap.get(service) ?? 0) + 1);
+  const previewGroups: TwofaDedupePreview["groups"] = [];
+
+  for (const [key, group] of groups.entries()) {
+    if (group.length <= 1) continue;
+    const winner = group.reduce((best, row) =>
+      Date.parse(row.updatedAt) >= Date.parse(best.updatedAt) ? row : best,
+    );
+    const removed = group.filter((row) => row.id !== winner.id);
+    previewGroups.push({ key, keptId: winner.id, kept: winner, removed });
+    for (const row of removed) {
+      removedIds.add(row.id);
+      const svc = row.service.trim() || "Others";
+      byServiceMap.set(svc, (byServiceMap.get(svc) ?? 0) + 1);
+    }
   }
+
+  previewGroups.sort((a, b) => {
+    const byCount = b.removed.length - a.removed.length;
+    if (byCount) return byCount;
+    return Date.parse(b.kept.updatedAt) - Date.parse(a.kept.updatedAt);
+  });
+
   const byService = [...byServiceMap.entries()]
     .map(([service, count]) => ({ service, count }))
     .sort((a, b) => b.count - a.count || a.service.localeCompare(b.service));
 
   return {
-    preview: { totalRemoved: removedIds.size, byService },
+    preview: { totalRemoved: removedIds.size, byService, groups: previewGroups.slice(0, 24) },
     error: null,
   };
 }

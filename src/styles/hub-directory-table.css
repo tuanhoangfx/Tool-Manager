@@ -1,2 +1,38 @@
 /* Directory table select column — vendor SSOT (hub-users-table--directory). */
 @import "../../vendor/hub-ui/src/styles/hub-directory-table.css";
+
+table.hub-users-table col.hub-users-col--sheet-title {
+  width: 54%;
+}
+
+table.hub-users-table col.hub-users-col--sheet-meta {
+  width: 46%;
+}
+
+table.hub-users-table th.hub-users-col--sheet-title,
+table.hub-users-table td.hub-users-col--sheet-title {
+  text-align: left;
+}
+
+table.hub-users-table th.hub-users-col--sheet-meta,
+table.hub-users-table td.hub-users-col--sheet-meta {
+  text-align: center;
+  min-width: 6.75rem;
+}
+
+table.hub-users-table .sheet-rail-sync-at {
+  display: inline-block;
+  max-width: 100%;
+}
+
+table.hub-users-table .hub-users-name-title {
+  font-size: 11px;
+}
+
+table.hub-users-table .hub-users-row.is-detail {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+table.hub-users-table .hub-users-row.is-detail:hover {
+  background: rgba(99, 102, 241, 0.14);
+}

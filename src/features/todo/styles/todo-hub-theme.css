@@ -209,9 +209,118 @@
 }
 
 @media (min-width: 768px) {
-  .todo-hub-panel--inset {
+  .todo-hub-panel--inset:not(.todo-hub-panel--inset-compact) {
     min-height: 25rem;
   }
+}
+
+.todo-hub-panel--inset-compact {
+  min-height: 7rem;
+  max-height: 12rem;
+}
+
+.todo-hub-details-split {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  /* Footer band — filter 2×2 height (2 control rows + gap). */
+  --todo-detail-footer-h: calc(var(--hub-control-h, 2rem) * 2 + 0.5rem);
+}
+
+.todo-hub-details-split__description,
+.todo-hub-details-split__comments {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.5rem;
+  min-width: 0;
+  min-height: 10rem;
+}
+
+.todo-hub-details-split__description textarea {
+  min-height: 0;
+  height: 100%;
+  resize: vertical;
+}
+
+.todo-hub-details-split__description .todo-hub-task-detail-filter-row {
+  min-height: var(--todo-detail-footer-h);
+}
+
+.todo-hub-details-split__comments .todo-hub-panel--inset-compact {
+  min-height: 0;
+  height: 100%;
+  max-height: none;
+  overflow-y: auto;
+}
+
+.todo-hub-details-split__comments .todo-hub-comment-input-row {
+  min-height: var(--hub-control-h, 2rem);
+  align-items: center;
+}
+
+.todo-hub-field--comment {
+  min-width: 0;
+  flex: 1 1 0%;
+  height: var(--hub-control-h, 2rem);
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 0.875rem;
+  line-height: var(--hub-control-h, 2rem);
+}
+
+@media (min-width: 768px) {
+  .todo-hub-details-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .todo-hub-details-split__description,
+  .todo-hub-details-split__comments {
+    min-height: 11rem;
+  }
+
+  .todo-hub-panel--inset-compact {
+    min-height: 9rem;
+  }
+
+  .todo-hub-details-split__comments .todo-hub-panel--inset-compact {
+    min-height: 0;
+  }
+}
+
+/* Task modal Details — filters 2×2 in Description column (do not reuse .todo-hub-filter-row). */
+.todo-hub-task-detail-filter-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: stretch;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .todo-hub-task-detail-filter-row {
+    gap: 0.75rem;
+  }
+}
+
+.todo-hub-task-detail-filter-row > * {
+  min-width: 0;
+  width: 100%;
+}
+
+.todo-hub-task-detail-filter-row .relative,
+.todo-hub-task-detail-filter-row button[class*="inline-flex"][class*="h-[var(--hub-control-h)]"] {
+  width: 100%;
+}
+
+.task-modal .hub-tool-detail-section#task-details {
+  position: relative;
+  z-index: 2;
+}
+
+.task-modal .hub-tool-detail-section#task-attachments {
+  position: relative;
+  z-index: 1;
 }
 
 .todo-hub-btn-secondary {

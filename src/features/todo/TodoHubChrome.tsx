@@ -24,6 +24,7 @@ import {
   TODO_KPI_DEFS,
 } from "./todo-display-prefs";
 import { buildTodoHeaderStats } from "./todo-header-stats";
+import { hubTabHeaderChromeProps } from "../../lib/hub-tab-header-chrome";
 import {
   filterValuesToTodoFilters,
   todoFiltersToFilterValues,
@@ -76,6 +77,8 @@ export function TodoHubChrome({
   const { t } = useSettings();
   const version = useMemo(() => workspaceVersionLine(), []);
   const { searchPin, headerPin, stackChrome } = useHubChromePrefs();
+  const hasFilterBar = Boolean(session && profile);
+  const headerChrome = hubTabHeaderChromeProps(hasFilterBar, { headerPin, searchPin, stackChrome });
   const showAdminViews = profile?.role === "admin" || profile?.role === "manager";
 
   const [activePreview, setActivePreview] = useState<Task["status"] | null>(null);
@@ -225,9 +228,9 @@ export function TodoHubChrome({
           }
         />
       }
-      pinSticky={stackChrome ? false : headerPin}
-      dividerBelow={stackChrome ? false : !searchPin}
-      embedded={stackChrome}
+      pinSticky={headerChrome.pinSticky}
+      dividerBelow={headerChrome.dividerBelow}
+      embedded={headerChrome.embedded}
     />
   );
 

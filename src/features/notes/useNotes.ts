@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useNotesCookieRealtime } from "../cookie/useNotesCookieRealtime";
-import { writeNoteDetailCache } from "../../lib/note-detail-cache";
+import { removeNoteDetailCache, writeNoteDetailCache } from "../../lib/note-detail-cache";
 import { readNotesListStaleCache, writeNotesListClientCache } from "../../lib/notes-list-cache";
-import { createNoteRow, deleteNoteRow, fetchNotesList } from "./notesRepository";
+import { createNoteRow, deleteNoteRow, fetchNotesList, type NoteDeleteResult } from "./notesRepository";
 import { useNotesRealtimeUiRefresh } from "./notes-realtime-pref";
 import { readNotesListPrefs } from "./notes-list-prefs";
 import { generateSyncId, mergeNoteRowForList, sortNoteRows, toListItem } from "./noteUtils";
@@ -11,7 +11,12 @@ import type { NoteRow } from "./types";
 import { getOfflineMode } from "../../lib/offlineMode";
 import { deleteOfflineNote, listOfflineNotes, upsertOfflineNote } from "./offlineNotesRepository";
 
-export type NotesRefreshOpts = { /** Skip loading UI — use for realtime / background poll */ silent?: boolean };
+export type NotesRefreshOpts = {
+  /** Skip loading UI — use for realtime / background poll */
+  silent?: boolean;
+  /** Bypass in-flight guard (e.g. after delete) */
+  force?: boolean;
+};
 
 export function useNotes(session: Session | null, opts?: { realtime?: boolean; enabled?: boolean }) {
   const enabled = opts?.enabled ?? true;
@@ -31,7 +36,7 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean; e
       setRefreshing(false);
       return;
     }
-    if (refreshInFlight.current) return;
+    if (refreshInFlight.current && !refreshOpts?.force) return;
     refreshInFlight.current = true;
     if (getOfflineMode()) {
       if (!silent) setLoading(true);
@@ -185,18 +190,34 @@ export function useNotes(session: Session | null, opts?: { realtime?: boolean; e
     return row;
   }, [session, refresh, upsertListRow]);
 
+  const removeNoteFromList = useCallback(
+    (id: string) => {
+      if (!userId) return;
+      setRows((prev) => {
+        const next = prev.filter((r) => r.id !== id);
+        writeNotesListClientCache(userId, next);
+        return next;
+      });
+      removeNoteDetailCache(id);
+    },
+    [userId],
+  );
+
   const deleteNote = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<NoteDeleteResult> => {
       if (getOfflineMode()) {
         await deleteOfflineNote(id);
-        await refresh({ silent: true });
-        return;
+        removeNoteFromList(id);
+        void refresh({ silent: true, force: true });
+        return { bridge_routes_removed: 0 };
       }
-      const { error: err } = await deleteNoteRow(id);
+      const { data, error: err } = await deleteNoteRow(id);
       if (err) throw err;
-      await refresh({ silent: true });
+      removeNoteFromList(id);
+      void refresh({ silent: true, force: true });
+      return data ?? { bridge_routes_removed: 0 };
     },
-    [refresh],
+    [refresh, removeNoteFromList],
   );
 
   return {

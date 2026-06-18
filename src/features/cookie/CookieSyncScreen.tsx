@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppToast } from "../../components/toast";
 import type { Session } from "@supabase/supabase-js";
-import { useNotesAuth } from "../notes/useNotesAuth";
+import { useNotesAuth } from "../notes/AuthSessionProvider";
 import { useNotes } from "../notes/useNotes";
 import {
   broadcastCookieBridgePrefs,
@@ -162,9 +162,8 @@ function CookieSyncMain({
     window.clearTimeout(realtimeRefreshTimer.current);
     realtimeRefreshTimer.current = window.setTimeout(() => {
       void refreshVault({ silent: true });
-      void refreshCookieBridge({ silent: true });
     }, 800);
-  }, [refreshCookieBridge, refreshVault]);
+  }, [refreshVault]);
 
   useEffect(
     () => () => {

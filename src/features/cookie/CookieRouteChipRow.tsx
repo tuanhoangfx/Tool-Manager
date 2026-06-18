@@ -7,6 +7,8 @@ export type CookieRouteChipRowProps = {
   syncStatus?: string | null;
   noteSyncedAt?: string | null;
   vaultCookieCount?: number | null;
+  /** When set, skips per-chip members RPC (directory supplies batch counts). */
+  shareCount?: number;
 };
 
 /** Route stat chips — Sync / Vault / Share (Publish removed). Card, About, and table parity. */
@@ -15,8 +17,12 @@ export function CookieRouteChipRow({
   syncStatus = "pending",
   noteSyncedAt,
   vaultCookieCount,
+  shareCount: shareCountProp,
 }: CookieRouteChipRowProps) {
-  const shareCount = useCookieRouteShareCount(binding.noteId);
+  const fetchedCount = useCookieRouteShareCount(binding.noteId, {
+    prefetch: shareCountProp === undefined,
+  });
+  const shareCount = shareCountProp ?? fetchedCount;
 
   return (
     <div className="flex min-h-[var(--hub-card-chip-row-min-h)] flex-wrap items-center gap-1.5">

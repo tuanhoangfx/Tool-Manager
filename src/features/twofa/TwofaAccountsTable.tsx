@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import {
-  HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS,
   HubDirectoryTableShell,
-  buildDirectoryColgroupForShell,
+  buildDirectoryColgroup,
   hubDirectoryTableClass,
   type HubSortDir,
   type HubTableColumnRole,
@@ -86,7 +85,7 @@ export function TwofaAccountsTable({
   );
 
   const colgroup = useMemo(
-    () => buildDirectoryColgroupForShell(shellColumns, { showSelect: true }),
+    () => buildDirectoryColgroup(shellColumns, { includeSelect: true }),
     [shellColumns],
   );
 
@@ -95,7 +94,7 @@ export function TwofaAccountsTable({
       items={rows}
       resetKey={resetKey}
       ariaLabel="2FA accounts table pages"
-      wrapClassName={HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS}
+      wrapClassName="overflow-hidden"
       tableClassName={`${hubDirectoryTableClass("default")} hub-users-table--twofa`}
       colgroup={colgroup}
       columns={shellColumns}

@@ -2,6 +2,7 @@
 
 import { notifyCookieBridgePrefsChange } from "./cookie-bridge-prefs-events";
 import { postCookieBindingsCrossTab } from "./cookie-bindings-cross-tab";
+import { broadcastCookieBindings, broadcastSelectedBinding } from "./extensionBridgeMessages";
 
 export { normalizeCookieDomain } from "./normalizeCookieDomain";
 
@@ -96,7 +97,7 @@ export function getActiveCookieBindingsForNote(noteId: string): CookieBinding[] 
   return filterActiveCookieBindingsForNote(loadCookieBindings(), noteId);
 }
 
-/** Note is driven by Cookie Auto route — editor allows title only. */
+/** Note is driven by Cookie Bridge route — editor allows title only. */
 export function isNoteManagedByCookieRoute(noteId: string | null | undefined): boolean {
   return Boolean(noteId && getActiveCookieBindingsForNote(noteId).length > 0);
 }
@@ -176,4 +177,30 @@ export function bindingsForExtension(bindings: CookieBinding[]) {
 
 export function newBindingId(): string {
   return crypto.randomUUID();
+}
+
+/** Drop local extension bindings for a deleted note; returns removed count. */
+export function removeBindingsForNote(noteId: string): number {
+  const id = noteId.trim();
+  if (!id || typeof window === "undefined") return 0;
+
+  const prev = loadCookieBindings();
+  const removed = prev.filter((b) => b.noteId === id);
+  if (!removed.length) return 0;
+
+  const removedIds = new Set(removed.map((b) => b.id));
+  const next = prev.filter((b) => b.noteId !== id);
+  saveCookieBindings(next);
+
+  const selId = loadSelectedBindingId();
+  if (selId && removedIds.has(selId)) {
+    saveSelectedBindingId(null);
+  }
+
+  broadcastCookieBindings(bindingsForExtension(next));
+  const activeSel = loadSelectedBindingId();
+  const selRow = activeSel ? next.find((b) => b.id === activeSel) : next.find((b) => b.enabled);
+  broadcastSelectedBinding(selRow?.noteId ?? null);
+
+  return removed.length;
 }
