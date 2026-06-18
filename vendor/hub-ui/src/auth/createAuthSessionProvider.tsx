@@ -6,13 +6,26 @@ export type AuthSessionProviderBundle<TState> = {
   Context: Context<TState | null>;
 };
 
+type AuthContextRegistry = Map<string, Context<unknown>>;
+
+function authContextRegistry(): AuthContextRegistry {
+  const g = globalThis as typeof globalThis & { __hubAuthContextRegistry?: AuthContextRegistry };
+  if (!g.__hubAuthContextRegistry) g.__hubAuthContextRegistry = new Map();
+  return g.__hubAuthContextRegistry;
+}
+
 /** Factory — one Provider + hook per workspace tool (P0016 useHubAuth, P0020 useNotesAuth, …). */
 export function createAuthSessionProvider<TState>(
   useAuthState: () => TState,
   hookName: string,
 ): AuthSessionProviderBundle<TState> {
-  const Context = createContext<TState | null>(null);
-  Context.displayName = `${hookName}Context`;
+  const registry = authContextRegistry();
+  let Context = registry.get(hookName) as Context<TState | null> | undefined;
+  if (!Context) {
+    Context = createContext<TState | null>(null);
+    Context.displayName = `${hookName}Context`;
+    registry.set(hookName, Context as Context<unknown>);
+  }
 
   function AuthSessionProvider({ children }: { children: ReactNode }) {
     const value = useAuthState();

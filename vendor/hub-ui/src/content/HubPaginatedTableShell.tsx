@@ -9,6 +9,8 @@ export type HubPaginatedTableShellProps<T> = {
   pageSize?: number;
   ariaLabel?: string;
   className?: string;
+  /** Hide pager when total rows ≤ page size (rail / compact lists). */
+  hideWhenSinglePage?: boolean;
   children: (pageItems: readonly T[]) => ReactNode;
 };
 
@@ -19,6 +21,7 @@ export function HubPaginatedTableShell<T>({
   pageSize,
   ariaLabel,
   className,
+  hideWhenSinglePage,
   children,
 }: HubPaginatedTableShellProps<T>) {
   const resolvedPageSize = useHubTablePageSize(pageSize);
@@ -43,6 +46,7 @@ export function HubPaginatedTableShell<T>({
         onNext={pagination.goNext}
         pageSize={resolvedPageSize}
         ariaLabel={ariaLabel}
+        hideWhenSinglePage={hideWhenSinglePage}
       />
     </div>
   );

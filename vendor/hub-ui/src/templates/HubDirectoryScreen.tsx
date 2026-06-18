@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 import { FilterBar, type FilterDef, type FilterValues } from "../shell/FilterBar";
+import {
+  HubDirectoryToolbarSelection,
+  type HubDirectoryToolbarSelectionProps,
+} from "../shell/HubDirectoryToolbarSelection";
 import type { SettingsExtraTab } from "../display-prefs/types";
 import type { TabHeaderStatItem } from "../shell/AppTabHeader";
 import type { KpiTileData } from "../shell/KpiStrip";
@@ -27,6 +31,8 @@ export type HubDirectoryScreenProps = {
   /** FilterBar keyboard focus scope (e.g. `library`, `bots`). */
   filterShortcutScope?: string;
   filterToolbar?: ReactNode;
+  /** Table view — `x/y` selection chip beside search (replaces toolbar-trailing placement). */
+  filterSelectionToolbar?: HubDirectoryToolbarSelectionProps;
   /** Row 2 leading — before filter dropdowns (e.g. active bot selector). */
   filterRowLeading?: ReactNode;
   filterRowActions?: ReactNode;
@@ -59,6 +65,7 @@ export function HubDirectoryScreen({
   filterPlaceholder = "Search…",
   filterShortcutScope = "default",
   filterToolbar,
+  filterSelectionToolbar,
   filterRowLeading,
   filterRowActions,
   directoryToolbar,
@@ -82,6 +89,9 @@ export function HubDirectoryScreen({
       onQueryChange={onQueryChange!}
       values={filterValues}
       onValuesChange={noopFilterValues}
+      searchTrailing={
+        filterSelectionToolbar ? <HubDirectoryToolbarSelection {...filterSelectionToolbar} /> : undefined
+      }
       toolbar={
         directoryToolbar || filterToolbar ? (
           <>

@@ -1,5 +1,11 @@
 /* HubSplitDirectoryPane — unified outer frame + inner table chrome (P0004 Users parity) */
 
+.hub-split-directory-pane__filters {
+  position: relative;
+  z-index: 4;
+  overflow: visible;
+}
+
 .hub-split-directory-pane__body {
   overflow: hidden;
 }
@@ -27,14 +33,77 @@
   margin-bottom: 0;
 }
 
-.hub-split-directory-pane__body .hub-users-table-wrap {
+.hub-split-directory-pane__body .hub-users-table-wrap:not(.hub-directory-table-split) {
   min-width: 0;
   margin-bottom: 0;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 1rem;
+  clip-path: inset(0 round 1rem);
   --hub-directory-thead-surface: rgba(255, 255, 255, 0.02);
   --hub-directory-thead-border: rgba(255, 255, 255, 0.08);
-  background: var(--hub-directory-thead-surface);
+  background: rgba(255, 255, 255, 0.02);
+  isolation: isolate;
+}
+
+/* border-collapse:collapse ignores th radius — separate + clip matches golden pane chrome */
+.hub-split-directory-pane__body .hub-users-table-wrap:not(.hub-directory-table-split) table.hub-users-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.hub-split-directory-pane__body .hub-users-table-wrap:not(.hub-directory-table-split) thead th {
+  background: var(--hub-directory-thead-surface, rgba(255, 255, 255, 0.02));
+}
+
+.hub-split-directory-pane__body .hub-users-table-wrap:not(.hub-directory-table-split) thead th:first-child {
+  border-top-left-radius: calc(1rem - 1px);
+}
+
+.hub-split-directory-pane__body .hub-users-table-wrap:not(.hub-directory-table-split) thead th:last-child {
+  border-top-right-radius: calc(1rem - 1px);
+}
+
+.hub-split-directory-pane__body .hub-users-table-wrap.hub-directory-table-split {
+  min-width: 0;
+  margin-bottom: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+/* Opt-in golden chrome for split wrap inside unified pane (Sheet grid). */
+.hub-split-directory-pane__body .hub-users-table-wrap.hub-directory-table-split.hub-directory-table-wrap--pane-chrome {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  clip-path: inset(0 round 1rem);
+  --hub-directory-thead-surface: rgba(255, 255, 255, 0.02);
+  --hub-directory-thead-border: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.hub-split-directory-pane__body
+  .hub-users-table-wrap.hub-directory-table-split.hub-directory-table-wrap--pane-chrome
+  .hub-directory-table-head {
+  overflow: hidden;
+  border-top-left-radius: calc(1rem - 1px);
+  border-top-right-radius: calc(1rem - 1px);
+}
+
+.hub-split-directory-pane__body
+  .hub-users-table-wrap.hub-directory-table-split.hub-directory-table-wrap--pane-chrome
+  thead
+  th:first-child {
+  border-top-left-radius: calc(1rem - 1px);
+}
+
+.hub-split-directory-pane__body
+  .hub-users-table-wrap.hub-directory-table-split.hub-directory-table-wrap--pane-chrome
+  thead
+  th:last-child {
+  border-top-right-radius: calc(1rem - 1px);
 }
 
 .hub-split-directory-pane__body .hub-table-pager {
@@ -62,8 +131,21 @@
   min-height: auto;
 }
 
-.hub-split-directory-pane--fixed-rows .hub-users-table-wrap {
-  overflow: visible;
+.hub-split-directory-pane--fixed-rows .hub-users-table-wrap:not(.hub-directory-table-split) {
+  overflow: hidden;
+}
+
+.hub-split-directory-pane--fixed-rows .hub-users-table-wrap.hub-directory-table-split {
+  overflow: hidden;
+}
+
+/* Clip thead to golden wrap radius (fixed-rows no longer uses overflow:visible). */
+.hub-split-directory-pane--fixed-rows .hub-users-table-wrap:not(.hub-directory-table-split) thead th:first-child {
+  border-top-left-radius: calc(1rem - 1px);
+}
+
+.hub-split-directory-pane--fixed-rows .hub-users-table-wrap:not(.hub-directory-table-split) thead th:last-child {
+  border-top-right-radius: calc(1rem - 1px);
 }
 
 .hub-split-directory-pane--fixed-rows table.hub-users-table {

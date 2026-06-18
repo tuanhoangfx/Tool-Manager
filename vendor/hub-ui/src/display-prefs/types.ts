@@ -11,6 +11,15 @@ export type SettingsExtraTab = {
   content: ReactNode;
 };
 
+/** Top-level TOC section in the Settings modal (same level as Display · Shortcuts). */
+export type HubDisplayPrefsToolSection = {
+  id: string;
+  label: string;
+  icon?: ReactNode;
+  body: ReactNode;
+  headerActions?: ReactNode;
+};
+
 export type DisplayPrefsPrefs = {
   range: TimeRange;
   limit: number;
@@ -96,10 +105,8 @@ export type HubDisplayPrefsProps = {
   onLog?: (scope: string, message: string) => void;
   mainSelector?: string;
   title?: string;
-  /** Header dropdown width in px (default 420 — P0020 Cookie Auto). */
-  panelWidth?: number;
-  /** CSS max-height for scrollable panel (default min(80vh, 42rem)). */
-  maxPanelHeight?: string;
   /** @deprecated Pass content via `displayExtras` + `SettingsSubsection` instead. */
   extraTabs?: SettingsExtraTab[];
+  /** Tool-owned TOC sections (e.g. bulk Startup URL on Profiles). */
+  toolSections?: HubDisplayPrefsToolSection[];
 };

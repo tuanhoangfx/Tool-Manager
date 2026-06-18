@@ -2,9 +2,10 @@ import { useMemo, useState, type ReactNode } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hubSessionLabels, type HubSessionLike } from "@tool-workspace/hub-identity";
 import { HubSidebarUserFooter } from "./HubSidebarUserFooter";
-import { HubWorkspaceUserAvatar } from "./HubWorkspaceUserAvatar";
 import { HubWorkspaceUserModal } from "./HubWorkspaceUserModal";
 import { useWorkspaceRoleKey } from "./useWorkspaceRoleKey";
+import { resolveWorkspaceRoleIcon } from "./hub-workspace-role-icon";
+import { compactIconSize } from "../ui-scale";
 import {
   buildWorkspaceUserProfileRows,
   workspaceUserFooterLabel,
@@ -111,6 +112,8 @@ export function HubWorkspaceUserShell({
       }),
     [session, labels, includeLoginId, emptyEmailLabel, roleKey],
   );
+  const roleMeta = useMemo(() => resolveWorkspaceRoleIcon(roleKey), [roleKey]);
+  const RoleIcon = roleMeta.icon;
 
   const modalCtx: HubWorkspaceUserModalRenderContext = {
     open,
@@ -158,7 +161,14 @@ export function HubWorkspaceUserShell({
           signingOut={signingOut}
           onSignOut={handleSignOut}
           workspaceNote={workspaceNote}
-          headerLeading={<HubWorkspaceUserAvatar initials={initials} />}
+          headerLeading={
+            <span
+              className={`user-access-modal__avatar grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-indigo-300/25 bg-indigo-500/20 transition-opacity ${roleIconPending ? "opacity-0" : ""}`}
+              aria-hidden
+            >
+              <RoleIcon size={compactIconSize(16)} className={roleMeta.className} />
+            </span>
+          }
           rows={profileRows}
         />
       )}

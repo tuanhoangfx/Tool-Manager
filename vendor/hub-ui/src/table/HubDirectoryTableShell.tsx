@@ -36,6 +36,7 @@ export type HubDirectoryTableShellProps<TItem, TSortKey extends string> = {
   onSort: (key: TSortKey) => void;
   getRowKey: (item: TItem) => string;
   onRowClick?: (item: TItem) => void;
+  onRowDoubleClick?: (item: TItem) => void;
   onRowMouseEnter?: (item: TItem) => void;
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
@@ -53,6 +54,8 @@ export type HubDirectoryTableShellProps<TItem, TSortKey extends string> = {
   getRowClassName?: (item: TItem) => string;
   /** When false, row has no select checkbox (e.g. route owner row). */
   canSelectRow?: (item: TItem) => boolean;
+  /** Hide pager when total rows ≤ page size. */
+  hideWhenSinglePage?: boolean;
   renderRowCells: (item: TItem) => ReactNode;
   renderStaticCells?: (item: TItem) => ReactNode;
 };
@@ -81,6 +84,7 @@ export function HubDirectoryTableShell<TItem, TSortKey extends string>({
   onSort,
   getRowKey,
   onRowClick,
+  onRowDoubleClick,
   onRowMouseEnter,
   selectedIds,
   onToggleSelect,
@@ -95,6 +99,7 @@ export function HubDirectoryTableShell<TItem, TSortKey extends string>({
   colgroup,
   getRowClassName,
   canSelectRow,
+  hideWhenSinglePage,
   renderRowCells,
   renderStaticCells,
 }: HubDirectoryTableShellProps<TItem, TSortKey>) {
@@ -110,7 +115,13 @@ export function HubDirectoryTableShell<TItem, TSortKey extends string>({
   const resolvedWrapClass = `hub-users-table-wrap${splitScroll ? " hub-directory-table-split" : ""} ${wrapClassName}${wrapBorder}`;
 
   return (
-    <HubPaginatedTableShell items={items} ariaLabel={ariaLabel} pageSize={pageSize} resetKey={resetKey}>
+    <HubPaginatedTableShell
+      items={items}
+      ariaLabel={ariaLabel}
+      pageSize={pageSize}
+      resetKey={resetKey}
+      hideWhenSinglePage={hideWhenSinglePage}
+    >
       {(pageItems) => {
         const allPageSelected = hubPageAllSelected(pageItems, getRowKey, selectedIds, canSelectRow);
 
@@ -178,6 +189,7 @@ export function HubDirectoryTableShell<TItem, TSortKey extends string>({
               key={rowKey}
               className={`hub-users-row${selected ? " is-selected" : ""}${getRowClassName?.(item) ?? ""}`}
               onClick={onRowClick ? () => onRowClick(item) : undefined}
+              onDoubleClick={onRowDoubleClick ? () => onRowDoubleClick(item) : undefined}
               onMouseEnter={onRowMouseEnter ? () => onRowMouseEnter(item) : undefined}
             >
               {showSelect ? (

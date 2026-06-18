@@ -242,7 +242,10 @@ export function AppTabHeader({
           <SessionLine sessionMmSs={sessionMmSs} />
         </span>
         {metaItems.map((item, index) => (
-          <span key={`${item.title ?? "meta"}-${index}`} className="inline-flex items-center gap-x-2.5">
+          <span
+            key={`${item.title ?? "meta"}-${index}`}
+            className="app-tab-header-meta inline-flex items-center gap-x-2.5"
+          >
             <Rule visibleFrom={index === 0 ? "md" : "lg"} />
             <MetaLine {...item} />
           </span>

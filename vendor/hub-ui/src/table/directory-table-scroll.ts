@@ -7,3 +7,6 @@ export const HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS = "overflow-hidden min-w-0";
 /** Split-pane flex fill — split head/body shell; scroll on .hub-directory-table-body-scroll only. */
 export const HUB_DIRECTORY_TABLE_SCROLL_FLEX_CLASS =
   "min-h-0 min-w-0 flex-1 hub-directory-table-scroll hub-directory-table-scroll--flex-pane";
+
+/** Split wrap inside HubSplitDirectoryPane — golden border/radius (Sheet grid, flex-pane). */
+export const HUB_DIRECTORY_TABLE_PANE_CHROME_SPLIT_CLASS = "hub-directory-table-wrap--pane-chrome";

@@ -80,15 +80,7 @@ export function GoldenDirectoryScreen() {
       filterShortcutScope="default"
       sectionRuleLabel="Items"
       filterRowActions={
-        <HubDirectoryBulkActionBar
-          selectAll={{
-            visibleCount: filtered.length,
-            selectedCount: selectedIds.size,
-            allVisibleSelected,
-            onToggleSelectAll: toggleSelectAll,
-            noun: "items",
-          }}
-        />
+        <HubDirectoryBulkActionBar>{/* bulk CTAs — selection: DirectorySearchToolbar.selectionToolbar */}</HubDirectoryBulkActionBar>
       }
     >
       <GoldenDirectoryTable

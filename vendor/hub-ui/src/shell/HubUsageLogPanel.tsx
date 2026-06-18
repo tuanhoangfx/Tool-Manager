@@ -187,7 +187,6 @@ export function HubUsageLogPanel({
 
   /** Always show TOC rail — same contract as Settings / User access modals. */
   const showToc = tocItems.length > 0;
-  const badgeCount = badge ?? logs.length;
 
   return (
     <>
@@ -196,7 +195,6 @@ export function HubUsageLogPanel({
         iconClassName="text-cyan-300"
         label="Log"
         title={title}
-        badge={badgeCount}
         compact={compact}
         sidebarRow={sidebarRow}
         onClick={() => setOpen(true)}

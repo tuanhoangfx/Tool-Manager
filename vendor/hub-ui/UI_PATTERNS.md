@@ -109,7 +109,7 @@ P0016 wrappers: `ConsoleLoadingView`, `ConsolePaneLoading`. P0004: `AppScreenLoa
 | Screen | `HubDirectoryScreen` + `FilterBar layout="hub"` | Directory tabs (Hub, 2FA, Cookie, Notes, System) |
 | Dropdown | `HubSingleFilterDropdown` | Single-select in forms/modals |
 | Primitives | `HubFilterDropdownTrigger`, `HubFilterDropdownCircle`, `HUB_FILTER_DROPDOWN_*_CLASS` | Custom multi-select pickers (e.g. note folder tagger) |
-| Toolbar | `DirectorySearchToolbar` / `HubDirectoryToolbarSlots` — `HubTimeRangeSelect` (period) + `HubTablePageSizeSelect` (`tpage`) + `HubResultCount` | FilterBar `toolbar` |
+| Toolbar | `DirectorySearchToolbar` — `HubTimeRangeSelect` · `HubTablePageSizeSelect` · **`HubDirectoryDisplayPanel`** (single Display button) · `HubResultCount` | FilterBar `toolbar` / `displayBand` |
 
 **Rules**
 
@@ -157,9 +157,9 @@ P0016 wrappers: `ConsoleLoadingView`, `ConsolePaneLoading`. P0004: `AppScreenLoa
 
 ## Split-pane scroll (golden — hub-ui)
 
-**Canonical source:** `packages/hub-ui/src/styles/hub-split-scroll.css` + tokens in tool `p0008-globals.css` → fan-out via `node Tool/scripts/sync-hub-ui-vendor.cjs`.
+**Canonical source:** `packages/hub-ui/src/styles/hub-split-scroll.css` + theme tokens in each tool (`p0008-globals.css` — legacy name; canonical alias **`hub-theme-tokens.css`**, not related to P0008 as hub-ui source) → fan-out via `node Tool/scripts/sync-hub-ui-vendor.cjs`.
 
-**CSS tokens** (`:root` / `.theme-hub` in `p0008-globals.css`):
+**CSS tokens** (`:root` / `.theme-hub` in `p0008-globals.css` / `hub-theme-tokens.css`):
 
 | Token | Default | Role |
 |-------|---------|------|
@@ -534,7 +534,10 @@ One semantic key maps icon + tone across **badge**, **KPI strip**, **tab header 
 
 **Settings / multi-select rules**
 
-- KPI toggles are **multi-select** `Set`, not radio. Label: `KPI (n/8)`.
+- KPI · Charts · Hub header stats · Filters · Table columns — single **`HubDirectoryDisplayPanel`** on FilterBar row 1 (`displayBand`).
+- Page size (`tpage`) — **`HubTablePageSizeSelect`** only.
+- Settings modal (tab scope) — Keyboard shortcuts + tool sections only; global scope keeps header pin toggles.
+- KPI toggles are **multi-select** `Set`, not radio. Toolbar label: `KPI n/8`.
 - Sub-tab screens (System, Fanpages): `HubDisplayPrefs` must bump `displayTick` after `adapter.patch()` so the open Settings modal re-reads `sessionStorage` (avoid overwrite on 2nd toggle).
 - Toggle `on` uses `isVisible(stored, defaults, key)` — not `resolveVisibleKpiKeys().has(key)`.
 - When `n >= MAX_VISIBLE_KPI` / `MAX_VISIBLE_CHART`, **disable** unselected toggles; click shows cap message via `onLog` (app log toast). Do **not** silently swap selections — block at cap.
@@ -551,6 +554,24 @@ One semantic key maps icon + tone across **badge**, **KPI strip**, **tab header 
 - P0004 — `HubListPage.tsx`, `system-display-prefs.ts`, `DisplayPrefs.tsx` (`SYSTEM_SUBTAB_CFG`)
 - P0016 — `fanpage-display-prefs.ts`, `use-screen-display-prefs.ts`
 - P0020 — `cookie-display-prefs.ts`, `twofa-display-prefs.ts`
+
+---
+
+## Modal shell (golden — hub-ui)
+
+**CSS SSOT:** `packages/hub-ui/src/styles/hub-modal.css` — tokens `--hub-modal-max-w` (72rem), `--hub-modal-max-h`, `--hub-modal-max-vh`.
+
+| Class | Height | Use |
+|-------|--------|-----|
+| `hub-tool-detail-modal` (default) | `min-height` fill ~640px | Tool detail, User access, directory modals with long TOC + tables |
+| `hub-header-panel-modal` | `height: auto` (content-fit) | Settings · Log · Notify · workspace user modals |
+| `hub-tool-detail-modal--fit` | opts out of 640px fill | Confirm dialogs, compact forms |
+
+**Rules**
+
+- Do **not** pass legacy `panelWidth` / `maxPanelHeight` on `HubDisplayPrefs` — removed; shell uses CSS tokens.
+- Header-panel modals: `shellClassName="hub-header-panel-modal"` (optional `hub-tool-detail-modal--fit` for small forms).
+- Tool-specific width override: `shellStyle={{ "--hub-modal-max-w": "…" }}` on `HubToolDetailModal` only when golden 72rem is insufficient (rare).
 
 ---
 
@@ -653,6 +674,7 @@ Do **not** fork select column width per tool — use shell + meta helpers only.
 | `HubDirectoryCardMetaRow` | Meta line — tinted Lucide icon + truncated text (`min-h-[var(--hub-card-meta-min-h)]` stack) |
 | `HubDirectoryCardHeader` | Header block — `leading` avatar/icon + `badges` + `title` + optional `trailing` |
 | `HubDirectorySelectAllChip` | Filter row 2 **actions** — **Card view only**; first slot before bulk CTAs; uses `HubBulkActionButton` + `ListChecks` icon |
+| `HubDirectoryToolbarSelection` | Always `x/y`; tier colors **0%** · **≥50%** · **max** — toolbar row-1 or trailing `row2Actions` (P0003 bulk row) |
 | `HubBulkActionButton` | Filter row 2 bulk CTAs — Pin / Refresh / Edit / Sync (count badge + tooltip) |
 
 **Variants (`variant` prop)**
@@ -694,6 +716,10 @@ HubDirectoryCardShell selected
 HubDirectoryBulkActionBar
   ├─ selectAll? → HubDirectorySelectAllChip (card view only)
   └─ children → Hub*DirectoryBulkActions / HubBulkActionButton(s)
+
+DirectorySearchToolbar (row 1)
+  ├─ selectionToolbar? → HubDirectoryToolbarSelection (table view — replaces HubResultCount)
+  └─ showResultCount → HubResultCount (when no selectionToolbar)
 ```
 
 Pass as `filterRowActions` on `HubDirectoryScreen` — `FilterBar` aligns end (`ml-auto flex gap-2`).
@@ -720,7 +746,8 @@ Pass as `filterRowActions` on `HubDirectoryScreen` — `FilterBar` aligns end (`
 |------|-----------------|
 | Shell | `HubDirectoryScreen` + `*ChromeHeader` + `sectionRuleLabel` |
 | `filterToolbar` | `DirectorySearchToolbar` — `ViewToggle` · `showTimeRange` (when data has `updatedAt`) · `showTablePageSize` (`HubTablePageSizeSelect` / `tpage`) · `HubResultCount` · `trailing` extras |
-| `filterRowActions` | `HubDirectoryBulkActionBar` → `selectAll?` (card only) + `Hub*DirectoryBulkActions` |
+| `filterRowActions` | `HubDirectoryBulkActionBar` → `selectAll?` (card) + `Hub*DirectoryBulkActions` |
+| `filterToolbar` `selectionToolbar` | `HubDirectoryToolbarSelection` on table directories — **no** `HubResultCount` duplicate |
 | KPI / charts | `build*KpiItems` + `directoryChartBandNode` (`resolveVisibleChartKeys` + `*_CHART_DEFS`); `MiniBarChart` always top-3 + **Others** via `prepareChartItems` |
 | Card view | `HubPaginatedCardGrid` — **never** raw `HubPaginatedTableShell` + manual grid class |
 | Table view | `*DirectoryTable` + checkbox column + same bulk bar as card |

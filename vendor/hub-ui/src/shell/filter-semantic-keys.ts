@@ -21,6 +21,7 @@ export const FILTER_BAR_SEMANTIC_KEY: Record<string, SemanticIconLookupKey> = {
   source: "filter.source",
   project: "filter.project",
   priority: "filter.priority",
+  assignee: "filter.creator",
   creator: "filter.creator",
   category: "filter.category",
   deploy: "filter.deploy",

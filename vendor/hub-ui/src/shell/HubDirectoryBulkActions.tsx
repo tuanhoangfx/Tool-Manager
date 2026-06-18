@@ -97,27 +97,28 @@ export function HubScreensDirectoryBulkActions({
 /** Golden Users directory — CRUD row-2 actions. */
 export type HubUsersDirectoryBulkActionsProps = {
   hasSelection: boolean;
-  selectedCount: number;
   roleLoading: boolean;
   isAdmin: boolean;
   isManager: boolean;
   onAdd: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onClearAccess: () => void;
+  onDeleteUsers: () => void;
 };
 
 export function HubUsersDirectoryBulkActions({
   hasSelection,
-  selectedCount,
   roleLoading,
   isAdmin,
   isManager,
   onAdd,
   onEdit,
-  onDelete,
+  onClearAccess,
+  onDeleteUsers,
 }: HubUsersDirectoryBulkActionsProps) {
   const canEdit = isAdmin || isManager;
   const editEnabled = canEdit && hasSelection && !roleLoading;
+  const clearEnabled = isAdmin && hasSelection && !roleLoading;
   const deleteEnabled = isAdmin && hasSelection && !roleLoading;
   const addEnabled = isAdmin && !roleLoading;
 
@@ -151,22 +152,35 @@ export function HubUsersDirectoryBulkActions({
         }
         tone="indigo"
         disabled={!editEnabled}
-        selectedCount={hasSelection ? selectedCount : undefined}
         onClick={onEdit}
       />
       <HubBulkActionButton
         icon={<Trash2 size={14} aria-hidden />}
-        label="Delete"
+        label="Clear access"
         title={
           roleLoading
             ? "Loading your role…"
             : isAdmin
-              ? "Clear tool access for selected users"
+              ? "Clear Hub tool access for selected users (keep profiles + auth accounts)"
+              : "Admin only"
+        }
+        tone="rose"
+        disabled={!clearEnabled}
+        onClick={onClearAccess}
+      />
+      <HubBulkActionButton
+        icon={<Trash2 size={14} aria-hidden />}
+        label="Delete users"
+        title={
+          roleLoading
+            ? "Loading your role…"
+            : isAdmin
+              ? "Delete selected users (7-day grace, then permanent purge)"
               : "Admin only"
         }
         tone="rose"
         disabled={!deleteEnabled}
-        onClick={onDelete}
+        onClick={onDeleteUsers}
       />
     </>
   );

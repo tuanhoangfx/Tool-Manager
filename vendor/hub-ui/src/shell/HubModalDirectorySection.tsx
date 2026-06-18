@@ -14,7 +14,7 @@ export type HubModalDirectorySectionProps = {
   loading?: ReactNode;
   /** When dataset is empty before filtering (no filter bar) */
   empty?: ReactNode;
-  /** FilterBar layout="inline" — golden modal directory */
+  /** HubModalDirectoryFilterBar — two-row hub layout, no Active: row */
   filterBar?: ReactNode;
   /** When filters/search yield zero rows */
   emptyFiltered?: ReactNode;
@@ -23,7 +23,7 @@ export type HubModalDirectorySectionProps = {
   className?: string;
 };
 
-/** Golden modal section body: FilterBar inline + table — P0004 User Access · P0020 Cookie Route. */
+/** Golden modal section body: HubModalDirectoryFilterBar + table — P0004 User Access · P0020 Cookie Route. */
 export function HubModalDirectorySection({
   banner,
   error,

@@ -1,4 +1,5 @@
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
+import { hubAuthEmailsForSignIn } from "@tool-workspace/hub-identity";
 import { normalizeWorkspaceRoleKey, type HubWorkspaceRoleKey } from "../auth/hub-workspace-role-icon";
 
 type RoleListener = (role: HubWorkspaceRoleKey) => void;
@@ -23,6 +24,21 @@ function removeStaleProfileRoleChannels(client: SupabaseClient, channelName: str
 }
 
 const ROLE_CACHE_KEY = "hub:workspace-profile-role";
+
+/** Fired when `cacheWorkspaceProfileRole` / directory warm updates session cache (P0020 dual-auth). */
+export const WORKSPACE_PROFILE_ROLE_UPDATED = "hub:workspace-profile-role-updated";
+
+export type WorkspaceProfileRoleUpdatedDetail = {
+  userId: string;
+  role: HubWorkspaceRoleKey;
+};
+
+const ROLE_RANK: Record<HubWorkspaceRoleKey, number> = {
+  admin: 3,
+  manager: 2,
+  user: 1,
+  anonymous: 0,
+};
 
 export type FetchWorkspaceProfileRoleOptions = {
   /** Dual-auth tools (P0020) — Hub profiles keyed by identity user, not local Supabase auth id. */
@@ -52,15 +68,52 @@ function readRoleCache(userId: string): HubWorkspaceRoleKey | null {
   );
 }
 
+function dispatchRoleCacheUpdated(userId: string, role: HubWorkspaceRoleKey): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<WorkspaceProfileRoleUpdatedDetail>(WORKSPACE_PROFILE_ROLE_UPDATED, {
+      detail: { userId, role },
+    }),
+  );
+}
+
 function writeRoleCache(userId: string, role: HubWorkspaceRoleKey): void {
   if (typeof window === "undefined") return;
   const payload = JSON.stringify({ userId, role });
   try {
     window.sessionStorage.setItem(ROLE_CACHE_KEY, payload);
     window.localStorage.setItem(ROLE_CACHE_KEY, payload);
+    dispatchRoleCacheUpdated(userId, role);
   } catch {
     /* ignore quota */
   }
+}
+
+function expandAuthEmails(email: string | null | undefined): Set<string> {
+  const raw = email?.trim();
+  if (!raw) return new Set();
+  const keys = new Set<string>([raw.toLowerCase()]);
+  for (const alias of hubAuthEmailsForSignIn(raw)) {
+    keys.add(alias.toLowerCase());
+  }
+  return keys;
+}
+
+function directoryEmailsMatch(
+  profileEmail: string | null | undefined,
+  needle: string | null | undefined,
+): boolean {
+  const profileKeys = expandAuthEmails(profileEmail);
+  const needleKeys = expandAuthEmails(needle);
+  if (!profileKeys.size || !needleKeys.size) return false;
+  for (const key of needleKeys) {
+    if (profileKeys.has(key)) return true;
+  }
+  return false;
+}
+
+function strongerRole(a: HubWorkspaceRoleKey, b: HubWorkspaceRoleKey): HubWorkspaceRoleKey {
+  return ROLE_RANK[a] >= ROLE_RANK[b] ? a : b;
 }
 
 function pickDirectoryRole(
@@ -68,16 +121,60 @@ function pickDirectoryRole(
   userId: string,
   email?: string | null,
 ): HubWorkspaceRoleKey | null {
-  const byId = rows.find((r) => r.id === userId);
-  if (byId?.role) return normalizeWorkspaceRoleKey(String(byId.role));
-  const mail = email?.trim().toLowerCase();
-  if (!mail) return null;
-  const byEmail = rows.find((r) => (r.email ?? "").trim().toLowerCase() === mail);
-  if (byEmail?.role) return normalizeWorkspaceRoleKey(String(byEmail.role));
+  let best: HubWorkspaceRoleKey | null = null;
+
+  for (const row of rows) {
+    if (!row.role) continue;
+    const role = normalizeWorkspaceRoleKey(String(row.role));
+    const idMatch = row.id === userId;
+    const emailMatch = email ? directoryEmailsMatch(row.email, email) : false;
+    if (!idMatch && !emailMatch) continue;
+    best = best ? strongerRole(best, role) : role;
+  }
+
+  return best;
+}
+
+function missingRpc(message: string, rpcName: string): boolean {
+  return new RegExp(rpcName, "i").test(message) && /does not exist|not found|PGRST202|42883/i.test(message);
+}
+
+/** Listen for cross-tab / post-warm cache writes (sidebar icon sync). */
+export function subscribeWorkspaceProfileRoleCache(
+  userId: string,
+  onRole: (role: HubWorkspaceRoleKey) => void,
+): () => void {
+  if (typeof window === "undefined") return () => {};
+  const handler = (event: Event) => {
+    const detail = (event as CustomEvent<WorkspaceProfileRoleUpdatedDetail>).detail;
+    if (!detail || detail.userId !== userId || !detail.role) return;
+    onRole(normalizeWorkspaceRoleKey(detail.role));
+  };
+  window.addEventListener(WORKSPACE_PROFILE_ROLE_UPDATED, handler);
+  return () => window.removeEventListener(WORKSPACE_PROFILE_ROLE_UPDATED, handler);
+}
+
+async function fetchDirectoryRole(
+  client: SupabaseClient,
+  userId: string,
+  email?: string | null,
+): Promise<HubWorkspaceRoleKey | null> {
+  const roster = await client.rpc("hub_todo_user_roster");
+  if (!roster.error && Array.isArray(roster.data)) {
+    const role = pickDirectoryRole(roster.data as DirectoryRow[], userId, email);
+    if (role) return role;
+  }
+
+  const directory = await client.rpc("workspace_user_directory");
+  if (!directory.error && Array.isArray(directory.data)) {
+    const role = pickDirectoryRole(directory.data as DirectoryRow[], userId, email);
+    if (role) return role;
+  }
+
   return null;
 }
 
-/** Fetch workspace role from shared `profiles` table (Hub Users SSOT). */
+/** Fetch workspace role — Hub directory roster SSOT, then profiles.role, then cache. */
 export async function fetchWorkspaceProfileRole(
   client: SupabaseClient,
   userId: string,
@@ -87,20 +184,18 @@ export async function fetchWorkspaceProfileRole(
   if (opts?.prepareClient) await opts.prepareClient(client);
   else await client.auth.getSession();
 
+  const directoryRole = await fetchDirectoryRole(client, userId, opts?.email);
+  if (directoryRole) {
+    writeRoleCache(userId, directoryRole);
+    return directoryRole;
+  }
+
   const { data, error } = await client.from("profiles").select("role").eq("id", userId).maybeSingle();
   if (!error && data?.role) {
     const role = normalizeWorkspaceRoleKey(String(data.role));
-    writeRoleCache(userId, role);
-    return role;
-  }
-
-  const directory = await client.rpc("workspace_user_directory");
-  if (!directory.error && Array.isArray(directory.data)) {
-    const role = pickDirectoryRole(directory.data as DirectoryRow[], userId, opts?.email);
-    if (role) {
-      writeRoleCache(userId, role);
-      return role;
-    }
+    const merged = cached ? strongerRole(cached, role) : role;
+    writeRoleCache(userId, merged);
+    return merged;
   }
 
   return cached;
@@ -159,7 +254,29 @@ export function readCachedWorkspaceProfileRole(userId: string): HubWorkspaceRole
 
 /** Write role cache when directory/modal resolves role (Users tab SSOT). */
 export function cacheWorkspaceProfileRole(userId: string, role: string): void {
-  writeRoleCache(userId, normalizeWorkspaceRoleKey(role));
+  const key = userId.trim();
+  if (!key) return;
+  writeRoleCache(key, normalizeWorkspaceRoleKey(role));
+}
+
+/** Dual-auth tools — cache the same role under Hub + tool-local user ids. */
+export function cacheWorkspaceProfileRoleForUsers(userIds: string[], role: string): void {
+  const normalized = normalizeWorkspaceRoleKey(role);
+  for (const id of userIds) {
+    const key = id.trim();
+    if (key) writeRoleCache(key, normalized);
+  }
+}
+
+/** Clear cached role on sign-out — avoid leaking role to next session. */
+export function clearWorkspaceProfileRoleCache(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(ROLE_CACHE_KEY);
+    window.localStorage.removeItem(ROLE_CACHE_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Prefetch profiles.role after sign-in — sidebar icon ready before shell paints. */

@@ -9,6 +9,7 @@ export type HubSplitDirectoryFilterBarProps = Omit<
   toolbar?: ReactNode;
   row2Leading?: ReactNode;
   row2Actions?: ReactNode;
+  row2Trailing?: ReactNode;
 };
 
 /** Frameless FilterBar for `HubSplitDirectoryPane` — parent owns border/bg. */
@@ -17,6 +18,7 @@ export function HubSplitDirectoryFilterBar({
   toolbar,
   row2Leading,
   row2Actions,
+  row2Trailing,
   ...rest
 }: HubSplitDirectoryFilterBarProps) {
   return (
@@ -28,6 +30,7 @@ export function HubSplitDirectoryFilterBar({
       toolbar={toolbar}
       row2Leading={row2Leading}
       row2Actions={row2Actions}
+      row2Trailing={row2Trailing}
       {...rest}
     />
   );

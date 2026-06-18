@@ -1,4 +1,6 @@
 export { HubDisplayPrefs } from "./display-prefs/HubDisplayPrefs";
+export { HubDirectoryDisplayPanel, HubDisplayBandToolbar, type HubDirectoryDisplayPanelProps, type HubDisplayBandToolbarProps } from "./display-prefs/HubDirectoryDisplayPanel";
+export { HubDisplayVisibilityMenu, type HubDisplayVisibilityMenuProps } from "./display-prefs/HubDisplayVisibilityMenu";
 export { HubSettingsExtras, type HubSettingsExtrasProps } from "./display-prefs/HubSettingsExtras";
 export { Section, SectionIcon, SettingsSubsection, TabButton, ToggleRow } from "./display-prefs/primitives";
 export { SettingsOptionFilter, type SettingsOptionFilterProps } from "./display-prefs/SettingsOptionFilter";
@@ -40,12 +42,24 @@ export {
 export type {
   DisplayPrefsPrefs,
   HubDisplayPrefsProps,
+  HubDisplayPrefsToolSection,
   PrefItem,
   SettingsExtraTab,
   SubTabDisplayConfig,
   SystemDisplayAdapter,
 } from "./display-prefs/types";
 export { SUBTAB_DISPLAY_CHANGE } from "./display-prefs/types";
+export {
+  countHiddenDirectoryTableColumns,
+  createDirectoryTableColumnPrefs,
+  type DirectoryTableColumnItem,
+  type DirectoryTableColumnPrefs,
+} from "./prefs/directory-table-column-prefs";
+export {
+  DirectoryTableColumnsSettings,
+  type DirectoryTableColumnsSettingsProps,
+} from "./prefs/DirectoryTableColumnsSettings";
+export { DirectoryTableColumnsResetAction } from "./prefs/DirectoryTableColumnsResetAction";
 export { compactIconSize, HUB_COMPACT_SCALE } from "./ui-scale";
 export { deployLabel } from "./lib/deploy-label";
 export { formatTabHeaderTimestamp } from "./lib/tab-header-timestamp";
@@ -302,6 +316,7 @@ export {
 export {
   HUB_DIRECTORY_TABLE_SCROLL_CLASS,
   HUB_DIRECTORY_TABLE_INLINE_WRAP_CLASS,
+  HUB_DIRECTORY_TABLE_PANE_CHROME_SPLIT_CLASS,
   HUB_DIRECTORY_TABLE_SCROLL_FLEX_CLASS,
 } from "./table/directory-table-scroll";
 export {
@@ -318,6 +333,8 @@ export {
   type HubDirectoryTableShellProps,
   type HubDirectoryTableStaticColumn,
 } from "./table/HubDirectoryTableShell";
+export { DirectorySplitScrollTable } from "./table/DirectorySplitScrollTable";
+export { DirectoryInlineTable } from "./table/DirectoryInlineTable";
 export {
   DirectoryTableBodyCell,
   type DirectoryTableBodyCellProps,
@@ -564,6 +581,7 @@ export {
   type FilterIconMeta,
   type FilterIconResolver,
 } from "./shell/filter-icons";
+export { countryCodeForLocale, flagCdnUrl, localeFlagIconSrc } from "./lib/locale-flag";
 export {
   AGENT_KIND_SEMANTIC,
   AGENT_SCOPE_SEMANTIC,
@@ -577,6 +595,10 @@ export {
   semanticKpiIcon,
   semanticDirectoryColumnIcon,
 } from "./lib/semantic-icon-registry";
+export {
+  createDirectoryColumnMetaHelpers,
+  type DirectoryColumnHeaderMeta,
+} from "./lib/directory-column-meta-helpers";
 export type {
   DeprecatedSemanticIconKey,
   SemanticIconKey,
@@ -700,7 +722,11 @@ export {
   type HubAddModalTocNavProps,
 } from "./shell/HubAddModalTocNav";
 export { HubHintTooltip } from "./shell/HubHintTooltip";
-export { HubHeaderPanelButton, type HubHeaderPanelButtonProps } from "./shell/HubHeaderPanelButton";
+export {
+  HubHeaderPanelButton,
+  HUB_HEADER_PANEL_BTN_CLASS,
+  type HubHeaderPanelButtonProps,
+} from "./shell/HubHeaderPanelButton";
 export { HubUsageLogPanel, type HubLogEntry, type HubLogQuickAction, type HubUsageLogPanelProps } from "./shell/HubUsageLogPanel";
 export {
   HubAppLogProvider,
@@ -758,6 +784,10 @@ export {
   HubDirectorySelectAllChip,
   type HubDirectorySelectAllChipProps,
 } from "./shell/HubDirectorySelectAllChip";
+export {
+  HubDirectoryToolbarSelection,
+  type HubDirectoryToolbarSelectionProps,
+} from "./shell/HubDirectoryToolbarSelection";
 export {
   HubDirectoryBulkActionBar,
   type HubDirectoryBulkActionBarProps,
@@ -837,11 +867,16 @@ export {
 } from "./auth/useWorkspaceRoleKey";
 export {
   cacheWorkspaceProfileRole,
+  cacheWorkspaceProfileRoleForUsers,
+  clearWorkspaceProfileRoleCache,
   fetchWorkspaceProfileRole,
   readCachedWorkspaceProfileRole,
   subscribeWorkspaceProfileRole,
+  subscribeWorkspaceProfileRoleCache,
   warmWorkspaceProfileRole,
+  WORKSPACE_PROFILE_ROLE_UPDATED,
   type FetchWorkspaceProfileRoleOptions,
+  type WorkspaceProfileRoleUpdatedDetail,
 } from "./lib/workspace-profile-role";
 export {
   normalizeHubAuthError,

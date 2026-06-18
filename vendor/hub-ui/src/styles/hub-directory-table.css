@@ -282,6 +282,17 @@ table.hub-users-table[data-hub-directory-select] thead .hub-users-th-text {
   scrollbar-gutter: stable;
 }
 
+.hub-directory-table-split.hub-directory-table-scroll--flex-pane .hub-directory-table-head::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--hub-directory-split-scrollbar-pad, 0px);
+  height: 100%;
+  background: var(--hub-directory-thead-surface);
+  pointer-events: none;
+}
+
 .hub-directory-table-split table.hub-users-table.hub-users-table--directory,
 .hub-directory-table-split table.hub-users-table[data-hub-directory-select] {
   min-width: 0;
@@ -308,6 +319,26 @@ table.hub-users-table[data-hub-directory-select] thead .hub-users-th-text {
 .hub-directory-table-split .hub-directory-table-head table.hub-users-table thead th {
   background: var(--hub-directory-thead-surface);
   border-bottom: none;
+}
+
+/* Pane-chrome split wrap — clip head track to inner golden radius */
+.hub-directory-table-wrap--pane-chrome > .hub-directory-table-head {
+  border-top-left-radius: calc(1rem - 1px);
+  border-top-right-radius: calc(1rem - 1px);
+  clip-path: inset(0 round 1rem 1rem 0 0);
+}
+
+.hub-directory-table-wrap--pane-chrome > .hub-directory-table-head table.hub-users-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.hub-directory-table-wrap--pane-chrome > .hub-directory-table-head thead th:first-child {
+  border-top-left-radius: calc(1rem - 1px);
+}
+
+.hub-directory-table-wrap--pane-chrome > .hub-directory-table-head thead th:last-child {
+  border-top-right-radius: calc(1rem - 1px);
 }
 
 /* Directory icon + label cell — platform / proxy / status body parity */

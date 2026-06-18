@@ -1,4 +1,5 @@
 export * from "./hub-login";
+export * from "./hub-default-tool-access";
 export * from "./hub-auth-rate-limit";
 export * from "./hub-admin-recover-client";
 export * from "./hub-recover-api-base";

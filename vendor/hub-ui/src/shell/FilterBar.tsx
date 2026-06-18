@@ -80,12 +80,16 @@ export type FilterBarProps = {
   onQueryChange: (q: string) => void;
   values: FilterValues;
   onValuesChange: (next: FilterValues) => void;
+  /** Row 1 — immediately after search (selection chip `x/y`). */
+  searchTrailing?: React.ReactNode;
   /** Row 1 trailing (view toggle, counts) — used with layout="hub". */
   toolbar?: React.ReactNode;
   /** Row 2 leading — before filter dropdowns in hub layout. */
   row2Leading?: React.ReactNode;
   /** Row 2 trailing actions — right side of filter row (before Clear filters). */
   row2Actions?: React.ReactNode;
+  /** Row 2 far-right — selection chip after bulk actions (P0003 golden). */
+  row2Trailing?: React.ReactNode;
   /** Single-row trailing (legacy / Links panel). */
   trailing?: React.ReactNode;
   layout?: "inline" | "hub";
@@ -109,9 +113,11 @@ export function FilterBar({
   onQueryChange,
   values,
   onValuesChange,
+  searchTrailing,
   toolbar,
   row2Leading,
   row2Actions,
+  row2Trailing,
   trailing,
   layout = "inline",
   pinSticky = false,
@@ -166,6 +172,7 @@ export function FilterBar({
       value={query}
       onChange={onQueryChange}
       placeholder={placeholder}
+      className={layout === "hub" ? "min-w-0" : ""}
     />
   );
 
@@ -202,9 +209,14 @@ export function FilterBar({
             : "space-y-2 rounded-2xl border border-white/5 bg-[var(--panel)] p-3"
         }
       >
-        <div className="flex flex-wrap items-center gap-2">
-          {hideSearch ? null : searchField}
-          {toolbar ? <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">{toolbar}</div> : null}
+        <div className="flex w-full min-w-0 items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {hideSearch ? null : searchField}
+            {searchTrailing}
+          </div>
+          {toolbar ? (
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">{toolbar}</div>
+          ) : null}
         </div>
         <div className="flex min-h-[var(--hub-control-h)] flex-wrap items-center gap-2">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
@@ -213,8 +225,9 @@ export function FilterBar({
             {clearFiltersBtn}
           </div>
           {row2Actions ? (
-            <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">{row2Actions}</div>
+            <div className="ml-auto flex min-w-0 shrink flex-wrap items-center justify-end gap-2">{row2Actions}</div>
           ) : null}
+          {row2Trailing ? <div className="shrink-0">{row2Trailing}</div> : null}
         </div>
       </div>
     );
@@ -313,12 +326,20 @@ export type HubMultiFilterDropdownProps = {
   filter: FilterDef;
   selected: string[];
   onChange: (values: string[]) => void;
+  className?: string;
+  /** `label-value` (default): `Label: value`. `value`: selected option label only. */
+  triggerFormat?: "label-value" | "value";
+  /** Native button title — assignee tooltip, etc. */
+  triggerTitle?: string;
 };
 
 export function HubMultiFilterDropdown({
   filter,
   selected,
   onChange,
+  className = "",
+  triggerFormat = "label-value",
+  triggerTitle,
 }: HubMultiFilterDropdownProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -348,6 +369,14 @@ export function HubMultiFilterDropdown({
   }
 
   const buttonLabel = (() => {
+    if (triggerFormat === "value") {
+      if (selected.length === 0) return filter.showAllLabel ? `All ${filter.label}` : filter.label;
+      if (selected.length === 1) {
+        const opt = filter.options.find((o) => o.value === selected[0]);
+        return opt?.label ?? selected[0];
+      }
+      return `${selected.length} selected`;
+    }
     if (selected.length === 0) return filter.showAllLabel ? `All ${filter.label}` : filter.label;
     if (selected.length === 1) {
       const opt = filter.options.find((o) => o.value === selected[0]);
@@ -363,9 +392,10 @@ export function HubMultiFilterDropdown({
   const showTotalOnTrigger = selected.length === 0 && filter.totalCount !== undefined;
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className={`relative ${className}`.trim()}>
       <button
         type="button"
+        title={triggerTitle}
         onClick={() => setOpen((v) => !v)}
         className={hubFilterTriggerClass(selected.length > 0)}
       >

@@ -37,6 +37,7 @@ export type DirectorySearchToolbarProps = {
   showRefresh?: boolean;
   /** When false, omit shown/total chip (e.g. Todo row-1 period-only). */
   showResultCount?: boolean;
+  displayBand?: ReactNode;
   trailing?: ReactNode;
 };
 
@@ -56,14 +57,16 @@ export function DirectorySearchToolbar({
   showViewToggle = true,
   showTimeRange = true,
   timeRange,
-  showTablePageSize = true,
+  showTablePageSize,
   tablePageSize,
   onTablePageSizeChange,
   showRefresh = true,
   showResultCount = true,
+  displayBand,
   trailing,
 }: DirectorySearchToolbarProps) {
   const period = useDirectoryTimeRange(timeRange);
+  const resolvedShowTablePageSize = showTablePageSize ?? !displayBand;
   return (
     <>
       {leading}
@@ -72,9 +75,10 @@ export function DirectorySearchToolbar({
         <ViewToggle value={viewMode} onChange={onViewModeChange} />
       ) : null}
       {showTimeRange ? <HubTimeRangeSelect value={period} /> : null}
-      {showTablePageSize ? (
+      {resolvedShowTablePageSize ? (
         <HubTablePageSizeSelect value={tablePageSize} onChange={onTablePageSizeChange} />
       ) : null}
+      {displayBand}
       {showResultCount ? (
         <HubResultCount icon={countIcon} shown={shown} total={total} label={countLabel} />
       ) : null}

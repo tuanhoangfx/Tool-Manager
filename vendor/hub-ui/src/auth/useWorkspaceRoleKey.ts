@@ -5,6 +5,7 @@ import {
   fetchWorkspaceProfileRole,
   readCachedWorkspaceProfileRole,
   subscribeWorkspaceProfileRole,
+  subscribeWorkspaceProfileRoleCache,
 } from "../lib/workspace-profile-role";
 import { normalizeWorkspaceRoleKey, resolveWorkspaceRoleKey } from "./hub-workspace-role-icon";
 
@@ -30,6 +31,24 @@ export type WorkspaceRoleState = {
   roleIconPending: boolean;
 };
 
+const ROLE_RANK = { admin: 3, manager: 2, user: 1, anonymous: 0 } as const;
+
+function strongerRoleKey(a: string, b: string): string {
+  const ak = normalizeWorkspaceRoleKey(a);
+  const bk = normalizeWorkspaceRoleKey(b);
+  return ROLE_RANK[ak] >= ROLE_RANK[bk] ? ak : bk;
+}
+
+function readCachedRoleForIds(...userIds: (string | null | undefined)[]): string | null {
+  for (const id of userIds) {
+    const trimmed = id?.trim();
+    if (!trimmed) continue;
+    const cached = readCachedWorkspaceProfileRole(trimmed);
+    if (cached) return cached;
+  }
+  return null;
+}
+
 /** Sidebar footer role icon — profiles.role SSOT with optional realtime sync. */
 export function useWorkspaceRoleKey(
   session: HubSessionLike,
@@ -49,7 +68,7 @@ export function useWorkspaceRoleKey(
   const roleEmail = profileRoleEmail?.trim() || session?.user?.email || null;
   const usesProfileSsot = Boolean(profileRoleClient && roleUserId);
   const sessionRoleKey = anonymous ? "anonymous" : resolveWorkspaceRoleKey(session);
-  const initialCached = roleUserId ? readCachedWorkspaceProfileRole(roleUserId) : null;
+  const initialCached = roleUserId ? readCachedRoleForIds(roleUserId, sessionUserId) : null;
 
   const [resolvedRoleKey, setResolvedRoleKey] = useState<string | null>(initialCached);
   const [roleIconPending, setRoleIconPending] = useState(() => usesProfileSsot && !initialCached);
@@ -69,16 +88,20 @@ export function useWorkspaceRoleKey(
     }
 
     let cancelled = false;
-    const cached = profileRoleClient ? readCachedWorkspaceProfileRole(roleUserId) : null;
+    const cached = readCachedRoleForIds(roleUserId, sessionUserId);
     setResolvedRoleKey(cached);
     setRoleIconPending(Boolean(profileRoleClient && !cached));
 
     const applyRole = (role: string | null | undefined) => {
       if (!cancelled && role) {
-        setResolvedRoleKey(normalizeWorkspaceRoleKey(role));
+        const next = normalizeWorkspaceRoleKey(role);
+        setResolvedRoleKey((prev) => (prev ? strongerRoleKey(prev, next) : next));
         setRoleIconPending(false);
       }
     };
+
+    const cacheUserIds = [...new Set([roleUserId, sessionUserId].filter(Boolean))] as string[];
+    const unsubCache = cacheUserIds.map((id) => subscribeWorkspaceProfileRoleCache(id, applyRole));
 
     if (profileRoleClient) {
       const load = () => {
@@ -99,18 +122,25 @@ export function useWorkspaceRoleKey(
       });
       return () => {
         cancelled = true;
+        unsubCache.forEach((u) => u());
         unsubscribeRole();
         subscription.unsubscribe();
       };
     }
 
-    if (!onResolveRoleKey) return;
+    if (!onResolveRoleKey) {
+      return () => {
+        cancelled = true;
+        unsubCache.forEach((u) => u());
+      };
+    }
 
     void onResolveRoleKey(roleUserId).then(applyRole);
     return () => {
       cancelled = true;
+      unsubCache.forEach((u) => u());
     };
-  }, [anonymous, onResolveRoleKey, profileRoleClient, roleEmail, roleKeyProp, roleUserId]);
+  }, [anonymous, onResolveRoleKey, profileRoleClient, roleEmail, roleKeyProp, roleUserId, sessionUserId]);
 
   if (roleKeyProp) {
     return { roleKey: normalizeWorkspaceRoleKey(roleKeyProp), roleIconPending: false };
