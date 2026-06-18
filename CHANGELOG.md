@@ -2,6 +2,24 @@
 
 ## 2026-06-18 - P0020 version sync
 
+- Version: `4.3.34`
+- Timestamp: 2026-06-18 17:40 (UTC+7)
+- Type: Patch
+- Status: Verified
+- Release: https://databox.infi.io.vn
+
+### Changes
+
+- Sheet: Category column parse fix, wrap/left defaults, inline copy control, header row picker, column width hints.
+- Typography SSOT: `hubDirectoryTableClass("sheet")`, directory table body tokens across Sheet/Notes/Cookie.
+
+### Verification
+
+- `vercel-env-ship.mjs` — prod bundle v4.3.34, env keys OK
+
+---
+## 2026-06-18 - P0020 version sync
+
 - Version: `4.3.33`
 - Timestamp: 2026-06-18 06:36 (UTC+7)
 - Type: Patch
