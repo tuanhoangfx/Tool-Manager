@@ -27,6 +27,7 @@ type Props = {
   sortDir: HubSortDir;
   onSort: (key: SheetSourceSortKey) => void;
   onSelect: (id: string) => void;
+  onPrefetch?: (source: SheetSource) => void;
   resetKey: string;
 };
 
@@ -42,6 +43,7 @@ export function SheetSourcesRail({
   sortDir,
   onSort,
   onSelect,
+  onPrefetch,
   resetKey,
 }: Props) {
   const railTimeRange = useDirectoryTimeRange();
@@ -86,6 +88,7 @@ export function SheetSourcesRail({
         sortDir={sortDir}
         onSort={onSort}
         onSelect={onSelect}
+        onPrefetch={onPrefetch}
         pageSize={pageSize}
         resetKey={resetKey}
         searchQuery={query}

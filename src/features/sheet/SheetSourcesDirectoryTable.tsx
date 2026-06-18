@@ -59,6 +59,7 @@ export function SheetSourcesDirectoryTable({
   sortDir,
   onSort,
   onSelect,
+  onPrefetch,
   pageSize,
   resetKey,
   searchQuery = "",
@@ -70,6 +71,7 @@ export function SheetSourcesDirectoryTable({
   sortDir: HubSortDir;
   onSort: (key: SheetSourceSortKey) => void;
   onSelect: (id: string) => void;
+  onPrefetch?: (source: SheetSource) => void;
   pageSize?: number;
   resetKey?: string | number | boolean | null;
   searchQuery?: string;
@@ -96,6 +98,7 @@ export function SheetSourcesDirectoryTable({
       onSort={onSort}
       getRowKey={(row) => row.id}
       onRowClick={(row) => onSelect(row.id)}
+      onRowMouseEnter={onPrefetch ? (row) => onPrefetch(row) : undefined}
       emptyMessage={emptyMessage}
       getRowClassName={(row) =>
         ` hub-users-row--static${row.id === activeId ? " is-detail" : ""}`

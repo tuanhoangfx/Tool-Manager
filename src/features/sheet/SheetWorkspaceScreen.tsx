@@ -34,11 +34,13 @@ import { SheetGridTable } from "./SheetGridTable";
 import type { SheetGridData } from "./sheet-grid-types";
 import { SheetHubChrome } from "./SheetHubChrome";
 import { filterSheetSourcesByTimeRange, SheetSourcesRail } from "./SheetSourcesRail";
-import type { SheetSourceSortKey } from "./SheetSourcesDirectoryTable";
+import { sortSheetSources, type SheetSourceSortKey } from "./SheetSourcesDirectoryTable";
 import { parseCsvToGrid } from "./sheet-csv-grid";
 import { buildHeaderRowCandidates, type SheetHeaderRowCandidate } from "./sheet-header-row-candidates";
 import { fetchSheetTabTitle, shouldSyncSheetTabTitle } from "./sheet-tab-title";
 import { applySheetMainFilters, buildSheetMainFilterDefs } from "./sheet-main-filters";
+import { deleteSheetGridCache, hydrateSheetGridCache, writeSheetGridCache } from "./sheet-grid-cache";
+import { prefetchAdjacentSheetGrids, prefetchSheetGrid } from "./sheet-grid-preload";
 import { setupSheetFilterIcons } from "./sheet-filter-icons";
 import { countSheetSearchMatches } from "./sheet-search-highlight";
 import { sheetTextIncludesQuery } from "./sheet-search-fold";
@@ -84,6 +86,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   const [gridPrefs, setGridPrefs] = useState(() => readSheetGridPrefs(activeId ?? ""));
   const [headerRowCandidates, setHeaderRowCandidates] = useState<SheetHeaderRowCandidate[]>([]);
   const rawCsvRef = useRef<string | null>(null);
+  const gridCacheRef = useRef<Map<string, SheetGridData>>(hydrateSheetGridCache());
   const activeIdRef = useRef(activeId);
   activeIdRef.current = activeId;
 
@@ -123,15 +126,26 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     });
   }, [railQuery, railTimeRange, sources]);
 
-  const mainFilterDefs = useMemo(() => buildSheetMainFilterDefs(grid), [grid]);
+  const sortedRailSources = useMemo(
+    () => sortSheetSources(filteredSources, railSortKey, railSortDir),
+    [filteredSources, railSortKey, railSortDir],
+  );
+
+  const resolvedGrid = useMemo(() => {
+    if (!activeId) return null;
+    if (grid && gridSheetId === activeId) return grid;
+    return gridCacheRef.current.get(activeId) ?? null;
+  }, [activeId, grid, gridSheetId]);
+
+  const mainFilterDefs = useMemo(() => buildSheetMainFilterDefs(resolvedGrid), [resolvedGrid]);
 
   const displayGrid = useMemo(() => {
-    if (!grid || gridSheetId !== activeId) return null;
-    let rows = applySheetMainFilters(grid.rows, grid.header, filterValues);
+    if (!resolvedGrid) return null;
+    let rows = applySheetMainFilters(resolvedGrid.rows, resolvedGrid.header, filterValues);
     const q = sheetQuery.trim().toLowerCase();
     if (q) rows = rows.filter((row) => rowMatchesSheetQuery(row, q));
-    return { header: grid.header, rows };
-  }, [filterValues, grid, sheetQuery]);
+    return { header: resolvedGrid.header, rows };
+  }, [filterValues, resolvedGrid, sheetQuery]);
 
   const hiddenCols = useMemo(() => new Set(gridPrefs.hidden), [gridPrefs.hidden]);
 
@@ -142,8 +156,17 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     return countSheetSearchMatches(displayGrid.rows, sheetQuery);
   }, [displayGrid, sheetQuery]);
 
+  const onGridCached = useCallback((sheetId: string, cached: SheetGridData) => {
+    gridCacheRef.current.set(sheetId, cached);
+    if (sheetId !== activeIdRef.current) return;
+    setGrid(cached);
+    setGridSheetId(sheetId);
+  }, []);
+
   const applyParsedGrid = useCallback(
     (sheetId: string, parsed: ReturnType<typeof parseCsvToGrid>) => {
+      gridCacheRef.current.set(sheetId, parsed.grid);
+      writeSheetGridCache(sheetId, parsed.grid);
       setGrid(parsed.grid);
       setGridSheetId(sheetId);
       const nextPrefs = reconcileSheetGridPrefs(sheetId, parsed.grid.header, parsed.grid.rows);
@@ -204,6 +227,16 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   }, [loadActive, tabActive, activeId]);
 
   useEffect(() => {
+    if (!tabActive) return;
+    prefetchAdjacentSheetGrids(sortedRailSources, activeId, onGridCached);
+  }, [activeId, onGridCached, sortedRailSources, tabActive]);
+
+  const onPrefetchSheet = useCallback(
+    (source: SheetSource) => prefetchSheetGrid(source, onGridCached),
+    [onGridCached],
+  );
+
+  useEffect(() => {
     setFilterValues({});
   }, [activeId]);
 
@@ -244,6 +277,8 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   const onRemove = useCallback(() => {
     if (!active) return;
     removeSheetSource(active.id);
+    gridCacheRef.current.delete(active.id);
+    deleteSheetGridCache(active.id);
     const next = loadSheetSources();
     setSources(next);
     setActiveId(next[0]?.id ?? null);
@@ -266,11 +301,11 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
 
   const onToggleColumn = useCallback(
     (index: number) => {
-      if (!activeId || !grid) return;
+      if (!activeId || !resolvedGrid) return;
       const nextHidden = new Set(hiddenCols);
       if (nextHidden.has(index)) nextHidden.delete(index);
       else {
-        const visible = grid.header.length - nextHidden.size;
+        const visible = resolvedGrid.header.length - nextHidden.size;
         if (visible <= 1) return;
         nextHidden.add(index);
       }
@@ -283,7 +318,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       writeSheetGridPrefs(activeId, patch);
       setGridPrefs((prev) => ({ ...prev, ...patch }));
     },
-    [activeId, grid, gridPrefs.columnFit, gridPrefs.widths, gridPrefs.wrap, hiddenCols],
+    [activeId, resolvedGrid, gridPrefs.columnFit, gridPrefs.widths, gridPrefs.wrap, hiddenCols],
   );
 
   const onWrapChange = useCallback(
@@ -365,12 +400,12 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
         showViewToggle={false}
         countIcon={Table2}
         shown={filteredRowCount}
-        total={grid?.rows.length ?? 0}
+        total={resolvedGrid?.rows.length ?? 0}
         countLabel="rows"
         displayBand={
           <SheetDisplayBandToolbar
             sheetId={activeId}
-            headers={grid?.header ?? []}
+            headers={resolvedGrid?.header ?? []}
             hidden={hiddenCols}
             onToggleColumn={onToggleColumn}
             wrap={Boolean(gridPrefs.wrap)}
@@ -390,8 +425,8 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     [
       activeId,
       filteredRowCount,
-      grid?.header,
-      grid?.rows.length,
+      resolvedGrid?.header,
+      resolvedGrid?.rows.length,
       gridPrefs.columnFit,
       gridPrefs.textAlign,
       gridPrefs.wrap,
@@ -406,6 +441,8 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       active?.headerRowIndex,
     ],
   );
+
+  const gridLoading = Boolean(activeId && busy && !resolvedGrid);
 
   const sheetBulkActions = useMemo(
     () => (
@@ -454,6 +491,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
           sortDir={railSortDir}
           onSort={onRailSort}
           onSelect={setActiveId}
+          onPrefetch={onPrefetchSheet}
           resetKey={`${railQuery}:${railTimeRange}:${railSortKey}:${railSortDir}:${filteredSources.length}`}
         />
 
@@ -478,6 +516,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
         >
           <SheetGridTable
             data={displayGrid}
+            loading={gridLoading}
             pageSize={pageSize}
             prefs={gridPrefs}
             searchQuery={sheetQuery}

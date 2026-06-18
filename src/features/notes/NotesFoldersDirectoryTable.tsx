@@ -81,7 +81,7 @@ export function NotesFoldersDirectoryTable({
       items={rows}
       resetKey={resetKey}
       ariaLabel="Folders table pages"
-      tableClassName={`${hubDirectoryTableClass("default")} hub-users-table--folders`}
+      tableClassName={hubDirectoryTableClass("folders")}
       colgroup={colgroup}
       columns={columns}
       sortKey={sortKey}

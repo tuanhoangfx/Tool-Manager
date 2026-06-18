@@ -25,7 +25,7 @@ function parseOrigin(argv) {
 
 const ORIGIN = parseOrigin(process.argv);
 const MAX = Number(process.env.WAIT_MAX ?? 40);
-const INTERVAL_MS = Number(process.env.WAIT_INTERVAL_MS ?? 15000);
+const INTERVAL_MS = Number(process.env.WAIT_INTERVAL_MS ?? 5000);
 
 console.log(`wait-prod-twofa-anon-key: origin=${ORIGIN}`);
 

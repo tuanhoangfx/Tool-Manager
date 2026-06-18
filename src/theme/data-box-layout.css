@@ -47,6 +47,21 @@ body,
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  margin-top: 0;
+}
+
+/* Sheet — no global FilterBar; tighten header → split panes (Notes fills chrome with FilterBar) */
+.hub-main--sheet .sheet-workspace .app-tab-header {
+  margin-bottom: 0;
+}
+
+.hub-main--sheet .sheet-workspace .hub-tab-body-zone--split {
+  margin-top: 0;
+}
+
+.hub-main--sheet .hub-split-directory-pane__filters {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 .hub-main--sheet .hub-tab-body-zone--split {
@@ -99,7 +114,7 @@ body,
 
 /* Sheet panes — align filter chrome + table tops (rail row2 = time range, panel row2 = filters) */
 .hub-main--sheet .hub-split-directory-pane__body {
-  padding-top: 0.5rem;
+  padding-top: 0.375rem;
 }
 
 .hub-main--sheet .hub-split-directory-pane__filters .space-y-2 > div:first-child,

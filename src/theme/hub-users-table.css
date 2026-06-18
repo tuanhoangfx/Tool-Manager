@@ -12,9 +12,10 @@
   color: #fde68a;
 }
 
-/* 2FA directory — sentence-case headers; dense body via token */
+/* 2FA directory — sentence-case headers; body typography aligned with Sheet (12px regular) */
 table.hub-users-table--twofa {
-  font-size: var(--hub-table-body-size-dense, 13px);
+  font-size: var(--hub-table-body-size, 12px);
+  line-height: var(--hub-table-body-line-height, 1.45);
 }
 
 table.hub-users-table--twofa th {
@@ -32,7 +33,9 @@ table.hub-users-table--twofa .hub-users-th-text {
 }
 
 .hub-users-table--twofa .hub-users-name-title {
-  font-size: var(--hub-table-body-size-dense, 13px);
+  font-size: var(--hub-table-body-size, 12px);
+  font-weight: 400;
+  line-height: var(--hub-table-body-line-height, 1.45);
 }
 
 .hub-users-table--twofa .hub-users-cell-muted {

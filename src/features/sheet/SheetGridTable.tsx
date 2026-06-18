@@ -21,6 +21,7 @@ export type { SheetGridData } from "./sheet-grid-types";
 
 export function SheetGridTable({
   data,
+  loading = false,
   pageSize,
   prefs,
   searchQuery = "",
@@ -28,6 +29,7 @@ export function SheetGridTable({
   resetKey,
 }: {
   data: SheetGridData | null;
+  loading?: boolean;
   pageSize: number;
   prefs: SheetGridColumnPrefs;
   searchQuery?: string;
@@ -174,6 +176,13 @@ export function SheetGridTable({
   }, []);
 
   if (!data) {
+    if (loading) {
+      return (
+        <div className="sheet-grid-loading flex min-h-[240px] flex-1 items-center justify-center p-6 text-center text-[12px] text-[var(--muted)]">
+          Loading sheet…
+        </div>
+      );
+    }
     return (
       <div className="sheet-grid-empty flex min-h-[240px] flex-1 items-center justify-center p-6 text-center text-[12px] text-[var(--muted)]">
         Paste Google Sheet link để xem dữ liệu.

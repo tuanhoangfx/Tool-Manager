@@ -21,7 +21,9 @@ export type HubDirectoryTableVariant =
   | "agent-context"
   | "tool-versions"
   | "tool-links"
-  | "sheet";
+  | "sheet"
+  | "folders"
+  | "cookie-routes";
 
 export const HUB_DIRECTORY_TABLE_BASE_CLASS = "hub-users-table hub-users-table--directory";
 
@@ -236,6 +238,12 @@ export function hubDirectoryTableClass(variant: HubDirectoryTableVariant = "defa
   }
   if (variant === "sheet") {
     return `${HUB_DIRECTORY_TABLE_BASE_CLASS} hub-users-table--sheet`;
+  }
+  if (variant === "folders") {
+    return `${HUB_DIRECTORY_TABLE_BASE_CLASS} hub-users-table--folders`;
+  }
+  if (variant === "cookie-routes") {
+    return `${HUB_DIRECTORY_TABLE_BASE_CLASS} hub-users-table--cookie-routes`;
   }
   return `${HUB_DIRECTORY_TABLE_BASE_CLASS} hub-users-table--directory-${variant}`;
 }

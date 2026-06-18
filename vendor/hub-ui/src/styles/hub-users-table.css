@@ -1461,11 +1461,19 @@ table.hub-users-table--route-access .hub-users-th-text {
   text-overflow: ellipsis;
 }
 
-/* Sheet directory — rail + CSV grid (tool theme may extend) */
+/* Directory variants — tool theme may extend (P0020 data-box-layout) */
 table.hub-users-table--sheet {
   font-size: var(--hub-table-body-size, 12px);
 }
 
 table.hub-users-table--sheet th {
   font-size: var(--hub-table-header-size, 12px);
+}
+
+table.hub-users-table--folders {
+  font-size: var(--hub-table-body-size, 12px);
+}
+
+table.hub-users-table--cookie-routes {
+  font-size: var(--hub-table-body-size, 12px);
 }

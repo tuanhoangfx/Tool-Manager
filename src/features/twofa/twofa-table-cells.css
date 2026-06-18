@@ -49,16 +49,16 @@
 }
 
 .twofa-copy-control--account {
-  font-weight: 600;
-  font-size: 13px;
-  line-height: 1.25;
+  font-weight: 400;
+  font-size: inherit;
+  line-height: var(--hub-table-body-line-height, 1.45);
   color: var(--text);
 }
 
 .twofa-copy-control--password {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.25;
+  font-size: inherit;
+  font-weight: 400;
+  line-height: var(--hub-table-body-line-height, 1.45);
   color: color-mix(in srgb, #c4b5fd 75%, var(--text));
   letter-spacing: 0.02em;
 }

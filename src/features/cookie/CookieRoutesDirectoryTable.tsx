@@ -114,7 +114,7 @@ export function CookieRoutesDirectoryTable(props: TableProps) {
       items={rows}
       resetKey={resetKey}
       ariaLabel="Route table pages"
-      tableClassName={`${hubDirectoryTableClass("default")} hub-users-table--cookie-routes min-w-[980px]`}
+      tableClassName={`${hubDirectoryTableClass("cookie-routes")} min-w-[980px]`}
       wrapClassName="overflow-hidden"
       colgroup={colgroup}
       columns={SHELL_COLUMNS}

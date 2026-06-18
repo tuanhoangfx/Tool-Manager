@@ -16,7 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 
 function parseArgs(argv) {
-  const out = { origin: "", timeoutMs: 300_000, intervalMs: 15_000 };
+  const out = { origin: "", timeoutMs: 300_000, intervalMs: 5_000 };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--origin" && argv[i + 1]) out.origin = String(argv[++i]).replace(/\/$/, "");

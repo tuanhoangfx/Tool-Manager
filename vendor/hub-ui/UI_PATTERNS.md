@@ -670,7 +670,7 @@ Do **not** fork select column width per tool — use shell + meta helpers only.
 |-------|---------|-----|
 | `--hub-table-body-size` | `12px` | Directory rail + grid body cells |
 | `--hub-table-header-size` | `12px` | `th` labels |
-| `--hub-table-body-size-dense` | `13px` | Dense tables (e.g. 2FA) |
+| `--hub-table-body-size-dense` | `13px` | Optional dense tables (legacy); 2FA + Sheet use `--hub-table-body-size` |
 | `--hub-table-muted-size` | `11px` | Timestamps, empty cells, compact rail meta |
 | `--hub-table-body-line-height` | `1.45` | Wrapped CSV / Q&A cells |
 
@@ -679,8 +679,8 @@ Do **not** fork select column width per tool — use shell + meta helpers only.
 | Call | Product skin class | P0020 use |
 |------|-------------------|-----------|
 | `hubDirectoryTableClass("sheet")` | `hub-users-table--sheet` | Sheet rail + CSV grid |
-| `hubDirectoryTableClass("default")` + `hub-users-table--folders` | Notes folder rail | Folders directory |
-| `hubDirectoryTableClass("default")` + `hub-users-table--cookie-routes` | Cookie routes table | Cookie tab |
+| `hubDirectoryTableClass("folders")` | `hub-users-table--folders` | Notes folder rail |
+| `hubDirectoryTableClass("cookie-routes")` | `hub-users-table--cookie-routes` | Cookie routes table |
 
 **Product CSS:** `theme/hub-users-table.css` — map variants to tokens. **Do not** hardcode `text-[11px]` on directory body cells; use `hub-directory-table-body-text` or variant rules.
 
