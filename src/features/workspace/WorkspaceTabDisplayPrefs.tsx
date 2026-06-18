@@ -57,6 +57,10 @@ import {
   TODO_KPI_DEFS,
 } from "../todo/todo-display-prefs";
 import { patchTodoHubPrefs, readTodoHubPrefs } from "../todo/todo-tab-prefs";
+import {
+  DEFAULT_SHEET_HEADER_STAT_KEYS,
+  SHEET_HEADER_STAT_DEFS,
+} from "../sheet/sheet-display-prefs";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 
 function TwofaTabDisplayPrefs({ screenFilters }: { screenFilters: FilterDef[] }) {
@@ -225,6 +229,22 @@ export function WorkspaceTabDisplayPrefs({
         patchPrefs={patchTodoHubPrefs}
         displayExtras={todoSettingsExtras}
         footerActions={todoSettingsFooterActions}
+      />
+    );
+  }
+
+  if (screen === "sheet") {
+    return (
+      <DisplayPrefs
+        filters={[]}
+        defaultFilterKeys={new Set()}
+        headerStats={SHEET_HEADER_STAT_DEFS}
+        defaultHeaderStatKeys={DEFAULT_SHEET_HEADER_STAT_KEYS}
+        showRange={false}
+        showLimit={false}
+        showHeaderPin
+        headerStatLabel={() => "Sheet header"}
+        scope="tab"
       />
     );
   }

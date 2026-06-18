@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
+import type { HubDirectoryToolbarSelectionProps } from "@tool-workspace/hub-ui";
 import type { KpiTileData, TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
 
@@ -11,6 +12,8 @@ type Ctx = {
   setFilterValues: (next: FilterValues) => void;
   toolbar: ReactNode;
   setToolbar: (toolbar: ReactNode) => void;
+  filterSelectionToolbar?: HubDirectoryToolbarSelectionProps;
+  setFilterSelectionToolbar: (toolbar: HubDirectoryToolbarSelectionProps | undefined) => void;
   filterToolbar: ReactNode;
   setFilterToolbar: (toolbar: ReactNode) => void;
   centerStats: TabHeaderStatItem[];
@@ -34,6 +37,8 @@ export function WorkspaceSearchProvider({
   setFilterValues,
   toolbar,
   setToolbar,
+  filterSelectionToolbar,
+  setFilterSelectionToolbar,
   filterToolbar,
   setFilterToolbar,
   centerStats,
@@ -54,6 +59,8 @@ export function WorkspaceSearchProvider({
   setFilterValues: (next: FilterValues) => void;
   toolbar: ReactNode;
   setToolbar: (toolbar: ReactNode) => void;
+  filterSelectionToolbar?: HubDirectoryToolbarSelectionProps;
+  setFilterSelectionToolbar: (toolbar: HubDirectoryToolbarSelectionProps | undefined) => void;
   filterToolbar: ReactNode;
   setFilterToolbar: (toolbar: ReactNode) => void;
   centerStats: TabHeaderStatItem[];
@@ -77,6 +84,8 @@ export function WorkspaceSearchProvider({
         setFilterValues,
         toolbar,
         setToolbar,
+        filterSelectionToolbar,
+        setFilterSelectionToolbar,
         filterToolbar,
         setFilterToolbar,
         centerStats,
@@ -103,6 +112,8 @@ const noopCtx: Ctx = {
   setFilterValues: () => {},
   toolbar: null,
   setToolbar: () => {},
+  filterSelectionToolbar: undefined,
+  setFilterSelectionToolbar: () => {},
   filterToolbar: null,
   setFilterToolbar: () => {},
   centerStats: [],

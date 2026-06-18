@@ -1,9 +1,11 @@
 import { useMemo, type ReactNode } from "react";
 import { HubWorkspaceDirectoryScreen, useHubChromePrefs, WorkspaceTabHeader } from "@tool-workspace/hub-ui";
+import type { HubDirectoryToolbarSelectionProps } from "@tool-workspace/hub-ui";
 import type { KpiTileData } from "../../components/sales-shell";
 import type { TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
+import { hubTabHeaderChromeProps } from "../../lib/hub-tab-header-chrome";
 import { screenChromeConfig } from "./workspace-screen-meta";
 import { workspaceVersionLine } from "./workspace-tab-header-meta";
 import { WorkspaceHeaderActions } from "./WorkspaceHeaderActions";
@@ -13,6 +15,7 @@ type Props = {
   query: string;
   onQueryChange: (q: string) => void;
   toolbar?: ReactNode;
+  filterSelectionToolbar?: HubDirectoryToolbarSelectionProps;
   filterRowActions?: ReactNode;
   centerStats?: TabHeaderStatItem[];
   filters?: FilterDef[];
@@ -33,6 +36,7 @@ export function WorkspaceDirectoryScreen({
   query,
   onQueryChange,
   toolbar,
+  filterSelectionToolbar,
   filterRowActions,
   centerStats = [],
   filters = [],
@@ -48,7 +52,8 @@ export function WorkspaceDirectoryScreen({
 }: Props) {
   const cfg = useMemo(() => screenChromeConfig(screen), [screen]);
   const version = useMemo(() => workspaceVersionLine(), []);
-  const { searchPin, headerPin, stackChrome } = useHubChromePrefs();
+  const chromePrefs = useHubChromePrefs();
+  const headerChrome = hubTabHeaderChromeProps(cfg.showSearch, chromePrefs);
 
   const header = (
     <WorkspaceTabHeader
@@ -61,9 +66,9 @@ export function WorkspaceDirectoryScreen({
       extraMetaItems={cfg.extraMetaItems}
       centerStats={centerStats}
       actions={<WorkspaceHeaderActions screen={screen} screenFilters={filters} />}
-      pinSticky={stackChrome ? false : headerPin}
-      dividerBelow={stackChrome ? false : !searchPin}
-      embedded={stackChrome}
+      pinSticky={headerChrome.pinSticky}
+      dividerBelow={headerChrome.dividerBelow}
+      embedded={headerChrome.embedded}
     />
   );
 
@@ -80,6 +85,7 @@ export function WorkspaceDirectoryScreen({
       filterPlaceholder={cfg.searchPlaceholder}
       filterShortcutScope={filterShortcutScope}
       directoryToolbar={toolbar}
+      filterSelectionToolbar={filterSelectionToolbar}
       filterRowActions={filterRowActions}
       kpis={kpis}
       charts={charts}

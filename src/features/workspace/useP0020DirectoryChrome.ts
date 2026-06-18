@@ -1,10 +1,12 @@
 import { useEffect, type ReactNode } from "react";
+import type { HubDirectoryToolbarSelectionProps } from "@tool-workspace/hub-ui";
 import type { TabHeaderStatItem } from "../../components/sales-shell";
 import { useWorkspaceSearch } from "./WorkspaceSearchContext";
 
 type ChromeInput = {
   active: boolean;
   toolbar: ReactNode;
+  filterSelectionToolbar?: HubDirectoryToolbarSelectionProps;
   filterToolbar: ReactNode;
   centerStats: TabHeaderStatItem[];
 };
@@ -13,20 +15,33 @@ type ChromeInput = {
 export function useP0020DirectoryChrome({
   active,
   toolbar,
+  filterSelectionToolbar,
   filterToolbar,
   centerStats,
 }: ChromeInput) {
-  const { setToolbar, setFilterToolbar, setCenterStats } = useWorkspaceSearch();
+  const { setToolbar, setFilterSelectionToolbar, setFilterToolbar, setCenterStats } = useWorkspaceSearch();
 
   useEffect(() => {
     if (!active) return;
     setToolbar(toolbar);
+    setFilterSelectionToolbar(filterSelectionToolbar);
     setFilterToolbar(filterToolbar);
     setCenterStats(centerStats);
     return () => {
       setToolbar(null);
+      setFilterSelectionToolbar(undefined);
       setFilterToolbar(null);
       setCenterStats([]);
     };
-  }, [active, centerStats, filterToolbar, setCenterStats, setFilterToolbar, setToolbar, toolbar]);
+  }, [
+    active,
+    centerStats,
+    filterSelectionToolbar,
+    filterToolbar,
+    setCenterStats,
+    setFilterSelectionToolbar,
+    setFilterToolbar,
+    setToolbar,
+    toolbar,
+  ]);
 }

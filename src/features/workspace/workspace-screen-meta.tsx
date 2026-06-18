@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { ClipboardList, Cookie, FileText, KeyRound, Settings2 } from "lucide-react";
+import { ClipboardList, Cookie, FileText, KeyRound, Settings2, Table2 } from "lucide-react";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import type { TabHeaderMetaItem } from "../../components/sales-shell";
 
@@ -30,6 +30,16 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         showSearch: screen === "notes",
         filterParam: "nfilt",
       };
+    case "sheet":
+      return {
+        title: "Sheet",
+        titleIcon: Table2,
+        titleIconClass: "text-cyan-300",
+        ariaLabel: "Sheet header",
+        searchPlaceholder: "Search sheets, gid, url…",
+        showSearch: false,
+        filterParam: "hfilt",
+      };
     case "todo":
       return {
         title: "Todo",
@@ -53,10 +63,10 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
       };
     case "cookie":
       return {
-        title: "Cookie Auto",
+        title: "Cookie Bridge",
         titleIcon: Cookie,
         titleIconClass: "text-violet-400",
-        ariaLabel: "Cookie Auto header",
+        ariaLabel: "Cookie Bridge header",
         searchPlaceholder: "Search domain, note, sync ID…",
         showSearch: true,
         filterParam: "cfilt",
