@@ -277,29 +277,6 @@ table.sheet-grid-table.sheet-grid-table--align-right td {
   display: none;
 }
 
-table.sheet-grid-table .sheet-grid-td {
-  padding: 6px 10px;
-  vertical-align: top;
-}
-
-table.sheet-grid-table .sheet-grid-cell {
-  display: block;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--text);
-}
-
-table.sheet-grid-table:not(.sheet-grid-table--wrap) .sheet-grid-cell {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 11px;
-}
-
-table.sheet-grid-table .sheet-grid-cell--wrap {
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  word-break: normal;
-}
-
 .sheet-grid-empty {
   animation: anim-fade 0.2s ease-out;
 }
@@ -558,10 +535,6 @@ table.hub-users-table--folders td.hub-users-col--folder-notes {
 table.hub-users-table--folders th.hub-users-col--folder-name,
 table.hub-users-table--folders td.hub-users-col--folder-name {
   text-align: left;
-}
-
-table.hub-users-table--folders .hub-users-name-title {
-  font-size: 11px;
 }
 
 table.hub-users-table--folders .notes-folder-icon {

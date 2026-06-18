@@ -21,6 +21,12 @@ describe("computeAutoHiddenColumnIndices", () => {
     expect(computeAutoHiddenColumnIndices(header, rows)).toEqual([2, 4]);
   });
 
+  it("hides placeholder dash headers with no data", () => {
+    const header = ["—", "Project", "Category", "Question"];
+    const rows = [["", "Infi 28", "Information", "Cần tư vấn"]];
+    expect(computeAutoHiddenColumnIndices(header, rows)).toEqual([0]);
+  });
+
   it("keeps all columns when every column has data", () => {
     const header = Array.from({ length: 10 }, (_, i) => `Col${i}`);
     const rows = [header.map((_, i) => `v${i}`)];

@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "4.3.33",
+    "version": "4.3.34",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -49,7 +49,7 @@
       "cookie-bridge"
     ],
     "latestPublished": {
-      "tag": "v4.3.33",
+      "tag": "v4.3.34",
       "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.1.5",
       "publishedAt": "2026-06-18T08:35:13.213Z"
     }

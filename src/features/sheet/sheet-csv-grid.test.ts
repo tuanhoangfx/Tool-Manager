@@ -3,7 +3,6 @@ import {
   alignColumnStart,
   detectHeaderRowIndex,
   dropUniformSpacerColumns,
-  normalizeDocumentTaxonomyColumn,
   padMatrixRows,
   parseCsvToGrid,
   resolveHeaderRowIndex,
@@ -65,7 +64,7 @@ describe("padMatrixRows", () => {
 });
 
 describe("dropUniformSpacerColumns", () => {
-  it("removes uniform spacer column when data is wider than header", () => {
+  it("keeps uniform Category column when header and data share the same width", () => {
     const header = ["Platform", "Category", "Question", "Answer"];
     const rows = [
       ["Infi 28", "Information", "Cần tư vấn", "cần tư vấn về thanh toán"],
@@ -74,28 +73,23 @@ describe("dropUniformSpacerColumns", () => {
     ];
     const { header: h, rows: rs } = dropUniformSpacerColumns(header, rows);
     expect(h).toEqual(header);
-    expect(rs[0]).toEqual(["Infi 28", "Cần tư vấn", "cần tư vấn về thanh toán"]);
-    expect(rs[1]?.[1]).toBe("Xác nhận ok");
+    expect(rs).toEqual(rows);
   });
-});
 
-describe("normalizeDocumentTaxonomyColumn", () => {
-  it("drops document taxonomy and keeps Question column", () => {
-    const header = ["💠 Platform", "🗂️ Category", "❓ Question", "🎯 Answer"];
+  it("removes uniform trailing spacer column when data is wider than header", () => {
+    const header = ["Platform", "Question", "Answer"];
     const rows = [
-      ["Infi 28", "📚 Information", "Cần tư vấn", "cần tư vấn về thanh toán"],
-      ["Infi 28", "❓ Q&A", "Xác nhận ok", "ok em"],
+      ["Infi 28", "Cần tư vấn", "cần tư vấn về thanh toán", "Information"],
+      ["Infi 28", "Xác nhận ok", "ok em", "Information"],
     ];
-    const { header: h, rows: rs } = normalizeDocumentTaxonomyColumn(header, rows);
-    expect(h).toHaveLength(3);
-    expect(h[1]).toMatch(/Question/i);
+    const { header: h, rows: rs } = dropUniformSpacerColumns(header, rows);
+    expect(h).toEqual(header);
     expect(rs[0]).toEqual(["Infi 28", "Cần tư vấn", "cần tư vấn về thanh toán"]);
-    expect(rs[1]?.[1]).toBe("Xác nhận ok");
   });
 });
 
 describe("parseCsvToGrid", () => {
-  it("aligns Infi Docs Q&A rows after uniform spacer column", () => {
+  it("keeps Category column for Infi Q&A tabs with uniform Information values", () => {
     const csv = [
       '"💠 Platform","🗂️ Category","❓ Question","🎯 Answer"',
       '"Infi 28","📚 Information","Cần tư vấn","cần tư vấn về thanh toán"',
@@ -103,10 +97,26 @@ describe("parseCsvToGrid", () => {
     ].join("\n");
     const { grid } = parseCsvToGrid(csv);
     expect(grid.header[0]).toContain("Platform");
-    expect(grid.header[1]).toMatch(/Question/i);
+    expect(grid.header[1]).toMatch(/Category/i);
+    expect(grid.header[2]).toMatch(/Question/i);
     expect(grid.rows[0]?.[0]).toBe("Infi 28");
-    expect(grid.rows[0]?.[1]).toBe("Cần tư vấn");
-    expect(grid.rows[0]?.[2]).toContain("cần tư vấn");
+    expect(grid.rows[0]?.[1]).toContain("Information");
+    expect(grid.rows[0]?.[2]).toBe("Cần tư vấn");
+  });
+
+  it("parses Infi 28 Q&A sheet with leading empty column and spacer rows", () => {
+    const csv = [
+      ",,,,,,,",
+      ",🚀 Project,💠 Platform,🗂️ Category,❓ Question,🎯 Answer,⏱️ Processing Time,✍️ Note",
+      ",,,,,,,",
+      ",♾️ Infi 28,♾️ Infi 28,📚 Information,Cần tư vấn,cần tư vấn về thanh toán,,",
+    ].join("\n");
+    const { grid, headerRowIndex } = parseCsvToGrid(csv);
+    expect(headerRowIndex).toBe(1);
+    expect(grid.header.some((h) => /Category/i.test(h))).toBe(true);
+    expect(grid.header.some((h) => /Project/i.test(h))).toBe(true);
+    expect(grid.rows[0]?.some((c) => /Information/i.test(c))).toBe(true);
+    expect(grid.rows[0]?.some((c) => c === "Cần tư vấn")).toBe(true);
   });
 
   it("parses Czp Docs Web tab with spacer row", () => {

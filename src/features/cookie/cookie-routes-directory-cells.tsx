@@ -92,10 +92,10 @@ export function renderCookieRoutesDirectoryBodyCell(
       );
     case "created":
       return (
-        <DirectoryTableBodyCell key={key} colClass={colClass} typographyClass="px-2 py-2 align-top text-[11px]">
+        <DirectoryTableBodyCell key={key} colClass={colClass} typographyClass="px-2 py-2 align-top">
           {vault ? (
             <div>
-              <div className="text-[11px] font-medium text-[var(--text)]">
+              <div className="hub-directory-table-body-text font-medium text-[var(--text)]">
                 {vault.cookie_count} cookie{vault.cookie_count === 1 ? "" : "s"}
               </div>
               <div className="mt-1 text-[10px] text-[var(--muted)]">

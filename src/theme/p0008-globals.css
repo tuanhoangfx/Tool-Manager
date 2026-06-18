@@ -13,6 +13,12 @@
   --hub-metric-badge-h: 20px;
   --hub-card-meta-min-h: 6.75rem;
   --hub-card-chip-row-min-h: 20px;
+  /* Directory tables — body/header/muted; override per tool variant in hub-users-table.css */
+  --hub-table-body-size: 12px;
+  --hub-table-header-size: 12px;
+  --hub-table-body-size-dense: 13px;
+  --hub-table-muted-size: 11px;
+  --hub-table-body-line-height: 1.45;
   --overview-toc-w: 135px;
   --overview-toc-h: 263px;
   --overview-toc-row-h: 30px;

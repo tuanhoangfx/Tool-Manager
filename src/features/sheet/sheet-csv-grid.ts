@@ -26,7 +26,7 @@ export function detectHeaderRowIndex(matrix: string[][]): number {
   return 0;
 }
 
-function rowLooksLikeHeader(row: string[]): boolean {
+export function rowLooksLikeHeader(row: string[]): boolean {
   const cells = row.map(normCell).filter(Boolean);
   if (cells.length < 2) return false;
   const urlLike = cells.filter((c) => /^https?:\/\//i.test(c)).length;
@@ -98,20 +98,10 @@ export function mergeHeaderWithPreviousRow(matrix: string[][], headerRowIndex: n
   return merged;
 }
 
-function columnUniqueCount(rows: string[][], j: number): number {
-  if (j < 0) return 0;
-  return new Set(rows.map((r) => normCell(r[j])).filter(Boolean)).size;
-}
-
-function headerExpectsVariedData(label: string): boolean {
-  const t = label.toLowerCase();
-  return /category|question|answer|name|title|label|type|tag|note|comment/.test(t);
-}
-
 /**
- * Drop uniform spacer columns in data (e.g. every row = "Information") when
- * data is wider than header, or when a uniform value sits under a varied header
- * and the next column carries the values that header expects.
+ * Drop uniform spacer columns only when data is wider than the header row
+ * (misaligned CSV export). Named header columns are always kept — e.g. Category
+ * with uniform "Information" must remain visible.
  */
 export function dropUniformSpacerColumns(
   header: string[],
@@ -125,27 +115,15 @@ export function dropUniformSpacerColumns(
   while (changed) {
     changed = false;
     const width = Math.max(h.length, ...rs.map((r) => r.length));
+    if (width <= h.length) break;
 
     for (let j = 0; j < width; j++) {
+      if (j < h.length) continue;
       const values = rs.map((r) => normCell(r[j])).filter(Boolean);
       const minSamples = rs.length < 3 ? rs.length : Math.max(3, Math.floor(rs.length * 0.45));
       if (values.length < minSamples) continue;
       const uniq = new Set(values);
       if (uniq.size !== 1) continue;
-
-      const uniform = [...uniq][0]!;
-      const headerLabel = normCell(h[j]);
-      const nextUnique = columnUniqueCount(rs, j + 1);
-      const extraColumn = width > h.length;
-      const mismatchedUniformUnderVariedHeader =
-        j < h.length &&
-        headerLabel &&
-        headerLabel !== uniform &&
-        headerExpectsVariedData(headerLabel) &&
-        nextUnique > 1;
-
-      if (!extraColumn && !mismatchedUniformUnderVariedHeader) continue;
-      if (extraColumn && width - 1 < h.length) continue;
 
       rs = rs.map((r) => [...r.slice(0, j), ...r.slice(j + 1)]);
       changed = true;
@@ -154,38 +132,6 @@ export function dropUniformSpacerColumns(
   }
 
   return { header: h, rows: rs };
-}
-
-const DOCUMENT_TAXONOMY_RE = /information|q&a|setup\s*&\s*guide|pricing|document/i;
-
-function looksLikeDocumentTaxonomyColumn(label: string, rows: string[][], j: number): boolean {
-  if (!/category/i.test(label)) return false;
-  const values = rows.map((r) => normCell(r[j])).filter(Boolean);
-  const minSamples = rows.length < 3 ? rows.length : Math.max(3, Math.floor(rows.length * 0.35));
-  if (values.length < minSamples) return false;
-  const uniq = [...new Set(values)];
-  if (uniq.length === 0 || uniq.length > 12) return false;
-  if (!uniq.every((v) => DOCUMENT_TAXONOMY_RE.test(v))) return false;
-  const nextUnique = columnUniqueCount(rows, j + 1);
-  return nextUnique > 1;
-}
-
-/**
- * Infi Docs Q&A tabs: "Category" column holds document taxonomy (Information / Q&A / Setup).
- * Drop taxonomy column; keep Question as its own column.
- */
-export function normalizeDocumentTaxonomyColumn(
-  header: string[],
-  rows: string[][],
-): { header: string[]; rows: string[][] } {
-  if (!rows.length) return { header, rows };
-  for (let j = 0; j < header.length; j++) {
-    if (!looksLikeDocumentTaxonomyColumn(normCell(header[j]), rows, j)) continue;
-    const nextHeader = [...header.slice(0, j), ...header.slice(j + 1)];
-    const nextRows = rows.map((r) => [...r.slice(0, j), ...r.slice(j + 1)]);
-    return { header: nextHeader, rows: nextRows };
-  }
-  return { header, rows };
 }
 
 function trimToHeaderWidth(header: string[], rows: string[][]): string[][] {
@@ -198,21 +144,22 @@ function trimToHeaderWidth(header: string[], rows: string[][]): string[][] {
   });
 }
 
-export function parseCsvToGrid(csv: string, opts?: { headerRowIndex?: number }): SheetCsvParseResult {
+export function csvToMatrix(csv: string): string[][] {
   const wb = XLSX.read(csv, { type: "string" });
   const name = wb.SheetNames[0];
   const ws = name ? wb.Sheets[name] : undefined;
   const matrix = ws ? (XLSX.utils.sheet_to_json(ws, { header: 1 }) as unknown[][]) : [];
-  const norm = padMatrixRows(
-    matrix.map((r) => (Array.isArray(r) ? r.map((v) => normCell(v)) : [])),
-  );
+  return padMatrixRows(matrix.map((r) => (Array.isArray(r) ? r.map((v) => normCell(v)) : [])));
+}
+
+export function parseCsvToGrid(csv: string, opts?: { headerRowIndex?: number }): SheetCsvParseResult {
+  const norm = csvToMatrix(csv);
   const headerRowIndex = resolveHeaderRowIndex(norm, opts?.headerRowIndex);
   let header = mergeHeaderWithPreviousRow(norm, headerRowIndex);
   let rows = norm.slice(headerRowIndex + 1).filter((row) => row.some((c) => normCell(c)));
 
   ({ header, rows } = alignColumnStart(header, rows));
   ({ header, rows } = dropUniformSpacerColumns(header, rows));
-  ({ header, rows } = normalizeDocumentTaxonomyColumn(header, rows));
   rows = trimToHeaderWidth(header, rows);
   header = header.map((v) => normCell(v) || "—");
 

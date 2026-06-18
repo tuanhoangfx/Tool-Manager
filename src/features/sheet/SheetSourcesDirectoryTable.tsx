@@ -85,7 +85,7 @@ export function SheetSourcesDirectoryTable({
       pageSize={pageSize}
       resetKey={listResetKey}
       ariaLabel="Sheet sources pages"
-      tableClassName={hubDirectoryTableClass("default")}
+      tableClassName={hubDirectoryTableClass("sheet")}
       wrapClassName={SHEET_DIRECTORY_TABLE_WRAP_RAIL_CLASS}
       flushWrap
       hideWhenSinglePage

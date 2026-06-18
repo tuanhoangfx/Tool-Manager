@@ -1,13 +1,12 @@
-/** read-only-directory — dynamic CSV columns; copy-on-click cells. */
+/** read-only-directory — dynamic CSV columns; copy icon per cell (2FA golden). */
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
   DirectoryInlineTable,
   DirectoryTableBodyCell,
   HubPaginatedTableShell,
   HubTableColumnHeader,
-  hubDirectoryTableClass,
 } from "@tool-workspace/hub-ui";
-import { SHEET_DIRECTORY_TABLE_WRAP_PANEL_CLASS } from "./sheet-directory-table";
+import { SHEET_DIRECTORY_TABLE_BASE_CLASS, SHEET_DIRECTORY_TABLE_WRAP_PANEL_CLASS } from "./sheet-directory-table";
 import {
   SHEET_GRID_DEFAULT_COL_WIDTH,
   SHEET_GRID_MIN_COL_WIDTH,
@@ -15,6 +14,7 @@ import {
 } from "./sheet-grid-prefs";
 import type { SheetGridData } from "./sheet-grid-types";
 import { resolveSheetGridHeaderRole } from "./sheet-grid-header-role";
+import { SheetGridCopyCell } from "./sheet-grid-copy-cell";
 import { SheetHighlightedText } from "./sheet-search-highlight";
 
 export type { SheetGridData } from "./sheet-grid-types";
@@ -25,7 +25,6 @@ export function SheetGridTable({
   prefs,
   searchQuery = "",
   onWidthsChange,
-  onCopyCell,
   resetKey,
 }: {
   data: SheetGridData | null;
@@ -33,7 +32,6 @@ export function SheetGridTable({
   prefs: SheetGridColumnPrefs;
   searchQuery?: string;
   onWidthsChange: (widths: Record<string, number>) => void;
-  onCopyCell: (value: string) => void;
   resetKey: string;
 }) {
   const resizeRef = useRef<{ index: number; startX: number; startW: number; base: Record<string, number> } | null>(
@@ -43,8 +41,8 @@ export function SheetGridTable({
   const [dragWidths, setDragWidths] = useState<Record<string, number> | null>(null);
   const widthsRef = useRef(prefs.widths);
   widthsRef.current = prefs.widths;
-  const wrap = Boolean(prefs.wrap);
-  const textAlign = prefs.textAlign ?? "center";
+  const wrap = prefs.wrap !== false;
+  const textAlign = prefs.textAlign ?? "left";
   const alignClass = `sheet-grid-table--align-${textAlign}`;
   const hidden = useMemo(() => new Set(prefs.hidden), [prefs.hidden]);
 
@@ -184,8 +182,8 @@ export function SheetGridTable({
   }
 
   const tableClass = wrap
-    ? `${hubDirectoryTableClass("default")} sheet-grid-table sheet-grid-table--wrap${sizedColumns ? " sheet-grid-table--sized" : ""} ${alignClass}`
-    : `${hubDirectoryTableClass("default")} sheet-grid-table sheet-grid-table--fill${sizedColumns && !wrap ? " sheet-grid-table--wide" : ""} ${alignClass}`;
+    ? `${SHEET_DIRECTORY_TABLE_BASE_CLASS} sheet-grid-table sheet-grid-table--wrap${sizedColumns ? " sheet-grid-table--sized" : ""} ${alignClass}`
+    : `${SHEET_DIRECTORY_TABLE_BASE_CLASS} sheet-grid-table sheet-grid-table--fill${sizedColumns && !wrap ? " sheet-grid-table--wide" : ""} ${alignClass}`;
 
   const wrapClassName = `hub-users-table-wrap ${SHEET_DIRECTORY_TABLE_WRAP_PANEL_CLASS}`;
 
@@ -249,13 +247,11 @@ export function SheetGridTable({
             pageRows.map((row, r) => (
               <tr key={String(r)} className="hub-users-row hub-users-row--static sheet-grid-row">
                 {visibleIndices.map((c) => (
-                  <DirectoryTableBodyCell
-                    key={String(c)}
-                    colClass="sheet-grid-td align-top"
-                    onClick={() => onCopyCell(row[c] ?? "")}
-                  >
+                  <DirectoryTableBodyCell key={String(c)} colClass="sheet-grid-td align-top">
                     <span className={wrap ? "sheet-grid-cell sheet-grid-cell--wrap" : "sheet-grid-cell truncate"}>
-                      <SheetHighlightedText text={row[c] ?? ""} query={searchQuery} />
+                      <SheetGridCopyCell value={row[c] ?? ""}>
+                        <SheetHighlightedText text={row[c] ?? ""} query={searchQuery} />
+                      </SheetGridCopyCell>
                     </span>
                   </DirectoryTableBodyCell>
                 ))}

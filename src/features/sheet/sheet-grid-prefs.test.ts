@@ -51,12 +51,13 @@ describe("reconcileSheetGridPrefs", () => {
     expect(next.hidden).toEqual([]);
   });
 
-  it("auto-hides unnamed empty columns on first load", () => {
+  it("auto-hides unnamed empty columns on first load and seeds role widths", () => {
     const header = ["A", "B", "", "D", "", "F", "G", ""];
     const rows = [["1", "2", "", "4", "", "6", "7", ""]];
     const next = reconcileSheetGridPrefs("sh_wide", header, rows);
     expect(next.hidden).toEqual([2, 4, 7]);
-    expect(next.columnFit).toBe("equal");
+    expect(next.columnFit).toBe("weighted");
+    expect(Object.keys(next.widths).length).toBe(header.length);
   });
 
   it("resetSheetGridColumnWidths clears widths and restores equal fit", () => {

@@ -1460,3 +1460,12 @@ table.hub-users-table--route-access .hub-users-th-text {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Sheet directory — rail + CSV grid (tool theme may extend) */
+table.hub-users-table--sheet {
+  font-size: var(--hub-table-body-size, 12px);
+}
+
+table.hub-users-table--sheet th {
+  font-size: var(--hub-table-header-size, 12px);
+}

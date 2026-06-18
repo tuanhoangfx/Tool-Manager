@@ -3,6 +3,7 @@ import { useWorkspaceDisplayPanelConfig } from "../workspace/workspace-display-p
 import { SheetGridColumnWidthsResetAction } from "./SheetGridColumnWidthsResetAction";
 import { SheetTableDisplaySettings } from "./SheetTableDisplaySettings";
 import type { SheetColumnFit, SheetGridColumnPrefs, SheetTextAlign } from "./sheet-grid-prefs";
+import type { SheetHeaderRowCandidate } from "./sheet-header-row-candidates";
 
 /** Sheet search-bar Display — header stats + table columns/wrap. */
 export function SheetDisplayBandToolbar({
@@ -17,6 +18,9 @@ export function SheetDisplayBandToolbar({
   textAlign,
   onTextAlignChange,
   onResetColumnWidths,
+  headerRowIndex,
+  headerRowCandidates,
+  onHeaderRowChange,
 }: {
   sheetId: string | null;
   headers: string[];
@@ -29,6 +33,9 @@ export function SheetDisplayBandToolbar({
   textAlign: SheetTextAlign;
   onTextAlignChange: (next: SheetTextAlign) => void;
   onResetColumnWidths: (next: SheetGridColumnPrefs) => void;
+  headerRowIndex?: number;
+  headerRowCandidates?: SheetHeaderRowCandidate[];
+  onHeaderRowChange?: (index: number) => void;
 }) {
   const base = useWorkspaceDisplayPanelConfig({ screen: "sheet" });
   if (!base) return null;
@@ -47,6 +54,9 @@ export function SheetDisplayBandToolbar({
           onColumnFitChange={onColumnFitChange}
           textAlign={textAlign}
           onTextAlignChange={onTextAlignChange}
+          headerRowIndex={headerRowIndex}
+          headerRowCandidates={headerRowCandidates}
+          onHeaderRowChange={onHeaderRowChange}
         />
       }
       tableSectionActions={

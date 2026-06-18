@@ -36,6 +36,7 @@ import { SheetHubChrome } from "./SheetHubChrome";
 import { filterSheetSourcesByTimeRange, SheetSourcesRail } from "./SheetSourcesRail";
 import type { SheetSourceSortKey } from "./SheetSourcesDirectoryTable";
 import { parseCsvToGrid } from "./sheet-csv-grid";
+import { buildHeaderRowCandidates, type SheetHeaderRowCandidate } from "./sheet-header-row-candidates";
 import { fetchSheetTabTitle, shouldSyncSheetTabTitle } from "./sheet-tab-title";
 import { applySheetMainFilters, buildSheetMainFilterDefs } from "./sheet-main-filters";
 import { setupSheetFilterIcons } from "./sheet-filter-icons";
@@ -81,6 +82,8 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   const [railSortKey, setRailSortKey] = useState<SheetSourceSortKey>("title");
   const [railSortDir, setRailSortDir] = useState<HubSortDir>("asc");
   const [gridPrefs, setGridPrefs] = useState(() => readSheetGridPrefs(activeId ?? ""));
+  const [headerRowCandidates, setHeaderRowCandidates] = useState<SheetHeaderRowCandidate[]>([]);
+  const rawCsvRef = useRef<string | null>(null);
   const activeIdRef = useRef(activeId);
   activeIdRef.current = activeId;
 
@@ -139,6 +142,16 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     return countSheetSearchMatches(displayGrid.rows, sheetQuery);
   }, [displayGrid, sheetQuery]);
 
+  const applyParsedGrid = useCallback(
+    (sheetId: string, parsed: ReturnType<typeof parseCsvToGrid>) => {
+      setGrid(parsed.grid);
+      setGridSheetId(sheetId);
+      const nextPrefs = reconcileSheetGridPrefs(sheetId, parsed.grid.header, parsed.grid.rows);
+      setGridPrefs(nextPrefs);
+    },
+    [],
+  );
+
   const loadActive = useCallback(async () => {
     if (!active) return;
     const loadId = active.id;
@@ -152,12 +165,11 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       if (trimmed.startsWith("<!") || /^<html[\s>]/i.test(trimmed)) {
         throw new Error("Sheet không truy cập được — bật quyền xem (Anyone with the link).");
       }
+      rawCsvRef.current = csv;
+      setHeaderRowCandidates(buildHeaderRowCandidates(csv));
       const parsed = parseCsvToGrid(csv, { headerRowIndex: active.headerRowIndex });
       if (loadId !== activeIdRef.current) return;
-      setGrid(parsed.grid);
-      setGridSheetId(loadId);
-      const nextPrefs = reconcileSheetGridPrefs(active.id, parsed.grid.header, parsed.grid.rows);
-      setGridPrefs(nextPrefs);
+      applyParsedGrid(loadId, parsed);
       updateSheetSourceLastSynced(active.id);
       setSources((prev) =>
         prev.map((s) => (s.id === active.id ? { ...s, lastSyncedAt: new Date().toISOString() } : s)),
@@ -184,7 +196,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     } finally {
       if (loadId === activeIdRef.current) setBusy(false);
     }
-  }, [active]);
+  }, [active, applyParsedGrid]);
 
   useEffect(() => {
     if (!tabActive) return;
@@ -239,16 +251,17 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     setGridSheetId(null);
   }, [active]);
 
-  const onCopyCell = useCallback(
-    (value: string) => {
-      const text = String(value ?? "").trim();
-      if (!text) return;
-      void navigator.clipboard
-        .writeText(text)
-        .then(() => pushToast("Đã copy vào clipboard.", "success", 1400))
-        .catch(() => pushToast("Copy thất bại (clipboard permission).", "warn", 2200));
+  const onHeaderRowChange = useCallback(
+    (headerRowIndex: number) => {
+      if (!active || !rawCsvRef.current) return;
+      updateSheetSourceHeaderRowIndex(active.id, headerRowIndex);
+      setSources((prev) =>
+        prev.map((s) => (s.id === active.id ? { ...s, headerRowIndex } : s)),
+      );
+      const parsed = parseCsvToGrid(rawCsvRef.current, { headerRowIndex });
+      applyParsedGrid(active.id, parsed);
     },
-    [pushToast],
+    [active, applyParsedGrid],
   );
 
   const onToggleColumn = useCallback(
@@ -364,9 +377,12 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
             onWrapChange={onWrapChange}
             columnFit={gridPrefs.columnFit ?? "equal"}
             onColumnFitChange={onColumnFitChange}
-            textAlign={gridPrefs.textAlign ?? "center"}
+            textAlign={gridPrefs.textAlign ?? "left"}
             onTextAlignChange={onTextAlignChange}
             onResetColumnWidths={onResetColumnWidths}
+            headerRowIndex={active?.headerRowIndex}
+            headerRowCandidates={headerRowCandidates}
+            onHeaderRowChange={onHeaderRowChange}
           />
         }
       />
@@ -385,6 +401,9 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       onTextAlignChange,
       onToggleColumn,
       onWrapChange,
+      onHeaderRowChange,
+      headerRowCandidates,
+      active?.headerRowIndex,
     ],
   );
 
@@ -463,8 +482,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
             prefs={gridPrefs}
             searchQuery={sheetQuery}
             onWidthsChange={onWidthsChange}
-            onCopyCell={onCopyCell}
-            resetKey={`${activeId ?? ""}:${sheetQuery}:${JSON.stringify(filterValues)}:${gridPrefs.hidden.join(",")}:${gridPrefs.wrap ? "w" : "n"}:${gridPrefs.columnFit ?? "equal"}:${gridPrefs.textAlign ?? "center"}:${Object.keys(gridPrefs.widths).join(",")}`}
+            resetKey={`${activeId ?? ""}:${sheetQuery}:${JSON.stringify(filterValues)}:${gridPrefs.hidden.join(",")}:${gridPrefs.wrap ? "w" : "n"}:${gridPrefs.columnFit ?? "equal"}:${gridPrefs.textAlign ?? "left"}:${Object.keys(gridPrefs.widths).join(",")}`}
           />
         </HubSplitDirectoryPane>
       </SheetHubChrome>

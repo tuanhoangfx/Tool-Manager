@@ -20,7 +20,8 @@ export type HubDirectoryTableVariant =
   | "dashboard-screens"
   | "agent-context"
   | "tool-versions"
-  | "tool-links";
+  | "tool-links"
+  | "sheet";
 
 export const HUB_DIRECTORY_TABLE_BASE_CLASS = "hub-users-table hub-users-table--directory";
 
@@ -232,6 +233,9 @@ export function hubDirectoryTableClass(variant: HubDirectoryTableVariant = "defa
   }
   if (variant === "tool-links") {
     return `${HUB_DIRECTORY_TABLE_BASE_CLASS} hub-users-table--tool-links`;
+  }
+  if (variant === "sheet") {
+    return `${HUB_DIRECTORY_TABLE_BASE_CLASS} hub-users-table--sheet`;
   }
   return `${HUB_DIRECTORY_TABLE_BASE_CLASS} hub-users-table--directory-${variant}`;
 }

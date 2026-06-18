@@ -1,3 +1,4 @@
+import { seedSheetGridColumnWidths } from "./sheet-grid-column-hints";
 import { computeAutoHiddenColumnIndices } from "./sheet-column-auto-hide";
 
 const STORAGE_KEY = "p0020:sheet:grid-prefs:v1";
@@ -24,14 +25,14 @@ type Store = Record<string, SheetGridColumnPrefs>;
 const DEFAULT_PREFS: SheetGridColumnPrefs = {
   hidden: [],
   widths: {},
-  wrap: false,
+  wrap: true,
   columnFit: "equal",
-  textAlign: "center",
+  textAlign: "left",
 };
 
 function normalizeTextAlign(value: unknown): SheetTextAlign {
-  if (value === "left" || value === "right") return value;
-  return "center";
+  if (value === "center" || value === "right") return value;
+  return "left";
 }
 
 function normalizeColumnFit(value: unknown): SheetColumnFit {
@@ -78,9 +79,9 @@ export function readSheetGridPrefs(sheetId: string): SheetGridColumnPrefs {
   return {
     hidden: Array.isArray(row.hidden) ? row.hidden.filter((n) => Number.isFinite(n)) : [],
     widths,
-    wrap: Boolean(row.wrap),
+    wrap: row.wrap !== undefined ? Boolean(row.wrap) : DEFAULT_PREFS.wrap!,
     columnFit: normalizeColumnFit(row.columnFit),
-    textAlign: normalizeTextAlign(row.textAlign),
+    textAlign: normalizeTextAlign(row.textAlign ?? DEFAULT_PREFS.textAlign),
   };
 }
 
@@ -165,11 +166,12 @@ export function reconcileSheetGridPrefs(
     header.length > 0 && rows.length > 0 ? computeAutoHiddenColumnIndices(header, rows) : [];
 
   if (shouldReconcileHidden) {
+    const seedWidths = headerChanged || needsAutoHideMigration || firstSeen;
     const next: SheetGridColumnPrefs = {
       ...prefs,
       hidden: emptyOnlyHidden,
-      widths: headerChanged || needsAutoHideMigration ? {} : prefs.widths,
-      columnFit: headerChanged || needsAutoHideMigration ? "equal" : prefs.columnFit,
+      widths: seedWidths ? seedSheetGridColumnWidths(header) : prefs.widths,
+      columnFit: seedWidths ? "weighted" : prefs.columnFit,
     };
     writeSheetGridPrefs(sheetId, next);
     saveHeaderFingerprint(sheetId, fp);

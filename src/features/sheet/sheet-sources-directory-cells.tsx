@@ -39,7 +39,7 @@ export function renderSheetSourcesDirectoryBodyCell(
   const label = formatTabHeaderTimestamp(sheetSourceSyncAt(row));
   return (
     <DirectoryTableBodyCell key={key} colClass={colClass}>
-      <span className="sheet-rail-sync-at whitespace-nowrap text-[11px] tabular-nums text-[var(--muted)]" title={label}>
+      <span className="sheet-rail-sync-at whitespace-nowrap tabular-nums text-[var(--muted)]" title={label}>
         {label}
       </span>
     </DirectoryTableBodyCell>

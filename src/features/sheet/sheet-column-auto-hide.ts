@@ -17,7 +17,7 @@ export function computeAutoHiddenColumnIndices(header: string[], rows: string[][
   const hidden: number[] = [];
   for (let i = 0; i < header.length; i++) {
     const label = String(header[i] ?? "").trim();
-    if (label) continue;
+    if (label && label !== "—") continue;
     if (columnFillRate(rows, i) === 0) hidden.push(i);
   }
   return hidden;

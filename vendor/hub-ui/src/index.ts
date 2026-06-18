@@ -265,6 +265,11 @@ export {
   type HubDirectoryMetricTone,
 } from "./shell/HubDirectoryMetricStrip";
 export { HubCopyBadge, type HubCopyBadgeProps } from "./shell/HubCopyBadge";
+export {
+  HubInlineCopyControl,
+  useHubCopyFlash,
+  type HubInlineCopyControlProps,
+} from "./shell/HubInlineCopyControl";
 export { CopyMetaChip, MetaChip, HUB_EMAIL_COPY_CHIP_CLASS, type MetaTone } from "./shell/CopyMetaChip";
 export { HubResultCount } from "./shell/HubResultCount";
 export { HubSearchField, type HubSearchFieldProps } from "./shell/HubSearchField";

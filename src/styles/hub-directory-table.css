@@ -25,10 +25,6 @@ table.hub-users-table .sheet-rail-sync-at {
   max-width: 100%;
 }
 
-table.hub-users-table .hub-users-name-title {
-  font-size: 11px;
-}
-
 table.hub-users-table .hub-users-row.is-detail {
   background: rgba(99, 102, 241, 0.1);
 }

@@ -12,13 +12,13 @@
   color: #fde68a;
 }
 
-/* 2FA directory ΓÇö sentence-case headers */
+/* 2FA directory — sentence-case headers; dense body via token */
 table.hub-users-table--twofa {
-  font-size: 13px;
+  font-size: var(--hub-table-body-size-dense, 13px);
 }
 
 table.hub-users-table--twofa th {
-  font-size: 12px;
+  font-size: var(--hub-table-header-size, 12px);
 }
 
 table.hub-users-table--twofa th,
@@ -28,15 +28,15 @@ table.hub-users-table--twofa .hub-users-th-text {
 }
 
 table.hub-users-table--twofa .hub-users-th-text {
-  font-size: 12px;
+  font-size: var(--hub-table-header-size, 12px);
 }
 
 .hub-users-table--twofa .hub-users-name-title {
-  font-size: 13px;
+  font-size: var(--hub-table-body-size-dense, 13px);
 }
 
 .hub-users-table--twofa .hub-users-cell-muted {
-  font-size: 11px;
+  font-size: var(--hub-table-muted-size, 11px);
 }
 
 .hub-users-row--static {
@@ -111,7 +111,7 @@ table.hub-users-table--twofa td.hub-users-col--twofa-secret {
 }
 
 .hub-twofa-period-label {
-  font-size: 12px;
+  font-size: var(--hub-table-header-size, 12px);
   font-weight: 700;
   line-height: 1;
   color: var(--text);
@@ -155,3 +155,99 @@ table.hub-users-table--twofa td.hub-users-col--twofa-secret {
 }
 
 /* Route access columns — canonical in @tool-workspace/hub-ui/styles/hub-users-table.css */
+
+/* Sheet directory — rail list + CSV grid share typography tokens */
+table.hub-users-table--sheet {
+  font-size: var(--hub-table-body-size, 12px);
+}
+
+table.hub-users-table--sheet th {
+  font-size: var(--hub-table-header-size, 12px);
+}
+
+.hub-users-table--sheet .hub-users-name-title {
+  font-size: var(--hub-table-body-size, 12px);
+  font-weight: 400;
+}
+
+.hub-users-table--sheet .sheet-rail-sync-at {
+  font-size: var(--hub-table-body-size, 12px);
+}
+
+table.hub-users-table--sheet.sheet-grid-table .sheet-grid-td {
+  padding: 6px 10px;
+  vertical-align: top;
+}
+
+table.hub-users-table--sheet.sheet-grid-table .sheet-grid-cell {
+  display: block;
+  font: inherit;
+  font-weight: 400;
+  line-height: var(--hub-table-body-line-height, 1.45);
+  color: var(--text);
+}
+
+table.hub-users-table--sheet.sheet-grid-table .sheet-grid-copy-control {
+  display: inline;
+  max-width: 100%;
+  font: inherit;
+  font-weight: 400;
+}
+
+table.hub-users-table--sheet.sheet-grid-table .sheet-grid-copy-control__value {
+  display: inline;
+}
+
+table.hub-users-table--sheet.sheet-grid-table.sheet-grid-table--wrap .sheet-grid-copy-control__value {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+table.hub-users-table--sheet .hub-users-cell-muted {
+  font-size: var(--hub-table-muted-size, 11px);
+  line-height: 1.35;
+  text-align: left;
+}
+
+table.hub-users-table--sheet.sheet-grid-table .sheet-grid-cell--wrap {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* Notes folder rail — directory table body typography */
+table.hub-users-table--folders {
+  font-size: var(--hub-table-body-size, 12px);
+}
+
+table.hub-users-table--folders .hub-users-name-title {
+  font-size: var(--hub-table-body-size, 12px);
+  font-weight: 400;
+}
+
+/* Cookie routes directory */
+table.hub-users-table--cookie-routes {
+  font-size: var(--hub-table-body-size, 12px);
+}
+
+table.hub-users-table--cookie-routes .hub-directory-table-body-text {
+  font-size: var(--hub-table-body-size, 12px);
+}
+
+/* Notes list rail (non-table) — reuse directory tokens */
+.hub-directory-rail-title {
+  font-size: var(--hub-table-body-size, 12px);
+}
+
+.hub-directory-rail-title--compact {
+  font-size: var(--hub-table-muted-size, 11px);
+}
+
+.hub-directory-rail-meta {
+  font-size: var(--hub-table-muted-size, 11px);
+}
+
+.hub-directory-rail-meta--compact {
+  font-size: 10px;
+}

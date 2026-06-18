@@ -1,8 +1,10 @@
 import { ToggleRow } from "@tool-workspace/hub-ui";
 import type { SheetColumnFit, SheetTextAlign } from "./sheet-grid-prefs";
+import { SheetHeaderRowControl } from "./SheetHeaderRowControl";
 import { SheetTextAlignControl } from "./SheetTextAlignControl";
+import type { SheetHeaderRowCandidate } from "./sheet-header-row-candidates";
 
-/** Sheet table prefs — columns + wrap + fit inside Display panel (Hub-UI golden). */
+/** Sheet table prefs — columns + wrap + fit + header row inside Display panel (Hub-UI golden). */
 export function SheetTableDisplaySettings({
   headers,
   hidden,
@@ -13,6 +15,9 @@ export function SheetTableDisplaySettings({
   onColumnFitChange,
   textAlign,
   onTextAlignChange,
+  headerRowIndex,
+  headerRowCandidates,
+  onHeaderRowChange,
 }: {
   headers: string[];
   hidden: Set<number>;
@@ -23,12 +28,22 @@ export function SheetTableDisplaySettings({
   onColumnFitChange: (next: SheetColumnFit) => void;
   textAlign: SheetTextAlign;
   onTextAlignChange: (next: SheetTextAlign) => void;
+  headerRowIndex?: number;
+  headerRowCandidates?: SheetHeaderRowCandidate[];
+  onHeaderRowChange?: (index: number) => void;
 }) {
   const visibleCount = headers.length - hidden.size;
   const fitEvenly = columnFit !== "weighted";
 
   return (
     <div className="space-y-3">
+      {headerRowCandidates && headerRowCandidates.length > 1 && onHeaderRowChange != null ? (
+        <SheetHeaderRowControl
+          value={headerRowIndex ?? headerRowCandidates[0]!.index}
+          candidates={headerRowCandidates}
+          onChange={onHeaderRowChange}
+        />
+      ) : null}
       <ToggleRow
         label="Wrap cell text"
         on={wrap}

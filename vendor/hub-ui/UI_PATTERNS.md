@@ -631,7 +631,7 @@ One semantic key maps icon + tone across **badge**, **KPI strip**, **tab header 
 | Columns | `buildDirectoryColumns(keys, meta)` — never hand-roll `COLUMNS` array |
 | Colgroup | `buildDirectoryColgroup(columns, { includeSelect: true })` — inline `style.width` per col |
 | Body | `DirectoryTableBodyCell` — `td.colClass` must match colgroup |
-| Shell | `HubDirectoryTableShell` + `hubDirectoryTableClass("default")` |
+| Shell | `HubDirectoryTableShell` + `hubDirectoryTableClass("default" \| "sheet" \| …)` |
 | Select | `data-hub-directory-select`; select col **36px** th/td + **3%** colgroup track |
 | Width tiers | Fixed chrome (status/timestamp/count) → **rem/px** via `HUB_DIRECTORY_COLUMN_WIDTH_REGISTRY`; fluid (name/path) → **%** via variant CSS |
 | Bulk colgroup | `buildDirectoryColgroupForShell({ showSelect: true })` — **no inline %** on data cols (2FA parity) |
@@ -659,6 +659,32 @@ Do **not** add per-domain CSS variants (`fb-accounts`, `directory-7`) for width 
 | CSS | `hub-directory-table.css` + variant CSS — fixed rem/px chrome; fluid % content |
 
 Do **not** fork select column width per tool — use shell + meta helpers only.
+
+---
+
+## Directory table body typography (golden — product tokens)
+
+**Token SSOT (P0020):** `theme/p0008-globals.css` on `.theme-hub` / `:root`.
+
+| Token | Default | Use |
+|-------|---------|-----|
+| `--hub-table-body-size` | `12px` | Directory rail + grid body cells |
+| `--hub-table-header-size` | `12px` | `th` labels |
+| `--hub-table-body-size-dense` | `13px` | Dense tables (e.g. 2FA) |
+| `--hub-table-muted-size` | `11px` | Timestamps, empty cells, compact rail meta |
+| `--hub-table-body-line-height` | `1.45` | Wrapped CSV / Q&A cells |
+
+**Variant API (hub-ui)**
+
+| Call | Product skin class | P0020 use |
+|------|-------------------|-----------|
+| `hubDirectoryTableClass("sheet")` | `hub-users-table--sheet` | Sheet rail + CSV grid |
+| `hubDirectoryTableClass("default")` + `hub-users-table--folders` | Notes folder rail | Folders directory |
+| `hubDirectoryTableClass("default")` + `hub-users-table--cookie-routes` | Cookie routes table | Cookie tab |
+
+**Product CSS:** `theme/hub-users-table.css` — map variants to tokens. **Do not** hardcode `text-[11px]` on directory body cells; use `hub-directory-table-body-text` or variant rules.
+
+**Rail list (non-table):** `hub-directory-rail-title` / `hub-directory-rail-meta` (+ `--compact` modifiers) — Notes list rail.
 
 ---
 

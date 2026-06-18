@@ -183,16 +183,16 @@ function NoteListRow({
         )}
         <span className="min-w-0 flex-1">
           <span
-            className={`block truncate font-medium text-[var(--text)] ${
-              compact ? "text-[11px]" : "text-[12px]"
+            className={`hub-directory-rail-title block truncate font-medium text-[var(--text)] ${
+              compact ? "hub-directory-rail-title--compact" : ""
             }`}
           >
             {displayNoteTitle(n.title)}
           </span>
           {timeLabel ? (
             <span
-              className={`notes-rail__time mt-0.5 block truncate font-medium text-violet-300/75 ${
-                compact ? "text-[9px]" : "text-[10px]"
+              className={`hub-directory-rail-meta notes-rail__time mt-0.5 block truncate font-medium text-violet-300/75 ${
+                compact ? "hub-directory-rail-meta--compact" : ""
               }`}
               title={isCookieRoute ? n.synced_at ?? undefined : n.updated_at}
             >
