@@ -5,7 +5,8 @@
 - Version: `4.3.33`
 - Timestamp: 2026-06-18 06:36 (UTC+7)
 - Type: Patch
-- Status: Committed
+- Status: Verified
+- Release: https://databox.infi.io.vn
 
 ### Changes
 
