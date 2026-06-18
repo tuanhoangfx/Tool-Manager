@@ -9,9 +9,10 @@ import { setOfflineMode } from "../../lib/offlineMode";
 import { clearTwofaSession } from "../../lib/twofa-session";
 import { getTwofaSupabase } from "../../lib/twofa-supabase";
 import { clearHubIdentity } from "../../lib/hub-identity-session";
-import { useNotesAuth } from "../../features/notes/useNotesAuth";
+import { useNotesAuth } from "../../features/notes/AuthSessionProvider";
 import { applyHubIdentitySession, getIdentitySupabase } from "../../lib/supabase-identity";
 import { supabase } from "../../lib/supabase";
+import { warmWorkspaceRoleForSession } from "../../lib/workspace-role-ssot";
 import {
   requestWorkspaceDataRefresh,
   WORKSPACE_LIST_REFRESHING,
@@ -24,6 +25,7 @@ import {
   HubSidebarShell,
   HubUiZoomControl,
   HubWorkspaceUserShell,
+  clearWorkspaceProfileRoleCache,
   useNavGroupOpenState,
 } from "@tool-workspace/hub-ui";
 import { NAV_STRUCTURE, NAV_SUBNAV_PREFIX } from "../../lib/nav-structure";
@@ -51,6 +53,14 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
     window.addEventListener(WORKSPACE_LIST_REFRESHING, onRefreshing);
     return () => window.removeEventListener(WORKSPACE_LIST_REFRESHING, onRefreshing);
   }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id || offline) return;
+    void warmWorkspaceRoleForSession(session, {
+      hubUserId,
+      hubEmail: hubEmail ?? session.user.email,
+    });
+  }, [session, hubUserId, hubEmail, offline]);
 
   return (
     <HubSidebarShell
@@ -99,6 +109,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
             }
             onSignOut={async () => {
               setOfflineMode(false);
+              clearWorkspaceProfileRoleCache();
               clearHubIdentity();
               clearDataBoxSession();
               clearTwofaSession();

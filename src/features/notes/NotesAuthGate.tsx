@@ -11,7 +11,7 @@ import {
 import { setOfflineMode } from "../../lib/offlineMode";
 import { applyHubIdentitySession } from "../../lib/supabase-identity";
 import { signInWorkspaceDual } from "../../lib/workspace-dual-auth";
-import { useNotesAuth } from "./useNotesAuth";
+import { useNotesAuth } from "./AuthSessionProvider";
 
 type Props = {
   onAuthed?: () => void;
