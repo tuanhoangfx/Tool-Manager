@@ -30,6 +30,76 @@ function routeKey(noteId: string, domain: string) {
   return `${noteId.trim()}:${normalizeCookieDomain(domain)}`;
 }
 
+function routeUpdatedMs(binding: CookieBinding) {
+  const raw = binding.routeUpdatedAt?.trim();
+  if (!raw) return 0;
+  const ms = Date.parse(raw);
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+/** One enabled route per note — prefer canonical domain + newest cloud row. */
+export function dedupeCookieBindingsByNoteId(bindings: CookieBinding[]): CookieBinding[] {
+  const losers = new Set<string>();
+  const byNote = new Map<string, CookieBinding[]>();
+
+  for (const binding of bindings) {
+    const noteId = binding.noteId?.trim();
+    if (!noteId || !binding.enabled) continue;
+    const group = byNote.get(noteId) ?? [];
+    group.push(binding);
+    byNote.set(noteId, group);
+  }
+
+  for (const group of byNote.values()) {
+    if (group.length <= 1) continue;
+    const sorted = [...group].sort((a, b) => {
+      const domainCmp = normalizeCookieDomain(a.domain)?.localeCompare(normalizeCookieDomain(b.domain) ?? "") ?? 0;
+      if (domainCmp !== 0) return domainCmp;
+      return routeUpdatedMs(b) - routeUpdatedMs(a);
+    });
+    for (const stale of sorted.slice(1)) losers.add(stale.id);
+  }
+
+  return bindings.filter((binding) => !losers.has(binding.id));
+}
+
+async function disableStaleDuplicateCloudRows(session: Session, rows: CookieCloudRouteRow[]): Promise<void> {
+  const byNote = new Map<string, CookieCloudRouteRow[]>();
+  for (const row of rows) {
+    if (row.enabled === false) continue;
+    const noteId = row.note_id?.trim();
+    const domain = normalizeCookieDomain(row.domain);
+    if (!noteId || !domain) continue;
+    const group = byNote.get(noteId) ?? [];
+    group.push(row);
+    byNote.set(noteId, group);
+  }
+
+  for (const group of byNote.values()) {
+    if (group.length <= 1) continue;
+    const sorted = [...group].sort((a, b) => {
+      const domainCmp = normalizeCookieDomain(a.domain)?.localeCompare(normalizeCookieDomain(b.domain) ?? "") ?? 0;
+      if (domainCmp !== 0) return domainCmp;
+      return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
+    });
+    const winner = sorted[0];
+    for (const stale of sorted.slice(1)) {
+      await disableCookieRouteInCloud(
+        session,
+        {
+          id: "cleanup",
+          enabled: true,
+          noteId: stale.note_id,
+          syncId: stale.sync_id ?? "",
+          domain: stale.domain,
+        },
+        { matchDomain: stale.domain },
+      );
+    }
+    void winner;
+  }
+}
+
 function cloudRowFromBinding(session: Session, binding: CookieBinding) {
   const sourceBrowserId = binding.sourceBrowserId?.trim();
   return {
@@ -117,13 +187,45 @@ export async function upsertCookieRouteToCloud(
   return { ok: true, route: data as CookieCloudRouteRow };
 }
 
+/** Domain change = new unique key — disable previous cloud row(s) for the same note first. */
+export async function replaceCookieRouteDomainInCloud(
+  session: Session | null,
+  binding: CookieBinding,
+  previousDomain?: string | null,
+): Promise<CloudResult<{ route: CookieCloudRouteRow }>> {
+  if (!session?.user?.id) return { ok: false, error: "Not signed in." };
+
+  const noteId = binding.noteId?.trim();
+  const nextDomain = normalizeCookieDomain(binding.domain);
+  if (!noteId || !nextDomain) return { ok: false, error: "Route requires Note ID and domain." };
+
+  const prevDomain = previousDomain ? normalizeCookieDomain(previousDomain) : null;
+  if (prevDomain && prevDomain !== nextDomain) {
+    await disableCookieRouteInCloud(session, { ...binding, domain: previousDomain!.trim() }, {
+      matchDomain: previousDomain!.trim(),
+    });
+  }
+
+  const siblings = await fetchEnabledCloudRoutesForNote(session, noteId);
+  if (siblings.ok) {
+    for (const row of siblings.routes) {
+      const rowDomain = normalizeCookieDomain(row.domain);
+      if (!rowDomain || rowDomain === nextDomain) continue;
+      await disableCookieRouteInCloud(session, { ...binding, domain: row.domain }, { matchDomain: row.domain });
+    }
+  }
+
+  return upsertCookieRouteToCloud(session, binding);
+}
+
 export async function disableCookieRouteInCloud(
   session: Session | null,
   binding: CookieBinding,
+  opts: { matchDomain?: string } = {},
 ): Promise<CloudResult<{ disabled: boolean }>> {
   if (!session?.user?.id) return { ok: false, error: "Not signed in." };
   const noteId = binding.noteId?.trim();
-  const domain = normalizeCookieDomain(binding.domain);
+  const domain = (opts.matchDomain ?? normalizeCookieDomain(binding.domain))?.trim();
   if (!noteId || !domain) return { ok: false, error: "Route requires Note ID and domain." };
 
   const { error } = await supabase
@@ -204,7 +306,9 @@ export async function pullCookieRoutesFromCloud(
   }
   if (!accessible.error && Array.isArray(accessible.data)) {
     const rows = accessible.data as CookieCloudRouteRow[];
-    return { ok: true, count: rows.length, bindings: mergeCookieRoutes(existing, rows, notes, { replace: true }) };
+    const merged = dedupeCookieBindingsByNoteId(mergeCookieRoutes(existing, rows, notes, { replace: true }));
+    await disableStaleDuplicateCloudRows(session, rows);
+    return { ok: true, count: merged.length, bindings: merged };
   }
 
   const { data, error } = await supabase
@@ -235,7 +339,9 @@ export async function pullCookieRoutesFromCloud(
   }
 
   const rows = (routeData ?? []) as CookieCloudRouteRow[];
-  return { ok: true, count: rows.length, bindings: mergeCookieRoutes(existing, rows, notes, { replace: true }) };
+  const merged = dedupeCookieBindingsByNoteId(mergeCookieRoutes(existing, rows, notes, { replace: true }));
+  await disableStaleDuplicateCloudRows(session, rows);
+  return { ok: true, count: merged.length, bindings: merged };
 }
 
 export async function setCookieRouteSource(

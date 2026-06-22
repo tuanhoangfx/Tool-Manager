@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useCrossTabVaultReload } from "@dev/hub-load";
 import { getTwofaStorageUserId, loadAccounts, saveAccounts } from "./storage";
 import type { TwofaAccount, TwofaDraft } from "./types";
+import { normalizeTwofaAccounts } from "./twofa-account-status";
+import { normalizeTwofaLog } from "./twofa-account-log";
 import { ensureTwofaAuth } from "../../lib/ensure-twofa-auth";
 import {
   dedupeTwofaCloudByIdentity,
@@ -14,14 +16,26 @@ import {
   type TwofaCloudSyncState,
 } from "./twofa-cloud-sync";
 import {
+  bulkUpdateTwofaMeta,
   dedupeTwofaAccounts,
   updateTwofaDraft,
   upsertTwofaDraft,
+  type TwofaBulkMetaPatch,
 } from "./twofa-upsert-accounts";
 import {
+  applyTwofaPendingEdits,
+  clearTwofaPendingEdit,
   filterTwofaPendingDeletes,
   markTwofaPendingDelete,
+  markTwofaPendingEdit,
+  retargetTwofaPendingEdit,
 } from "./twofa-sync-pending";
+import {
+  isTwofaVaultCloudAlignDone,
+  isTwofaVaultDedupeMigrationDone,
+  runTwofaVaultCloudAlignMigration,
+  runTwofaVaultDedupeMigration,
+} from "./twofa-vault-dedupe-migration";
 import { useTwofaRealtime } from "./useTwofaRealtime";
 import {
   postTwofaVaultBroadcast,
@@ -77,6 +91,8 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
   const pendingSilentSync = useRef(false);
   const pendingFullSync = useRef(false);
   const bootSyncDoneRef = useRef(false);
+  const logBackfillCloudRef = useRef(false);
+  const vaultDedupeMigrationRef = useRef(false);
   const vaultUserIdRef = useRef<string | null>(getTwofaStorageUserId());
   const lastFullSyncEmitRef = useRef(0);
   const applyAccountsRef = useRef<(next: TwofaAccount[], opts?: { skipBroadcast?: boolean }) => void>(
@@ -94,9 +110,10 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
 
   const applyAccounts = useCallback(
     (next: TwofaAccount[], opts?: { skipBroadcast?: boolean }) => {
-      accountsRef.current = next;
-      setAccounts(next);
-      persistAccounts(next);
+      const normalized = normalizeTwofaAccounts(next);
+      accountsRef.current = normalized;
+      setAccounts(normalized);
+      persistAccounts(normalized);
       if (!opts?.skipBroadcast) {
         postTwofaVaultBroadcast({
           type: "local-updated",
@@ -147,7 +164,7 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
         return;
       }
       const { accounts: deduped } = dedupeTwofaAccounts(merged);
-      const next = filterTwofaPendingDeletes(deduped);
+      const next = applyTwofaPendingEdits(filterTwofaPendingDeletes(deduped));
       if (generation !== syncGeneration.current) return;
       applyAccounts(next, { skipBroadcast: silent });
       setCloudState("ok");
@@ -290,10 +307,28 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
         setCloudError(error);
         return;
       }
-      if (cloudId && cloudId !== account.id) remapLocalId(account.id, cloudId);
+      const resolvedId = cloudId ?? account.id;
+      if (cloudId && cloudId !== account.id) {
+        retargetTwofaPendingEdit(account.id, cloudId, { ...account, id: cloudId });
+        remapLocalId(account.id, cloudId);
+      }
+      clearTwofaPendingEdit(resolvedId);
     },
     [remapLocalId],
   );
+
+  useEffect(() => {
+    if (!tabActive || logBackfillCloudRef.current || !isTwofaCloudAvailable()) return;
+    const raw = loadAccounts(vaultUserIdRef.current);
+    const legacyIds = raw.filter((row) => !normalizeTwofaLog(row.log).length).map((row) => row.id);
+    logBackfillCloudRef.current = true;
+    if (!legacyIds.length) return;
+    const normalized = normalizeTwofaAccounts(accountsRef.current);
+    applyAccounts(normalized, { skipBroadcast: true });
+    for (const row of normalized.filter((r) => legacyIds.includes(r.id))) {
+      void cloudUpsert(row);
+    }
+  }, [applyAccounts, cloudUpsert, tabActive]);
 
   const cloudDelete = useCallback(async (id: string) => {
     if (!isTwofaCloudAvailable()) return;
@@ -303,6 +338,26 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
       setCloudError(err);
     }
   }, []);
+
+  useEffect(() => {
+    if (!tabActive || vaultDedupeMigrationRef.current) return;
+    void resolveVaultUserId().then((uid) => {
+      if (isTwofaVaultCloudAlignDone(uid) && isTwofaVaultDedupeMigrationDone(uid)) return;
+      vaultDedupeMigrationRef.current = true;
+      const deps = {
+        userId: uid,
+        getLocal: () => accountsRef.current,
+        applyAccounts,
+        cloudDelete,
+        syncFromCloud,
+      };
+      if (!isTwofaVaultCloudAlignDone(uid)) {
+        void runTwofaVaultCloudAlignMigration(deps);
+        return;
+      }
+      void runTwofaVaultDedupeMigration(deps);
+    });
+  }, [tabActive, applyAccounts, cloudDelete, resolveVaultUserId, syncFromCloud]);
 
   const addMany = useCallback(
     (drafts: TwofaDraft[]): TwofaAddManyResult => {
@@ -349,9 +404,12 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
       const now = new Date().toISOString();
       const outcome = updateTwofaDraft(accountsRef.current, id, draft, now);
       if (!outcome) return false;
+      markTwofaPendingEdit(outcome.row);
       applyAccounts(outcome.accounts);
-      void cloudUpsert(outcome.row);
-      for (const removedId of outcome.removedIds) void cloudDelete(removedId);
+      void (async () => {
+        await cloudUpsert(outcome.row);
+        for (const removedId of outcome.removedIds) await cloudDelete(removedId);
+      })();
       return true;
     },
     [applyAccounts, cloudDelete, cloudUpsert],
@@ -382,11 +440,23 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
       const now = new Date().toISOString();
       const next = accountsRef.current.map((a) => {
         if (a.id !== id) return a;
-        const row = { ...a, lastUsedAt: now, updatedAt: now };
+        const row = { ...a, lastUsedAt: now };
         void cloudUpsert(row);
         return row;
       });
       applyAccounts(next);
+    },
+    [applyAccounts, cloudUpsert],
+  );
+
+  const bulkUpdateMeta = useCallback(
+    (ids: string[], patch: TwofaBulkMetaPatch) => {
+      const now = new Date().toISOString();
+      const { accounts: next, changed } = bulkUpdateTwofaMeta(accountsRef.current, ids, patch, now);
+      if (!changed.length) return 0;
+      applyAccounts(next);
+      for (const row of changed) void cloudUpsert(row);
+      return changed.length;
     },
     [applyAccounts, cloudUpsert],
   );
@@ -425,6 +495,7 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
     update,
     remove,
     touchLastUsed,
+    bulkUpdateMeta,
     dedupeNow,
     previewDedupe,
     cloudState,

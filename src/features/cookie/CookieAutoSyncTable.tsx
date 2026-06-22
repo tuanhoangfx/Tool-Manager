@@ -66,7 +66,7 @@ import { useWorkspaceSearch } from "../workspace/WorkspaceSearchContext";
 import type { NoteListItem } from "../notes/types";
 import { routeMatchesTimeRange } from "./cookie-route-activity";
 import { cookieLines } from "../notes/noteUtils";
-import { DOMAIN_PRESETS, normalizeCookieDomain, type CookieBinding } from "./cookieBridge";
+import { DOMAIN_PRESETS, deprecatedCookieRouteDomainHint, normalizeCookieDomain, type CookieBinding } from "./cookieBridge";
 import { readCookieDeepLink } from "./cookieDeepLink";
 import { buildAppUrl } from "../../lib/workspace-path";
 import { subscribeHubListPrefs } from "../../lib/url-prefs";
@@ -720,7 +720,14 @@ export function CookieAutoSyncTable({
 
   const submitAdd = () => {
     if (!onAdd || !draftNoteId.trim()) return;
-    onAdd(draftNoteId.trim(), draftDomain.trim(), draftPass.trim());
+    const domain = normalizeCookieDomain(draftDomain.trim());
+    if (!domain) {
+      pushToast("Invalid domain — use a hostname like .facebook.com", "error");
+      return;
+    }
+    const hint = deprecatedCookieRouteDomainHint(draftDomain);
+    if (hint) pushToast(hint, "info", 6000);
+    onAdd(draftNoteId.trim(), domain, draftPass.trim());
     setModal(null);
     setDraftPass("");
   };
@@ -793,13 +800,20 @@ export function CookieAutoSyncTable({
 
   const submitEdit = () => {
     if (!onUpdate || !editing) return;
+    const domain = normalizeCookieDomain(draftDomain.trim());
+    if (!domain) {
+      pushToast("Invalid domain — use a hostname like .facebook.com", "error");
+      return;
+    }
+    const hint = deprecatedCookieRouteDomainHint(draftDomain);
+    if (hint) pushToast(hint, "info", 6000);
     const note = notesById.get(draftNoteId);
     onUpdate(editing.id, {
       noteId: draftNoteId,
       syncId: note?.sync_id ?? editing.syncId,
       noteTitle: note?.title ?? editing.noteTitle,
       requiresPass: Boolean(note?.sync_pass_hash),
-      domain: draftDomain.trim(),
+      domain,
       pass: draftPass.trim() || undefined,
       useNoteIdRpc: !note?.sync_id?.trim() && Boolean(draftNoteId),
     });
@@ -989,7 +1003,7 @@ export function CookieAutoSyncTable({
                   key={p.domain}
                   type="button"
                   className="cookie-route-modal__preset-btn"
-                  onClick={() => setDraftDomain(p.domain)}
+                  onClick={() => setDraftDomain(normalizeCookieDomain(p.domain) ?? p.domain)}
                 >
                   + {p.label}
                 </button>

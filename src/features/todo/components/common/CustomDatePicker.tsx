@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useLayoutEffect } from "re
 import { createPortal } from "react-dom";
 import {
   HUB_FILTER_DROPDOWN_PANEL_PORTAL_CLASS,
+  HUB_FILTER_OPTION_EMOJI_CLASS,
   HubFilterDropdownTrigger,
   compactIconSize,
 } from "@tool-workspace/hub-ui";
@@ -17,6 +18,10 @@ interface CustomDatePickerProps {
   className?: string;
   min?: string;
   max?: string;
+  /** Extra classes on the trigger button. */
+  triggerClassName?: string;
+  /** Color emoji on trigger (task modal filter row). */
+  triggerEmoji?: string;
   /** Trigger label uses DD/MM/YY (modal filter row). */
   compactTrigger?: boolean;
 }
@@ -26,6 +31,8 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   onChange,
   placeholder,
   className,
+  triggerClassName = "w-full justify-between",
+  triggerEmoji,
   compactTrigger = false,
 }) => {
   const { t, language } = useSettings();
@@ -231,9 +238,17 @@ const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         open={isOpen}
         label={triggerLabel}
         title={triggerTitle}
-        icon={<Calendar size={compactIconSize(12)} className="shrink-0 opacity-75" aria-hidden />}
+        icon={
+          triggerEmoji ? (
+            <span className={HUB_FILTER_OPTION_EMOJI_CLASS} aria-hidden>
+              {triggerEmoji}
+            </span>
+          ) : (
+            <Calendar size={compactIconSize(12)} className="shrink-0 text-sky-300" aria-hidden />
+          )
+        }
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full justify-between"
+        className={triggerClassName}
       />
       {panel ? createPortal(panel, document.body) : null}
     </div>

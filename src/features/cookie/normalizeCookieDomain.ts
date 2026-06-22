@@ -1,5 +1,4 @@
-/** Turn URL or hostname into cookie jar domain (e.g. https://www.facebook.com/ → .facebook.com) */
-export function normalizeCookieDomain(input: string): string | null {
+function normalizeHost(input: string): string | null {
   const raw = input.trim();
   if (!raw) return null;
 
@@ -16,7 +15,25 @@ export function normalizeCookieDomain(input: string): string | null {
 
   host = host.replace(/^\.+/, "").toLowerCase();
   if (!host || !host.includes(".")) return null;
+  return host.replace(/^www\./, "");
+}
 
-  const withoutWww = host.replace(/^www\./, "");
-  return `.${withoutWww}`;
+/** Google Gmail routes share one cookie jar on `.google.com` — avoid duplicate routes. */
+export function canonicalCookieRouteDomain(input: string): string | null {
+  const host = normalizeHost(input);
+  if (!host) return null;
+  if (host === "google.com" || host.endsWith(".google.com")) return ".google.com";
+  return `.${host}`;
+}
+
+/** Warn when user enters a deprecated Gmail subdomain route. */
+export function deprecatedCookieRouteDomainHint(input: string): string | null {
+  const raw = input.trim().toLowerCase();
+  if (!raw.includes("mail.google.com")) return null;
+  return "Gmail routes use .google.com (shared cookie jar). Domain was normalized.";
+}
+
+/** Turn URL or hostname into cookie jar domain (e.g. https://www.facebook.com/ → .facebook.com) */
+export function normalizeCookieDomain(input: string): string | null {
+  return canonicalCookieRouteDomain(input);
 }

@@ -13,7 +13,15 @@ export function readTwofaMaskPasswordInTable(): boolean {
   }
 }
 
+export function readTwofaShowPasswordInTable(): boolean {
+  return !readTwofaMaskPasswordInTable();
+}
+
 export function writeTwofaMaskPasswordInTable(mask: boolean) {
   window.localStorage.setItem(MASK_PASSWORD_KEY, mask ? "1" : "0");
   window.dispatchEvent(new CustomEvent(TWOFA_TABLE_DISPLAY_CHANGE_EVENT));
+}
+
+export function writeTwofaShowPasswordInTable(show: boolean) {
+  writeTwofaMaskPasswordInTable(!show);
 }

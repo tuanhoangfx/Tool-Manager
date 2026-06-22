@@ -1,6 +1,12 @@
 export { HubDisplayPrefs } from "./display-prefs/HubDisplayPrefs";
 export { HubDirectoryDisplayPanel, HubDisplayBandToolbar, type HubDirectoryDisplayPanelProps, type HubDisplayBandToolbarProps } from "./display-prefs/HubDirectoryDisplayPanel";
 export { HubDisplayVisibilityMenu, type HubDisplayVisibilityMenuProps } from "./display-prefs/HubDisplayVisibilityMenu";
+export {
+  countVisiblePrefs,
+  defaultsForPrefItems,
+  isHubPrefVisible,
+  toggleHubPrefSet,
+} from "./display-prefs/hub-display-visibility";
 export { HubSettingsExtras, type HubSettingsExtrasProps } from "./display-prefs/HubSettingsExtras";
 export { Section, SectionIcon, SettingsSubsection, TabButton, ToggleRow } from "./display-prefs/primitives";
 export { SettingsOptionFilter, type SettingsOptionFilterProps } from "./display-prefs/SettingsOptionFilter";
@@ -44,11 +50,18 @@ export type {
   HubDisplayPrefsProps,
   HubDisplayPrefsToolSection,
   PrefItem,
+  PrefIcon,
   SettingsExtraTab,
   SubTabDisplayConfig,
   SystemDisplayAdapter,
 } from "./display-prefs/types";
 export { SUBTAB_DISPLAY_CHANGE } from "./display-prefs/types";
+export {
+  withPrefItemIcons,
+  withDirectoryColumnIcons,
+  type PrefIconMap,
+  type PrefIconMeta,
+} from "./display-prefs/pref-item-icons";
 export {
   countHiddenDirectoryTableColumns,
   createDirectoryTableColumnPrefs,
@@ -164,7 +177,10 @@ export {
   HUB_FILTER_DROPDOWN_PANEL_PORTAL_CLASS,
   HUB_FILTER_DROPDOWN_ROW_CLASS,
   HubFilterDropdownCircle,
+  HubFilterDropdownPanelSearch,
   HubFilterDropdownTrigger,
+  HUB_FILTER_OPTION_EMOJI_CLASS,
+  filterDropdownPanelSearchPlaceholder,
   folderFilterButtonLabel,
   multiFilterTriggerTitle,
   hubFilterTriggerClass,
@@ -307,7 +323,40 @@ export {
   DirectoryRelativeTimeCell,
   type DirectoryRelativeTimeCellProps,
 } from "./content/DirectoryRelativeTimeCell";
+export {
+  HubActivityTimestampLabel,
+  type HubActivityTimestampLabelProps,
+} from "./content/HubActivityTimestampLabel";
 export { formatHubRelativeTime } from "./lib/format-hub-relative-time";
+export {
+  formatHubActivityRelativeAge,
+  formatHubActivityStaleLabel,
+  formatHubActivityTime,
+  formatLastOpenedRelativeAge,
+  formatLastOpenedStaleDate,
+  hubActivityAgeHubTone,
+  hubActivityAgeTone,
+  lastOpenedAgeTone,
+  lastOpenedHubTone,
+  parseHubActivityMs,
+  type HubActivityAgeTone,
+} from "./lib/format-hub-activity-time";
+export {
+  formatHubTimestampCompact,
+  formatHubTimestampFull,
+} from "./lib/format-hub-timestamp-compact";
+export {
+  extractNumericSearchTerm,
+  matchesDirectoryIdSearch,
+  getDirectorySearchHighlight,
+  buildHighlightSegments,
+  type DirectoryIdSearchInput,
+  type DirectoryIdSearchOptions,
+  type DirectorySearchHighlight,
+  type HighlightSegment,
+} from "./lib/directory-id-search";
+export { HubDirectorySearchHighlightText } from "./content/HubDirectorySearchHighlightText";
+
 export { useRelativeNow } from "./lib/use-relative-now";
 export {
   configureDirectoryPager,
@@ -367,6 +416,7 @@ export {
   type HubDirectoryColumnDef,
   type HubDirectoryColumnMetaInput,
   type HubDirectoryTableVariant,
+  resolveDirectoryPanelFillRows,
 } from "./table/hub-directory-table-meta";
 export {
   HUB_DIRECTORY_COLUMN_WIDTH_REGISTRY,

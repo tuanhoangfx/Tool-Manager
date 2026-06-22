@@ -32,3 +32,7 @@ export const SETTINGS_OPTION_PICKER_DESIGN_LOCK = "F1" as const;
 /** Locked 2026-06 — Design V4 Emoji TOC wide → noteHistoryTocRails.tsx */
 export const NOTE_HISTORY_TOC_RAILS_DESIGN_LOCK = "V4" as const;
 export const NOTE_HISTORY_COMPARE_DESIGN_LOCK = "V3" as const;
+
+/** Locked 2026-06-19 — Account detail: Credentials V4 + Changelog V5 → TwofaAccountDetailModal */
+export const TWOFA_ACCOUNT_DETAIL_CREDENTIALS_DESIGN_LOCK = "V4" as const;
+export const TWOFA_ACCOUNT_DETAIL_CHANGELOG_DESIGN_LOCK = "V5" as const;

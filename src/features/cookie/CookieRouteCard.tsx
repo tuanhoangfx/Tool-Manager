@@ -6,8 +6,8 @@ import {
   HubDirectoryCardMetaRow,
   HubDirectoryInteractiveCard,
   HUB_DIRECTORY_CARD_ICON_GLYPH_PX,
+  HubActivityTimestampLabel,
 } from "@tool-workspace/hub-ui";
-import { formatTimestampCompact } from "../../lib/format-timestamp";
 import type { CookieAutoRow } from "./cookieAutoRow";
 import { CookieRouteChipRow } from "./CookieRouteChipRow";
 import { prefetchNoteCookieMembers } from "./cookieRouteMembersPrefetch";
@@ -107,18 +107,14 @@ export function CookieRouteCard({
           </HubDirectoryCardMetaRow>
           <HubDirectoryCardMetaRow icon={RefreshCw} tint="#818cf8">
             <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <span title={syncedIso ?? "No extension sync yet"}>
+              <span>
                 <span className="text-[10px] text-[var(--muted)]">Sync</span>{" "}
-                <span className="font-medium text-indigo-200/90">
-                  {formatTimestampCompact(syncedIso) ?? "—"}
-                </span>
+                <HubActivityTimestampLabel at={syncedIso} />
               </span>
               <span className="text-white/20">·</span>
-              <span title={loadIso ?? "No vault load yet"}>
+              <span>
                 <span className="text-[10px] text-[var(--muted)]">Load</span>{" "}
-                <span className="font-medium text-indigo-200/90">
-                  {formatTimestampCompact(loadIso) ?? "—"}
-                </span>
+                <HubActivityTimestampLabel at={loadIso} />
               </span>
             </span>
           </HubDirectoryCardMetaRow>

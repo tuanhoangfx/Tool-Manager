@@ -1,5 +1,6 @@
 import {
   HubRouteAccessDirectoryTable,
+  HubActivityTimestampLabel,
   type HubRouteAccessSortKey,
 } from "@tool-workspace/hub-ui";
 import { CookieAccessRoleBadge } from "./CookieAccessRoleBadge";
@@ -26,6 +27,10 @@ function TimestampCell({ iso }: { iso: string | null }) {
   const text = formatTimestampCompactOrDash(iso);
   const full = formatTimestampFull(iso);
   return <span title={full || undefined}>{text}</span>;
+}
+
+function SyncLoadTimestampCell({ iso }: { iso: string | null }) {
+  return <HubActivityTimestampLabel at={iso} />;
 }
 
 function ExpiresCell({ iso }: { iso: string | null }) {
@@ -124,9 +129,9 @@ export function CookieRouteAccessTable({
       getSortValue={getSortValue}
       defaultSortKey="user"
       renderSyncAtCell={(row) => (
-        <TimestampCell iso={syncAtForRow(row.canPublish, row.id, row.member)} />
+        <SyncLoadTimestampCell iso={syncAtForRow(row.canPublish, row.id, row.member)} />
       )}
-      renderLoadAtCell={(row) => <TimestampCell iso={loadAtForRow(row.id, row.member)} />}
+      renderLoadAtCell={(row) => <SyncLoadTimestampCell iso={loadAtForRow(row.id, row.member)} />}
       renderAddedAtCell={(row) => <TimestampCell iso={row.addedAt} />}
       renderExpiresCell={(row) => <ExpiresCell iso={row.expiresAt} />}
     />

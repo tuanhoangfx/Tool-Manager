@@ -1,7 +1,15 @@
 import { newId } from "./storage";
 import type { TwofaAccount, TwofaDraft } from "./types";
+import { normalizeTwofaAccountStatus, type TwofaAccountStatus } from "./twofa-account-status";
+import { withTwofaCreateLog, withTwofaUpdateLog } from "./twofa-account-log";
+import {
+  pickTwofaVaultWinner,
+  twofaDedupeKey,
+  twofaIdentityKey,
+  twofaVaultIdentityKey,
+  twofaVaultSlotKey,
+} from "./twofa-identity";
 import { normalizeSecret } from "./totp";
-import { twofaDedupeKey, twofaIdentityKey } from "./twofa-identity";
 
 export type TwofaUpsertOutcome = {
   accounts: TwofaAccount[];
@@ -16,7 +24,14 @@ function draftToFields(draft: TwofaDraft) {
   const account = draft.account.trim();
   const secret = normalizeSecret(draft.secret);
   const password = draft.password?.trim();
-  return { service, browser, account, secret, password };
+  const note = draft.note?.trim();
+  const status = normalizeTwofaAccountStatus(draft.status);
+  return { service, browser, account, secret, password, note, status };
+}
+
+export function twofaDraftHasContent(draft: TwofaDraft): boolean {
+  const { service, browser, account, secret, password, note } = draftToFields(draft);
+  return Boolean(service || browser || account || secret || password || note);
 }
 
 /** Upsert one draft: replace existing same identity (delete older duplicates), or append new row. */
@@ -25,8 +40,8 @@ export function upsertTwofaDraft(
   draft: TwofaDraft,
   now: string,
 ): TwofaUpsertOutcome | null {
-  const { service, browser, account, secret, password } = draftToFields(draft);
-  if (!secret) return null;
+  const { service, browser, account, secret, password, note, status } = draftToFields(draft);
+  if (!twofaDraftHasContent(draft)) return null;
 
   const key = twofaIdentityKey(service, account, secret, browser);
   const matches = prev.filter(
@@ -38,17 +53,24 @@ export function upsertTwofaDraft(
       Date.parse(row.updatedAt) >= Date.parse(best.updatedAt) ? row : best,
     );
     const removedIds = matches.filter((row) => row.id !== keeper.id).map((row) => row.id);
-    const updated: TwofaAccount = {
-      ...keeper,
-      service,
-      account,
-      secret,
-      updatedAt: now,
-      ...(browser ? { browser } : {}),
-      ...(password ? { password } : {}),
-    };
+    const updated: TwofaAccount = withTwofaUpdateLog(
+      keeper,
+      {
+        ...keeper,
+        service,
+        account,
+        secret,
+        status,
+        updatedAt: now,
+        ...(browser ? { browser } : {}),
+        ...(password ? { password } : {}),
+        ...(note ? { note } : {}),
+      },
+      now,
+    );
     if (!browser) delete updated.browser;
     if (!password) delete updated.password;
+    if (!note) delete updated.note;
 
     const accounts = prev
       .filter((row) => !matches.some((m) => m.id === row.id))
@@ -56,16 +78,21 @@ export function upsertTwofaDraft(
     return { accounts, row: updated, replaced: true, removedIds };
   }
 
-  const row: TwofaAccount = {
-    id: newId(),
-    service,
-    ...(browser ? { browser } : {}),
-    account,
-    ...(password ? { password } : {}),
-    secret,
-    createdAt: now,
-    updatedAt: now,
-  };
+  const row: TwofaAccount = withTwofaCreateLog(
+    {
+      id: newId(),
+      service,
+      ...(browser ? { browser } : {}),
+      account,
+      ...(password ? { password } : {}),
+      secret,
+      status,
+      ...(note ? { note } : {}),
+      createdAt: now,
+      updatedAt: now,
+    },
+    now,
+  );
   return { accounts: [...prev, row], row, replaced: false, removedIds: [] };
 }
 
@@ -76,28 +103,39 @@ export function updateTwofaDraft(
   draft: TwofaDraft,
   now: string,
 ): TwofaUpsertOutcome | null {
-  const { service, browser, account, secret, password } = draftToFields(draft);
-  if (!secret) return null;
+  const { service, browser, account, secret, password, note, status } = draftToFields(draft);
+  if (!twofaDraftHasContent(draft)) return null;
 
   const current = prev.find((row) => row.id === id);
   if (!current) return null;
 
   const key = twofaIdentityKey(service, account, secret, browser);
-  const duplicates = prev.filter(
-    (row) =>
-      row.id !== id && twofaIdentityKey(row.service, row.account, row.secret, row.browser) === key,
+  const vaultKey = twofaVaultIdentityKey(service, account, browser);
+  const slotKey = twofaVaultSlotKey(service, account);
+  const duplicates = prev.filter((row) => {
+    if (row.id === id) return false;
+    if (twofaIdentityKey(row.service, row.account, row.secret, row.browser) === key) return true;
+    if (twofaVaultIdentityKey(row.service, row.account, row.browser) === vaultKey) return true;
+    return twofaVaultSlotKey(row.service, row.account) === slotKey;
+  });
+  const updated: TwofaAccount = withTwofaUpdateLog(
+    current,
+    {
+      ...current,
+      service,
+      account,
+      secret,
+      status,
+      updatedAt: now,
+      ...(browser ? { browser } : {}),
+      ...(password ? { password } : {}),
+      ...(note ? { note } : {}),
+    },
+    now,
   );
-  const updated: TwofaAccount = {
-    ...current,
-    service,
-    account,
-    secret,
-    updatedAt: now,
-    ...(browser ? { browser } : {}),
-    ...(password ? { password } : {}),
-  };
   if (!browser) delete updated.browser;
   if (!password) delete updated.password;
+  if (!note) delete updated.note;
 
   const accounts = prev
     .filter((row) => row.id === id || !duplicates.some((d) => d.id === row.id))
@@ -111,14 +149,65 @@ export function updateTwofaDraft(
   };
 }
 
+export type TwofaBulkMetaPatch = {
+  status?: TwofaAccountStatus;
+  note?: string;
+  clearNote?: boolean;
+  /** When true, append `note` to existing note (newline-separated). */
+  appendNote?: boolean;
+};
+
+/** Apply status and/or note to many rows — each change appends audit log. */
+export function bulkUpdateTwofaMeta(
+  prev: TwofaAccount[],
+  ids: readonly string[],
+  patch: TwofaBulkMetaPatch,
+  now: string,
+): { accounts: TwofaAccount[]; changed: TwofaAccount[] } {
+  const idSet = new Set(ids);
+  const changed: TwofaAccount[] = [];
+  const accounts = prev.map((row) => {
+    if (!idSet.has(row.id)) return row;
+
+    const touchesStatus = patch.status !== undefined && patch.status !== row.status;
+    const touchesNote =
+      patch.clearNote ||
+      (patch.note !== undefined &&
+        (patch.appendNote
+          ? Boolean(patch.note.trim())
+          : (patch.note.trim() || undefined) !== (row.note?.trim() || undefined)));
+    if (!touchesStatus && !touchesNote) return row;
+
+    const after: TwofaAccount = { ...row, updatedAt: now };
+    if (touchesStatus && patch.status !== undefined) after.status = patch.status;
+    if (patch.clearNote) delete after.note;
+    else if (patch.note !== undefined) {
+      const trimmed = patch.note.trim();
+      if (patch.appendNote) {
+        if (trimmed) {
+          const prev = row.note?.trim();
+          after.note = prev ? `${prev}\n${trimmed}` : trimmed;
+        }
+      } else if (trimmed) after.note = trimmed;
+      else delete after.note;
+    }
+
+    const updated = withTwofaUpdateLog(row, after, now);
+    changed.push(updated);
+    return updated;
+  });
+
+  return { accounts, changed };
+}
+
 /** Find another row that shares the draft identity (for edit conflict checks). */
 export function findTwofaDraftConflict(
   accounts: TwofaAccount[],
   draft: TwofaDraft,
   excludeId?: string,
 ): TwofaAccount | null {
+  if (!twofaDraftHasContent(draft)) return null;
   const { service, browser, account, secret } = draftToFields(draft);
-  if (!secret) return null;
   const key = twofaIdentityKey(service, account, secret, browser);
   const match = accounts.find(
     (row) =>
@@ -197,6 +286,34 @@ export function previewTwofaDedupe(accounts: TwofaAccount[]): TwofaDedupePreview
   return buildTwofaDedupePreview(accounts);
 }
 
+/** Collapse rows that share vault identity (service + account + browser) — e.g. secret vs no-secret duplicates. */
+function collapseTwofaVaultIdentities(accounts: TwofaAccount[]): TwofaDedupeResult {
+  const byVault = new Map<string, TwofaAccount[]>();
+  for (const row of accounts) {
+    if (!row.service.trim() && !row.account.trim()) continue;
+    const vk = twofaVaultSlotKey(row.service, row.account);
+    if (!vk) continue;
+    const list = byVault.get(vk) ?? [];
+    list.push(row);
+    byVault.set(vk, list);
+  }
+
+  const dropIds = new Set<string>();
+  for (const group of byVault.values()) {
+    if (group.length <= 1) continue;
+    const winner = pickTwofaVaultWinner(group);
+    for (const row of group) {
+      if (row.id !== winner.id) dropIds.add(row.id);
+    }
+  }
+
+  if (!dropIds.size) return { accounts, removedIds: [] };
+  return {
+    accounts: accounts.filter((row) => !dropIds.has(row.id)),
+    removedIds: [...dropIds],
+  };
+}
+
 /** Collapse duplicate identities in an account list — keep newest updatedAt per key. */
 export function dedupeTwofaAccounts(accounts: TwofaAccount[]): TwofaDedupeResult {
   const groups = new Map<string, TwofaAccount[]>();
@@ -227,5 +344,9 @@ export function dedupeTwofaAccounts(accounts: TwofaAccount[]): TwofaDedupeResult
   kept.sort(
     (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || a.service.localeCompare(b.service),
   );
-  return { accounts: kept, removedIds };
+  const vaultCollapsed = collapseTwofaVaultIdentities(kept);
+  return {
+    accounts: vaultCollapsed.accounts,
+    removedIds: [...removedIds, ...vaultCollapsed.removedIds],
+  };
 }

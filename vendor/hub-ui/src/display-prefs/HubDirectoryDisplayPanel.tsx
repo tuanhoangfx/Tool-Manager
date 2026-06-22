@@ -42,6 +42,7 @@ export type HubDirectoryDisplayPanelProps = Pick<
   | "subTabDisplay"
   | "onLog"
   | "tablePanel"
+  | "tableSectionLabel"
   | "tableSectionActions"
   | "tableActiveCount"
 >;
@@ -104,6 +105,7 @@ export function HubDirectoryDisplayPanel({
   subTabDisplay,
   onLog,
   tablePanel,
+  tableSectionLabel = "Table columns",
   tableSectionActions,
   showPageSize = true,
 }: HubDirectoryDisplayPanelProps & { showPageSize?: boolean }) {
@@ -322,6 +324,8 @@ export function HubDirectoryDisplayPanel({
                     <ToggleRow
                       key={item.key}
                       label={item.label}
+                      icon={item.icon}
+                      iconClassName={item.iconClassName}
                       on={selected}
                       disabled={kpiAtMax && !selected}
                       onDisabledClick={() =>
@@ -346,6 +350,8 @@ export function HubDirectoryDisplayPanel({
                     <ToggleRow
                       key={item.key}
                       label={item.label}
+                      icon={item.icon}
+                      iconClassName={item.iconClassName}
                       on={selected}
                       disabled={chartAtMax && !selected}
                       onDisabledClick={() =>
@@ -368,6 +374,8 @@ export function HubDirectoryDisplayPanel({
                   <ToggleRow
                     key={item.key}
                     label={item.label}
+                    icon={item.icon}
+                    iconClassName={item.iconClassName}
                     on={isHubPrefVisible(visHeaderStats, headerStatDefaults, item.key)}
                     onChange={() => toggle(headerStatParam, headerStatsProp, headerStatDefaults, item.key)}
                   />
@@ -385,6 +393,8 @@ export function HubDirectoryDisplayPanel({
                   <ToggleRow
                     key={item.key}
                     label={item.label}
+                    icon={item.icon}
+                    iconClassName={item.iconClassName}
                     on={isHubPrefVisible(visHubFilters, filterDefaults, item.key)}
                     onChange={() => toggle(filterParam, tabFilters, filterDefaults, item.key)}
                   />
@@ -394,7 +404,7 @@ export function HubDirectoryDisplayPanel({
           ) : null}
           {tablePanel ? (
             <PanelSection
-              label="Table columns"
+              label={tableSectionLabel}
               icon={buildSemanticTocIcon("settings.table")}
               headerActions={tableSectionActions}
             >

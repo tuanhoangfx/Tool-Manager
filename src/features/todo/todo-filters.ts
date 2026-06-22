@@ -1,8 +1,7 @@
 import type { FilterDef, FilterValues } from "@tool-workspace/hub-ui";
-import { PROJECT_COLORS } from "./constants";
 import type { Profile, Project } from "./types";
 import type { Translation } from "./types";
-import { profileFilterOptions } from "./todo-hub-filter-helpers";
+import { buildTodoKanbanFilterDefs } from "./todo-hub-filter-helpers";
 
 export interface TodoFilters {
   searchTerm: string;
@@ -17,44 +16,7 @@ export function buildTodoFilterDefs(
   allUsers: Profile[],
   t: Translation,
 ): FilterDef[] {
-  const projectOpts = [
-    { value: "0", label: t.personalProject, color: "#6b7280" },
-    ...projects.map((p) => ({
-      value: p.id.toString(),
-      label: p.name,
-      color: p.color || PROJECT_COLORS[p.id % PROJECT_COLORS.length],
-    })),
-  ];
-
-  return [
-    { key: "project", label: "Projects", showAllLabel: true, options: projectOpts },
-    {
-      key: "dueDate",
-      label: "Due Dates",
-      showAllLabel: true,
-      options: [
-        { value: "overdue", label: t.overdue },
-        { value: "today", label: t.dueToday },
-        { value: "this_week", label: t.dueThisWeek },
-      ],
-    },
-    {
-      key: "creator",
-      label: "Creators",
-      showAllLabel: true,
-      options: profileFilterOptions(allUsers),
-    },
-    {
-      key: "priority",
-      label: "Priorities",
-      showAllLabel: true,
-      options: [
-        { value: "low", label: t.low },
-        { value: "medium", label: t.medium },
-        { value: "high", label: t.high },
-      ],
-    },
-  ];
+  return buildTodoKanbanFilterDefs(projects, allUsers, t);
 }
 
 function normalizeMulti(selected: string[] | undefined, allValues: string[]): string[] {

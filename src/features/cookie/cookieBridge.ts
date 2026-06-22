@@ -5,6 +5,7 @@ import { postCookieBindingsCrossTab } from "./cookie-bindings-cross-tab";
 import { broadcastCookieBindings, broadcastSelectedBinding } from "./extensionBridgeMessages";
 
 export { normalizeCookieDomain } from "./normalizeCookieDomain";
+export { deprecatedCookieRouteDomainHint } from "./normalizeCookieDomain";
 
 export type CookieBinding = {
   id: string;

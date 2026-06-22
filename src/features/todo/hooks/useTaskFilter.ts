@@ -1,38 +1,30 @@
 import { useMemo } from 'react';
 
+import { matchesDirectoryIdSearch } from '@tool-workspace/hub-ui';
+
 import { Task } from '../types';
 import { formatTaskId } from '../lib/taskId';
-import { extractNumericSearchTerm } from '../lib/taskSearchHighlight';
 
 import type { TodoFilters } from '../todo-filters';
 
 import { getTodayDateString, getEndOfWeekDateString } from '../lib/taskUtils';
 
-function taskTextMatches(task: Task, lower: string): boolean {  return task.title.toLowerCase().includes(lower) ||
-    Boolean(task.description && task.description.toLowerCase().includes(lower)) ||
-    Boolean(task.task_comments && task.task_comments.some(c => c.content.toLowerCase().includes(lower)));
+function taskTextBlob(task: Task): string {
+  return [
+    task.title,
+    task.description ?? '',
+    ...(task.task_comments?.map((c) => c.content) ?? []),
+  ]
+    .join('\u0001')
+    .toLowerCase();
 }
 
 export function matchesTodoTaskSearch(task: Task, searchTerm: string): boolean {
-  const trimmedSearch = searchTerm.trim();
-  if (!trimmedSearch) return true;
-
-  const paddedId = formatTaskId(task.id);
-  const numericOnly = extractNumericSearchTerm(trimmedSearch);
-
-  if (numericOnly !== null) {
-    return paddedId.includes(numericOnly);
-  }
-
-  const lower = trimmedSearch.toLowerCase();
-  const digits = trimmedSearch.replace(/\D/g, '');
-  const letters = trimmedSearch.replace(/[\d#]/g, '').trim().toLowerCase();
-
-  if (digits && letters) {
-    return paddedId.includes(digits) && taskTextMatches(task, letters);
-  }
-
-  return taskTextMatches(task, lower) || (digits.length > 0 && paddedId.includes(digits));
+  return matchesDirectoryIdSearch(
+    { idText: formatTaskId(task.id), textBlob: taskTextBlob(task) },
+    searchTerm,
+    { mixedRequiresWhitespace: false },
+  );
 }
 
 export const useTaskFilter = (tasks: Task[], filters: TodoFilters, timezone: string): Task[] => {

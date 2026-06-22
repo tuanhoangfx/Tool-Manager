@@ -1,4 +1,5 @@
 import { readTwofaSession } from "../../lib/twofa-session";
+import { normalizeTwofaAccounts } from "./twofa-account-status";
 import type { TwofaAccount } from "./types";
 
 export const TWOFA_LEGACY_STORAGE_KEY = "p0020-twofa-accounts-v1";
@@ -25,7 +26,7 @@ function readKey(key: string): TwofaAccount[] {
     const raw = localStorage.getItem(key);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as TwofaAccount[];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? normalizeTwofaAccounts(parsed) : [];
   } catch {
     return [];
   }

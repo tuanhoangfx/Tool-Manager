@@ -1,6 +1,8 @@
 import { memo, useEffect, useMemo, useState, type ReactNode } from "react";
 import { HubCopyTickWrap, useHubCopyFlash } from "@tool-workspace/hub-ui";
 import type { TwofaAccount } from "./types";
+import { formatTwofaAccountStatus } from "./twofa-account-status";
+import { latestTwofaLogEntry } from "./twofa-account-log";
 import { generateCode, normalizeSecret, secondsRemaining } from "./totp";
 import { useTwofaTotpTick } from "./twofa-totp-tick";
 import { readTwofaMaskPasswordInTable, TWOFA_TABLE_DISPLAY_CHANGE_EVENT } from "./twofa-table-display-prefs";
@@ -107,6 +109,35 @@ export function TwofaSecretCell({ account }: { account: TwofaAccount }) {
         title="Copy secret"
       />
     </div>
+  );
+}
+
+export function TwofaStatusCell({ account }: { account: TwofaAccount }) {
+  const label = formatTwofaAccountStatus(account.status);
+  return (
+    <span className="line-clamp-1" title={label}>
+      {label}
+    </span>
+  );
+}
+
+export function TwofaNoteCell({ account }: { account: TwofaAccount }) {
+  const value = account.note?.trim();
+  if (!value) return <span className="hub-users-cell-muted">—</span>;
+  return (
+    <span className="line-clamp-2 text-left" title={value}>
+      {value}
+    </span>
+  );
+}
+
+export function TwofaLogCell({ account }: { account: TwofaAccount }) {
+  const entry = latestTwofaLogEntry(account);
+  if (!entry) return <span className="hub-users-cell-muted">—</span>;
+  return (
+    <span className="line-clamp-2 text-left" title={`${entry.message} · ${entry.at}`}>
+      {entry.message}
+    </span>
   );
 }
 

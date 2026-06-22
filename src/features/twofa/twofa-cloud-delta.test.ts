@@ -9,6 +9,9 @@ function row(partial: Partial<TwofaDbRow> & Pick<TwofaDbRow, "id">): TwofaDbRow 
     account: "a@b.com",
     password: null,
     secret: "SECRET",
+    note: null,
+    status: "active",
+    log: [],
     created_at: "2026-06-01T00:00:00.000Z",
     updated_at: "2026-06-09T10:00:00.000Z",
     last_used_at: null,
@@ -22,6 +25,7 @@ function localAccount(partial: Partial<TwofaAccount> & Pick<TwofaAccount, "id">)
     service: "Gmail",
     account: "a@b.com",
     secret: "SECRET",
+    status: "active",
     createdAt: "2026-06-01T00:00:00.000Z",
     updatedAt: "2026-06-08T00:00:00.000Z",
     ...partial,
@@ -45,5 +49,12 @@ describe("applyTwofaCloudDelta", () => {
     ]);
     expect(accounts).toHaveLength(1);
     expect(accounts[0]?.secret).toBe("NEW");
+  });
+
+  it("keeps local cleared secret when remote echo has same updated_at", () => {
+    const ts = "2026-06-09T12:00:00.000Z";
+    const local = [localAccount({ id: "a", secret: "", updatedAt: ts })];
+    const { accounts } = applyTwofaCloudDelta(local, [row({ id: "a", secret: "STALE", updated_at: ts })]);
+    expect(accounts[0]?.secret).toBe("");
   });
 });

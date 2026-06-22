@@ -1,34 +1,38 @@
 import { useEffect, useState } from "react";
 import { ToggleRow } from "@tool-workspace/hub-ui";
 import {
-  readTwofaMaskPasswordInTable,
+  readTwofaShowPasswordInTable,
   TWOFA_TABLE_DISPLAY_CHANGE_EVENT,
-  writeTwofaMaskPasswordInTable,
+  writeTwofaShowPasswordInTable,
 } from "./twofa-table-display-prefs";
 
-const MASK_PASSWORD_TOOLTIP = "Shows •••• in the table — click still copies plain text.";
+const SHOW_PASSWORD_TOOLTIP =
+  "Plain text in the password column and detail modal. Off shows •••• in the table (copy still works).";
 
-/** App mode toggle — mask password column values in 2FA table. */
-export function TwofaMaskPasswordToggle() {
-  const [maskPassword, setMaskPassword] = useState(() => readTwofaMaskPasswordInTable());
+/** Display setting — show or mask password in table and detail modal. */
+export function TwofaShowPasswordToggle() {
+  const [showPassword, setShowPassword] = useState(() => readTwofaShowPasswordInTable());
 
   useEffect(() => {
-    const sync = () => setMaskPassword(readTwofaMaskPasswordInTable());
+    const sync = () => setShowPassword(readTwofaShowPasswordInTable());
     window.addEventListener(TWOFA_TABLE_DISPLAY_CHANGE_EVENT, sync);
     return () => window.removeEventListener(TWOFA_TABLE_DISPLAY_CHANGE_EVENT, sync);
   }, []);
 
   return (
-    <div title={MASK_PASSWORD_TOOLTIP}>
+    <div title={SHOW_PASSWORD_TOOLTIP}>
       <ToggleRow
-        label="Mask password in table"
-        on={maskPassword}
+        label="Show password in table"
+        on={showPassword}
         onChange={() => {
-          const next = !maskPassword;
-          writeTwofaMaskPasswordInTable(next);
-          setMaskPassword(next);
+          const next = !showPassword;
+          writeTwofaShowPasswordInTable(next);
+          setShowPassword(next);
         }}
       />
     </div>
   );
 }
+
+/** @deprecated use TwofaShowPasswordToggle */
+export const TwofaMaskPasswordToggle = TwofaShowPasswordToggle;

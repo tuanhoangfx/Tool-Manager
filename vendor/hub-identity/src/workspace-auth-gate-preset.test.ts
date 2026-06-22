@@ -6,6 +6,9 @@ describe("createWorkspaceAuthGatePreset", () => {
     const preset = createWorkspaceAuthGatePreset({ code: "P0020", variant: "cookie-auto" });
     expect(preset.anonymousHint).toMatch(/local cookie jar/i);
     expect(preset.errorOptions?.dualWorkspace).toBe(true);
+    expect(preset.toolInfo.code).toBeUndefined();
+    expect(preset.toolInfo.name).toBe("Data Box");
+    expect(preset.toolInfo.tagline).toBe("Notes, cookies & 2FA vault");
   });
 
   it("returns P0004 users tagline", () => {

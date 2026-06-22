@@ -1,12 +1,16 @@
 import React, { useMemo, type ReactNode } from 'react';
-import { HubMultiFilterDropdown } from '@tool-workspace/hub-ui';
+import { HubFormFieldLabel, HubMultiFilterDropdown, HubSingleFilterDropdown } from '@tool-workspace/hub-ui';
 import { useSettings } from '../../context/SettingsContext';
 import { Task, Profile, Project } from '../../types';
-import StatusPrioritySelect, { CustomSelectOption } from '../common/StatusPrioritySelect';
-import { PROJECT_COLORS } from '../../constants';
 import CustomDatePicker from '../common/CustomDatePicker';
 import { TODO_HUB } from '../../styles/todo-hub-classes';
-import { buildTodoMultiFilterDef, profileFilterOptions } from '../../todo-hub-filter-helpers';
+import {
+    buildTodoPriorityFilterOptions,
+    buildTodoTaskDetailAssigneeFilterDef,
+    buildTodoTaskDetailProjectFilterDef,
+    TODO_FILTER_FIELD_EMOJI,
+    TODO_TASK_DETAIL_DUE_DATE_EMOJI,
+} from '../../todo-hub-filter-helpers';
 import { todoProfileAssigneeTooltip } from '../../todo-profile-display';
 
 interface TaskDetailsFormProps {
@@ -42,20 +46,12 @@ const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({
     const { t } = useSettings();
 
     const projectFilterDef = useMemo(
-        () =>
-            buildTodoMultiFilterDef('project', t.project, [
-                { value: 'personal', label: t.personalProject, color: '#6b7280' },
-                ...userProjects.map((p) => ({
-                    value: p.id.toString(),
-                    label: p.name,
-                    color: p.color || PROJECT_COLORS[p.id % PROJECT_COLORS.length],
-                })),
-            ]),
+        () => buildTodoTaskDetailProjectFilterDef(t, userProjects),
         [userProjects, t.personalProject, t.project],
     );
 
     const assigneeFilterDef = useMemo(
-        () => buildTodoMultiFilterDef('assignee', t.assignee, profileFilterOptions(allUsers, { compactTrigger: true })),
+        () => buildTodoTaskDetailAssigneeFilterDef(t, allUsers),
         [allUsers, t.assignee],
     );
 
@@ -65,11 +61,7 @@ const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({
         return user ? todoProfileAssigneeTooltip(user) : undefined;
     }, [allUsers, taskData.assigneeIds]);
 
-    const priorityConfig: { [key in Task['priority']]: CustomSelectOption } = {
-        low: { label: t.low, icon: '💤', color: 'text-green-400' },
-        medium: { label: t.medium, icon: '⚡', color: 'text-yellow-400' },
-        high: { label: t.high, icon: '🚨', color: 'text-red-400' },
-    };
+    const priorityOptions = useMemo(() => buildTodoPriorityFilterOptions(t), [t]);
 
     return (
         <div className="space-y-3">
@@ -86,7 +78,7 @@ const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({
             </div>
             <div className={TODO_HUB.detailsSplit}>
                 <div className={TODO_HUB.detailsSplitDescription}>
-                    <label htmlFor="description" className={`${TODO_HUB.labelSection} sm:text-sm`}>
+                    <label htmlFor="description" className="hub-form-field-label block">
                         {t.descriptionLabel}
                     </label>
                     <textarea
@@ -98,16 +90,22 @@ const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({
                         className={`${TODO_HUB.field} sm:text-sm`}
                     />
                     <div className={TODO_HUB.taskDetailFilterRow}>
-                        <HubMultiFilterDropdown
-                            className="w-full min-w-0"
-                            triggerFormat="value"
-                            filter={projectFilterDef}
-                            selected={taskData.projectIds}
-                            onChange={(ids) => onFieldChange('projectIds', handleProjectSelection(taskData.projectIds, ids))}
-                        />
-                        <div className={validationError === 'assignee' ? 'min-w-0 w-full ring-2 ring-red-500/50 rounded-md animate-shake' : 'min-w-0 w-full'}>
+                        <div className={TODO_HUB.taskDetailFilterCell}>
+                            <HubFormFieldLabel emoji={TODO_FILTER_FIELD_EMOJI.project}>{t.project}</HubFormFieldLabel>
                             <HubMultiFilterDropdown
                                 className="w-full min-w-0"
+                                triggerClassName={TODO_HUB.taskDetailFilterTrigger}
+                                triggerFormat="value"
+                                filter={projectFilterDef}
+                                selected={taskData.projectIds}
+                                onChange={(ids) => onFieldChange('projectIds', handleProjectSelection(taskData.projectIds, ids))}
+                            />
+                        </div>
+                        <div className={TODO_HUB.taskDetailFilterCell}>
+                            <HubFormFieldLabel emoji={TODO_FILTER_FIELD_EMOJI.assignee}>{t.assignee}</HubFormFieldLabel>
+                            <HubMultiFilterDropdown
+                                className={`w-full min-w-0${validationError === 'assignee' ? ' ring-2 ring-red-500/50 rounded-lg animate-shake' : ''}`}
+                                triggerClassName={TODO_HUB.taskDetailFilterTrigger}
                                 triggerFormat="value"
                                 triggerTitle={assigneeTriggerTitle}
                                 filter={assigneeFilterDef}
@@ -115,18 +113,29 @@ const TaskDetailsForm: React.FC<TaskDetailsFormProps> = ({
                                 onChange={(ids) => onFieldChange('assigneeIds', ids)}
                             />
                         </div>
-                        <CustomDatePicker
-                            value={taskData.dueDate}
-                            onChange={(val) => onFieldChange('dueDate', val)}
-                            placeholder={t.dueDateLabel}
-                            className="w-full min-w-0"
-                            compactTrigger
-                        />
-                        <div className="min-w-0 w-full">
-                            <StatusPrioritySelect
+                        <div className={TODO_HUB.taskDetailFilterCell}>
+                            <HubFormFieldLabel emoji={TODO_FILTER_FIELD_EMOJI.dueDate}>{t.dueDateLabel}</HubFormFieldLabel>
+                            <CustomDatePicker
+                                value={taskData.dueDate}
+                                onChange={(val) => onFieldChange('dueDate', val)}
+                                placeholder={t.dueDateLabel}
+                                className="w-full min-w-0"
+                                triggerClassName={TODO_HUB.taskDetailFilterTrigger}
+                                triggerEmoji={TODO_TASK_DETAIL_DUE_DATE_EMOJI}
+                                compactTrigger
+                            />
+                        </div>
+                        <div className={TODO_HUB.taskDetailFilterCell}>
+                            <HubFormFieldLabel emoji={TODO_FILTER_FIELD_EMOJI.priority}>{t.priority}</HubFormFieldLabel>
+                            <HubSingleFilterDropdown
+                                filterKey="priority"
+                                label={t.priority}
+                                options={priorityOptions}
                                 value={taskData.priority}
-                                onChange={(val) => onFieldChange('priority', val)}
-                                options={priorityConfig}
+                                onChange={(val) => onFieldChange('priority', val as Task['priority'])}
+                                triggerFormat="value"
+                                triggerClassName={TODO_HUB.taskDetailFilterTrigger}
+                                className="w-full min-w-0"
                             />
                         </div>
                     </div>

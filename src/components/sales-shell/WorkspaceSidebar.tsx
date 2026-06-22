@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { RefreshCcw } from "lucide-react";
-import { APP_VERSION } from "../../lib/app-meta";
 import type { WorkspaceNavScreen } from "../../lib/workspace-screen";
 import { ToolAvatar } from "../ToolAvatar";
 import { toolIconName, toolSvgIcon } from "../../lib/visual";
+import { DATA_BOX_PRODUCT } from "../../lib/app-meta";
 import { clearDataBoxSession } from "../../lib/data-box-session";
 import { setOfflineMode } from "../../lib/offlineMode";
 import { clearTwofaSession } from "../../lib/twofa-session";
@@ -66,14 +66,13 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
     <HubSidebarShell
       brandLeading={
         <ToolAvatar
-          code="P0020"
-          iconName={toolIconName({ code: "P0020" })}
-          svgSrc={toolSvgIcon({ code: "P0020" }) ?? undefined}
+          code={DATA_BOX_PRODUCT.code}
+          iconName={toolIconName({ code: DATA_BOX_PRODUCT.code })}
+          svgSrc={toolSvgIcon({ code: DATA_BOX_PRODUCT.code }) ?? undefined}
           size="md"
         />
       }
-      brandTitle="P0020-Data-Box"
-      brandTagline={`P0020 · v${APP_VERSION}`}
+      brandTitle={DATA_BOX_PRODUCT.name}
       nav={
         <HubSidebarNavList
           structure={NAV_STRUCTURE}

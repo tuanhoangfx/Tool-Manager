@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { HubFormFieldLabel } from '@tool-workspace/hub-ui';
 import { useSettings } from '../../context/SettingsContext';
 import { TaskComment, Profile } from '../../types';
 import { formatAbsoluteDateTime } from '../../lib/taskUtils';
@@ -54,9 +55,9 @@ const CommentSection: React.FC<CommentSectionProps> = ({
 
     return (
         <div className={embedded ? "contents" : "flex min-h-0 flex-col"}>
-            <label className={`${TODO_HUB.labelSection} sm:text-sm`}>
+            <HubFormFieldLabel className="block">
               {t.comments} ({comments.length})
-            </label>
+            </HubFormFieldLabel>
             <div className={panelClass}>
                 {comments.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center text-center text-[var(--muted)]">

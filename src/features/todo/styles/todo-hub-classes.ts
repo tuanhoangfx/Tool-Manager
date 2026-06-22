@@ -40,6 +40,10 @@ export const TODO_HUB = {
   filterRow: "todo-hub-filter-row",
   /** Task modal Details — 4 filters on one row (distinct from board .todo-hub-filter-row flex). */
   taskDetailFilterRow: "todo-hub-task-detail-filter-row",
+  /** Shared trigger chrome for task modal 2×2 filters. */
+  taskDetailFilterTrigger: "w-full justify-between",
+  /** Label + control stack in task modal filter grid. */
+  taskDetailFilterCell: "todo-hub-task-detail-filter-cell",
   badge: "todo-hub-badge",
   badgePriorityLow: "todo-hub-badge todo-hub-badge--priority-low",
   badgePriorityMedium: "todo-hub-badge todo-hub-badge--priority-medium",

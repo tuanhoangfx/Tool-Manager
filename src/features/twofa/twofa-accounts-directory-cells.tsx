@@ -4,12 +4,15 @@ import {
   TwofaAccountCell,
   TwofaBrowserCell,
   TwofaCodeCell,
+  TwofaLogCell,
+  TwofaNoteCell,
   TwofaPasswordCell,
   TwofaPeriodCell,
   TwofaSecretCell,
+  TwofaStatusCell,
 } from "./twofa-copy-cells";
 import type { TwofaAccount } from "./types";
-import { fmtHubDate, twofaActivityAt } from "./twofa-time";
+import { TwofaRelativeTime } from "./TwofaRelativeTime";
 import type { TwofaTableColumnKey } from "./twofa-table-prefs";
 
 export type TwofaAccountsTableSortKey = TwofaTableColumnKey;
@@ -44,6 +47,12 @@ export function renderTwofaAccountsDirectoryBodyCell(
           <TwofaAccountCell account={row} />
         </DirectoryTableBodyCell>
       );
+    case "status":
+      return (
+        <DirectoryTableBodyCell key={key} colClass={colClass}>
+          <TwofaStatusCell account={row} />
+        </DirectoryTableBodyCell>
+      );
     case "password":
       return (
         <DirectoryTableBodyCell key={key} colClass={colClass}>
@@ -68,16 +77,28 @@ export function renderTwofaAccountsDirectoryBodyCell(
           <TwofaPeriodCell />
         </DirectoryTableBodyCell>
       );
+    case "note":
+      return (
+        <DirectoryTableBodyCell key={key} colClass={colClass}>
+          <TwofaNoteCell account={row} />
+        </DirectoryTableBodyCell>
+      );
+    case "log":
+      return (
+        <DirectoryTableBodyCell key={key} colClass={colClass}>
+          <TwofaLogCell account={row} />
+        </DirectoryTableBodyCell>
+      );
     case "created":
       return (
         <DirectoryTableBodyCell key={key} colClass={colClass} typographyClass="hub-users-cell-muted">
-          <span className="line-clamp-1">{fmtHubDate(row.createdAt)}</span>
+          <TwofaRelativeTime iso={row.createdAt} className="line-clamp-1" />
         </DirectoryTableBodyCell>
       );
-    case "used":
+    case "updated":
       return (
         <DirectoryTableBodyCell key={key} colClass={colClass} typographyClass="hub-users-cell-muted">
-          <span className="line-clamp-1">{fmtHubDate(twofaActivityAt(row))}</span>
+          <TwofaRelativeTime iso={row.updatedAt} className="line-clamp-1" />
         </DirectoryTableBodyCell>
       );
     default:

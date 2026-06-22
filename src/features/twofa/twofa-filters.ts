@@ -29,20 +29,32 @@ export function filterTwofaAccounts(
 ): TwofaAccount[] {
   const q = query.trim().toLowerCase();
   const serviceFilters = filterValues.service ?? [];
+  const statusFilters = filterValues.status ?? [];
   const usageFilters = filterValues.usage ?? [];
   const now = Date.now();
   const weekMs = 7 * 86400000;
 
   return accounts.filter((row) => {
     if (q) {
-      const haystack = [row.service, row.browser, row.account, row.secret].join(" ").toLowerCase();
+      const haystack = [row.service, row.browser, row.account, row.password, row.note, row.secret]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const logHay = (row.log ?? []).map((entry) => entry.message).join(" ").toLowerCase();
       const secretHay = normalizeSecret(row.secret).toLowerCase();
       const qSecret = normalizeSecret(q).toLowerCase();
-      const matchText = haystack.includes(q) || (qSecret.length >= 8 && secretHay.includes(qSecret));
+      const matchText =
+        haystack.includes(q) ||
+        logHay.includes(q) ||
+        (qSecret.length >= 8 && secretHay.includes(qSecret));
       if (!matchText) return false;
     }
 
     if (serviceFilters.length && !serviceFilters.includes(row.service.trim() || "Other")) {
+      return false;
+    }
+
+    if (statusFilters.length && !statusFilters.includes(row.status)) {
       return false;
     }
 

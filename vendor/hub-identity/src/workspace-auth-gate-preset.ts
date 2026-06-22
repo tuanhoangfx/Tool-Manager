@@ -3,7 +3,7 @@ import type { CreateHubForgotPasswordHandlerOptions } from "./hub-forgot-passwor
 export type WorkspaceAuthToolCode = "P0004" | "P0016" | "P0020";
 
 export type WorkspaceAuthGateToolInfo = {
-  code: string;
+  code?: string;
   name: string;
   tagline: string;
 };
@@ -54,7 +54,7 @@ const BASE: Record<
   },
   P0020: {
     title: "Welcome to Data Box",
-    toolInfo: { code: "P0020", name: "Data Box" },
+    toolInfo: { name: "Data Box" },
     errorOptions: { toolHubHint: true, dualWorkspace: true },
     forgotPassword: {},
   },

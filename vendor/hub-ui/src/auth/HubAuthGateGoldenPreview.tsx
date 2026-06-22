@@ -37,7 +37,7 @@ const PREVIEW: Record<PreviewTool, PreviewConfig> = {
   },
   P0020: {
     title: "Welcome to Data Box",
-    toolInfo: { code: "P0020", name: "Data Box", tagline: "Notes, cookies & 2FA vault" },
+    toolInfo: { name: "Data Box", tagline: "Notes, cookies & 2FA vault" },
     variant: "anonymous-dual",
     anonymousHint: "Browse with limited features. Cloud sync requires sign-in.",
     deniedTitle: "No access to Data Box",

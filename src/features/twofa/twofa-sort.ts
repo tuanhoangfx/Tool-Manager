@@ -1,5 +1,4 @@
 import type { TwofaAccount } from "./types";
-import { twofaActivityAt } from "./twofa-time";
 import type { TwofaTableColumnKey } from "./twofa-table-prefs";
 
 export function sortableTwofaValue(row: TwofaAccount, key: TwofaTableColumnKey): string | number {
@@ -10,14 +9,20 @@ export function sortableTwofaValue(row: TwofaAccount, key: TwofaTableColumnKey):
       return row.browser ?? "";
     case "account":
       return row.account;
+    case "status":
+      return row.status;
     case "password":
       return row.password ?? "";
     case "secret":
       return row.secret;
+    case "note":
+      return row.note ?? "";
+    case "log":
+      return row.log?.[row.log.length - 1]?.message ?? "";
     case "created":
       return new Date(row.createdAt).getTime();
-    case "used":
-      return new Date(twofaActivityAt(row)).getTime();
+    case "updated":
+      return new Date(row.updatedAt).getTime();
     case "code":
     case "period":
     default:

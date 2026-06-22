@@ -1,0 +1,113 @@
+/* 2FA inline label + control rows — shared by detail modal + add form */
+
+.twofa-adm-form-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.twofa-adm-form-row {
+  display: grid;
+  gap: 0.4rem 0.5rem;
+  align-items: center;
+}
+
+.twofa-adm-form-row--3 {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: 0.5rem;
+  row-gap: 0.4rem;
+  align-items: center;
+}
+
+.twofa-adm-form-row--3 .twofa-adm-inline-field {
+  display: contents;
+}
+
+.twofa-adm-form-row--2 {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: 0.5rem;
+  row-gap: 0.4rem;
+  align-items: center;
+}
+
+.twofa-adm-form-row--2 .twofa-adm-inline-field {
+  display: contents;
+}
+
+.twofa-adm-inline-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.35rem 0.45rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.twofa-adm-inline-field__label {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-width: 4.75rem;
+}
+
+.twofa-adm-inline-field__label .hub-users-th-icon {
+  width: 11px;
+  height: 11px;
+}
+
+.twofa-adm-inline-field__label .hub-users-th-text {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgb(148, 163, 184);
+}
+
+.twofa-adm-inline-field__control {
+  min-width: 0;
+}
+
+.twofa-adm-inline-field__value {
+  min-width: 0;
+  font-size: 10px;
+  color: rgb(203, 213, 225);
+  line-height: var(--hub-control-h, 2rem);
+  display: flex;
+  align-items: center;
+}
+
+.twofa-adm-control {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--hub-control-h, 2rem);
+  height: var(--hub-control-h, 2rem);
+  padding: 0.2rem 0.45rem;
+  font-size: 11px;
+  border-radius: 0.45rem;
+}
+
+@media (max-width: 1023px) {
+  .twofa-adm-form-row--3 {
+    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .twofa-adm-form-row--3 .twofa-adm-inline-field:nth-child(3) {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .twofa-adm-form-row--3,
+  .twofa-adm-form-row--2 {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .twofa-adm-form-row--3 .twofa-adm-inline-field,
+  .twofa-adm-form-row--2 .twofa-adm-inline-field {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}

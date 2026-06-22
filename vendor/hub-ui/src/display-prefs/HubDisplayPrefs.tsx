@@ -64,6 +64,7 @@ export function HubDisplayPrefs({
   displayExtras,
   footerActions,
   tablePanel,
+  tableSectionLabel = "Table columns",
   tableSectionActions,
   tableActiveCount = 0,
   headerStatLabel = (isSystem) => (isSystem ? "System header" : "Hub header"),
@@ -417,6 +418,8 @@ export function HubDisplayPrefs({
             <ToggleRow
               key={f.key}
               label={f.label}
+              icon={f.icon}
+              iconClassName={f.iconClassName}
               on={isVisible(visHubFilters, filterDefaults, f.key)}
               onChange={() => toggle(filterParam, tabFilters, filterDefaults, f.key)}
             />
@@ -442,7 +445,7 @@ export function HubDisplayPrefs({
   if (!displayOnToolbar && hasTablePanel) {
     pushSection(
       "table",
-      "Table columns",
+      tableSectionLabel,
       buildSemanticTocIcon("settings.table"),
       tablePanel,
       tableSectionActions,

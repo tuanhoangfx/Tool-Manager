@@ -4,6 +4,7 @@ import {
   detectTwofaBulkLineFormat,
   formatTwofaBulkLine,
   getTwofaBulkLineStatuses,
+  normalizeTwofaBulkPasteLine,
   parseTwofaBulkLine,
   parseTwofaBulkText,
   summarizeTwofaBulkLineStatuses,
@@ -11,6 +12,17 @@ import {
 } from "./parse-twofa-bulk";
 
 describe("parseTwofaBulkLine", () => {
+  it("parses Platform|ID|Pass without 2FA (3 fields)", () => {
+    const row = parseTwofaBulkLine(["Facebook", "user@email.com", "mypass"]);
+    expect(row).toEqual({
+      browser: undefined,
+      service: "Facebook",
+      account: "user@email.com",
+      password: "mypass",
+      secret: "",
+    });
+  });
+
   it("parses Platform|ID|2FA (3 fields)", () => {
     const row = parseTwofaBulkLine(["Google", "user@gmail.com", "JBSWY3DPEHPK3PXP"]);
     expect(row).toEqual({
@@ -125,8 +137,8 @@ GitHub|dev|secret123|JBSWY3DPEHPK3PXP`;
     expect(rows[0]?.secret).toBe("JBSWY3DPEHPK3PXP");
   });
 
-  it("reports lines missing secret", () => {
-    const { errors } = parseTwofaBulkText("Google||");
+  it("reports completely empty rows", () => {
+    const { errors } = parseTwofaBulkText("||");
     expect(errors.length).toBeGreaterThan(0);
   });
 });
@@ -216,14 +228,18 @@ Google|user@gmail.com|JBSWY3DPEHPK3PXP
 !!!
 # comment
 
-Google|user@gmail.com|not-base32!!!`;
+Google|user@gmail.com|not-base32!!!
+||
+invalid|only|one|field|too|many`;
     const statuses = getTwofaBulkLineStatuses(text);
     expect(statuses[0]?.kind).toBe("skip");
     expect(statuses[1]?.kind).toBe("valid");
     expect(statuses[2]?.kind).toBe("invalid");
     expect(statuses[3]?.kind).toBe("skip");
     expect(statuses[4]?.kind).toBe("empty");
-    expect(statuses[5]?.kind).toBe("invalid");
+    expect(statuses[5]?.kind).toBe("valid");
+    expect(statuses[6]?.kind).toBe("invalid");
+    expect(statuses[7]?.kind).toBe("invalid");
   });
 
   it("summarizes line statuses", () => {
@@ -237,21 +253,48 @@ Platform|ID|2FA`;
 
 describe("detectTwofaBulkLineFormat", () => {
   it("detects core and browser-prefixed schemas", () => {
-    expect(detectTwofaBulkLineFormat("JBSWY3DPEHPK3PXP")).toBe("2FA");
-    expect(detectTwofaBulkLineFormat("Google|JBSWY3DPEHPK3PXP")).toBe("Platform|2FA");
+    expect(detectTwofaBulkLineFormat("JBSWY3DPEHPK3PXP")).toBe("Secret");
+    expect(detectTwofaBulkLineFormat("Google|JBSWY3DPEHPK3PXP")).toBe("Service|Secret");
     expect(detectTwofaBulkLineFormat("Google|user@gmail.com|JBSWY3DPEHPK3PXP")).toBe(
-      "Platform|ID|2FA",
+      "Service|Account|Secret",
     );
     expect(detectTwofaBulkLineFormat("Google|user@gmail.com|pass|JBSWY3DPEHPK3PXP")).toBe(
-      "Platform|ID|Pass|2FA",
+      "Service|Account|Pass|Secret",
     );
     expect(detectTwofaBulkLineFormat("0100|Google|user@gmail.com|JBSWY3DPEHPK3PXP")).toBe(
-      "Browser|Platform|ID|2FA",
+      "Browser|Service|Account|Secret",
     );
     expect(
       detectTwofaBulkLineFormat("0100|Google|user@gmail.com|pass|JBSWY3DPEHPK3PXP"),
-    ).toBe("Browser|Platform|ID|Pass|2FA");
+    ).toBe("Browser|Service|Account|Pass|Secret");
     expect(detectTwofaBulkLineFormat("Platform|ID|2FA")).toBe("Header");
+    expect(detectTwofaBulkLineFormat("Service|Account|Secret")).toBe("Header");
+  });
+});
+
+describe("normalizeTwofaBulkPasteLine", () => {
+  it("maps legacy header tokens to table vocabulary", () => {
+    expect(normalizeTwofaBulkPasteLine("Platform|ID|2FA")).toBe("Service|Account|Secret");
+    expect(normalizeTwofaBulkPasteLine("platform : id : 2fa")).toBe("Service|Account|Secret");
+    expect(normalizeTwofaBulkPasteLine("Browser|Platform|ID|Pass|2FA")).toBe(
+      "Browser|Service|Account|Pass|Secret",
+    );
+  });
+
+  it("leaves data rows unchanged", () => {
+    const row = "Google|user@gmail.com|JBSWY3DPEHPK3PXP";
+    expect(normalizeTwofaBulkPasteLine(row)).toBe(row);
+  });
+});
+
+describe("parseTwofaBulkText header aliases", () => {
+  it("skips legacy Platform|ID|2FA header after normalization", () => {
+    const text = `Platform|ID|2FA
+Google|user@gmail.com|JBSWY3DPEHPK3PXP`;
+    const { rows, errors } = parseTwofaBulkText(text);
+    expect(errors).toHaveLength(0);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.service).toBe("Google");
   });
 });
 
@@ -261,9 +304,9 @@ describe("describeTwofaBulkLineFields", () => {
       "0100|ChatGPT|q3c78@outlook.com|openPH@2|7JSROMJWQL5ZGMD4",
     );
     expect(tip).toContain("Browser: 0100");
-    expect(tip).toContain("Platform: ChatGPT");
-    expect(tip).toContain("ID: q3c78@outlook.com");
+    expect(tip).toContain("Service: ChatGPT");
+    expect(tip).toContain("Account: q3c78@outlook.com");
     expect(tip).toContain("Pass: openPH@2");
-    expect(tip).toContain("2FA:");
+    expect(tip).toContain("Secret:");
   });
 });

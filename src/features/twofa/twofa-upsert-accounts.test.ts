@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { TwofaAccount } from "./types";
 import {
+  bulkUpdateTwofaMeta,
   dedupeTwofaAccounts,
   findTwofaDraftConflict,
   previewTwofaDedupe,
+  updateTwofaDraft,
   upsertTwofaDraft,
 } from "./twofa-upsert-accounts";
 import { twofaIdentityKey } from "./twofa-identity";
@@ -22,6 +24,7 @@ function row(
     service,
     account,
     secret,
+    status: "active",
     createdAt: "2026-06-01T00:00:00.000Z",
     updatedAt,
   };
@@ -95,6 +98,19 @@ describe("upsertTwofaDraft", () => {
     expect(outcome?.row.browser).toBe("0100");
   });
 
+  it("accepts account without 2FA secret when identity fields exist", () => {
+    const outcome = upsertTwofaDraft(
+      [],
+      { service: "Facebook", account: "user@email.com", password: "secret-pass", secret: "" },
+      "2026-06-07T00:00:00.000Z",
+    );
+    expect(outcome?.accounts).toHaveLength(1);
+    expect(outcome?.row.secret).toBe("");
+    expect(outcome?.row.password).toBe("secret-pass");
+    expect(outcome?.row.status).toBe("active");
+    expect(outcome?.row.log?.[0]?.message).toBe("Account created");
+  });
+
   it("dedupes within batch — last row wins", () => {
     let list: TwofaAccount[] = [];
     const now = "2026-06-07T00:00:00.000Z";
@@ -108,6 +124,25 @@ describe("upsertTwofaDraft", () => {
     expect(second?.replaced).toBe(true);
     expect(second?.accounts).toHaveLength(1);
     expect(second?.row.secret).toBe("NBSWY3DPEHPK3PXP");
+  });
+});
+
+describe("updateTwofaDraft", () => {
+  it("removes sibling row with same service+account when clearing secret", () => {
+    const prev = [
+      row("keeper", "Capcut", "user@test.com", SECRET, "2026-06-08T00:00:00.000Z"),
+      row("ghost", "Capcut", "user@test.com", SECRET, "2026-06-01T00:00:00.000Z"),
+    ];
+    const outcome = updateTwofaDraft(
+      prev,
+      "keeper",
+      { service: "Capcut", account: "user@test.com", secret: "" },
+      "2026-06-09T00:00:00.000Z",
+    );
+    expect(outcome?.accounts).toHaveLength(1);
+    expect(outcome?.row.id).toBe("keeper");
+    expect(outcome?.row.secret).toBe("");
+    expect(outcome?.removedIds).toEqual(["ghost"]);
   });
 });
 
@@ -152,6 +187,18 @@ describe("dedupeTwofaAccounts", () => {
     expect(accounts[0]?.id).toBe("b");
     expect(removedIds).toEqual(["a"]);
   });
+
+  it("collapses vault identity split between secret-key and service-account rows", () => {
+    const prev = [
+      row("ghost", "Capcut", "user@test.com", SECRET, "2026-06-01T00:00:00.000Z"),
+      row("keeper", "Capcut", "user@test.com", "", "2026-06-09T00:00:00.000Z"),
+    ];
+    const { accounts, removedIds } = dedupeTwofaAccounts(prev);
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0]?.id).toBe("keeper");
+    expect(accounts[0]?.secret).toBe("");
+    expect(removedIds).toContain("ghost");
+  });
 });
 
 describe("previewTwofaDedupe", () => {
@@ -171,5 +218,38 @@ describe("previewTwofaDedupe", () => {
       { service: "Gmail", count: 1 },
     ]);
     expect(preview.groups.length).toBeGreaterThan(0);
+  });
+});
+
+describe("bulkUpdateTwofaMeta", () => {
+  it("updates status and note for selected ids with audit log", () => {
+    const prev = [
+      row("a", "Gmail", "a@gmail.com"),
+      row("b", "ChatGPT", "b@gmail.com"),
+    ];
+    const now = "2026-06-09T12:00:00.000Z";
+    const { accounts, changed } = bulkUpdateTwofaMeta(
+      prev,
+      ["a", "b"],
+      { status: "disable", note: "Batch" },
+      now,
+    );
+    expect(changed).toHaveLength(2);
+    expect(accounts[0]?.status).toBe("disable");
+    expect(accounts[1]?.note).toBe("Batch");
+    expect(accounts[0]?.log?.at(-1)?.message).toContain("Status:");
+    expect(accounts[1]?.log?.at(-1)?.message).toContain("Note:");
+  });
+
+  it("appends note when appendNote is set", () => {
+    const prev = [{ ...row("a", "Gmail", "a@gmail.com"), note: "Checkpoint" }];
+    const { accounts, changed } = bulkUpdateTwofaMeta(
+      prev,
+      ["a"],
+      { note: "Batch", appendNote: true },
+      "2026-06-09T12:00:00.000Z",
+    );
+    expect(changed).toHaveLength(1);
+    expect(accounts[0]?.note).toBe("Checkpoint\nBatch");
   });
 });

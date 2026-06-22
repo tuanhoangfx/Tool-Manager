@@ -1,3 +1,28 @@
+import type { TwofaAccountStatus } from "./twofa-account-status";
+
+export type { TwofaAccountStatus } from "./twofa-account-status";
+
+export type TwofaAccountLogField =
+  | "service"
+  | "browser"
+  | "account"
+  | "password"
+  | "secret"
+  | "status"
+  | "note";
+
+export type TwofaAccountLogChange = {
+  field: TwofaAccountLogField;
+  before?: string;
+  after?: string;
+};
+
+export type TwofaAccountLogEntry = {
+  at: string;
+  message: string;
+  changes?: TwofaAccountLogChange[];
+};
+
 export type TwofaAccount = {
   id: string;
   service: string;
@@ -6,7 +31,14 @@ export type TwofaAccount = {
   account: string;
   /** Optional login password (stored locally). */
   password?: string;
+  /** Optional TOTP secret — empty when account has no 2FA. */
   secret: string;
+  /** Free-form note for the account vault row. */
+  note?: string;
+  /** Live operational status of the account. */
+  status: TwofaAccountStatus;
+  /** Audit trail of field changes for this account. */
+  log?: TwofaAccountLogEntry[];
   createdAt: string;
   updatedAt: string;
   /** Set when a code is copied or the row is actively used (for time-range filters). */
@@ -19,4 +51,6 @@ export type TwofaDraft = {
   account: string;
   password?: string;
   secret: string;
+  note?: string;
+  status?: TwofaAccountStatus;
 };

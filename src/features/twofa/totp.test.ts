@@ -11,6 +11,11 @@ describe("totp", () => {
     expect(code).toMatch(/^\d{6}$/);
   });
 
+  it("returns null when secret is empty", () => {
+    expect(generateCode("Test", "user@test.com", "")).toBeNull();
+    expect(generateCode("Test", "user@test.com", "   ")).toBeNull();
+  });
+
   it("seconds remaining is between 1 and 30", () => {
     const s = secondsRemaining();
     expect(s).toBeGreaterThanOrEqual(1);

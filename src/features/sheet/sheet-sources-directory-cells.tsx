@@ -1,6 +1,6 @@
 import {
   DirectoryTableBodyCell,
-  formatTabHeaderTimestamp,
+  HubActivityTimestampLabel,
   type HubDirectoryColumnDef,
 } from "@tool-workspace/hub-ui";
 import { DIRECTORY_CELL_TRUNCATE } from "../../lib/directory-cell-format";
@@ -36,12 +36,9 @@ export function renderSheetSourcesDirectoryBodyCell(
       </DirectoryTableBodyCell>
     );
   }
-  const label = formatTabHeaderTimestamp(sheetSourceSyncAt(row));
   return (
     <DirectoryTableBodyCell key={key} colClass={colClass}>
-      <span className="sheet-rail-sync-at whitespace-nowrap tabular-nums text-[var(--muted)]" title={label}>
-        {label}
-      </span>
+      <HubActivityTimestampLabel at={sheetSourceSyncAt(row)} />
     </DirectoryTableBodyCell>
   );
 }

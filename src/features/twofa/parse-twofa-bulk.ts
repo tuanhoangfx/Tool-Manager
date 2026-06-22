@@ -1,6 +1,7 @@
 import type { TwofaDraft } from "./types";
 import { isBrowserCode, normalizeBrowserCode } from "./twofa-browser-code";
-import { generateCode, normalizeSecret } from "./totp";
+import { generateCode, isPlausibleTotpSecret, normalizeSecret } from "./totp";
+import { twofaDraftHasContent } from "./twofa-upsert-accounts";
 
 export type TwofaBulkRow = TwofaDraft & { line: number };
 
@@ -10,12 +11,31 @@ export type TwofaBulkParseResult = {
 };
 
 export const TWOFA_BULK_FORMAT_HINT =
-  "Browser|Platform|ID|Pass|2FA · Platform|ID|2FA · secret only";
+  "Browser|Service|Account|Pass|Secret · Service|Account|Pass · Service|Account|Secret · secret only";
 
 const HEADER_3_RE = /^platform\s*[|:]\s*id\s*[|:]\s*2fa\s*$/i;
+const HEADER_3_ALT_RE = /^service\s*[|:]\s*account\s*[|:]\s*secret\s*$/i;
 const HEADER_4_RE = /^platform\s*[|:]\s*id\s*[|:]\s*pass\s*[|:]\s*2fa\s*$/i;
+const HEADER_4_ALT_RE = /^service\s*[|:]\s*account\s*[|:]\s*pass\s*[|:]\s*secret\s*$/i;
 const HEADER_BROWSER_3_RE = /^browser\s*[|:]\s*platform\s*[|:]\s*id\s*[|:]\s*2fa\s*$/i;
+const HEADER_BROWSER_3_ALT_RE = /^browser\s*[|:]\s*service\s*[|:]\s*account\s*[|:]\s*secret\s*$/i;
 const HEADER_BROWSER_4_RE = /^browser\s*[|:]\s*platform\s*[|:]\s*id\s*[|:]\s*pass\s*[|:]\s*2fa\s*$/i;
+const HEADER_BROWSER_4_ALT_RE =
+  /^browser\s*[|:]\s*service\s*[|:]\s*account\s*[|:]\s*pass\s*[|:]\s*secret\s*$/i;
+
+/** Legacy header tokens → table vocabulary (Platform|ID|2FA → Service|Account|Secret). */
+const BULK_HEADER_TOKEN_ALIASES: Record<string, string> = {
+  platform: "Service",
+  service: "Service",
+  id: "Account",
+  account: "Account",
+  "2fa": "Secret",
+  secret: "Secret",
+  totp: "Secret",
+  pass: "Pass",
+  password: "Pass",
+  browser: "Browser",
+};
 
 function splitFields(line: string): string[] {
   const sep = line.includes("|") ? "|" : line.includes(":") ? ":" : null;
@@ -23,13 +43,48 @@ function splitFields(line: string): string[] {
   return line.split(sep).map((p) => p.trim());
 }
 
+function looksLikeBulkHeaderTokens(parts: string[]): boolean {
+  if (parts.length < 2) return false;
+  return parts.every((part) => {
+    const key = part.trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(BULK_HEADER_TOKEN_ALIASES, key);
+  });
+}
+
+/** Normalize legacy header synonyms before parse (Platform|ID|2FA ↔ Service|Account|Secret). */
+export function normalizeTwofaBulkPasteLine(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.startsWith("#")) return raw;
+
+  const sep = trimmed.includes("|") ? "|" : trimmed.includes(":") ? ":" : null;
+  if (!sep) return raw;
+
+  const parts = splitFields(trimmed);
+  if (!looksLikeBulkHeaderTokens(parts)) return raw;
+
+  return parts
+    .map((part) => {
+      const key = part.trim().toLowerCase();
+      return BULK_HEADER_TOKEN_ALIASES[key] ?? part.trim();
+    })
+    .join("|");
+}
+
+function prepareBulkLine(raw: string): string {
+  return normalizeTwofaBulkPasteLine(raw.trim());
+}
+
 function isHeaderLine(raw: string): boolean {
   const compact = raw.replace(/\s+/g, "");
   return (
     HEADER_3_RE.test(compact) ||
+    HEADER_3_ALT_RE.test(compact) ||
     HEADER_4_RE.test(compact) ||
+    HEADER_4_ALT_RE.test(compact) ||
     HEADER_BROWSER_3_RE.test(compact) ||
-    HEADER_BROWSER_4_RE.test(compact)
+    HEADER_BROWSER_3_ALT_RE.test(compact) ||
+    HEADER_BROWSER_4_RE.test(compact) ||
+    HEADER_BROWSER_4_ALT_RE.test(compact)
   );
 }
 
@@ -50,12 +105,22 @@ function parseCoreFields(parts: string[]): ParsedFields | null {
   const account = parts[1] ?? "";
 
   if (parts.length === 3) {
+    const third = parts[2] ?? "";
+    if (account.trim() && third && !isPlausibleTotpSecret(third)) {
+      return {
+        browser: undefined,
+        service,
+        account,
+        password: third,
+        secret: "",
+      };
+    }
     return {
       browser: undefined,
       service,
       account,
       password: "",
-      secret: parts[2] ?? "",
+      secret: third,
     };
   }
 
@@ -100,7 +165,7 @@ export function parseTwofaBulkText(text: string): TwofaBulkParseResult {
 
   for (let i = 0; i < lines.length; i++) {
     const lineNo = i + 1;
-    const raw = lines[i].trim();
+    const raw = prepareBulkLine(lines[i]);
     if (!raw || raw.startsWith("#")) continue;
     if (isHeaderLine(raw)) continue;
 
@@ -115,8 +180,8 @@ export function parseTwofaBulkText(text: string): TwofaBulkParseResult {
     }
 
     const { browser, service, account, password, secret } = parsed;
-    if (!secret.trim()) {
-      errors.push({ line: lineNo, message: "Missing 2FA secret" });
+    if (!twofaDraftHasContent({ service, browser, account, password, secret })) {
+      errors.push({ line: lineNo, message: "Row is empty — add platform, ID, pass, or 2FA" });
       continue;
     }
 
@@ -154,11 +219,11 @@ export function validateTwofaBulkRows(rows: TwofaBulkRow[]): {
       password: row.password?.trim() || undefined,
       secret: normalizeSecret(row.secret),
     };
-    if (!draft.secret) {
-      invalid.push({ line: row.line, message: "Missing 2FA secret" });
+    if (!twofaDraftHasContent(draft)) {
+      invalid.push({ line: row.line, message: "Row is empty — add platform, ID, pass, or 2FA" });
       continue;
     }
-    if (!generateCode(draft.service, draft.account, draft.secret)) {
+    if (draft.secret && !generateCode(draft.service, draft.account, draft.secret)) {
       invalid.push({ line: row.line, message: "Invalid Base32 secret" });
       continue;
     }
@@ -181,7 +246,7 @@ export function getTwofaBulkLineStatuses(text: string): TwofaBulkLineStatus[] {
 }
 
 function getTwofaBulkLineStatus(raw: string, lineNo: number): TwofaBulkLineStatus {
-  const trimmed = raw.trim();
+  const trimmed = prepareBulkLine(raw);
   if (!trimmed) return { kind: "empty" };
   if (trimmed.startsWith("#") || isHeaderLine(trimmed)) return { kind: "skip" };
 
@@ -190,8 +255,8 @@ function getTwofaBulkLineStatus(raw: string, lineNo: number): TwofaBulkLineStatu
   if (!parsed) {
     return { kind: "invalid", message: "Expected 2FA secret (Base32) or Platform|ID|2FA" };
   }
-  if (!parsed.secret.trim()) {
-    return { kind: "invalid", message: "Missing 2FA secret" };
+  if (!parsed.secret.trim() && !twofaDraftHasContent(parsed)) {
+    return { kind: "invalid", message: "Row is empty — add platform, ID, pass, or 2FA" };
   }
 
   const row: TwofaBulkRow = {
@@ -223,9 +288,9 @@ export function summarizeTwofaBulkLineStatuses(statuses: TwofaBulkLineStatus[]):
   return { valid, invalid, skip };
 }
 
-/** Detected row schema label for gutter (e.g. Browser|Platform|ID|2FA). */
+/** Detected row schema label for gutter (e.g. Browser|Service|Account|Secret). */
 export function detectTwofaBulkLineFormat(raw: string): string | null {
-  const trimmed = raw.trim();
+  const trimmed = prepareBulkLine(raw);
   if (!trimmed) return null;
   if (trimmed.startsWith("#")) return null;
   if (isHeaderLine(trimmed)) return "Header";
@@ -237,16 +302,28 @@ export function detectTwofaBulkLineFormat(raw: string): string | null {
 
   if (hasBrowser) {
     const prefix = "Browser|";
-    if (core.length === 1) return `${prefix}2FA`;
-    if (core.length === 2) return `${prefix}Platform|2FA`;
-    if (core.length === 3) return `${prefix}Platform|ID|2FA`;
-    return `${prefix}Platform|ID|Pass|2FA`;
+    if (core.length === 1) return `${prefix}Secret`;
+    if (core.length === 2) return `${prefix}Service|Secret`;
+    if (core.length === 3) {
+      const third = core[2] ?? "";
+      if ((core[1] ?? "").trim() && third && !isPlausibleTotpSecret(third)) {
+        return `${prefix}Service|Account|Pass`;
+      }
+      return `${prefix}Service|Account|Secret`;
+    }
+    return `${prefix}Service|Account|Pass|Secret`;
   }
 
-  if (effectiveParts.length === 1) return "2FA";
-  if (effectiveParts.length === 2) return "Platform|2FA";
-  if (effectiveParts.length === 3) return "Platform|ID|2FA";
-  return "Platform|ID|Pass|2FA";
+  if (effectiveParts.length === 1) return "Secret";
+  if (effectiveParts.length === 2) return "Service|Secret";
+  if (effectiveParts.length === 3) {
+    const third = effectiveParts[2] ?? "";
+    if ((effectiveParts[1] ?? "").trim() && third && !isPlausibleTotpSecret(third)) {
+      return "Service|Account|Pass";
+    }
+    return "Service|Account|Secret";
+  }
+  return "Service|Account|Pass|Secret";
 }
 
 export function getTwofaBulkLineFormats(text: string): (string | null)[] {
@@ -256,7 +333,7 @@ export function getTwofaBulkLineFormats(text: string): (string | null)[] {
 
 /** Tooltip lines for format badge — parsed field breakdown. */
 export function describeTwofaBulkLineFields(raw: string): string | null {
-  const trimmed = raw.trim();
+  const trimmed = prepareBulkLine(raw);
   if (!trimmed) return null;
   if (trimmed.startsWith("#")) return "Comment line (skipped)";
   if (isHeaderLine(trimmed)) return "Header row (skipped)";
@@ -267,14 +344,14 @@ export function describeTwofaBulkLineFields(raw: string): string | null {
 
   const lines: string[] = [];
   if (parsed.browser) lines.push(`Browser: ${parsed.browser}`);
-  if (parsed.service) lines.push(`Platform: ${parsed.service}`);
-  if (parsed.account) lines.push(`ID: ${parsed.account}`);
+  if (parsed.service) lines.push(`Service: ${parsed.service}`);
+  if (parsed.account) lines.push(`Account: ${parsed.account}`);
   if (parsed.password) lines.push(`Pass: ${parsed.password}`);
-  if (parsed.secret) lines.push(`2FA: ${parsed.secret}`);
+  if (parsed.secret) lines.push(`Secret: ${parsed.secret}`);
 
   if (!lines.length) return null;
   if (lines.length === 1 && parsed.secret && !parsed.service && !parsed.browser) {
-    return `2FA secret: ${parsed.secret}`;
+    return `Secret: ${parsed.secret}`;
   }
   return lines.join("\n");
 }

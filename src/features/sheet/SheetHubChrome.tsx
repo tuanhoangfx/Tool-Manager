@@ -35,6 +35,7 @@ export function SheetHubChrome({ sources, active, children }: Props) {
           titleIconClass="text-cyan-300"
           title="Sheet"
           versionLine={version.line}
+          publishedAt={version.publishedAt}
           versionLive={version.live}
           centerStats={[
             visHeaderStats.has("sheet-total")

@@ -27,6 +27,7 @@ import { useNotesCookieRealtime } from "./useNotesCookieRealtime";
 import {
   disableCookieRouteInCloud,
   pullCookieRoutesFromCloud,
+  replaceCookieRouteDomainInCloud,
   upsertCookieRouteToCloud,
 } from "./cookieRoutesRepository";
 import { SupabaseMigrateBanner } from "./SupabaseMigrateBanner";
@@ -317,10 +318,11 @@ function CookieSyncMain({
               pushToast("Route saved locally (anonymous).", "info");
               return;
             }
-            void publishRouteToCloud(row, { silent: true }).then((ok) => {
-              if (!ok) {
+            void replaceCookieRouteDomainInCloud(session, row).then((res) => {
+              if (!res.ok) {
                 removeBinding(row.id);
                 setSelectedBindingId(null);
+                pushToast(res.error, "error", 8000);
                 return;
               }
               pushToExtension(nextBindings);
@@ -331,15 +333,19 @@ function CookieSyncMain({
           onUpdate={(id, patch) => {
             const current = bindings.find((binding) => binding.id === id);
             if (!current) return;
-            const nextRoute = { ...current, ...patch };
+            const nextRoute = { ...current, ...patch, domain: patch.domain ?? current.domain };
+            const previousDomain = current.domain;
             updateBinding(id, patch);
             if (offline) {
               pushToExtension(bindings.map((binding) => (binding.id === id ? nextRoute : binding)));
               pushToast("Route updated locally (anonymous).", "info");
               return;
             }
-            void publishRouteToCloud(nextRoute, { silent: true }).then((ok) => {
-              if (!ok) return;
+            void replaceCookieRouteDomainInCloud(session, nextRoute, previousDomain).then((res) => {
+              if (!res.ok) {
+                pushToast(res.error, "error", 8000);
+                return;
+              }
               pushToExtension(bindings.map((binding) => (binding.id === id ? nextRoute : binding)));
               pushToast("Route updated in cloud.", "success");
               void refreshCookieBridge({ silent: true });

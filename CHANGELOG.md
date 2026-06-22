@@ -1,5 +1,164 @@
 # Changelog
 
+## 2026-06-22 - Branding: auth gate subtitle, tab title, PWA name, sidebar SSOT audit
+
+- Version: `4.3.45`
+- Timestamp: 2026-06-22 16:45 (UTC+7)
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Auth gate subtitle: `Data Box — Notes, cookies & 2FA vault` (no `P0020` code prefix; hub-identity preset).
+- Browser tab title + boot loader aria: **Data Box**; PWA `manifest.json` `name` aligned (`short_name` unchanged).
+- hub-ui `UI_PATTERNS` sidebar brand SSOT + parity guard (no version/code in `brandTagline`).
+
+### Verification
+
+- Browser: auth modal subtitle without `P0020 ·`; document title `Data Box`
+- `hub-ui-parity-check.mjs --code P0020`
+
+## 2026-06-22 - Sidebar brand: icon + Data Box only
+
+- Version: `4.3.44`
+- Timestamp: 2026-06-22 13:30 (UTC+7)
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Sidebar brand: `Data Box` + tool icon only — removed `P0020` code and version tagline (version in tab header; parity P0003 Stealth).
+
+### Verification
+
+- Browser: sidebar shows icon + "Data Box", no tagline row
+
+## 2026-06-22 - Header release meta typography parity Session
+
+- Version: `4.3.43`
+- Timestamp: 2026-06-22 13:00 (UTC+7)
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- hub-ui `AppTabHeader`: version meta `vX.Y.Z` + activity dot + label — no `·` separator; label span matches Session `tabular-nums text-[var(--text)]/90`.
+- `UI_PATTERNS.md`: document header release meta layout.
+
+### Verification
+
+- `node Tool/scripts/sync-hub-ui-vendor.cjs P0020` — passed
+
+## 2026-06-22 - Notes rail + header meta single activity dot
+
+- Version: `4.3.42`
+- Timestamp: 2026-06-22 12:30 (UTC+7)
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Notes rail: one activity dot per row — folder marker moved to title icon; removed folder/sync dot stacking on meta line.
+- Tab header meta (hub-ui): drop release `live` dot beside version when `activityAt` set; activity dot renders before timestamp via `HubActivityTimestampLabel`.
+
+### Verification
+
+- `node Tool/scripts/sync-hub-ui-vendor.cjs P0020` — passed
+
+## 2026-06-22 - Hub vendor prereqs guard (hub-ui + hub-identity)
+
+- Version: `4.3.41`
+- Timestamp: 2026-06-22 12:00 (UTC+7)
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- `predev`: `verify-hub-vendor-prereqs` fails fast when `vendor/hub-identity` or `vendor/hub-ui` src is missing.
+- Workspace scripts: `sync-hub-ui-vendor` chains `sync-hub-identity-vendor`; `hub-ui-sync-verify` hash-checks identity for P0004/P0016/P0020.
+
+### Verification
+
+- `node Tool/scripts/verify-hub-vendor-prereqs.mjs P0004 P0016 P0020` — passed
+
+## 2026-06-22 - Hub activity timestamp SSOT
+
+- Version: `4.3.40`
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Cookie sync/load timestamps use hub-ui `HubActivityTimestampLabel` (removed local `activity-time-display`).
+- Shared with P0003 profile Last opened — dot + relative/stale format from `@tool-workspace/hub-ui` 0.2.3.
+
+### Verification
+
+- `vitest run format-hub-activity-time.test.ts` (hub-ui) — passed
+
+## 2026-06-22 - Activity timestamp copy + stale format fix
+
+- Version: `4.3.39`
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Fix `33m Ago` → `33m ago`: `HubUsersStatusLabel` adds `hub-users-status--plain` when `capitalize={false}` (overrides CSS `text-transform: capitalize`).
+- Stale (>24h) labels use workspace compact `hh:mm dd/mm/yy` via `formatTimestampCompact` (not date-only).
+- hub-ui `0.2.2`: status label plain modifier for relative timestamps.
+
+### Verification
+
+- `vitest run activity-time-display.test.ts` — passed
+
+## 2026-06-22 - Activity timestamps auto-refresh + vault column
+
+- Version: `4.3.38`
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Activity labels re-render every 60s via shared clock (`useActivityRelativeNow`) — `6m ago` updates without page reload.
+- Directory vault column: `updated_at` uses same colored-dot + relative/stale format as Sync/Load.
+
+### Verification
+
+- `vitest run activity-time-display.test.ts` — passed
+
+## 2026-06-22 - Cookie sync/load activity timestamps
+
+- Version: `4.3.37`
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Sync/Load columns: colored status dot + relative age (`just now`, `6m ago`, `6h ago`) within 24h; `dd/mm/yy` when older than 1 day.
+- Tone buckets: fresh ≤1h (cyan), recent ≤24h (amber), stale >24h (gray) — aligned with P0003 `HubUsersStatusLabel` pattern.
+- Applied on route cards, access table, and directory synced sub-line.
+
+### Verification
+
+- `vitest run activity-time-display.test.ts` — passed
+
+## 2026-06-22 - Cookie route domain replace (no duplicate Gmail routes)
+
+- Version: `4.3.36`
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- `normalizeCookieDomain`: `.mail.google.com` → canonical `.google.com`.
+- `replaceCookieRouteDomainInCloud`: disable previous domain row when editing route domain.
+- Pull cloud routes: dedupe one route per note + auto-disable stale duplicate rows in Supabase.
+
+### Verification
+
+- `vitest run normalizeCookieDomain.test.ts dedupeCookieBindings.test.ts` — passed
+
 ## 2026-06-18 - P0020 version sync
 
 - Version: `4.3.35`

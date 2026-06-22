@@ -1,4 +1,6 @@
 import type { TwofaAccount } from "./types";
+import { normalizeTwofaAccountStatus } from "./twofa-account-status";
+import { normalizeTwofaLog } from "./twofa-account-log";
 
 export type TwofaDbRow = {
   id: string;
@@ -7,6 +9,9 @@ export type TwofaDbRow = {
   account: string;
   password: string | null;
   secret: string;
+  note: string | null;
+  status: string | null;
+  log: unknown;
   created_at: string;
   updated_at: string;
   last_used_at: string | null;
@@ -14,27 +19,41 @@ export type TwofaDbRow = {
 };
 
 export function twofaDbRowToAccount(row: TwofaDbRow): TwofaAccount {
+  const note = row.note?.trim();
+  const log = normalizeTwofaLog(row.log);
   return {
     id: row.id,
     service: row.service,
     ...(row.browser?.trim() ? { browser: row.browser.trim() } : {}),
     account: row.account,
     ...(row.password?.trim() ? { password: row.password.trim() } : {}),
-    secret: row.secret,
+    secret: row.secret ?? "",
+    status: normalizeTwofaAccountStatus(row.status),
+    ...(note ? { note } : {}),
+    ...(log.length ? { log } : {}),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     ...(row.last_used_at ? { lastUsedAt: row.last_used_at } : {}),
   };
 }
 
-function mergeAccounts(local: TwofaAccount[], remote: TwofaAccount[]): TwofaAccount[] {
+export type MergeAccountsOpts = { /** When timestamps tie, incoming row wins (use for local-over-remote reconcile). */ incomingWinsOnTie?: boolean };
+
+export function mergeAccounts(
+  base: TwofaAccount[],
+  incoming: TwofaAccount[],
+  opts?: MergeAccountsOpts,
+): TwofaAccount[] {
+  const incomingWinsOnTie = opts?.incomingWinsOnTie ?? false;
   const byId = new Map<string, TwofaAccount>();
-  for (const row of local) byId.set(row.id, row);
-  for (const row of remote) {
+  for (const row of base) byId.set(row.id, row);
+  for (const row of incoming) {
     const prev = byId.get(row.id);
-    if (!prev || Date.parse(row.updatedAt) >= Date.parse(prev.updatedAt)) {
-      byId.set(row.id, row);
-    }
+    const incomingAt = Date.parse(row.updatedAt);
+    const prevAt = prev ? Date.parse(prev.updatedAt) : Number.NEGATIVE_INFINITY;
+    const incomingWins =
+      !prev || incomingAt > prevAt || (incomingWinsOnTie && incomingAt === prevAt);
+    if (incomingWins) byId.set(row.id, row);
   }
   return [...byId.values()].sort(
     (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt) || a.service.localeCompare(b.service),

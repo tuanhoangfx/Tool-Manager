@@ -210,6 +210,7 @@ export function TodoHubChrome({
       titleIconClass="text-orange-400"
       title="Todo"
       versionLine={version.line}
+      publishedAt={version.publishedAt}
       versionLive={version.live}
       extraMetaItems={emailMeta}
       centerStats={centerStats}

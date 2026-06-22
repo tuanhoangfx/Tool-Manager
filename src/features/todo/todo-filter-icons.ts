@@ -1,4 +1,4 @@
-import { Calendar, Star, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { mergeFilterIconResolver, resolveWorkspaceRoleIcon, semanticFilterAllIcon } from "@tool-workspace/hub-ui";
 import type { Profile } from "./types";
 
@@ -17,7 +17,7 @@ export function setupTodoFilterIcons() {
 
   mergeFilterIconResolver({
     resolveAll(filterKey) {
-      if (filterKey === "assignee" || filterKey === "creator") {
+      if (filterKey === "assignee" || filterKey === "creator" || filterKey === "employee") {
         return { icon: Users, className: "text-sky-300" };
       }
       return semanticFilterAllIcon(filterKey);
@@ -25,7 +25,7 @@ export function setupTodoFilterIcons() {
     resolveOption(filterKey, value) {
       // Project rows use per-option color dots from FilterOption.color (hub-ui golden).
       if (filterKey === "project") return null;
-      if (filterKey === "assignee" || filterKey === "creator") {
+      if (filterKey === "assignee" || filterKey === "creator" || filterKey === "employee") {
         const user = profileUsersById.get(value);
         if (user) {
           const roleMeta = resolveWorkspaceRoleIcon(user.role);
@@ -33,12 +33,7 @@ export function setupTodoFilterIcons() {
         }
         return null;
       }
-      if (filterKey === "priority") {
-        if (value === "high") return { icon: Star, className: "text-rose-400" };
-        if (value === "medium") return { icon: Star, className: "text-amber-400" };
-        if (value === "low") return { icon: Star, className: "text-emerald-400" };
-      }
-      if (filterKey === "dueDate") return { icon: Calendar, className: "text-sky-300" };
+      // priority / dueDate use FilterOption.emoji + triggerEmoji (todo-hub-filter-helpers SSOT).
       return null;
     },
   });

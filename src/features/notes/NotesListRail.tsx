@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Cookie, Pin } from "lucide-react";
+import { HubActivityTimestampLabel } from "@tool-workspace/hub-ui";
 import { resolveCookieSiteIcon } from "../cookie/cookieSiteIcon";
 import type { NotesCookieRouteIndex } from "../cookie/useNotesCookieRouteIndex";
-import { NotesFolderListDot } from "./NotesFolderGlyph";
+import { NotesFolderGlyph } from "./NotesFolderGlyph";
 import { getPrimaryFolderForListNote } from "./noteFolders";
 import type { NoteFolder } from "./noteFolders";
-import { noteEditorTocLabel } from "./noteUtils";
 import type { NoteListItem } from "./types";
 import type { NotesListDensity } from "./notes-list-prefs";
 import { prefetchNoteDetail, prefetchNoteDetailBatch } from "./noteDetailPrefetch";
@@ -174,7 +174,8 @@ function NoteListRow({
   );
   const isCookieRoute = cookieRouteNoteIds.has(n.id);
   const pinDisabled = isCookieRoute;
-  const timeLabel = noteEditorTocLabel(n, isCookieRoute);
+  const activityAt = isCookieRoute ? n.synced_at : n.updated_at;
+  const showActivity = Boolean(activityAt?.trim()) || isCookieRoute;
 
   return (
     <li>
@@ -199,35 +200,32 @@ function NoteListRow({
             }`}
           >
             <span className="notes-rail__title-leading inline-flex w-4 shrink-0 items-center justify-center">
-              {routeDomain ? <CookieRouteMark domain={routeDomain} compact={compact} /> : null}
+              {routeDomain ? (
+                <CookieRouteMark domain={routeDomain} compact={compact} />
+              ) : primaryFolder ? (
+                <span title={primaryFolder.name}>
+                  <NotesFolderGlyph
+                    variant="icon"
+                    color={primaryFolder.color}
+                    size={compact ? 11 : 12}
+                  />
+                </span>
+              ) : null}
             </span>
             <span className="min-w-0 flex-1 truncate">{displayNoteTitle(n.title)}</span>
           </span>
-          {timeLabel ? (
+          {showActivity ? (
             <span
-              className={`hub-directory-rail-meta notes-rail__time mt-0.5 flex min-w-0 items-center gap-1 truncate font-medium text-violet-300/75 ${
+              className={`hub-directory-rail-meta notes-rail__time mt-0.5 flex min-w-0 items-center gap-1 truncate ${
                 compact ? "hub-directory-rail-meta--compact" : ""
               }`}
-              title={isCookieRoute ? n.synced_at ?? undefined : n.updated_at}
             >
-              <span className="notes-rail__meta-leading inline-flex w-4 shrink-0 items-center justify-center">
-                {primaryFolder ? (
-                  <NotesFolderListDot color={primaryFolder.color} title={primaryFolder.name} />
-                ) : (
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      n.syncTone === "emerald"
-                        ? "bg-emerald-400"
-                        : n.syncTone === "rose"
-                          ? "bg-rose-400"
-                          : "bg-amber-400"
-                    }`}
-                    title={n.syncLabel}
-                    aria-hidden
-                  />
-                )}
+              <span className="min-w-0 flex-1 truncate">
+                <HubActivityTimestampLabel
+                  at={activityAt}
+                  fallback={isCookieRoute ? "Not synced yet" : "—"}
+                />
               </span>
-              <span className="min-w-0 flex-1 truncate">{timeLabel}</span>
             </span>
           ) : null}
         </span>

@@ -4,11 +4,9 @@ import { Task } from '../../types';
 import { useSettings } from '../../context/SettingsContext';
 import { TodoHubBadge } from './TodoHubBadge';
 
-const PRIORITY_ICON: Record<Task['priority'], string> = {
-  low: '💤',
-  medium: '⚡',
-  high: '🚨',
-};
+import { TODO_PRIORITY_EMOJI } from "../../todo-hub-filter-helpers";
+
+const PRIORITY_ICON: Record<Task['priority'], string> = TODO_PRIORITY_EMOJI;
 
 const PriorityIndicator: React.FC<{ priority: Task['priority'] }> = ({ priority }) => {
     const { t } = useSettings();

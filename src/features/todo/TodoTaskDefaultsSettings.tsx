@@ -12,6 +12,7 @@ import { useSettings } from "./context/SettingsContext";
 import { useToasts } from "./context/ToastContext";
 import { supabase } from "./lib/supabase";
 import type { Profile, Project, ProjectMember, Task } from "./types";
+import { formatTodoPriorityDisplayLabel } from "./todo-hub-filter-helpers";
 import { useTodoChrome } from "./TodoChromeContext";
 
 type Props = {
@@ -56,9 +57,9 @@ export function TodoTaskDefaultsSettings({ profile, userProjects, onProfileRefre
   );
 
   const priorityLabels: Record<Task["priority"], string> = {
-    low: `💤 ${t.low}`,
-    medium: `⚡ ${t.medium}`,
-    high: `🚨 ${t.high}`,
+    low: formatTodoPriorityDisplayLabel("low", t),
+    medium: formatTodoPriorityDisplayLabel("medium", t),
+    high: formatTodoPriorityDisplayLabel("high", t),
   };
 
   const handleSave = useCallback(async () => {

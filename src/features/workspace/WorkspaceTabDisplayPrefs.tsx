@@ -41,10 +41,9 @@ import { patchTwofaHubPrefs, readTwofaHubPrefs } from "../twofa/twofa-tab-prefs"
 import { DEFAULT_TWOFA_FILTER_KEYS, TWOFA_FILTER_DEFS } from "../twofa/twofa-filter-defs";
 import {
   countHiddenTwofaTableColumns,
-  TwofaTableColumnsSettings,
 } from "../twofa/TwofaTableColumnsSettings";
 import { TwofaTableColumnsResetAction } from "../twofa/TwofaTableColumnsResetAction";
-import { TwofaMaskPasswordToggle } from "../twofa/TwofaMaskPasswordToggle";
+import { TwofaTableDisplaySettings } from "../twofa/TwofaTableDisplaySettings";
 import {
   DEFAULT_TODO_CHART_KEYS,
   DEFAULT_TODO_FILTER_KEYS,
@@ -90,12 +89,12 @@ function TwofaTabDisplayPrefs({ screenFilters }: { screenFilters: FilterDef[] })
       showHeaderPin
       headerStatLabel={() => "2FA header"}
       scope="tab"
-      tablePanel={<TwofaTableColumnsSettings />}
+      tablePanel={<TwofaTableDisplaySettings />}
+      tableSectionLabel="Table & detail"
       tableSectionActions={<TwofaTableColumnsResetAction />}
       tableActiveCount={hiddenCols}
       readPrefs={readTwofaHubPrefs}
       patchPrefs={patchTwofaHubPrefs}
-      appModeExtras={<TwofaMaskPasswordToggle />}
     />
   );
 }

@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { WorkspaceAuthGate, createWorkspaceAuthGate } from "@tool-workspace/hub-ui";
 import { ToolAvatar } from "../../components/ToolAvatar";
+import { DATA_BOX_PRODUCT } from "../../lib/app-meta";
 import { relaySessionsToExtension } from "../../lib/relay-extension-sessions";
 import { toolIconName, toolSvgIcon } from "../../lib/visual";
 import {
@@ -29,9 +30,9 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
         variant,
         headerLeading: (
           <ToolAvatar
-            code="P0020"
-            iconName={toolIconName({ code: "P0020" })}
-            svgSrc={toolSvgIcon({ code: "P0020" }) ?? undefined}
+            code={DATA_BOX_PRODUCT.code}
+            iconName={toolIconName({ code: DATA_BOX_PRODUCT.code })}
+            svgSrc={toolSvgIcon({ code: DATA_BOX_PRODUCT.code }) ?? undefined}
             size="sm"
           />
         ),

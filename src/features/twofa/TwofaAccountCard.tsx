@@ -9,7 +9,7 @@ import { KeyRound } from "lucide-react";
 import { TwofaPlatformIcon } from "./TwofaPlatformIcon";
 import { TwofaCodeCell } from "./twofa-copy-cells";
 import type { TwofaAccount } from "./types";
-import { fmtHubDate, twofaActivityAt } from "./twofa-time";
+import { fmtHubDate } from "./twofa-time";
 
 export type TwofaAccountCardProps = {
   account: TwofaAccount;
@@ -70,7 +70,7 @@ export function TwofaAccountCard({
           </div>
           <div className="flex items-center justify-between border-t border-white/5 pt-2 text-[10px] text-[var(--muted)]">
             <span>Created {fmtHubDate(account.createdAt)}</span>
-            <span>Used {fmtHubDate(twofaActivityAt(account))}</span>
+            <span>Updated {fmtHubDate(account.updatedAt)}</span>
           </div>
         </div>
       </div>

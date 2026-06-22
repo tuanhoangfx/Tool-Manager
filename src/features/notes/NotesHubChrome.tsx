@@ -102,6 +102,7 @@ export function NotesHubChrome({
           titleIconClass="text-indigo-400"
           title="Notes"
           versionLine={version.line}
+          publishedAt={version.publishedAt}
           versionLive={version.live}
           centerStats={[
             visHeaderStats.has("notes-total")

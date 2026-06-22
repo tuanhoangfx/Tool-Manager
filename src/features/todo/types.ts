@@ -252,6 +252,10 @@ export type Translation = {
   cancelTask: string;
   copyTaskId: string;
   project: string;
+  folderFilter: string;
+  dueDatesFilter: string;
+  creatorsFilter: string;
+  prioritiesFilter: string;
 
   // Task Modal
   taskTitleLabel: string;

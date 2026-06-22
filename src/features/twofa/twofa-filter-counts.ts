@@ -12,6 +12,8 @@ function matchesTwofaOption(row: TwofaAccount, filterKey: string, optionValue: s
   switch (filterKey) {
     case "service":
       return (row.service.trim() || "Other") === optionValue;
+    case "status":
+      return row.status === optionValue;
     case "usage": {
       const now = Date.now();
       const weekMs = 7 * 86400000;

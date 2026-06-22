@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Boxes, Globe, KeyRound, LockKeyhole, User } from "lucide-react";
+import { KeyRound } from "lucide-react";
 import {
   HubAddModalTocNav,
-  HubFormFieldLabel,
+  HubSingleFilterDropdown,
   HubToolDetailModal,
   HubToolDetailModalPrimaryAction,
   HubToolDetailModalSecondaryAction,
   HubToolDetailSection,
-  HUB_TOOL_DETAIL_FORM_GRID_2_CLASS,
   HUB_TOOL_DETAIL_SCROLL_ROOT,
 } from "@tool-workspace/hub-ui";
 import { generateCode } from "./totp";
-import type { TwofaAccount, TwofaDraft } from "./types";
+import type { TwofaDraft } from "./types";
 import {
   getTwofaBulkLineStatuses,
   parseTwofaBulkText,
@@ -19,10 +18,19 @@ import {
   validateTwofaBulkRows,
 } from "./parse-twofa-bulk";
 import { isBrowserCode, normalizeBrowserCode } from "./twofa-browser-code";
+import {
+  DEFAULT_TWOFA_ACCOUNT_STATUS,
+  twofaStatusFilterOptions,
+  type TwofaAccountStatus,
+} from "./twofa-account-status";
 import { TWOFA_ADD_TABS, twofaBulkSectionTitle } from "./twofa-add-toc";
+import { twofaDraftHasContent } from "./twofa-upsert-accounts";
+import { twofaColumnLabel } from "./twofa-column-meta";
+import { TWOFA_ADM_CONTROL_CLASS, TwofaDetailInlineField } from "./TwofaDetailField";
 import type { TwofaAddManyResult } from "./useTwofaAccounts";
 import { TwofaBulkInputFrame } from "./TwofaBulkInputFrame";
 import { TwofaBulkSectionSummary } from "./TwofaBulkSectionSummary";
+import "./twofa-inline-fields.css";
 import "./twofa-add-form.css";
 
 type Tab = "single" | "bulk";
@@ -31,8 +39,6 @@ const TWOFA_ID_PREFIX = "twofa-";
 
 export type TwofaAddFormProps = {
   active: boolean;
-  mode: "add" | "edit";
-  initial?: TwofaAccount | null;
   initialDraft?: Partial<TwofaDraft> | null;
   /** When opened from search-with-no-match, customizes title. */
   searchQuery?: string;
@@ -43,8 +49,6 @@ export type TwofaAddFormProps = {
 
 export function TwofaAddForm({
   active,
-  mode,
-  initial,
   initialDraft,
   searchQuery,
   onClose,
@@ -57,6 +61,8 @@ export function TwofaAddForm({
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [secret, setSecret] = useState("");
+  const [note, setNote] = useState("");
+  const [status, setStatus] = useState<TwofaAccountStatus>(DEFAULT_TWOFA_ACCOUNT_STATUS);
   const [bulkText, setBulkText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -65,35 +71,23 @@ export function TwofaAddForm({
     if (!active) return;
     setError(null);
     setTab("single");
-    if (mode === "edit" && initial) {
-      setService(initial.service);
-      setBrowser(initial.browser ?? "");
-      setAccount(initial.account);
-      setPassword(initial.password ?? "");
-      setSecret(initial.secret);
-      setBulkText("");
-    } else {
-      setService(initialDraft?.service ?? "");
-      setBrowser(initialDraft?.browser ?? "");
-      setAccount(initialDraft?.account ?? "");
-      setPassword(initialDraft?.password ?? "");
-      setSecret(initialDraft?.secret ?? "");
-      setBulkText("");
-    }
+    setService(initialDraft?.service ?? "");
+    setBrowser(initialDraft?.browser ?? "");
+    setAccount(initialDraft?.account ?? "");
+    setPassword(initialDraft?.password ?? "");
+    setSecret(initialDraft?.secret ?? "");
+    setNote(initialDraft?.note ?? "");
+    setStatus(initialDraft?.status ?? DEFAULT_TWOFA_ACCOUNT_STATUS);
+    setBulkText("");
   }, [
     active,
-    mode,
-    initial?.id,
-    initial?.service,
-    initial?.browser,
-    initial?.account,
-    initial?.password,
-    initial?.secret,
     initialDraft?.service,
     initialDraft?.browser,
     initialDraft?.account,
     initialDraft?.password,
     initialDraft?.secret,
+    initialDraft?.note,
+    initialDraft?.status,
   ]);
 
   const parsed = useMemo(() => parseTwofaBulkText(bulkText), [bulkText]);
@@ -108,18 +102,13 @@ export function TwofaAddForm({
   const canTryBulkImport = Boolean(bulkText.trim());
 
   const sectionIds = useMemo(() => {
-    if (mode === "edit") return [`${TWOFA_ID_PREFIX}single`];
     if (tab === "single") return [`${TWOFA_ID_PREFIX}single`];
     return [`${TWOFA_ID_PREFIX}bulk-input`];
-  }, [mode, tab]);
+  }, [tab]);
 
   if (!active) return null;
 
   const onSubmitSingle = () => {
-    if (!secret.trim()) {
-      setError("2FA secret is required.");
-      return;
-    }
     const browserRaw = browser.trim();
     if (browserRaw && !isBrowserCode(browserRaw)) {
       setError("Browser code must be 4 digits (e.g. 0100).");
@@ -131,8 +120,14 @@ export function TwofaAddForm({
       account,
       password: password.trim() || undefined,
       secret,
+      note: note.trim() || undefined,
+      status,
     };
-    if (!generateCode(draft.service, draft.account, draft.secret)) {
+    if (!twofaDraftHasContent(draft)) {
+      setError(`Add at least ${twofaColumnLabel("service").toLowerCase()}, browser, account, password, note, or secret.`);
+      return;
+    }
+    if (secret.trim() && !generateCode(draft.service, draft.account, draft.secret)) {
       setError("Invalid Base32 secret.");
       return;
     }
@@ -174,92 +169,101 @@ export function TwofaAddForm({
     }
   };
 
-  const title = searchQuery?.trim()
-    ? "Add account"
-    : mode === "edit"
-      ? "Edit account"
-      : "Add accounts";
+  const title = searchQuery?.trim() ? "Add account" : "Add accounts";
 
   const singleFields = (
-    <div className={HUB_TOOL_DETAIL_FORM_GRID_2_CLASS}>
-      <label className="block min-w-0">
-        <HubFormFieldLabel icon={Boxes} iconClassName="text-sky-300">
-          Platform
-        </HubFormFieldLabel>
-        <input
-          className="field auth-gate-field w-full"
-          name="twofa-service"
-          autoComplete="off"
-          placeholder="Optional"
-          value={service}
-          onChange={(e) => setService(e.target.value)}
-        />
-      </label>
-      <label className="block min-w-0">
-        <HubFormFieldLabel icon={Globe} iconClassName="text-cyan-300">
-          Browser
-        </HubFormFieldLabel>
-        <input
-          className="field auth-gate-field w-full font-mono"
-          name="twofa-browser"
-          autoComplete="off"
-          inputMode="numeric"
-          placeholder="0100 — optional"
-          maxLength={4}
-          value={browser}
-          onChange={(e) => setBrowser(e.target.value.replace(/\D/g, "").slice(0, 4))}
-        />
-      </label>
-      <label className="block min-w-0">
-        <HubFormFieldLabel icon={User} iconClassName="text-indigo-300">
-          ID / account
-        </HubFormFieldLabel>
-        <input
-          className="field auth-gate-field w-full"
-          name="twofa-account-id"
-          autoComplete="off"
-          placeholder="Optional"
-          value={account}
-          readOnly={mode === "add"}
-          onFocus={(e) => {
-            if (mode === "add") e.currentTarget.readOnly = false;
-          }}
-          onChange={(e) => setAccount(e.target.value)}
-        />
-      </label>
-      <label className="block min-w-0">
-        <HubFormFieldLabel icon={LockKeyhole} iconClassName="text-amber-300">
-          Password
-        </HubFormFieldLabel>
-        <input
-          className="field auth-gate-field twofa-add-field-masked w-full"
-          name="twofa-stored-password"
-          type="text"
-          autoComplete="off"
-          data-lpignore="true"
-          data-1p-ignore
-          placeholder="Optional"
-          value={password}
-          readOnly={mode === "add"}
-          onFocus={(e) => {
-            if (mode === "add") e.currentTarget.readOnly = false;
-          }}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </label>
-      <label className="block min-w-0">
-        <HubFormFieldLabel icon={KeyRound} iconClassName="text-violet-300">
-          2FA secret
-        </HubFormFieldLabel>
-        <input
-          className="field auth-gate-field w-full font-mono"
-          name="twofa-totp-secret"
-          autoComplete="off"
-          placeholder="Base32 — required"
-          value={secret}
-          onChange={(e) => setSecret(e.target.value)}
-        />
-      </label>
+    <div className="twofa-adm-form-rows">
+      <div className="twofa-adm-form-row twofa-adm-form-row--3">
+        <TwofaDetailInlineField columnKey="service">
+          <input
+            className={TWOFA_ADM_CONTROL_CLASS}
+            name="twofa-service"
+            autoComplete="off"
+            placeholder="Optional"
+            value={service}
+            onChange={(e) => setService(e.target.value)}
+          />
+        </TwofaDetailInlineField>
+        <TwofaDetailInlineField columnKey="browser">
+          <input
+            className={`${TWOFA_ADM_CONTROL_CLASS} font-mono`}
+            name="twofa-browser"
+            autoComplete="off"
+            inputMode="numeric"
+            placeholder="0100"
+            maxLength={4}
+            value={browser}
+            onChange={(e) => setBrowser(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          />
+        </TwofaDetailInlineField>
+        <TwofaDetailInlineField columnKey="account">
+          <input
+            className={TWOFA_ADM_CONTROL_CLASS}
+            name="twofa-account-id"
+            autoComplete="off"
+            placeholder="Optional"
+            value={account}
+            readOnly
+            onFocus={(e) => {
+              e.currentTarget.readOnly = false;
+            }}
+            onChange={(e) => setAccount(e.target.value)}
+          />
+        </TwofaDetailInlineField>
+      </div>
+      <div className="twofa-adm-form-row twofa-adm-form-row--3">
+        <TwofaDetailInlineField columnKey="password">
+          <input
+            className={`${TWOFA_ADM_CONTROL_CLASS} twofa-add-field-masked font-mono`}
+            name="twofa-stored-password"
+            type="text"
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore
+            placeholder="Optional"
+            value={password}
+            readOnly
+            onFocus={(e) => {
+              e.currentTarget.readOnly = false;
+            }}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </TwofaDetailInlineField>
+        <TwofaDetailInlineField columnKey="secret">
+          <input
+            className={`${TWOFA_ADM_CONTROL_CLASS} font-mono`}
+            name="twofa-totp-secret"
+            autoComplete="off"
+            placeholder="Base32 — optional"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+          />
+        </TwofaDetailInlineField>
+        <TwofaDetailInlineField columnKey="note">
+          <input
+            className={TWOFA_ADM_CONTROL_CLASS}
+            name="twofa-note"
+            autoComplete="off"
+            placeholder="Optional"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </TwofaDetailInlineField>
+      </div>
+      <div className="twofa-adm-form-row twofa-adm-form-row--2">
+        <TwofaDetailInlineField columnKey="status">
+          <HubSingleFilterDropdown
+            filterKey="twofa-add-status"
+            label={twofaColumnLabel("status")}
+            options={twofaStatusFilterOptions()}
+            value={status}
+            onChange={(value) => setStatus(value as TwofaAccountStatus)}
+            triggerFormat="value"
+            className="w-full min-w-0"
+            triggerClassName={`${TWOFA_ADM_CONTROL_CLASS} !w-full`}
+          />
+        </TwofaDetailInlineField>
+      </div>
     </div>
   );
 
@@ -287,22 +291,18 @@ export function TwofaAddForm({
       onSubmit={(e) => e.preventDefault()}
       data-twofa-credential-form
     >
-      {mode === "edit" ? (
-        singlePanel
-      ) : (
-        <div className="hub-add-modal__panels">
-          <div
-            className={`hub-add-modal__panel${tab === "single" ? "" : " hub-add-modal__panel--hidden"}`}
-          >
-            {singlePanel}
-          </div>
-          <div
-            className={`hub-add-modal__panel${tab === "bulk" ? "" : " hub-add-modal__panel--hidden"}`}
-          >
-            {bulkPanel}
-          </div>
+      <div className="hub-add-modal__panels">
+        <div
+          className={`hub-add-modal__panel${tab === "single" ? "" : " hub-add-modal__panel--hidden"}`}
+        >
+          {singlePanel}
         </div>
-      )}
+        <div
+          className={`hub-add-modal__panel${tab === "bulk" ? "" : " hub-add-modal__panel--hidden"}`}
+        >
+          {bulkPanel}
+        </div>
+      </div>
 
       {error ? <p className="auth-gate-message">{error}</p> : null}
     </form>
@@ -311,7 +311,7 @@ export function TwofaAddForm({
   const hubFooter = (
     <>
       <HubToolDetailModalSecondaryAction label="Cancel" onClick={onClose} disabled={busy} />
-      {tab === "bulk" && mode === "add" ? (
+      {tab === "bulk" ? (
         <HubToolDetailModalPrimaryAction
           label={busy ? "Please wait…" : previewCount > 0 ? `Import (${previewCount})` : "Import"}
           onClick={onImportBulk}
@@ -320,7 +320,7 @@ export function TwofaAddForm({
         />
       ) : (
         <HubToolDetailModalPrimaryAction
-          label={mode === "edit" ? "Save changes" : "Add account"}
+          label="Add account"
           onClick={onSubmitSingle}
           disabled={busy}
           busy={busy}
@@ -330,8 +330,6 @@ export function TwofaAddForm({
     </>
   );
 
-  const isAdd = mode === "add";
-
   return (
     <HubToolDetailModal
       open={active}
@@ -340,20 +338,18 @@ export function TwofaAddForm({
       titleId="twofa-add-modal-title"
       headerIcon={KeyRound}
       headerIconClassName="text-indigo-300"
-      shellClassName={`hub-add-modal twofa-add-modal${isAdd ? "" : " hub-tool-detail-modal--fit"}`}
-      size={isAdd ? "detail" : "compact"}
+      shellClassName="hub-add-modal twofa-add-modal"
+      size="detail"
       sectionIds={sectionIds}
       scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
       toc={
-        isAdd ? (
-          <HubAddModalTocNav
-            tabs={TWOFA_ADD_TABS}
-            activeTab={tab}
-            onTabChange={setTab}
-            sectionIdPrefix={TWOFA_ID_PREFIX}
-            scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
-          />
-        ) : undefined
+        <HubAddModalTocNav
+          tabs={TWOFA_ADD_TABS}
+          activeTab={tab}
+          onTabChange={setTab}
+          sectionIdPrefix={TWOFA_ID_PREFIX}
+          scrollRootSelector={HUB_TOOL_DETAIL_SCROLL_ROOT}
+        />
       }
       footer={hubFooter}
     >

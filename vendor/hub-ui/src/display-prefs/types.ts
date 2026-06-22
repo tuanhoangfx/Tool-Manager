@@ -1,7 +1,18 @@
 import type { ReactNode } from "react";
 import type { TimeRange } from "./constants";
 
-export type PrefItem = { key: string; label: string };
+export type PrefIcon = React.ComponentType<{
+  size?: number;
+  className?: string;
+  "aria-hidden"?: boolean;
+}>;
+
+export type PrefItem = {
+  key: string;
+  label: string;
+  icon?: PrefIcon;
+  iconClassName?: string;
+};
 
 /** Extra settings tab (e.g. Cookie bridge / vault) between General and Display. */
 export type SettingsExtraTab = {
@@ -98,6 +109,8 @@ export type HubDisplayPrefsProps = {
   /** Extra footer actions before “Reset to defaults” (e.g. tab-specific Save). */
   footerActions?: ReactNode;
   tablePanel?: ReactNode;
+  /** Label for the table settings section in Display panel / Settings (default: Table columns). */
+  tableSectionLabel?: string;
   /** Actions in the Table columns section header (e.g. Reset columns). */
   tableSectionActions?: ReactNode;
   tableActiveCount?: number;

@@ -64,6 +64,7 @@ export function WorkspaceDirectoryScreen({
       titleIconClass={cfg.titleIconClass}
       title={cfg.title}
       versionLine={version.line}
+      publishedAt={version.publishedAt}
       versionLive={version.live}
       extraMetaItems={cfg.extraMetaItems}
       centerStats={centerStats}

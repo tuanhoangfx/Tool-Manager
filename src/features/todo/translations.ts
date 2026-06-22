@@ -128,6 +128,10 @@ const en: Translation = {
   cancelTask: "Cancel Task",
   copyTaskId: "Copy Task ID",
   project: "Project",
+  folderFilter: "Folder",
+  dueDatesFilter: "Due Dates",
+  creatorsFilter: "Creators",
+  prioritiesFilter: "Priorities",
 
   // Task Modal
   taskTitleLabel: "Task Title",
@@ -441,6 +445,10 @@ const vi: Translation = {
   cancelTask: "Hủy công việc",
   copyTaskId: "Sao chép ID công việc",
   project: "Dự án",
+  folderFilter: "Thư mục",
+  dueDatesFilter: "Hạn chót",
+  creatorsFilter: "Người tạo",
+  prioritiesFilter: "Ưu tiên",
 
   // Task Modal
   taskTitleLabel: "Tiêu đề công việc",

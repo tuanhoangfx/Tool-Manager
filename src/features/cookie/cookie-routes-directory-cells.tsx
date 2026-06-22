@@ -1,10 +1,10 @@
 import {
   DirectoryTableBodyCell,
   HubDirectoryToolBadge,
+  HubActivityTimestampLabel,
   type HubDirectoryColumnDef,
 } from "@tool-workspace/hub-ui";
 import { LockKeyhole } from "lucide-react";
-import { formatTimestampCompact, formatTimestampCompactOrDash } from "../../lib/format-timestamp";
 import { CookieRouteChipRow } from "./CookieRouteChipRow";
 import type { CookieAutoRow } from "./cookieAutoRow";
 import { resolveCookieRouteOwnerLabel } from "./cookie-route-owner";
@@ -84,8 +84,8 @@ export function renderCookieRoutesDirectoryBodyCell(
             {note?.syncLabel ?? "not synced"}
           </div>
           {syncedIso ? (
-            <div className="mt-0.5 text-[9px] text-indigo-300/70" title={syncedIso}>
-              {formatTimestampCompact(syncedIso)}
+            <div className="mt-0.5 text-[9px]">
+              <HubActivityTimestampLabel at={syncedIso} />
             </div>
           ) : null}
         </DirectoryTableBodyCell>
@@ -98,8 +98,8 @@ export function renderCookieRoutesDirectoryBodyCell(
               <div className="hub-directory-table-body-text font-medium text-[var(--text)]">
                 {vault.cookie_count} cookie{vault.cookie_count === 1 ? "" : "s"}
               </div>
-              <div className="mt-1 text-[10px] text-[var(--muted)]">
-                {formatTimestampCompactOrDash(vault.updated_at)}
+              <div className="mt-1 text-[10px]">
+                <HubActivityTimestampLabel at={vault.updated_at} />
               </div>
               {vault.updated_by ? (
                 <div

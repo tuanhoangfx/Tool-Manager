@@ -1,15 +1,32 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { TwofaAccount } from "./types";
 import {
+  applyTwofaPendingEdits,
   clearTwofaPendingDelete,
+  clearTwofaPendingEdit,
   filterTwofaPendingDeletes,
   getTwofaPendingDeleteIds,
   markTwofaPendingDelete,
+  markTwofaPendingEdit,
 } from "./twofa-sync-pending";
+
+function account(id: string, secret = "SECRET"): TwofaAccount {
+  return {
+    id,
+    service: "Capcut",
+    account: "user@test.com",
+    secret,
+    status: "active",
+    createdAt: "2026-06-01T00:00:00.000Z",
+    updatedAt: "2026-06-09T00:00:00.000Z",
+  };
+}
 
 describe("twofa-sync-pending", () => {
   afterEach(() => {
     clearTwofaPendingDelete("a");
     clearTwofaPendingDelete("b");
+    clearTwofaPendingEdit("known-1");
     vi.useRealTimers();
   });
 
@@ -28,5 +45,11 @@ describe("twofa-sync-pending", () => {
     markTwofaPendingDelete("a", 1000);
     vi.advanceTimersByTime(1001);
     expect(getTwofaPendingDeleteIds().has("a")).toBe(false);
+  });
+
+  it("overlays pending edit snapshot over stale cloud merge", () => {
+    markTwofaPendingEdit({ ...account("known-1"), secret: "" });
+    const merged = applyTwofaPendingEdits([account("known-1")]);
+    expect(merged[0]?.secret).toBe("");
   });
 });

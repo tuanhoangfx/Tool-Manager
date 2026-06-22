@@ -41,10 +41,12 @@ import { TwofaAccountsTable } from "./TwofaAccountsTable";
 import { patchTwofaViewMode, readTwofaViewMode } from "./twofa-list-prefs";
 import { TwofaTotpTickProvider } from "./twofa-totp-tick";
 import { TwofaBulkActionBar } from "./TwofaBulkActionBar";
+import { TwofaBulkMetaEditModal } from "./TwofaBulkMetaEditModal";
 import { TwofaAddModal } from "./TwofaAddModal";
+import { TwofaAccountDetailModal } from "./TwofaAccountDetailModal";
 import { TwofaConfirmDialog } from "./TwofaConfirmDialog";
 import { TwofaDedupePreviewModal } from "./TwofaDedupePreviewModal";
-import type { TwofaDedupePreview } from "./twofa-upsert-accounts";
+import type { TwofaDedupePreview, TwofaBulkMetaPatch } from "./twofa-upsert-accounts";
 import { findTwofaDraftConflict } from "./twofa-upsert-accounts";
 import {
   formatTwofaEntryLabel,
@@ -64,10 +66,7 @@ function visibleSet(set: Set<string> | null, defaults: Set<string>) {
 
 const TWOFA_CHART_ORDER = ["service_bar", "identity_bar", "usage_bar", "password_bar"] as const;
 
-type AddModalState =
-  | { mode: "add"; draft?: Partial<TwofaDraft> }
-  | { mode: "edit"; account: TwofaAccount }
-  | null;
+type AddModalState = { draft?: Partial<TwofaDraft> } | null;
 
 type PendingReplaceState = {
   editingId: string;
@@ -111,6 +110,7 @@ function TwofaManagerScreenBody({
     update,
     remove,
     touchLastUsed,
+    bulkUpdateMeta,
     dedupeNow,
     previewDedupe,
     cloudState,
@@ -142,8 +142,10 @@ function TwofaManagerScreenBody({
   const [hubPrefs, setHubPrefs] = useState(readTwofaHubPrefs);
   const [period, setPeriod] = useState<WorkspacePeriodPrefs>(() => readWorkspacePeriod("twofa", "all"));
   const [addModal, setAddModal] = useState<AddModalState>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<TwofaAccount[] | null>(null);
   const [pendingReplace, setPendingReplace] = useState<PendingReplaceState>(null);
+  const [bulkMetaOpen, setBulkMetaOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visibleColumns, setVisibleColumns] = useState(() => readTwofaTableColumns());
   const [dedupeModalOpen, setDedupeModalOpen] = useState(false);
@@ -214,13 +216,17 @@ function TwofaManagerScreenBody({
   }, []);
 
   const openAddModal = useCallback((draft?: Partial<TwofaDraft>) => {
-    setAddModal({ mode: "add", draft });
+    setAddModal({ draft });
     setError(null);
   }, []);
 
-  const startEdit = useCallback((row: TwofaAccount) => {
-    setAddModal({ mode: "edit", account: row });
+  const openDetail = useCallback((row: TwofaAccount) => {
+    setDetailId(row.id);
     setError(null);
+  }, []);
+
+  const closeDetail = useCallback(() => {
+    setDetailId(null);
   }, []);
 
   const requestBulkDelete = useCallback(() => {
@@ -238,25 +244,26 @@ function TwofaManagerScreenBody({
 
   const handleBulkEdit = useCallback(() => {
     const target = selectedRows[0];
-    if (target) startEdit(target);
-  }, [selectedRows, startEdit]);
+    if (target) openDetail(target);
+  }, [openDetail, selectedRows]);
+
+  const handleBulkMeta = useCallback(() => {
+    if (selectedIds.size > 1) setBulkMetaOpen(true);
+  }, [selectedIds.size]);
+
+  const handleBulkMetaApply = useCallback(
+    (patch: TwofaBulkMetaPatch) => {
+      const count = bulkUpdateMeta([...selectedIds], patch);
+      if (count > 0) {
+        pushToast(`Updated ${count} account${count === 1 ? "" : "s"}.`, "success");
+      }
+      return count;
+    },
+    [bulkUpdateMeta, pushToast, selectedIds],
+  );
 
   const handleSaveSingle = useCallback(
     (draft: TwofaDraft): "ok" | "conflict" | "fail" => {
-      if (addModal?.mode === "edit") {
-        const conflict = findTwofaDraftConflict(accounts, draft, addModal.account.id);
-        if (conflict) {
-          setPendingReplace({ editingId: addModal.account.id, draft, conflict });
-          return "conflict";
-        }
-        const ok = update(addModal.account.id, draft);
-        if (ok) {
-          pushToast(twofaUpdateToast(draft.service, draft.account), "success");
-          setError(null);
-          return "ok";
-        }
-        return "fail";
-      }
       const result = add(draft);
       if (!result.ok) return "fail";
       pushToast(
@@ -266,7 +273,7 @@ function TwofaManagerScreenBody({
       setError(null);
       return "ok";
     },
-    [accounts, add, addModal, pushToast, update],
+    [add, pushToast],
   );
 
   const handleImportMany = useCallback(
@@ -324,11 +331,11 @@ function TwofaManagerScreenBody({
         )}`,
         "success",
       );
-      setAddModal(null);
+      closeDetail();
       setError(null);
     }
     setPendingReplace(null);
-  }, [pendingReplace, pushToast, update]);
+  }, [closeDetail, pendingReplace, pushToast, update]);
 
   const analyticsActive = shellMode && tabActive;
   const visHeaderStats = hubPrefs.headerStats ?? DEFAULT_TWOFA_HEADER_STAT_KEYS;
@@ -387,17 +394,44 @@ function TwofaManagerScreenBody({
     analyticsActive,
   );
 
-  const editingId = addModal?.mode === "edit" ? addModal.account.id : null;
+  useEffect(() => {
+    if (detailId && !accounts.some((row) => row.id === detailId)) {
+      setDetailId(null);
+    }
+  }, [accounts, detailId]);
 
-  const modalInitialDraft =
-    addModal?.mode === "add"
-      ? {
-          service: addModal.draft?.service ?? "",
-          account: addModal.draft?.account ?? "",
-          password: addModal.draft?.password ?? "",
-          secret: addModal.draft?.secret ?? "",
-        }
-      : null;
+  const detailAccount = useMemo(
+    () => (detailId ? accounts.find((row) => row.id === detailId) ?? null : null),
+    [accounts, detailId],
+  );
+
+  const handleDetailSave = useCallback(
+    (draft: TwofaDraft): "ok" | "conflict" | "fail" => {
+      if (!detailAccount) return "fail";
+      const conflict = findTwofaDraftConflict(accounts, draft, detailAccount.id);
+      if (conflict) {
+        setPendingReplace({ editingId: detailAccount.id, draft, conflict });
+        return "conflict";
+      }
+      const ok = update(detailAccount.id, draft);
+      if (ok) {
+        pushToast(twofaUpdateToast(draft.service, draft.account), "success");
+        setError(null);
+        return "ok";
+      }
+      return "fail";
+    },
+    [accounts, detailAccount, pushToast, update],
+  );
+
+  const modalInitialDraft = addModal
+    ? {
+        service: addModal.draft?.service ?? "",
+        account: addModal.draft?.account ?? "",
+        password: addModal.draft?.password ?? "",
+        secret: addModal.draft?.secret ?? "",
+      }
+    : null;
 
   const addModalOpen = addModal !== null;
 
@@ -491,6 +525,7 @@ function TwofaManagerScreenBody({
           selectedCount={selectedIds.size}
           onAdd={() => openAddModal()}
           onEdit={handleBulkEdit}
+          onBulkMeta={handleBulkMeta}
           onDelete={requestBulkDelete}
           onDedupe={handleDedupePreview}
         />
@@ -499,6 +534,7 @@ function TwofaManagerScreenBody({
     [
       allVisibleSelected,
       handleBulkEdit,
+      handleBulkMeta,
       handleDedupePreview,
       hasSelection,
       openAddModal,
@@ -568,9 +604,9 @@ function TwofaManagerScreenBody({
               key={row.id}
               account={row}
               selected={selectedIds.has(row.id)}
-              editing={editingId === row.id}
+              editing={detailId === row.id}
               onToggleSelect={() => toggleSelect(row.id)}
-              onOpen={() => startEdit(row)}
+              onOpen={() => openDetail(row)}
               onUsed={() => touchLastUsed(row.id)}
             />
           )}
@@ -578,12 +614,13 @@ function TwofaManagerScreenBody({
             <TwofaAccountsTable
               rows={sortedDisplayedAccounts}
               visibleColumns={visibleColumns}
-              editingId={editingId}
+              detailId={detailId}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelect}
               onToggleSelectAll={toggleSelectAll}
               allVisibleSelected={allVisibleSelected}
               onUsed={touchLastUsed}
+              onOpenAccount={openDetail}
               sortKey={sortKey}
               sortDir={sortDir}
               onSort={onSort}
@@ -614,12 +651,27 @@ function TwofaManagerScreenBody({
 
       <TwofaAddModal
         open={addModalOpen}
-        mode={addModal?.mode ?? "add"}
-        initial={addModal?.mode === "edit" ? addModal.account : null}
         initialDraft={modalInitialDraft}
         onClose={closeModal}
         onSaveSingle={handleSaveSingle}
         onImportMany={handleImportMany}
+      />
+
+      {detailAccount ? (
+        <TwofaAccountDetailModal
+          key={detailAccount.id}
+          account={detailAccount}
+          onClose={closeDetail}
+          onSave={handleDetailSave}
+          onCodeUsed={() => touchLastUsed(detailAccount.id)}
+        />
+      ) : null}
+
+      <TwofaBulkMetaEditModal
+        open={bulkMetaOpen}
+        selectedCount={selectedIds.size}
+        onClose={() => setBulkMetaOpen(false)}
+        onApply={handleBulkMetaApply}
       />
 
       <TwofaConfirmDialog

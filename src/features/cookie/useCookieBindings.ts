@@ -66,6 +66,7 @@ export function useCookieBindings(notes: NoteListItem[]) {
       };
       setBindings((prev) => {
         const without = prev.filter((b) => {
+          if (full.noteId && b.noteId === full.noteId && b.id !== full.id) return false;
           if (b.domain !== full.domain) return true;
           if (full.noteId && b.noteId === full.noteId) return false;
           if (full.syncId && b.syncId === full.syncId) return false;
@@ -178,10 +179,16 @@ export function useCookieBindings(notes: NoteListItem[]) {
   );
 
   const updateBinding = useCallback((id: string, patch: Partial<CookieBinding>) => {
-    setBindings((prev) =>
-      prev.map((b) => {
+    setBindings((prev) => {
+      const current = prev.find((b) => b.id === id);
+      const nextDomain = patch.domain ? normalizeCookieDomain(patch.domain) : null;
+      const withoutDuplicates =
+        current?.noteId && nextDomain
+          ? prev.filter((b) => b.id === id || b.noteId !== current.noteId)
+          : prev;
+      return withoutDuplicates.map((b) => {
         if (b.id !== id) return b;
-        const next = { ...b, ...patch };
+        const next = { ...b, ...patch, ...(nextDomain ? { domain: nextDomain } : {}) };
         if (patch.noteId) {
           const note = notes.find((n) => n.id === patch.noteId);
           if (note) {
@@ -191,8 +198,8 @@ export function useCookieBindings(notes: NoteListItem[]) {
           }
         }
         return next;
-      }),
-    );
+      });
+    });
   }, [notes]);
 
   const removeBinding = useCallback((id: string) => {

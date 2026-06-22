@@ -46,9 +46,9 @@ import { patchTwofaHubPrefs, readTwofaHubPrefs } from "../twofa/twofa-tab-prefs"
 import { DEFAULT_TWOFA_FILTER_KEYS, TWOFA_FILTER_DEFS } from "../twofa/twofa-filter-defs";
 import {
   countHiddenTwofaTableColumns,
-  TwofaTableColumnsSettings,
 } from "../twofa/TwofaTableColumnsSettings";
 import { TwofaTableColumnsResetAction } from "../twofa/TwofaTableColumnsResetAction";
+import { TwofaTableDisplaySettings } from "../twofa/TwofaTableDisplaySettings";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import { patchHubListPrefs, readHubListPrefs } from "../../lib/url-prefs";
 
@@ -128,7 +128,7 @@ export function useWorkspaceDisplayPanelConfig({
     const filters = screenFilters.length
       ? screenFilters.map(({ key, label }) => ({ key, label }))
       : TWOFA_FILTER_DEFS;
-    const tablePanel: ReactNode = <TwofaTableColumnsSettings />;
+    const tablePanel: ReactNode = <TwofaTableDisplaySettings />;
 
     return {
       kpis: TWOFA_KPI_DEFS,
@@ -143,6 +143,7 @@ export function useWorkspaceDisplayPanelConfig({
       defaultHeaderStatKeys: DEFAULT_TWOFA_HEADER_STAT_KEYS,
       headerStatLabel: () => "2FA header",
       tablePanel,
+      tableSectionLabel: "Table & detail",
       tableSectionActions: <TwofaTableColumnsResetAction />,
       tableActiveCount: hiddenTwofaCols,
       readPrefs: readTwofaHubPrefs,
