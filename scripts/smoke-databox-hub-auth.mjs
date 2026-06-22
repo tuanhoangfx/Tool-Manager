@@ -195,4 +195,3 @@ if (!rpcRes.ok) {
 
 const count = Array.isArray(rpcBody) ? rpcBody.length : 0;
 console.log("VAULT_RPC_OK", { rows: count, url: databoxUrl });
-process.exit(0);
