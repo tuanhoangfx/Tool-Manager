@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useState, type ReactNode } from "react";
 import { HubCopyTickWrap, useHubCopyFlash } from "@tool-workspace/hub-ui";
 import type { TwofaAccount } from "./types";
 import { formatTwofaAccountStatus } from "./twofa-account-status";
+import { formatTwofaAccountOwnership } from "./twofa-account-ownership";
 import { latestTwofaLogEntry } from "./twofa-account-log";
 import { generateCode, normalizeSecret, secondsRemaining } from "./totp";
 import { useTwofaTotpTick } from "./twofa-totp-tick";
@@ -114,6 +115,15 @@ export function TwofaSecretCell({ account }: { account: TwofaAccount }) {
 
 export function TwofaStatusCell({ account }: { account: TwofaAccount }) {
   const label = formatTwofaAccountStatus(account.status);
+  return (
+    <span className="line-clamp-1" title={label}>
+      {label}
+    </span>
+  );
+}
+
+export function TwofaOwnershipCell({ account }: { account: TwofaAccount }) {
+  const label = formatTwofaAccountOwnership(account.ownership);
   return (
     <span className="line-clamp-1" title={label}>
       {label}

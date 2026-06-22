@@ -38,6 +38,7 @@ function row(id: string, secret: string, updatedAt: string): TwofaAccount {
     account: "user@test.com",
     secret,
     status: "active",
+    ownership: "undefined",
     createdAt: "2026-06-01T00:00:00.000Z",
     updatedAt,
   };

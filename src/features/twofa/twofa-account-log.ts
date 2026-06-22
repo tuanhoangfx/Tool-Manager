@@ -1,4 +1,5 @@
 import { formatTwofaAccountStatus } from "./twofa-account-status";
+import { formatTwofaAccountOwnership } from "./twofa-account-ownership";
 import type {
   TwofaAccount,
   TwofaAccountLogChange,
@@ -15,6 +16,7 @@ const LOG_FIELDS = new Set<TwofaAccountLogField>([
   "password",
   "secret",
   "status",
+  "ownership",
   "note",
 ]);
 
@@ -124,6 +126,13 @@ export function buildTwofaUpdateLogChanges(
       after: formatTwofaAccountStatus(after.status),
     });
   }
+  if (before.ownership !== after.ownership) {
+    changes.push({
+      field: "ownership",
+      before: formatTwofaAccountOwnership(before.ownership),
+      after: formatTwofaAccountOwnership(after.ownership),
+    });
+  }
   if ((before.note ?? "").trim() !== (after.note ?? "").trim()) {
     changes.push({
       field: "note",
@@ -162,6 +171,7 @@ export function buildTwofaUpdateLogMessage(
     password: "Password",
     secret: "Secret",
     status: "Status",
+    ownership: "Ownership",
     note: "Note",
   };
   return changes.map((change) => formatLogChangeLine(change, fallbackLabels)).join(" · ");

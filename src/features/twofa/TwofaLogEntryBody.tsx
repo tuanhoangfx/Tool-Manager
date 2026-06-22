@@ -10,6 +10,7 @@ const LOG_FIELD_KEYS: Record<TwofaAccountLogChange["field"], TwofaTableColumnKey
   password: "password",
   secret: "secret",
   status: "status",
+  ownership: "ownership",
   note: "note",
 };
 

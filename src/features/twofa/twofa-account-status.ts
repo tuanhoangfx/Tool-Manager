@@ -1,6 +1,7 @@
 import type { FilterOption } from "@tool-workspace/hub-ui";
 import type { TwofaAccount } from "./types";
 import { backfillTwofaAccountLog, normalizeTwofaLog } from "./twofa-account-log";
+import { normalizeTwofaAccountOwnershipField } from "./twofa-account-ownership";
 
 export const TWOFA_ACCOUNT_STATUS_OPTIONS = [
   { id: "active", emoji: "♻️", label: "Active" },
@@ -43,12 +44,13 @@ export function twofaStatusFilterOptions(): FilterOption[] {
 }
 
 export function normalizeTwofaAccount(row: TwofaAccount): TwofaAccount {
-  const note = row.note?.trim();
-  const log = normalizeTwofaLog(row.log);
+  const withOwnership = normalizeTwofaAccountOwnershipField(row);
+  const note = withOwnership.note?.trim();
+  const log = normalizeTwofaLog(withOwnership.log);
   return backfillTwofaAccountLog({
-    ...row,
-    secret: row.secret ?? "",
-    status: normalizeTwofaAccountStatus(row.status),
+    ...withOwnership,
+    secret: withOwnership.secret ?? "",
+    status: normalizeTwofaAccountStatus(withOwnership.status),
     ...(note ? { note } : {}),
     ...(log.length ? { log } : {}),
   });

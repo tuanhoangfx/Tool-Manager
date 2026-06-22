@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, EyeOff, KeyRound, Save, ScrollText, User } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Save, ScrollText, StickyNote, User } from "lucide-react";
 import {
   HubCopyBadge,
   HubSingleFilterDropdown,
@@ -25,6 +25,11 @@ import {
   twofaStatusFilterOptions,
   type TwofaAccountStatus,
 } from "./twofa-account-status";
+import {
+  DEFAULT_TWOFA_ACCOUNT_OWNERSHIP,
+  twofaOwnershipFilterOptions,
+  type TwofaAccountOwnership,
+} from "./twofa-account-ownership";
 import {
   TWOFA_ACCOUNT_DETAIL_SECTION_CREDENTIALS,
   TWOFA_ACCOUNT_DETAIL_SECTION_LOG,
@@ -59,6 +64,9 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
   const [status, setStatus] = useState<TwofaAccountStatus>(
     () => account.status ?? DEFAULT_TWOFA_ACCOUNT_STATUS,
   );
+  const [ownership, setOwnership] = useState<TwofaAccountOwnership>(
+    () => account.ownership ?? DEFAULT_TWOFA_ACCOUNT_OWNERSHIP,
+  );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const accountRowIdRef = useRef<string | null>(null);
@@ -72,8 +80,9 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
       secret,
       note: note.trim() || undefined,
       status,
+      ownership,
     }),
-    [accountId, browser, note, password, secret, service, status],
+    [accountId, browser, note, ownership, password, secret, service, status],
   );
 
   const dirty = useMemo(() => {
@@ -85,9 +94,10 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
       (password.trim() || undefined) !== (account.password?.trim() || undefined) ||
       secret !== account.secret ||
       (note.trim() || undefined) !== (account.note?.trim() || undefined) ||
-      status !== account.status
+      status !== account.status ||
+      ownership !== account.ownership
     );
-  }, [account, accountId, browser, note, password, secret, service, status]);
+  }, [account, accountId, browser, note, ownership, password, secret, service, status]);
 
   useEffect(() => {
     const rowChanged = accountRowIdRef.current !== account.id;
@@ -100,6 +110,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
     setSecret(account.secret);
     setNote(account.note ?? "");
     setStatus(account.status ?? DEFAULT_TWOFA_ACCOUNT_STATUS);
+    setOwnership(account.ownership ?? DEFAULT_TWOFA_ACCOUNT_OWNERSHIP);
     setError(null);
     setBusy(false);
   }, [account, dirty]);
@@ -120,6 +131,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
       secret: draft.secret,
       note: draft.note,
       status: draft.status ?? DEFAULT_TWOFA_ACCOUNT_STATUS,
+      ownership: draft.ownership ?? DEFAULT_TWOFA_ACCOUNT_OWNERSHIP,
     }),
     [account, draft],
   );
@@ -219,20 +231,37 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
             </div>
             <div className="twofa-adm-panel__body">
               <div className="twofa-adm-hero">
-                <div className="twofa-adm-hero__status">
-                  <span className="twofa-adm-inline-field__label hub-users-th-label hub-users-th-label--start">
-                    <HubTableColumnHeader {...twofaColumnHeaderProps("status")} />
-                  </span>
-                  <HubSingleFilterDropdown
-                    filterKey="twofa-detail-status"
-                    label={twofaColumnLabel("status")}
-                    options={twofaStatusFilterOptions()}
-                    value={status}
-                    onChange={(value) => setStatus(value as TwofaAccountStatus)}
-                    triggerFormat="value"
-                    className="twofa-adm-hero__status-wrap"
-                    triggerClassName="twofa-adm-hero__status-trigger"
-                  />
+                <div className="twofa-adm-hero__meta">
+                  <div className="twofa-adm-hero__status">
+                    <span className="twofa-adm-inline-field__label hub-users-th-label hub-users-th-label--start">
+                      <HubTableColumnHeader {...twofaColumnHeaderProps("status")} />
+                    </span>
+                    <HubSingleFilterDropdown
+                      filterKey="twofa-detail-status"
+                      label={twofaColumnLabel("status")}
+                      options={twofaStatusFilterOptions()}
+                      value={status}
+                      onChange={(value) => setStatus(value as TwofaAccountStatus)}
+                      triggerFormat="value"
+                      className="twofa-adm-hero__status-wrap"
+                      triggerClassName="twofa-adm-hero__status-trigger"
+                    />
+                  </div>
+                  <div className="twofa-adm-hero__status">
+                    <span className="twofa-adm-inline-field__label hub-users-th-label hub-users-th-label--start">
+                      <HubTableColumnHeader {...twofaColumnHeaderProps("ownership")} />
+                    </span>
+                    <HubSingleFilterDropdown
+                      filterKey="twofa-detail-ownership"
+                      label={twofaColumnLabel("ownership")}
+                      options={twofaOwnershipFilterOptions()}
+                      value={ownership}
+                      onChange={(value) => setOwnership(value as TwofaAccountOwnership)}
+                      triggerFormat="value"
+                      className="twofa-adm-hero__status-wrap"
+                      triggerClassName="twofa-adm-hero__status-trigger"
+                    />
+                  </div>
                 </div>
                 <div className="twofa-adm-hero__code">
                   <span className="twofa-adm-muted">{twofaColumnLabel("code")}</span>
@@ -282,7 +311,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
                   </TwofaDetailInlineField>
                 </div>
 
-                <div className="twofa-adm-form-row twofa-adm-form-row--3">
+                <div className="twofa-adm-form-row twofa-adm-form-row--2">
                   <TwofaDetailInlineField columnKey="password">
                     <div className="twofa-adm-password-field">
                       <input
@@ -317,17 +346,6 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
                       onChange={(e) => setSecret(e.target.value)}
                     />
                   </TwofaDetailInlineField>
-
-                  <TwofaDetailInlineField columnKey="note">
-                    <input
-                      className={TWOFA_ADM_CONTROL_CLASS}
-                      name="twofa-detail-note"
-                      autoComplete="off"
-                      placeholder="Optional"
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                    />
-                  </TwofaDetailInlineField>
                 </div>
               </div>
 
@@ -351,11 +369,30 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
             </div>
           </section>
 
-          <aside
-            id={TWOFA_ACCOUNT_DETAIL_SECTION_LOG}
-            className="twofa-adm-rail twofa-adm-rail--log"
-            aria-label="Change log"
-          >
+          <div className="twofa-account-detail__rail">
+            <section className="twofa-adm-rail twofa-adm-rail--note" aria-label="Note">
+              <div className="twofa-adm-rail__head">
+                <StickyNote size={12} aria-hidden />
+                {twofaColumnLabel("note")}
+              </div>
+              <div className="twofa-adm-rail__body twofa-adm-rail__body--note">
+                <textarea
+                  className={`${TWOFA_ADM_CONTROL_CLASS} twofa-adm-note-textarea`}
+                  name="twofa-detail-note"
+                  autoComplete="off"
+                  placeholder="Optional notes, mail recovery, plan info…"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={5}
+                />
+              </div>
+            </section>
+
+            <aside
+              id={TWOFA_ACCOUNT_DETAIL_SECTION_LOG}
+              className="twofa-adm-rail twofa-adm-rail--log"
+              aria-label="Change log"
+            >
             <div className="twofa-adm-rail__head">
               <ScrollText size={12} aria-hidden />
               Change log
@@ -390,6 +427,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
               )}
             </div>
           </aside>
+          </div>
         </div>
       </div>
     </HubToolDetailModal>

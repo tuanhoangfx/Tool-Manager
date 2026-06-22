@@ -25,6 +25,7 @@ function row(
     account,
     secret,
     status: "active",
+    ownership: "undefined",
     createdAt: "2026-06-01T00:00:00.000Z",
     updatedAt,
   };

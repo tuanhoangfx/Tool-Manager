@@ -23,6 +23,11 @@ import {
   twofaStatusFilterOptions,
   type TwofaAccountStatus,
 } from "./twofa-account-status";
+import {
+  DEFAULT_TWOFA_ACCOUNT_OWNERSHIP,
+  twofaOwnershipFilterOptions,
+  type TwofaAccountOwnership,
+} from "./twofa-account-ownership";
 import { TWOFA_ADD_TABS, twofaBulkSectionTitle } from "./twofa-add-toc";
 import { twofaDraftHasContent } from "./twofa-upsert-accounts";
 import { twofaColumnLabel } from "./twofa-column-meta";
@@ -63,6 +68,7 @@ export function TwofaAddForm({
   const [secret, setSecret] = useState("");
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<TwofaAccountStatus>(DEFAULT_TWOFA_ACCOUNT_STATUS);
+  const [ownership, setOwnership] = useState<TwofaAccountOwnership>(DEFAULT_TWOFA_ACCOUNT_OWNERSHIP);
   const [bulkText, setBulkText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -78,6 +84,7 @@ export function TwofaAddForm({
     setSecret(initialDraft?.secret ?? "");
     setNote(initialDraft?.note ?? "");
     setStatus(initialDraft?.status ?? DEFAULT_TWOFA_ACCOUNT_STATUS);
+    setOwnership(initialDraft?.ownership ?? DEFAULT_TWOFA_ACCOUNT_OWNERSHIP);
     setBulkText("");
   }, [
     active,
@@ -88,6 +95,7 @@ export function TwofaAddForm({
     initialDraft?.secret,
     initialDraft?.note,
     initialDraft?.status,
+    initialDraft?.ownership,
   ]);
 
   const parsed = useMemo(() => parseTwofaBulkText(bulkText), [bulkText]);
@@ -122,6 +130,7 @@ export function TwofaAddForm({
       secret,
       note: note.trim() || undefined,
       status,
+      ownership,
     };
     if (!twofaDraftHasContent(draft)) {
       setError(`Add at least ${twofaColumnLabel("service").toLowerCase()}, browser, account, password, note, or secret.`);
@@ -258,6 +267,18 @@ export function TwofaAddForm({
             options={twofaStatusFilterOptions()}
             value={status}
             onChange={(value) => setStatus(value as TwofaAccountStatus)}
+            triggerFormat="value"
+            className="w-full min-w-0"
+            triggerClassName={`${TWOFA_ADM_CONTROL_CLASS} !w-full`}
+          />
+        </TwofaDetailInlineField>
+        <TwofaDetailInlineField columnKey="ownership">
+          <HubSingleFilterDropdown
+            filterKey="twofa-add-ownership"
+            label={twofaColumnLabel("ownership")}
+            options={twofaOwnershipFilterOptions()}
+            value={ownership}
+            onChange={(value) => setOwnership(value as TwofaAccountOwnership)}
             triggerFormat="value"
             className="w-full min-w-0"
             triggerClassName={`${TWOFA_ADM_CONTROL_CLASS} !w-full`}

@@ -9,6 +9,7 @@ function account(partial: Partial<TwofaAccount> & Pick<TwofaAccount, "service">)
     account: partial.account ?? "user@example.com",
     secret: partial.secret ?? "ABCDEFGHIJKLMNOP",
     status: partial.status ?? "active",
+    ownership: partial.ownership ?? "undefined",
     createdAt: partial.createdAt ?? "2026-01-01T00:00:00.000Z",
     updatedAt: partial.updatedAt ?? "2026-01-01T00:00:00.000Z",
     password: partial.password,

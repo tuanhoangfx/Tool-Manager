@@ -1,5 +1,40 @@
 # Changelog
 
+## 2026-06-23 - 2FA: Ownership column + Note frame above change log
+
+- Version: `4.3.47`
+- Timestamp: 2026-06-23 02:55 (UTC+7)
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Add `ownership` field on vault rows (dropdown like Status): CzP, Buyer, Ready, Appeal, Usable, Rent, Sell, Give, Resell, Storage, Undefined.
+- Account detail modal: Note moved to dedicated frame above Change log (textarea); Status + Ownership in hero row.
+- Directory table: optional Ownership column; sheet import maps Ownership column to `ownership` (no longer prefixed in note).
+- Migration `20260623120000_twofa_accounts_ownership.sql` + `backfill-twofa-ownership-from-note.mjs`.
+
+### Verification
+
+- `vitest run src/features/twofa` — 93 passed
+- Migration applied to twofa Supabase project
+
+## 2026-06-23 - Script: import Google Sheet accounts into 2FA vault
+
+- Version: `4.3.46`
+- Timestamp: 2026-06-23 02:00 (UTC+7)
+- Type: Patch
+- Product: P0020
+
+### Changes
+
+- Add `scripts/import-sheet-to-twofa.mjs` — fetch Sheet CSV (gviz), parse `Full 2FA`, dedupe by `service+account` (newest Timestamp), merge aux columns into `note`, upsert cloud vault (`--dry-run` / `--apply`, optional `--ownership`).
+
+### Verification
+
+- `node scripts/import-sheet-to-twofa.mjs --dry-run` — 2255 rows after dedupe
+- `node scripts/import-sheet-to-twofa.mjs --apply` — 634 insert + 1621 update
+
 ## 2026-06-22 - Branding: auth gate subtitle, tab title, PWA name, sidebar SSOT audit
 
 - Version: `4.3.45`

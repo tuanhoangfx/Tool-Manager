@@ -17,6 +17,7 @@ function account(id: string, secret = "SECRET"): TwofaAccount {
     account: "user@test.com",
     secret,
     status: "active",
+    ownership: "undefined",
     createdAt: "2026-06-01T00:00:00.000Z",
     updatedAt: "2026-06-09T00:00:00.000Z",
   };

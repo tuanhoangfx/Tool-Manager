@@ -401,7 +401,7 @@ Checks: `session-in-start-rail`, `center-stats-always-visible`, `grid-three-colu
 | **No code** | Do not show `P00xx` in `brandTitle` or `brandTagline` |
 | **No version** | Release `vX.Y.Z` lives in tab header meta (`buildVersionMetaItems`) — never duplicate in sidebar |
 | **Tagline** | Optional short descriptor (P0004 `Workspace catalog`, P0016 `Multi-channel chat console`) — **not** code, **not** version |
-| **Auth gate subtitle** | `formatHubAuthToolInfo` — P0020 omits `code` → `Data Box — Notes, cookies & 2FA vault` |
+| **Auth gate subtitle** | `formatHubAuthToolInfo` — omit `code` in preset → `Data Box — …`, `Tool Hub — …`, `Chat Center — …`, `GPM Console — …` |
 
 **Golden refs (icon + name, no version tagline)**
 

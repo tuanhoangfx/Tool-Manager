@@ -1,6 +1,6 @@
 import type { CreateHubForgotPasswordHandlerOptions } from "./hub-forgot-password";
 
-export type WorkspaceAuthToolCode = "P0004" | "P0016" | "P0020";
+export type WorkspaceAuthToolCode = "P0001" | "P0004" | "P0016" | "P0020";
 
 export type WorkspaceAuthGateToolInfo = {
   code?: string;
@@ -37,9 +37,14 @@ const BASE: Record<
   WorkspaceAuthToolCode,
   Omit<WorkspaceAuthGatePreset, "toolInfo"> & { toolInfo: Omit<WorkspaceAuthGateToolInfo, "tagline"> }
 > = {
+  P0001: {
+    title: "Welcome to GPM Console",
+    toolInfo: { name: "GPM Console" },
+    forgotPassword: {},
+  },
   P0004: {
     title: "Welcome to Tool Hub",
-    toolInfo: { code: "P0004", name: "Tool Hub" },
+    toolInfo: { name: "Tool Hub" },
     forgotPassword: {
       syntheticHint:
         "Link your email in Account after sign-in, or ask an admin to reset your password.",
@@ -48,7 +53,7 @@ const BASE: Record<
   },
   P0016: {
     title: "Welcome to Chat Center",
-    toolInfo: { code: "P0016", name: "Chat Center" },
+    toolInfo: { name: "Chat Center" },
     errorOptions: { toolHubHint: true, dualWorkspace: true },
     forgotPassword: {},
   },
@@ -80,6 +85,8 @@ export function createWorkspaceAuthGatePreset(
       ? options.variant === "users"
         ? "Users, roles & password reset"
         : "Workspace login for infi tools"
+      : options.code === "P0001"
+        ? "GPM Login automation"
       : options.code === "P0020"
         ? "Notes, cookies & 2FA vault"
         : "Multi-channel inbox & fanpages");

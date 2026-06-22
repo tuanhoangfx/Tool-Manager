@@ -10,6 +10,7 @@ import {
   TwofaPeriodCell,
   TwofaSecretCell,
   TwofaStatusCell,
+  TwofaOwnershipCell,
 } from "./twofa-copy-cells";
 import type { TwofaAccount } from "./types";
 import { TwofaRelativeTime } from "./TwofaRelativeTime";
@@ -51,6 +52,12 @@ export function renderTwofaAccountsDirectoryBodyCell(
       return (
         <DirectoryTableBodyCell key={key} colClass={colClass}>
           <TwofaStatusCell account={row} />
+        </DirectoryTableBodyCell>
+      );
+    case "ownership":
+      return (
+        <DirectoryTableBodyCell key={key} colClass={colClass}>
+          <TwofaOwnershipCell account={row} />
         </DirectoryTableBodyCell>
       );
     case "password":

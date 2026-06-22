@@ -3,6 +3,7 @@ import { isTwofaSupabaseConfigured } from "../../lib/twofa-supabase-env";
 import { getTwofaSupabase } from "../../lib/twofa-supabase";
 import type { TwofaAccount, TwofaDraft } from "./types";
 import { normalizeTwofaAccountStatus } from "./twofa-account-status";
+import { normalizeTwofaAccountOwnership } from "./twofa-account-ownership";
 import {
   applyTwofaCloudDelta,
   mergeAccounts as mergeTwofaAccountsById,
@@ -25,7 +26,7 @@ const LEGACY_SYNC_WATERMARK_KEY = "p0020-twofa-cloud-sync-at-v1";
 const SYNC_WATERMARK_PREFIX = "p0020-twofa-cloud-sync-at-v2";
 const PAGE_SIZE = 500;
 const SELECT_COLS =
-  "id,service,browser,account,password,secret,note,status,log,created_at,updated_at,last_used_at,deleted_at";
+  "id,service,browser,account,password,secret,note,status,ownership,log,created_at,updated_at,last_used_at,deleted_at";
 
 export type TwofaCloudSyncState = "off" | "idle" | "syncing" | "ok" | "error";
 
@@ -40,6 +41,7 @@ function accountToPayload(account: TwofaAccount, userId: string) {
     secret: account.secret,
     note: account.note?.trim() || null,
     status: account.status,
+    ownership: account.ownership,
     log: account.log ?? [],
     created_at: account.createdAt,
     updated_at: account.updatedAt,
@@ -59,6 +61,7 @@ function draftToPayload(id: string, draft: TwofaDraft, userId: string, now: stri
     secret: draft.secret,
     note: draft.note?.trim() || null,
     status: normalizeTwofaAccountStatus(draft.status),
+    ownership: normalizeTwofaAccountOwnership(draft.ownership),
     log: [],
     created_at: now,
     updated_at: now,

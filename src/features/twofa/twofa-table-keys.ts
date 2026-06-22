@@ -3,6 +3,7 @@ export type TwofaTableColumnKey =
   | "browser"
   | "account"
   | "status"
+  | "ownership"
   | "password"
   | "secret"
   | "code"
@@ -22,6 +23,7 @@ export const TWOFA_TABLE_COLUMN_DEFS: readonly TwofaTableColumnDef[] = [
   { key: "browser" },
   { key: "account" },
   { key: "status", required: true },
+  { key: "ownership" },
   { key: "password" },
   { key: "secret" },
   { key: "code", required: true },

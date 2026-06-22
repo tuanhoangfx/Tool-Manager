@@ -1,5 +1,9 @@
 import type { TwofaAccount } from "./types";
 import { normalizeTwofaAccountStatus } from "./twofa-account-status";
+import {
+  normalizeTwofaAccountOwnership,
+  resolveTwofaAccountOwnership,
+} from "./twofa-account-ownership";
 import { normalizeTwofaLog } from "./twofa-account-log";
 
 export type TwofaDbRow = {
@@ -11,6 +15,7 @@ export type TwofaDbRow = {
   secret: string;
   note: string | null;
   status: string | null;
+  ownership: string | null;
   log: unknown;
   created_at: string;
   updated_at: string;
@@ -29,6 +34,7 @@ export function twofaDbRowToAccount(row: TwofaDbRow): TwofaAccount {
     ...(row.password?.trim() ? { password: row.password.trim() } : {}),
     secret: row.secret ?? "",
     status: normalizeTwofaAccountStatus(row.status),
+    ownership: resolveTwofaAccountOwnership(row.ownership, row.note ?? undefined),
     ...(note ? { note } : {}),
     ...(log.length ? { log } : {}),
     createdAt: row.created_at,

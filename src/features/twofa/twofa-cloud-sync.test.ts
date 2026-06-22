@@ -10,6 +10,7 @@ function account(id: string): TwofaAccount {
     account: `${id}@test.com`,
     secret: "SECRET",
     status: "active",
+    ownership: "undefined",
     createdAt: "2026-06-01T00:00:00.000Z",
     updatedAt: "2026-06-01T00:00:00.000Z",
   };
@@ -72,6 +73,7 @@ describe("selectTwofaCloudPush", () => {
       account: "user@test.com",
       secret: "SECRET",
       status: "active",
+    ownership: "undefined",
       createdAt: "2026-06-01T00:00:00.000Z",
       updatedAt: "2026-06-01T00:00:00.000Z",
     };
@@ -81,6 +83,7 @@ describe("selectTwofaCloudPush", () => {
       account: "user@test.com",
       secret: "STALE",
       status: "active",
+    ownership: "undefined",
       createdAt: "2026-06-01T00:00:00.000Z",
       updatedAt: "2026-06-01T00:00:00.000Z",
     };
@@ -129,6 +132,7 @@ describe("rowSetsFromDbRows", () => {
         secret: "S1",
         note: null,
         status: "active",
+    ownership: "undefined",
         log: [],
         created_at: "2026-06-01T00:00:00.000Z",
         updated_at: "2026-06-01T00:00:00.000Z",
@@ -144,6 +148,7 @@ describe("rowSetsFromDbRows", () => {
         secret: "S2",
         note: null,
         status: "active",
+    ownership: "undefined",
         log: [],
         created_at: "2026-06-01T00:00:00.000Z",
         updated_at: "2026-06-02T00:00:00.000Z",

@@ -1,6 +1,11 @@
 import { newId } from "./storage";
 import type { TwofaAccount, TwofaDraft } from "./types";
 import { normalizeTwofaAccountStatus, type TwofaAccountStatus } from "./twofa-account-status";
+import {
+  DEFAULT_TWOFA_ACCOUNT_OWNERSHIP,
+  normalizeTwofaAccountOwnership,
+  type TwofaAccountOwnership,
+} from "./twofa-account-ownership";
 import { withTwofaCreateLog, withTwofaUpdateLog } from "./twofa-account-log";
 import {
   pickTwofaVaultWinner,
@@ -26,7 +31,8 @@ function draftToFields(draft: TwofaDraft) {
   const password = draft.password?.trim();
   const note = draft.note?.trim();
   const status = normalizeTwofaAccountStatus(draft.status);
-  return { service, browser, account, secret, password, note, status };
+  const ownership = normalizeTwofaAccountOwnership(draft.ownership);
+  return { service, browser, account, secret, password, note, status, ownership };
 }
 
 export function twofaDraftHasContent(draft: TwofaDraft): boolean {
@@ -40,7 +46,7 @@ export function upsertTwofaDraft(
   draft: TwofaDraft,
   now: string,
 ): TwofaUpsertOutcome | null {
-  const { service, browser, account, secret, password, note, status } = draftToFields(draft);
+  const { service, browser, account, secret, password, note, status, ownership } = draftToFields(draft);
   if (!twofaDraftHasContent(draft)) return null;
 
   const key = twofaIdentityKey(service, account, secret, browser);
@@ -61,6 +67,7 @@ export function upsertTwofaDraft(
         account,
         secret,
         status,
+        ownership,
         updatedAt: now,
         ...(browser ? { browser } : {}),
         ...(password ? { password } : {}),
@@ -87,6 +94,7 @@ export function upsertTwofaDraft(
       ...(password ? { password } : {}),
       secret,
       status,
+      ownership,
       ...(note ? { note } : {}),
       createdAt: now,
       updatedAt: now,
@@ -103,7 +111,7 @@ export function updateTwofaDraft(
   draft: TwofaDraft,
   now: string,
 ): TwofaUpsertOutcome | null {
-  const { service, browser, account, secret, password, note, status } = draftToFields(draft);
+  const { service, browser, account, secret, password, note, status, ownership } = draftToFields(draft);
   if (!twofaDraftHasContent(draft)) return null;
 
   const current = prev.find((row) => row.id === id);
@@ -126,6 +134,7 @@ export function updateTwofaDraft(
       account,
       secret,
       status,
+      ownership,
       updatedAt: now,
       ...(browser ? { browser } : {}),
       ...(password ? { password } : {}),

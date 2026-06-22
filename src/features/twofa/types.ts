@@ -1,6 +1,8 @@
 import type { TwofaAccountStatus } from "./twofa-account-status";
+import type { TwofaAccountOwnership } from "./twofa-account-ownership";
 
 export type { TwofaAccountStatus } from "./twofa-account-status";
+export type { TwofaAccountOwnership } from "./twofa-account-ownership";
 
 export type TwofaAccountLogField =
   | "service"
@@ -9,6 +11,7 @@ export type TwofaAccountLogField =
   | "password"
   | "secret"
   | "status"
+  | "ownership"
   | "note";
 
 export type TwofaAccountLogChange = {
@@ -37,6 +40,8 @@ export type TwofaAccount = {
   note?: string;
   /** Live operational status of the account. */
   status: TwofaAccountStatus;
+  /** Sheet ownership / custody label. */
+  ownership: TwofaAccountOwnership;
   /** Audit trail of field changes for this account. */
   log?: TwofaAccountLogEntry[];
   createdAt: string;
@@ -53,4 +58,5 @@ export type TwofaDraft = {
   secret: string;
   note?: string;
   status?: TwofaAccountStatus;
+  ownership?: TwofaAccountOwnership;
 };

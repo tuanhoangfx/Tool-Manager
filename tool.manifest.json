@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "4.3.45",
+    "version": "4.3.47",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
