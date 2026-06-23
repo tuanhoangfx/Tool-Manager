@@ -7,6 +7,7 @@ import {
   type SheetSource,
   type SheetTitleSource,
 } from "./sheet-sources";
+import { clearSheetPendingDelete, filterSheetPendingDeletes } from "./sheet-sync-pending";
 
 type SheetSourceRow = {
   id: string;
@@ -94,10 +95,10 @@ function mergeTwoSources(a: SheetSource, b: SheetSource): SheetSource {
 /** Merge local + remote rows by doc+gid dedupe key. */
 export function mergeSheetSourcesLocalRemote(local: SheetSource[], remote: SheetSource[]): SheetSource[] {
   const byKey = new Map<string, SheetSource>();
-  for (const row of remote) {
+  for (const row of filterSheetPendingDeletes(remote)) {
     byKey.set(sheetSourceDedupeKey(row), row);
   }
-  for (const row of local) {
+  for (const row of filterSheetPendingDeletes(local)) {
     const key = sheetSourceDedupeKey(row);
     const prev = byKey.get(key);
     byKey.set(key, prev ? mergeTwoSources(prev, row) : row);
@@ -178,23 +179,25 @@ export async function syncSheetSourcesWithCloud(userId: string): Promise<SheetSo
     next.push(synced);
   }
 
-  merged = dedupeSheetSources(next);
+  merged = filterSheetPendingDeletes(dedupeSheetSources(next));
   saveSheetSources(merged);
   return merged;
 }
 
 /** Realtime / background pull — cloud is SSOT; keep local-only rows pending first push. */
 export function reconcileSheetSourceLists(local: SheetSource[], remote: SheetSource[]): SheetSource[] {
-  const remoteByKey = new Map(remote.map((r) => [sheetSourceDedupeKey(r), r]));
+  const localFiltered = filterSheetPendingDeletes(local);
+  const remoteFiltered = filterSheetPendingDeletes(remote);
+  const remoteByKey = new Map(remoteFiltered.map((r) => [sheetSourceDedupeKey(r), r]));
   const merged: SheetSource[] = [];
 
-  for (const row of remote) {
+  for (const row of remoteFiltered) {
     const key = sheetSourceDedupeKey(row);
-    const localMatch = local.find((s) => sheetSourceDedupeKey(s) === key);
+    const localMatch = localFiltered.find((s) => sheetSourceDedupeKey(s) === key);
     merged.push(localMatch ? mergeTwoSources(row, localMatch) : row);
   }
 
-  for (const row of local) {
+  for (const row of localFiltered) {
     const key = sheetSourceDedupeKey(row);
     if (remoteByKey.has(key)) continue;
     if (!isUuid(row.id)) merged.push(row);
@@ -208,7 +211,7 @@ export async function reconcileSheetSourcesFromCloud(userId: string): Promise<Sh
 
   const local = loadSheetSources();
   const remote = await fetchRemoteSheetSources(userId);
-  const result = reconcileSheetSourceLists(local, remote);
+  const result = filterSheetPendingDeletes(reconcileSheetSourceLists(local, remote));
   saveSheetSources(result);
   return result;
 }
@@ -227,6 +230,7 @@ export async function deleteSheetSourceFromCloud(source: SheetSource, userId: st
   if (isUuid(source.id)) {
     const { error } = await supabase.from("sheet_sources").delete().eq("id", source.id).eq("user_id", userId);
     if (error && !isSheetSourcesTableMissing(error.message)) throw error;
+    clearSheetPendingDelete(source);
     return;
   }
   const dedupeKey = sheetSourceDedupeKey(source);
@@ -236,4 +240,5 @@ export async function deleteSheetSourceFromCloud(source: SheetSource, userId: st
     .eq("user_id", userId)
     .eq("dedupe_key", dedupeKey);
   if (error && !isSheetSourcesTableMissing(error.message)) throw error;
+  clearSheetPendingDelete(source);
 }

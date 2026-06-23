@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mergeSheetSourcesLocalRemote, reconcileSheetSourceLists } from "./sheet-sources-cloud";
 import type { SheetSource } from "./sheet-sources";
+import { markSheetPendingDelete } from "./sheet-sync-pending";
 
 function src(partial: Partial<SheetSource> & Pick<SheetSource, "id" | "title" | "rawUrl" | "csvUrl" | "gid">): SheetSource {
   return {
@@ -92,5 +93,29 @@ describe("reconcileSheetSourceLists", () => {
     ];
     const merged = reconcileSheetSourceLists(local, remote);
     expect(merged.map((s) => s.title).sort()).toEqual(["Cloud sheet", "New local"]);
+  });
+
+  it("does not restore rows marked pending local delete during reconcile", () => {
+    const local = [
+      src({
+        id: "550e8400-e29b-41d4-a716-446655440099",
+        title: "Deleted locally",
+        rawUrl: "https://docs.google.com/spreadsheets/d/old/edit#gid=1",
+        csvUrl: "https://docs.google.com/spreadsheets/d/old/export?format=csv&gid=1",
+        gid: "1",
+      }),
+    ];
+    const remote = [
+      src({
+        id: "550e8400-e29b-41d4-a716-446655440099",
+        title: "Deleted locally",
+        rawUrl: "https://docs.google.com/spreadsheets/d/old/edit#gid=1",
+        csvUrl: "https://docs.google.com/spreadsheets/d/old/export?format=csv&gid=1",
+        gid: "1",
+      }),
+    ];
+    markSheetPendingDelete(local[0]!);
+    const merged = reconcileSheetSourceLists(local, remote);
+    expect(merged).toHaveLength(0);
   });
 });

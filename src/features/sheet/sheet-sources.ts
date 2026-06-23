@@ -1,4 +1,5 @@
 import { parseGoogleSheetLink } from "./google-sheet-link";
+import { filterSheetPendingDeletes, markSheetPendingDelete } from "./sheet-sync-pending";
 
 export type SheetTitleSource = "auto" | "manual";
 
@@ -85,7 +86,7 @@ export function loadSheetSources(): SheetSource[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     const list = Array.isArray(parsed) ? (parsed as SheetSource[]).map(normalizeSheetSource) : [];
-    const deduped = dedupeSheetSources(list);
+    const deduped = filterSheetPendingDeletes(dedupeSheetSources(list));
     if (deduped.length !== list.length) saveSheetSources(deduped);
     return deduped;
   } catch {
@@ -140,6 +141,7 @@ export function addSheetSource(opts: {
 export function removeSheetSource(id: string) {
   const prev = loadSheetSources();
   const removed = prev.find((s) => s.id === id);
+  if (removed) markSheetPendingDelete(removed);
   const next = prev.filter((s) => s.id !== id);
   saveSheetSources(next);
   if (removed) notifySheetSourcesChange({ action: "delete", sourceId: id, source: removed });

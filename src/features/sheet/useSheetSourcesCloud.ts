@@ -10,6 +10,14 @@ import {
   syncSheetSourcesWithCloud,
 } from "./sheet-sources-cloud";
 import { addSheetSourcesRealtimeListener } from "./sheet-sources-realtime-hub";
+import { filterSheetPendingDeletes } from "./sheet-sync-pending";
+
+function applyCloudSources(
+  onSources: (sources: ReturnType<typeof loadSheetSources>) => void,
+  next: ReturnType<typeof loadSheetSources>,
+) {
+  onSources(filterSheetPendingDeletes(next));
+}
 
 export function useSheetSourcesCloud(
   session: Session | null,
@@ -20,6 +28,7 @@ export function useSheetSourcesCloud(
   const syncingRef = useRef(false);
   const pushTimerRef = useRef<number | null>(null);
   const onSourcesRef = useRef(onSources);
+  const syncGeneration = useRef(0);
 
   useEffect(() => {
     onSourcesRef.current = onSources;
@@ -28,10 +37,13 @@ export function useSheetSourcesCloud(
   useEffect(() => {
     if (!tabActive || !userId || !isSheetSourcesCloudAvailable()) return;
     let cancelled = false;
+    const generation = syncGeneration.current;
     syncingRef.current = true;
     void syncSheetSourcesWithCloud(userId)
       .then((next) => {
-        if (!cancelled) onSourcesRef.current(next);
+        if (!cancelled && generation === syncGeneration.current) {
+          applyCloudSources(onSourcesRef.current, next);
+        }
       })
       .catch(() => {
         /* keep local cache on sync failure */
@@ -49,9 +61,14 @@ export function useSheetSourcesCloud(
 
     return addSheetSourcesRealtimeListener(userId, () => {
       if (syncingRef.current) return;
+      const generation = syncGeneration.current;
       syncingRef.current = true;
       void reconcileSheetSourcesFromCloud(userId)
-        .then((next) => onSourcesRef.current(next))
+        .then((next) => {
+          if (generation === syncGeneration.current) {
+            applyCloudSources(onSourcesRef.current, next);
+          }
+        })
         .catch(() => {
           /* keep local cache */
         })
@@ -65,9 +82,10 @@ export function useSheetSourcesCloud(
     if (!userId || !isSheetSourcesCloudAvailable()) return;
 
     const onChange = (event: Event) => {
-      if (syncingRef.current) return;
       const detail = (event as CustomEvent<SheetSourcesChangeDetail>).detail;
       if (!detail) return;
+      if (detail.action === "delete") syncGeneration.current += 1;
+      if (syncingRef.current) return;
       if (pushTimerRef.current) window.clearTimeout(pushTimerRef.current);
       pushTimerRef.current = window.setTimeout(() => {
         void (async () => {
@@ -77,7 +95,7 @@ export function useSheetSourcesCloud(
               await deleteSheetSourceFromCloud(detail.source, userId);
             } else if (detail.source) {
               await pushSheetSourceToCloud(detail.source, userId);
-              onSourcesRef.current(loadSheetSources());
+              applyCloudSources(onSourcesRef.current, loadSheetSources());
             }
           } catch {
             /* offline — local cache remains */
