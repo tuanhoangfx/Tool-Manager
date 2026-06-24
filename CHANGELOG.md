@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-06-24 - Sheet: smoother switching between sources
+
+- Version: `4.6.3`
+- Type: Patch
+- Product: P0020
+- Prompt: Tăng độ mượt khi chuyển giữa các sheet.
+
+### Changes
+
+- Sheet switch: hiển thị grid từ memory/session cache ngay khi chọn rail (`activateSheet` + `peekSheetGridFromCaches`).
+- Network refresh chạy nền — giữ bảng cũ với opacity nhẹ thay vì full-screen "Loading sheet…".
+- Prefetch tối đa 6 sheet khi mở tab; hover rail vẫn prefetch như trước.
+
+### Verification
+
+- `vitest run src/features/sheet/sheet-grid-cache.test.ts`
+- Deploy smoke `databox.infi.io.vn` v4.6.3
+
 ## 2026-06-24 - Sheet: fix deleted source resurrected by title sync + cloud purge
 
 - Version: `4.6.2`

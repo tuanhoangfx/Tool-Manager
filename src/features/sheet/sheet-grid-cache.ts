@@ -60,3 +60,14 @@ export function hydrateSheetGridCache(): Map<string, SheetGridData> {
   }
   return map;
 }
+
+/** Sync peek — memory map first, then sessionStorage (instant sheet switch). */
+export function peekSheetGridFromCaches(
+  sheetId: string,
+  memory?: Map<string, SheetGridData>,
+): SheetGridData | null {
+  if (!sheetId) return null;
+  const fromMemory = memory?.get(sheetId);
+  if (fromMemory?.header?.length) return fromMemory;
+  return readSheetGridCache(sheetId);
+}

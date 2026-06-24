@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Table2, Trash2, Upload } from "lucide-react";
 import {
   HubBulkActionButton,
@@ -41,7 +41,12 @@ import { parseCsvToGrid } from "./sheet-csv-grid";
 import { buildHeaderRowCandidates, type SheetHeaderRowCandidate } from "./sheet-header-row-candidates";
 import { fetchSheetTabTitle, shouldSyncSheetTabTitle } from "./sheet-tab-title";
 import { applySheetMainFilters, buildSheetMainFilterDefs } from "./sheet-main-filters";
-import { deleteSheetGridCache, hydrateSheetGridCache, writeSheetGridCache } from "./sheet-grid-cache";
+import {
+  deleteSheetGridCache,
+  hydrateSheetGridCache,
+  peekSheetGridFromCaches,
+  writeSheetGridCache,
+} from "./sheet-grid-cache";
 import { deleteSheetGridCsvIdb, readSheetGridCsvIdb, writeSheetGridCsvIdb } from "./sheet-grid-idb-cache";
 import { prefetchAdjacentSheetGrids, prefetchSheetGrid } from "./sheet-grid-preload";
 import { setupSheetFilterIcons } from "./sheet-filter-icons";
@@ -205,12 +210,36 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     return countSheetSearchMatches(displayGrid.rows, sheetQuery);
   }, [displayGrid, sheetQuery]);
 
-  const onGridCached = useCallback((sheetId: string, cached: SheetGridData) => {
+  const applySheetGridToUi = useCallback((sheetId: string, cached: SheetGridData) => {
     gridCacheRef.current.set(sheetId, cached);
     if (sheetId !== activeIdRef.current) return;
     setGrid(cached);
     setGridSheetId(sheetId);
+    setBusy(false);
   }, []);
+
+  const onGridCached = useCallback(
+    (sheetId: string, cached: SheetGridData) => {
+      applySheetGridToUi(sheetId, cached);
+    },
+    [applySheetGridToUi],
+  );
+
+  const activateSheet = useCallback(
+    (id: string) => {
+      if (id === activeIdRef.current) return;
+      setError(null);
+      const cached = peekSheetGridFromCaches(id, gridCacheRef.current);
+      if (cached) applySheetGridToUi(id, cached);
+      else {
+        setGrid(null);
+        setGridSheetId(null);
+        setBusy(true);
+      }
+      startTransition(() => setActiveId(id));
+    },
+    [applySheetGridToUi],
+  );
 
   const applyParsedGrid = useCallback(
     (sheetId: string, parsed: ReturnType<typeof parseCsvToGrid>) => {
@@ -229,22 +258,37 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     const source = activeLoadSource;
     const loadId = source.id;
 
-    const idbSnap = await readSheetGridCsvIdb(loadId);
-    if (!idbSnap) setError(null);
-    if (idbSnap && loadId === activeIdRef.current) {
-      rawCsvRef.current = idbSnap.csv;
-      setHeaderRowCandidates(buildHeaderRowCandidates(idbSnap.csv));
-      const stale = parseCsvToGrid(idbSnap.csv, {
-        headerRowIndex: source.headerRowIndex ?? idbSnap.headerRowIndex,
-      });
-      gridCacheRef.current.set(loadId, stale.grid);
-      writeSheetGridCache(loadId, stale.grid);
-      setGrid(stale.grid);
-      setGridSheetId(loadId);
+    const sessionCached = peekSheetGridFromCaches(loadId, gridCacheRef.current);
+    if (sessionCached && loadId === activeIdRef.current) {
+      applySheetGridToUi(loadId, sessionCached);
     }
 
-    setBusy(true);
+    const idbPromise = readSheetGridCsvIdb(loadId);
+    const hasCachedGrid = Boolean(peekSheetGridFromCaches(loadId, gridCacheRef.current));
+    if (!hasCachedGrid) {
+      setBusy(true);
+      const idbSnap = await idbPromise;
+      if (!idbSnap) setError(null);
+      if (idbSnap && loadId === activeIdRef.current) {
+        rawCsvRef.current = idbSnap.csv;
+        setHeaderRowCandidates(buildHeaderRowCandidates(idbSnap.csv));
+        const stale = parseCsvToGrid(idbSnap.csv, {
+          headerRowIndex: source.headerRowIndex ?? idbSnap.headerRowIndex,
+        });
+        gridCacheRef.current.set(loadId, stale.grid);
+        writeSheetGridCache(loadId, stale.grid);
+        applySheetGridToUi(loadId, stale.grid);
+      }
+    } else {
+      void idbPromise.then((idbSnap) => {
+        if (!idbSnap || loadId !== activeIdRef.current) return;
+        rawCsvRef.current = idbSnap.csv;
+        setHeaderRowCandidates(buildHeaderRowCandidates(idbSnap.csv));
+      });
+    }
+
     try {
+      if (peekSheetGridFromCaches(loadId, gridCacheRef.current)) setBusy(true);
       const res = await fetch(source.csvUrl, { method: "GET" });
       if (!res.ok) throw new Error(`Fetch failed (${res.status}).`);
       const csv = await res.text();
@@ -277,7 +321,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       }
     } catch (e) {
       if (loadId !== activeIdRef.current) return;
-      if (idbSnap) {
+      if (peekSheetGridFromCaches(loadId, gridCacheRef.current)) {
         setError((prev) => prev ?? "Không tải được Google Sheet — đang hiển thị bản lưu offline.");
         return;
       }
@@ -288,7 +332,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     } finally {
       if (loadId === activeIdRef.current) setBusy(false);
     }
-  }, [activeLoadSource, applyParsedGrid]);
+  }, [activeLoadSource, applyParsedGrid, applySheetGridToUi]);
 
   useEffect(() => {
     if (!tabActive) return;
@@ -299,6 +343,13 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     if (!tabActive) return;
     prefetchAdjacentSheetGrids(sortedRailSources, activeId, onGridCached);
   }, [activeId, onGridCached, sortedRailSources, tabActive]);
+
+  useEffect(() => {
+    if (!tabActive) return;
+    for (const source of sources.slice(0, 6)) {
+      prefetchSheetGrid(source, onGridCached);
+    }
+  }, [onGridCached, sources, tabActive]);
 
   const onPrefetchSheet = useCallback(
     (source: SheetSource) => prefetchSheetGrid(source, onGridCached),
@@ -513,6 +564,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   );
 
   const gridLoading = Boolean(activeId && busy && !resolvedGrid);
+  const gridRefreshing = Boolean(activeId && busy && resolvedGrid);
 
   const sheetBulkActions = useMemo(
     () => (
@@ -562,7 +614,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
           sortKey={railSortKey}
           sortDir={railSortDir}
           onSort={onRailSort}
-          onSelect={setActiveId}
+          onSelect={activateSheet}
           onPrefetch={onPrefetchSheet}
           resetKey={`${railQuery}:${railTimeRange}:${railSortKey}:${railSortDir}:${filteredSources.length}`}
         />
@@ -589,6 +641,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
           <SheetGridTable
             data={displayGrid}
             loading={gridLoading}
+            refreshing={gridRefreshing}
             pageSize={pageSize}
             prefs={gridPrefs}
             searchQuery={sheetQuery}

@@ -145,6 +145,25 @@ body,
 .hub-main--sheet .sheet-panel .sheet-grid-shell {
   flex: 1 1 0;
   min-height: 0;
+  transition: opacity 140ms ease;
+}
+
+.hub-main--sheet .sheet-panel .sheet-grid-shell--refreshing {
+  opacity: 0.88;
+  pointer-events: auto;
+}
+
+.hub-main--sheet .sheet-panel .sheet-grid-loading {
+  animation: sheet-grid-fade-in 160ms ease;
+}
+
+@keyframes sheet-grid-fade-in {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .hub-main--sheet .sheet-panel .hub-split-directory-pane__body .hub-users-table-wrap.hub-directory-table-scroll:not(.hub-directory-table-split) {

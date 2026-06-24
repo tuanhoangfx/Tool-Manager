@@ -22,6 +22,7 @@ export type { SheetGridData } from "./sheet-grid-types";
 export function SheetGridTable({
   data,
   loading = false,
+  refreshing = false,
   pageSize,
   prefs,
   searchQuery = "",
@@ -30,6 +31,7 @@ export function SheetGridTable({
 }: {
   data: SheetGridData | null;
   loading?: boolean;
+  refreshing?: boolean;
   pageSize: number;
   prefs: SheetGridColumnPrefs;
   searchQuery?: string;
@@ -239,7 +241,7 @@ export function SheetGridTable({
       ariaLabel="Sheet rows pages"
       pageSize={pageSize}
       resetKey={resetKey}
-      className="sheet-grid-shell flex min-h-0 flex-1 flex-col"
+      className={`sheet-grid-shell flex min-h-0 flex-1 flex-col${refreshing ? " sheet-grid-shell--refreshing" : ""}`}
     >
       {(pageRows) => {
         const bodyRows =
