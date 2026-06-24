@@ -151,7 +151,7 @@ export function HubAuthGateGoldenPreview({ tool = "P0016", compare = true }: Hub
           </button>
         </div>
         <p className="text-center text-xs text-[var(--muted)]">
-          Modal-only · 30rem · blur 8px · {cfg.toolInfo.code} · {HUB_AUTH_GATE_VARIANTS[cfg.variant].tabCount} tabs
+          Modal-only · 30rem · blur 8px · {activeTool} · {HUB_AUTH_GATE_VARIANTS[cfg.variant].tabCount} tabs
         </p>
       </section>
 
@@ -179,7 +179,7 @@ export function HubAuthGateGoldenPreview({ tool = "P0016", compare = true }: Hub
         title={cfg.title}
         toolInfo={cfg.toolInfo}
         anonymousHint={cfg.anonymousHint}
-        headerLeading={<HubToolAvatar code={cfg.toolInfo.code ?? activeTool} size="sm" />}
+        headerLeading={<HubToolAvatar code={activeTool} size="sm" />}
         onClose={() => setModalOpen(false)}
         onAnonymous={flags.showAnonymous ? () => setModalOpen(false) : undefined}
         onAuthed={() => setModalOpen(false)}
@@ -193,11 +193,10 @@ export function HubAuthGateGoldenPreview({ tool = "P0016", compare = true }: Hub
           toolInfo={cfg.toolInfo}
           signedInAs="preview@infix1.io.vn"
           message={cfg.deniedMessage}
-          headerLeading={<HubToolAvatar code={cfg.toolInfo.code ?? activeTool} size="sm" />}
+          headerLeading={<HubToolAvatar code={activeTool} size="sm" />}
           onSignOut={() => setDeniedOpen(false)}
         />
       ) : null}
     </div>
   );
 }
-

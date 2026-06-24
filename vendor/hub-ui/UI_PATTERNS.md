@@ -410,6 +410,16 @@ Checks: `session-in-start-rail`, `center-stats-always-visible`, `grid-three-colu
 - P0020 — `WorkspaceSidebar.tsx` — `DATA_BOX_PRODUCT.name`
 - P0004 / P0016 — descriptive `brandTagline` only (no `APP_VERSION`)
 
+**Legacy aside (not `HubSidebarShell` yet — migration backlog)**
+
+| Tool | File | Brand today | Target |
+|------|------|-------------|--------|
+| **P0008** | `app/src/components/layout/Sidebar.tsx` | `Seller Center` + `CRM · CzP Seller` | Migrate to `HubSidebarShell`; descriptor OK, no code/version |
+| **P0021** | `app/src/components/workspace/WorkspaceShell.tsx` | `Workspace Hub` + `P0021 · vX.Y.Z` | Migrate to `HubSidebarShell`; drop code/version tagline (version in `AppTabHeader` meta) |
+
+- P0008/P0021 reuse `navActive*` / `navIconClass` from hub-ui but inline `<aside>` — excluded from `hub-ui-parity-check.mjs --sidebar-only` until shell migration.
+- New Next.js tools: prefer `HubSidebarShell` from day one (see P0003/P0020).
+
 **Verify:** `node Tool/scripts/hub-ui-parity-check.mjs --code P00xx`
 
 ---

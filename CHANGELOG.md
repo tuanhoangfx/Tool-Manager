@@ -5,6 +5,7 @@
 - Version: `4.6.2`
 - Type: Patch
 - Product: P0020
+- Timestamp: 2026-06-24 22:55 (UTC+7)
 - Prompt: Order List vẫn hiện sau khi xóa (v4.6.1).
 
 ### Changes
