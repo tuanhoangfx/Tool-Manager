@@ -131,12 +131,28 @@ export function TwofaOwnershipCell({ account }: { account: TwofaAccount }) {
   );
 }
 
+export function TwofaMailRecoverCell({ account }: { account: TwofaAccount }) {
+  const value = account.mailRecover?.trim();
+  if (!value) return <span className="hub-users-cell-muted">—</span>;
+
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <TwofaCopyControl
+        value={value}
+        display={value}
+        className="twofa-copy-control--account hub-users-name-title"
+        title="Copy recovery mail"
+      />
+    </div>
+  );
+}
+
 export function TwofaNoteCell({ account }: { account: TwofaAccount }) {
   const value = account.note?.trim();
   if (!value) return <span className="hub-users-cell-muted">—</span>;
   return (
-    <span className="line-clamp-2 text-left" title={value}>
-      {value}
+    <span className="twofa-table-cell-ellipsis text-left" title={value}>
+      {value.replace(/\s+/g, " ")}
     </span>
   );
 }
@@ -145,7 +161,7 @@ export function TwofaLogCell({ account }: { account: TwofaAccount }) {
   const entry = latestTwofaLogEntry(account);
   if (!entry) return <span className="hub-users-cell-muted">—</span>;
   return (
-    <span className="line-clamp-2 text-left" title={`${entry.message} · ${entry.at}`}>
+    <span className="twofa-table-cell-ellipsis text-left" title={`${entry.message} · ${entry.at}`}>
       {entry.message}
     </span>
   );

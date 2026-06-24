@@ -11,6 +11,7 @@ export type TwofaDbRow = {
   service: string;
   browser: string | null;
   account: string;
+  mail_recover: string | null;
   password: string | null;
   secret: string;
   note: string | null;
@@ -31,6 +32,7 @@ export function twofaDbRowToAccount(row: TwofaDbRow): TwofaAccount {
     service: row.service,
     ...(row.browser?.trim() ? { browser: row.browser.trim() } : {}),
     account: row.account,
+    ...(row.mail_recover?.trim() ? { mailRecover: row.mail_recover.trim() } : {}),
     ...(row.password?.trim() ? { password: row.password.trim() } : {}),
     secret: row.secret ?? "",
     status: normalizeTwofaAccountStatus(row.status),

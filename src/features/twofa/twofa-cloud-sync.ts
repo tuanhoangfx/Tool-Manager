@@ -26,7 +26,7 @@ const LEGACY_SYNC_WATERMARK_KEY = "p0020-twofa-cloud-sync-at-v1";
 const SYNC_WATERMARK_PREFIX = "p0020-twofa-cloud-sync-at-v2";
 const PAGE_SIZE = 500;
 const SELECT_COLS =
-  "id,service,browser,account,password,secret,note,status,ownership,log,created_at,updated_at,last_used_at,deleted_at";
+  "id,service,browser,account,mail_recover,password,secret,note,status,ownership,log,created_at,updated_at,last_used_at,deleted_at";
 
 export type TwofaCloudSyncState = "off" | "idle" | "syncing" | "ok" | "error";
 
@@ -37,6 +37,7 @@ function accountToPayload(account: TwofaAccount, userId: string) {
     service: account.service,
     browser: account.browser?.trim() || null,
     account: account.account,
+    mail_recover: account.mailRecover?.trim() || null,
     password: account.password?.trim() || null,
     secret: account.secret,
     note: account.note?.trim() || null,
@@ -57,6 +58,7 @@ function draftToPayload(id: string, draft: TwofaDraft, userId: string, now: stri
     service: draft.service.trim(),
     browser: draft.browser?.trim() || null,
     account: draft.account.trim(),
+    mail_recover: draft.mailRecover?.trim() || null,
     password: draft.password?.trim() || null,
     secret: draft.secret,
     note: draft.note?.trim() || null,

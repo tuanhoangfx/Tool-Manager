@@ -7,7 +7,11 @@ import {
   type SheetSource,
   type SheetTitleSource,
 } from "./sheet-sources";
-import { clearSheetPendingDelete, filterSheetPendingDeletes } from "./sheet-sync-pending";
+import {
+  clearSheetPendingDelete,
+  filterSheetPendingDeletes,
+  isSheetPendingDelete,
+} from "./sheet-sync-pending";
 
 type SheetSourceRow = {
   id: string;
@@ -165,23 +169,42 @@ async function upsertSheetSourceRow(source: SheetSource, userId: string): Promis
   return source;
 }
 
+export type SheetSourcesCloudSyncOpts = {
+  /** Abort in-flight sync when local generation changes (e.g. delete). */
+  isStale?: () => boolean;
+};
+
+/** Rows eligible for cloud upsert — excludes in-flight local deletes. */
+export function selectSheetSourcesForCloudPush(merged: SheetSource[]): SheetSource[] {
+  return filterSheetPendingDeletes(merged);
+}
+
 /** Pull cloud, merge with local, push local-only rows, persist merged list. */
-export async function syncSheetSourcesWithCloud(userId: string): Promise<SheetSource[]> {
+export async function syncSheetSourcesWithCloud(
+  userId: string,
+  opts?: SheetSourcesCloudSyncOpts,
+): Promise<SheetSource[]> {
   if (!isSheetSourcesCloudAvailable()) return loadSheetSources();
+  if (opts?.isStale?.()) return loadSheetSources();
 
   const local = loadSheetSources();
   const remote = await fetchRemoteSheetSources(userId);
-  let merged = mergeSheetSourcesLocalRemote(local, remote);
+  if (opts?.isStale?.()) return loadSheetSources();
+
+  const merged = selectSheetSourcesForCloudPush(mergeSheetSourcesLocalRemote(local, remote));
 
   const next: SheetSource[] = [];
   for (const row of merged) {
+    if (opts?.isStale?.()) return loadSheetSources();
+    if (isSheetPendingDelete(row)) continue;
     const synced = await upsertSheetSourceRow(row, userId);
+    if (opts?.isStale?.()) return loadSheetSources();
     next.push(synced);
   }
 
-  merged = filterSheetPendingDeletes(dedupeSheetSources(next));
-  saveSheetSources(merged);
-  return merged;
+  const result = filterSheetPendingDeletes(dedupeSheetSources(next));
+  saveSheetSources(result);
+  return result;
 }
 
 /** Realtime / background pull — cloud is SSOT; keep local-only rows pending first push. */

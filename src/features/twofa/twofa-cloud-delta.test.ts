@@ -7,6 +7,7 @@ function row(partial: Partial<TwofaDbRow> & Pick<TwofaDbRow, "id">): TwofaDbRow 
     service: "Gmail",
     browser: null,
     account: "a@b.com",
+    mail_recover: null,
     password: null,
     secret: "SECRET",
     note: null,

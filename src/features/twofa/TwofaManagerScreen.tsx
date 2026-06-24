@@ -11,7 +11,6 @@ import { readWorkspacePeriod, type WorkspacePeriodPrefs } from "../../lib/hub-wo
 import { readTwofaHubPrefs } from "./twofa-tab-prefs";
 import { P0020DirectoryScreen } from "../workspace/P0020DirectoryScreen";
 import { useP0020DirectoryChrome } from "../workspace/useP0020DirectoryChrome";
-import { TwofaCloudSyncTrailing } from "./TwofaCloudSyncTrailing";
 import { useResolvedVisibleKpiKeys } from "../../components/sales-shell";
 import {
   barChartSeriesSignature,
@@ -23,6 +22,7 @@ import {
   useHubDirectorySelection,
   useDirectoryBandSync,
   useDirectoryTableSort,
+  useHubTablePageSize,
 } from "@tool-workspace/hub-ui";
 import { WorkspaceDirectorySearchToolbar } from "../workspace/WorkspaceDirectorySearchToolbar";
 import {
@@ -41,6 +41,7 @@ import { TwofaAccountsTable } from "./TwofaAccountsTable";
 import { patchTwofaViewMode, readTwofaViewMode } from "./twofa-list-prefs";
 import { TwofaTotpTickProvider } from "./twofa-totp-tick";
 import { TwofaBulkActionBar } from "./TwofaBulkActionBar";
+import { resolveTwofaDirectoryPageSize } from "./twofa-directory-page-size";
 import { TwofaBulkMetaEditModal } from "./TwofaBulkMetaEditModal";
 import { TwofaAddModal } from "./TwofaAddModal";
 import { TwofaAccountDetailModal } from "./TwofaAccountDetailModal";
@@ -113,11 +114,8 @@ function TwofaManagerScreenBody({
     bulkUpdateMeta,
     dedupeNow,
     previewDedupe,
-    cloudState,
-    cloudError,
     fullSyncNotice,
     ackFullSyncNotice,
-    syncFromCloud,
   } = useTwofaAccounts({ tabActive });
   const { pushToast } = useAppToast();
 
@@ -154,6 +152,7 @@ function TwofaManagerScreenBody({
   const [dedupePreviewError, setDedupePreviewError] = useState<string | null>(null);
   const [dedupeRunning, setDedupeRunning] = useState(false);
   const [viewMode, setViewModeState] = useState<HubViewMode>(() => readTwofaViewMode());
+  const userTablePageSize = useHubTablePageSize();
 
   const setViewMode = useCallback((mode: HubViewMode) => {
     setViewModeState(mode);
@@ -173,9 +172,10 @@ function TwofaManagerScreenBody({
   }), []);
 
   const accountsForAnalytics = useDeferredValue(accounts);
+  const deferredQuery = useDeferredValue(query);
   const twofaFilters = useMemo(
-    () => twofaFiltersWithCounts(accountsForAnalytics, query, filterValues, period),
-    [accountsForAnalytics, filterValues, period, query],
+    () => twofaFiltersWithCounts(accountsForAnalytics, deferredQuery, filterValues, period),
+    [accountsForAnalytics, deferredQuery, filterValues, period],
   );
 
   useEffect(() => {
@@ -185,14 +185,19 @@ function TwofaManagerScreenBody({
   }, [setFilters, shellMode, twofaFilters]);
 
   const displayedAccounts = useMemo(
-    () => filterTwofaAccounts(accounts, query, filterValues, period),
-    [accounts, filterValues, period, query],
+    () => filterTwofaAccounts(accounts, deferredQuery, filterValues, period),
+    [accounts, deferredQuery, filterValues, period],
   );
 
   const { sortKey, sortDir, onSort, sorted: sortedDisplayedAccounts } = useDirectoryTableSort(
     displayedAccounts,
     "service" as TwofaTableColumnKey,
     sortableTwofaValue,
+  );
+
+  const directoryPageSize = useMemo(
+    () => resolveTwofaDirectoryPageSize(sortedDisplayedAccounts.length, userTablePageSize),
+    [sortedDisplayedAccounts.length, userTablePageSize],
   );
 
   const {
@@ -483,24 +488,12 @@ function TwofaManagerScreenBody({
         total={accounts.length}
         countLabel="accounts"
         showResultCount={viewMode === "card"}
-        trailing={
-          <TwofaCloudSyncTrailing
-            filteredTotal={displayedAccounts.length}
-            total={accounts.length}
-            cloudState={cloudState}
-            cloudError={cloudError}
-            onCloudSync={() => void syncFromCloud({ full: true })}
-          />
-        }
       />
     ),
     [
       accounts.length,
-      cloudError,
-      cloudState,
       displayedAccounts.length,
       setViewMode,
-      syncFromCloud,
       viewMode,
     ],
   );
@@ -588,6 +581,7 @@ function TwofaManagerScreenBody({
           items={sortedDisplayedAccounts}
           viewMode={viewMode}
           resetKey={listResetKey}
+          pageSize={directoryPageSize}
           empty={
             !addModalOpen ? (
               <div className="rounded-xl border border-dashed border-white/15 bg-white/[.02] px-6 py-10 text-center text-sm text-[var(--muted)]">
@@ -625,6 +619,7 @@ function TwofaManagerScreenBody({
               sortDir={sortDir}
               onSort={onSort}
               resetKey={listResetKey}
+              pageSize={directoryPageSize}
             />
           }
         />

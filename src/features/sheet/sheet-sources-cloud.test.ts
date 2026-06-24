@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeSheetSourcesLocalRemote, reconcileSheetSourceLists } from "./sheet-sources-cloud";
+import { mergeSheetSourcesLocalRemote, reconcileSheetSourceLists, selectSheetSourcesForCloudPush } from "./sheet-sources-cloud";
 import type { SheetSource } from "./sheet-sources";
 import { markSheetPendingDelete } from "./sheet-sync-pending";
 
@@ -117,5 +117,29 @@ describe("reconcileSheetSourceLists", () => {
     markSheetPendingDelete(local[0]!);
     const merged = reconcileSheetSourceLists(local, remote);
     expect(merged).toHaveLength(0);
+  });
+});
+
+describe("selectSheetSourcesForCloudPush", () => {
+  it("excludes pending local deletes before cloud upsert", () => {
+    const local = [
+      src({
+        id: "sh_local",
+        title: "Deleted",
+        rawUrl: "https://docs.google.com/spreadsheets/d/abc/edit#gid=1",
+        csvUrl: "https://docs.google.com/spreadsheets/d/abc/export?format=csv&gid=1",
+        gid: "1",
+      }),
+      src({
+        id: "sh_keep",
+        title: "Keep",
+        rawUrl: "https://docs.google.com/spreadsheets/d/xyz/edit#gid=2",
+        csvUrl: "https://docs.google.com/spreadsheets/d/xyz/export?format=csv&gid=2",
+        gid: "2",
+      }),
+    ];
+    markSheetPendingDelete(local[0]!);
+    const push = selectSheetSourcesForCloudPush(mergeSheetSourcesLocalRemote(local, []));
+    expect(push.map((s) => s.title)).toEqual(["Keep"]);
   });
 });

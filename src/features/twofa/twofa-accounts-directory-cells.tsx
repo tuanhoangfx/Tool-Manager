@@ -2,6 +2,7 @@ import { DirectoryTableBodyCell, type HubDirectoryColumnDef } from "@tool-worksp
 import { TwofaPlatformIcon } from "./TwofaPlatformIcon";
 import {
   TwofaAccountCell,
+  TwofaMailRecoverCell,
   TwofaBrowserCell,
   TwofaCodeCell,
   TwofaLogCell,
@@ -30,7 +31,7 @@ export function renderTwofaAccountsDirectoryBodyCell(
         <DirectoryTableBodyCell key={key} colClass={colClass}>
           <div className="hub-users-cell-name">
             <TwofaPlatformIcon service={row.service} />
-            <span className="hub-users-name-title" title={row.service}>
+            <span className="hub-users-name-title twofa-table-cell-ellipsis" title={row.service}>
               {row.service}
             </span>
           </div>
@@ -46,6 +47,12 @@ export function renderTwofaAccountsDirectoryBodyCell(
       return (
         <DirectoryTableBodyCell key={key} colClass={colClass}>
           <TwofaAccountCell account={row} />
+        </DirectoryTableBodyCell>
+      );
+    case "mailRecover":
+      return (
+        <DirectoryTableBodyCell key={key} colClass={colClass}>
+          <TwofaMailRecoverCell account={row} />
         </DirectoryTableBodyCell>
       );
     case "status":

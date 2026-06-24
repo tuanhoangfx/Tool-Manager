@@ -168,7 +168,6 @@ function buildAuxNote(fields) {
     const v = normCell(value);
     if (v) lines.push(`${label}: ${v}`);
   };
-  push("Mail", fields.mail);
   push("Mail password", fields.mailPassword);
   push("Mail 2FA", fields.mail2fa);
   push("Mail GPM", fields.mailGpm);
@@ -350,8 +349,8 @@ for (let i = 0; i < dataRows.length; i++) {
   const timestamp = get(row, cols.timestamp);
   const sheetNote = get(row, cols.note);
   const ownership = mapSheetOwnership(get(row, cols.ownership));
+  const mailRecover = get(row, cols.mail);
   const note = buildAuxNote({
-    mail: get(row, cols.mail),
     mailPassword: get(row, cols.mailPassword),
     mail2fa: get(row, cols.mail2fa),
     mailGpm: get(row, cols.mailGpm),
@@ -372,6 +371,7 @@ for (let i = 0; i < dataRows.length; i++) {
     draft: {
       ...draft,
       ownership,
+      ...(mailRecover ? { mailRecover } : {}),
       note: note || undefined,
       status: mapSheetStatus(get(row, cols.status), ownership),
     },
@@ -409,6 +409,7 @@ for (const item of finalRows) {
     account: d.account.trim(),
     password: d.password?.trim() || null,
     secret: d.secret ?? "",
+    mail_recover: d.mailRecover?.trim() || null,
     note: d.note?.trim() || "",
     status: d.status,
     ownership: d.ownership ?? "undefined",

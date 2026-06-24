@@ -30,14 +30,15 @@ function draftToFields(draft: TwofaDraft) {
   const secret = normalizeSecret(draft.secret);
   const password = draft.password?.trim();
   const note = draft.note?.trim();
+  const mailRecover = draft.mailRecover?.trim();
   const status = normalizeTwofaAccountStatus(draft.status);
   const ownership = normalizeTwofaAccountOwnership(draft.ownership);
-  return { service, browser, account, secret, password, note, status, ownership };
+  return { service, browser, account, secret, password, note, mailRecover, status, ownership };
 }
 
 export function twofaDraftHasContent(draft: TwofaDraft): boolean {
-  const { service, browser, account, secret, password, note } = draftToFields(draft);
-  return Boolean(service || browser || account || secret || password || note);
+  const { service, browser, account, secret, password, note, mailRecover } = draftToFields(draft);
+  return Boolean(service || browser || account || secret || password || note || mailRecover);
 }
 
 /** Upsert one draft: replace existing same identity (delete older duplicates), or append new row. */
@@ -46,7 +47,7 @@ export function upsertTwofaDraft(
   draft: TwofaDraft,
   now: string,
 ): TwofaUpsertOutcome | null {
-  const { service, browser, account, secret, password, note, status, ownership } = draftToFields(draft);
+  const { service, browser, account, secret, password, note, mailRecover, status, ownership } = draftToFields(draft);
   if (!twofaDraftHasContent(draft)) return null;
 
   const key = twofaIdentityKey(service, account, secret, browser);
@@ -71,12 +72,14 @@ export function upsertTwofaDraft(
         updatedAt: now,
         ...(browser ? { browser } : {}),
         ...(password ? { password } : {}),
+        ...(mailRecover ? { mailRecover } : {}),
         ...(note ? { note } : {}),
       },
       now,
     );
     if (!browser) delete updated.browser;
     if (!password) delete updated.password;
+    if (!mailRecover) delete updated.mailRecover;
     if (!note) delete updated.note;
 
     const accounts = prev
@@ -95,6 +98,7 @@ export function upsertTwofaDraft(
       secret,
       status,
       ownership,
+      ...(mailRecover ? { mailRecover } : {}),
       ...(note ? { note } : {}),
       createdAt: now,
       updatedAt: now,
@@ -111,7 +115,7 @@ export function updateTwofaDraft(
   draft: TwofaDraft,
   now: string,
 ): TwofaUpsertOutcome | null {
-  const { service, browser, account, secret, password, note, status, ownership } = draftToFields(draft);
+  const { service, browser, account, secret, password, note, mailRecover, status, ownership } = draftToFields(draft);
   if (!twofaDraftHasContent(draft)) return null;
 
   const current = prev.find((row) => row.id === id);
@@ -138,12 +142,14 @@ export function updateTwofaDraft(
       updatedAt: now,
       ...(browser ? { browser } : {}),
       ...(password ? { password } : {}),
+      ...(mailRecover ? { mailRecover } : {}),
       ...(note ? { note } : {}),
     },
     now,
   );
   if (!browser) delete updated.browser;
   if (!password) delete updated.password;
+  if (!mailRecover) delete updated.mailRecover;
   if (!note) delete updated.note;
 
   const accounts = prev

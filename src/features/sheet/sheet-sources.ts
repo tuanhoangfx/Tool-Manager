@@ -1,4 +1,5 @@
 import { parseGoogleSheetLink } from "./google-sheet-link";
+import { postSheetSourcesCrossTab } from "./sheet-sources-cross-tab";
 import { filterSheetPendingDeletes, markSheetPendingDelete } from "./sheet-sync-pending";
 
 export type SheetTitleSource = "auto" | "manual";
@@ -20,7 +21,8 @@ export type SheetSource = {
   titleSource?: SheetTitleSource;
 };
 
-const STORAGE_KEY = "p0020:sheet:sources:v1";
+export const SHEET_SOURCES_STORAGE_KEY = "p0020:sheet:sources:v1";
+const STORAGE_KEY = SHEET_SOURCES_STORAGE_KEY;
 export const SHEET_SOURCES_CHANGE_EVENT = "sheet-sources-change";
 
 export type SheetSourcesChangeDetail = {
@@ -32,6 +34,7 @@ export type SheetSourcesChangeDetail = {
 function notifySheetSourcesChange(detail: SheetSourcesChangeDetail) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(SHEET_SOURCES_CHANGE_EVENT, { detail }));
+  postSheetSourcesCrossTab("local-updated");
 }
 
 function nowIso() {
@@ -97,7 +100,7 @@ export function loadSheetSources(): SheetSource[] {
 export function saveSheetSources(list: SheetSource[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dedupeSheetSources(list)));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filterSheetPendingDeletes(dedupeSheetSources(list))));
   } catch {
     /* ignore quota */
   }

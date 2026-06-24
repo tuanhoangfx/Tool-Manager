@@ -140,6 +140,29 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   }, [activeId]);
 
   const active = useMemo(() => sources.find((s) => s.id === activeId) ?? null, [activeId, sources]);
+  const activeLoadSource = useMemo(
+    () =>
+      active
+        ? {
+            id: active.id,
+            title: active.title,
+            rawUrl: active.rawUrl,
+            csvUrl: active.csvUrl,
+            gid: active.gid,
+            headerRowIndex: active.headerRowIndex,
+            titleSource: active.titleSource,
+          }
+        : null,
+    [
+      active?.id,
+      active?.title,
+      active?.rawUrl,
+      active?.csvUrl,
+      active?.gid,
+      active?.headerRowIndex,
+      active?.titleSource,
+    ],
+  );
 
   const filteredSources = useMemo(() => {
     let list = filterSheetSourcesByTimeRange(sources, railTimeRange);
@@ -201,16 +224,17 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   );
 
   const loadActive = useCallback(async () => {
-    if (!active) return;
-    const loadId = active.id;
-    setError(null);
+    if (!activeLoadSource) return;
+    const source = activeLoadSource;
+    const loadId = source.id;
 
     const idbSnap = await readSheetGridCsvIdb(loadId);
+    if (!idbSnap) setError(null);
     if (idbSnap && loadId === activeIdRef.current) {
       rawCsvRef.current = idbSnap.csv;
       setHeaderRowCandidates(buildHeaderRowCandidates(idbSnap.csv));
       const stale = parseCsvToGrid(idbSnap.csv, {
-        headerRowIndex: active.headerRowIndex ?? idbSnap.headerRowIndex,
+        headerRowIndex: source.headerRowIndex ?? idbSnap.headerRowIndex,
       });
       gridCacheRef.current.set(loadId, stale.grid);
       writeSheetGridCache(loadId, stale.grid);
@@ -220,7 +244,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
 
     setBusy(true);
     try {
-      const res = await fetch(active.csvUrl, { method: "GET" });
+      const res = await fetch(source.csvUrl, { method: "GET" });
       if (!res.ok) throw new Error(`Fetch failed (${res.status}).`);
       const csv = await res.text();
       const trimmed = csv.trimStart();
@@ -229,31 +253,31 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       }
       rawCsvRef.current = csv;
       setHeaderRowCandidates(buildHeaderRowCandidates(csv));
-      const parsed = parseCsvToGrid(csv, { headerRowIndex: active.headerRowIndex });
+      const parsed = parseCsvToGrid(csv, { headerRowIndex: source.headerRowIndex });
       if (loadId !== activeIdRef.current) return;
       applyParsedGrid(loadId, parsed);
       void writeSheetGridCsvIdb(loadId, csv, parsed.headerRowIndex);
-      updateSheetSourceLastSynced(active.id);
+      updateSheetSourceLastSynced(source.id);
       setSources((prev) =>
-        prev.map((s) => (s.id === active.id ? { ...s, lastSyncedAt: new Date().toISOString() } : s)),
+        prev.map((s) => (s.id === source.id ? { ...s, lastSyncedAt: new Date().toISOString() } : s)),
       );
-      if (parsed.headerRowIndex !== active.headerRowIndex) {
-        updateSheetSourceHeaderRowIndex(active.id, parsed.headerRowIndex);
+      if (parsed.headerRowIndex !== source.headerRowIndex) {
+        updateSheetSourceHeaderRowIndex(source.id, parsed.headerRowIndex);
         setSources((prev) =>
-          prev.map((s) => (s.id === active.id ? { ...s, headerRowIndex: parsed.headerRowIndex } : s)),
+          prev.map((s) => (s.id === source.id ? { ...s, headerRowIndex: parsed.headerRowIndex } : s)),
         );
       }
-      if (shouldSyncSheetTabTitle(active)) {
-        const title = await fetchSheetTabTitle(active);
-        if (title && title !== active.title) {
-          updateSheetSourceTitle(active.id, title);
-          setSources((prev) => prev.map((s) => (s.id === active.id ? { ...s, title } : s)));
+      if (shouldSyncSheetTabTitle(source)) {
+        const title = await fetchSheetTabTitle(source);
+        if (title && title !== source.title) {
+          updateSheetSourceTitle(source.id, title);
+          setSources((prev) => prev.map((s) => (s.id === source.id ? { ...s, title } : s)));
         }
       }
     } catch (e) {
       if (loadId !== activeIdRef.current) return;
       if (idbSnap) {
-        setError("Không tải được Google Sheet — đang hiển thị bản lưu offline.");
+        setError((prev) => prev ?? "Không tải được Google Sheet — đang hiển thị bản lưu offline.");
         return;
       }
       const msg = e instanceof Error ? e.message : String(e ?? "Load failed.");
@@ -263,7 +287,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     } finally {
       if (loadId === activeIdRef.current) setBusy(false);
     }
-  }, [active, applyParsedGrid]);
+  }, [activeLoadSource, applyParsedGrid]);
 
   useEffect(() => {
     if (!tabActive) return;

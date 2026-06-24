@@ -8,6 +8,9 @@ import {
 } from "./twofa-filters";
 import type { TwofaAccount } from "./types";
 
+/** Skip O(n×options) faceted counts when vault is large — keeps filter UI responsive. */
+const FILTER_COUNT_CAP = 2_000;
+
 function matchesTwofaOption(row: TwofaAccount, filterKey: string, optionValue: string): boolean {
   switch (filterKey) {
     case "service":
@@ -39,6 +42,10 @@ export function twofaFiltersWithCounts(
   const baseDefs = TWOFA_FILTER_DEFS.map((def) =>
     def.key === "service" ? { ...def, options: serviceOptions } : def,
   );
+
+  if (accounts.length > FILTER_COUNT_CAP) {
+    return baseDefs;
+  }
 
   return enrichFilterDefs(
     accounts,

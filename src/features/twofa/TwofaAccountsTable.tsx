@@ -27,7 +27,8 @@ type ColumnDef = {
 const COLUMNS: ColumnDef[] = [
   { key: "service", label: twofaColumnLabel("service"), colClass: "hub-users-col--twofa-service", role: TWOFA_COLUMN_ROLE.service, width: "12%", headerAlign: "start" },
   { key: "browser", label: twofaColumnLabel("browser"), colClass: "hub-users-col--twofa-browser", role: TWOFA_COLUMN_ROLE.browser, width: "7%", headerAlign: "center" },
-  { key: "account", label: twofaColumnLabel("account"), colClass: "hub-users-col--twofa-account", role: TWOFA_COLUMN_ROLE.account, width: "16%", headerAlign: "start" },
+  { key: "account", label: twofaColumnLabel("account"), colClass: "hub-users-col--twofa-account", role: TWOFA_COLUMN_ROLE.account, width: "14%", headerAlign: "start" },
+  { key: "mailRecover", label: twofaColumnLabel("mailRecover"), colClass: "hub-users-col--twofa-mail-recover", role: TWOFA_COLUMN_ROLE.mailRecover, width: "14%", headerAlign: "start" },
   { key: "status", label: twofaColumnLabel("status"), colClass: "hub-users-col--twofa-status", role: TWOFA_COLUMN_ROLE.status, width: "9rem", headerAlign: "start" },
   { key: "password", label: twofaColumnLabel("password"), colClass: "hub-users-col--twofa-password", role: TWOFA_COLUMN_ROLE.password, width: "10%", headerAlign: "start" },
   { key: "secret", label: twofaColumnLabel("secret"), colClass: "hub-users-col--twofa-secret", role: TWOFA_COLUMN_ROLE.secret, width: "11%", headerAlign: "start" },
@@ -56,6 +57,7 @@ export function TwofaAccountsTable({
   sortDir,
   onSort,
   resetKey,
+  pageSize,
 }: {
   rows: TwofaAccount[];
   detailId: string | null;
@@ -70,6 +72,7 @@ export function TwofaAccountsTable({
   sortDir: HubSortDir;
   onSort: (key: ColumnKey) => void;
   resetKey?: string | number | boolean | null;
+  pageSize?: number;
 }) {
   const visibleDefs = useMemo(
     () => COLUMNS.filter((col) => visibleColumns.has(col.key)),
@@ -99,6 +102,7 @@ export function TwofaAccountsTable({
     <HubDirectoryTableShell
       items={rows}
       resetKey={resetKey}
+      pageSize={pageSize}
       ariaLabel="Account vault table pages"
       wrapClassName="overflow-hidden"
       tableClassName={`${hubDirectoryTableClass("default")} hub-users-table--twofa`}

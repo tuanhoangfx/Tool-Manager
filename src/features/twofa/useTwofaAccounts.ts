@@ -67,9 +67,14 @@ export type TwofaFullSyncNotice = {
 
 const FULL_SYNC_TOAST_DEBOUNCE_MS = 1500;
 const CROSS_TAB_RELOAD_DEBOUNCE_MS = 120;
+const LARGE_VAULT_LOCAL_DEDUPE_SKIP = 2_000;
+const FOCUS_RECONCILE_MIN_MS = 5 * 60_000;
 
 function loadDedupedAccounts(userId?: string | null): TwofaAccount[] {
   const loaded = loadAccounts(userId);
+  if (loaded.length > LARGE_VAULT_LOCAL_DEDUPE_SKIP && isTwofaVaultDedupeMigrationDone(userId)) {
+    return loaded;
+  }
   const { accounts: deduped, removedIds } = dedupeTwofaAccounts(loaded);
   if (removedIds.length) saveAccounts(deduped, userId);
   return deduped;
@@ -95,6 +100,7 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
   const vaultDedupeMigrationRef = useRef(false);
   const vaultUserIdRef = useRef<string | null>(getTwofaStorageUserId());
   const lastFullSyncEmitRef = useRef(0);
+  const lastFocusReconcileRef = useRef(0);
   const applyAccountsRef = useRef<(next: TwofaAccount[], opts?: { skipBroadcast?: boolean }) => void>(
     () => {},
   );
@@ -104,7 +110,8 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => persistAccounts(accounts), 280);
+    const delay = accounts.length > LARGE_VAULT_LOCAL_DEDUPE_SKIP ? 900 : 280;
+    const timer = window.setTimeout(() => persistAccounts(accounts), delay);
     return () => window.clearTimeout(timer);
   }, [accounts, persistAccounts]);
 
@@ -258,6 +265,9 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
 
     const onFocus = () => {
       if (!bootSyncDoneRef.current || !tabActive) return;
+      const now = Date.now();
+      if (now - lastFocusReconcileRef.current < FOCUS_RECONCILE_MIN_MS) return;
+      lastFocusReconcileRef.current = now;
       void syncFromCloud({ silent: true, reconcile: true });
     };
     if (tabActive) window.addEventListener("focus", onFocus);

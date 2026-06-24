@@ -58,6 +58,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
   const [service, setService] = useState(() => account.service);
   const [browser, setBrowser] = useState(() => account.browser ?? "");
   const [accountId, setAccountId] = useState(() => account.account);
+  const [mailRecover, setMailRecover] = useState(() => account.mailRecover ?? "");
   const [password, setPassword] = useState(() => account.password ?? "");
   const [secret, setSecret] = useState(() => account.secret ?? "");
   const [note, setNote] = useState(() => account.note ?? "");
@@ -76,13 +77,14 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
       service,
       browser: browser.trim() ? normalizeBrowserCode(browser.trim()) : undefined,
       account: accountId,
+      mailRecover: mailRecover.trim() || undefined,
       password: password.trim() || undefined,
       secret,
       note: note.trim() || undefined,
       status,
       ownership,
     }),
-    [accountId, browser, note, ownership, password, secret, service, status],
+    [accountId, browser, mailRecover, note, ownership, password, secret, service, status],
   );
 
   const dirty = useMemo(() => {
@@ -91,13 +93,14 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
       service !== account.service ||
       browserNorm !== (account.browser?.trim() || undefined) ||
       accountId !== account.account ||
+      (mailRecover.trim() || undefined) !== (account.mailRecover?.trim() || undefined) ||
       (password.trim() || undefined) !== (account.password?.trim() || undefined) ||
       secret !== account.secret ||
       (note.trim() || undefined) !== (account.note?.trim() || undefined) ||
       status !== account.status ||
       ownership !== account.ownership
     );
-  }, [account, accountId, browser, note, ownership, password, secret, service, status]);
+  }, [account, accountId, browser, mailRecover, note, ownership, password, secret, service, status]);
 
   useEffect(() => {
     const rowChanged = accountRowIdRef.current !== account.id;
@@ -106,6 +109,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
     setService(account.service);
     setBrowser(account.browser ?? "");
     setAccountId(account.account);
+    setMailRecover(account.mailRecover ?? "");
     setPassword(account.password ?? "");
     setSecret(account.secret);
     setNote(account.note ?? "");
@@ -127,6 +131,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
       service: draft.service,
       browser: draft.browser,
       account: draft.account,
+      mailRecover: draft.mailRecover,
       password: draft.password,
       secret: draft.secret,
       note: draft.note,
@@ -276,7 +281,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
               </div>
 
               <div className="twofa-adm-form-rows">
-                <div className="twofa-adm-form-row twofa-adm-form-row--3">
+                <div className="twofa-adm-form-row twofa-adm-form-row--3 twofa-adm-form-row--aligned">
                   <TwofaDetailInlineField columnKey="service">
                     <input
                       className={TWOFA_ADM_CONTROL_CLASS}
@@ -300,6 +305,19 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
                     />
                   </TwofaDetailInlineField>
 
+                  <TwofaDetailInlineField columnKey="mailRecover">
+                    <input
+                      className={TWOFA_ADM_CONTROL_CLASS}
+                      name="twofa-detail-mail-recover"
+                      autoComplete="off"
+                      placeholder="Recovery mailbox"
+                      value={mailRecover}
+                      onChange={(e) => setMailRecover(e.target.value)}
+                    />
+                  </TwofaDetailInlineField>
+                </div>
+
+                <div className="twofa-adm-form-row twofa-adm-form-row--3 twofa-adm-form-row--aligned twofa-adm-form-row--credentials">
                   <TwofaDetailInlineField columnKey="account">
                     <input
                       className={TWOFA_ADM_CONTROL_CLASS}
@@ -309,9 +327,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
                       onChange={(e) => setAccountId(e.target.value)}
                     />
                   </TwofaDetailInlineField>
-                </div>
 
-                <div className="twofa-adm-form-row twofa-adm-form-row--2">
                   <TwofaDetailInlineField columnKey="password">
                     <div className="twofa-adm-password-field">
                       <input
@@ -349,7 +365,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
                 </div>
               </div>
 
-              <div className="twofa-adm-meta-row">
+              <div className="twofa-adm-form-row twofa-adm-form-row--3 twofa-adm-form-row--aligned twofa-adm-meta-row">
                 <TwofaDetailInlineReadonly columnKey="created">
                   <time dateTime={account.createdAt} title={fmtHubDate(account.createdAt)}>
                     {fmtHubRelativeTime(account.createdAt, relativeNow)}

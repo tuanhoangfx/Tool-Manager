@@ -2,6 +2,7 @@ export type TwofaTableColumnKey =
   | "service"
   | "browser"
   | "account"
+  | "mailRecover"
   | "status"
   | "ownership"
   | "password"
@@ -22,6 +23,7 @@ export const TWOFA_TABLE_COLUMN_DEFS: readonly TwofaTableColumnDef[] = [
   { key: "service", required: true },
   { key: "browser" },
   { key: "account" },
+  { key: "mailRecover" },
   { key: "status", required: true },
   { key: "ownership" },
   { key: "password" },
@@ -35,5 +37,5 @@ export const TWOFA_TABLE_COLUMN_DEFS: readonly TwofaTableColumnDef[] = [
 ];
 
 export const DEFAULT_TWOFA_TABLE_COLUMNS = new Set<TwofaTableColumnKey>(
-  TWOFA_TABLE_COLUMN_DEFS.map((c) => c.key),
+  TWOFA_TABLE_COLUMN_DEFS.filter((c) => c.key !== "note").map((c) => c.key),
 );

@@ -57,7 +57,8 @@ table.hub-users-table--twofa .hub-users-th-text {
 
 .hub-users-col--twofa-service { width: 10%; text-align: left; }
 .hub-users-col--twofa-browser { width: 7%; text-align: center; }
-.hub-users-col--twofa-account { width: 14%; text-align: left; }
+.hub-users-col--twofa-account { width: 12%; text-align: left; }
+.hub-users-col--twofa-mail-recover { width: 12%; text-align: left; }
 .hub-users-col--twofa-status { width: 9rem; text-align: left; }
 .hub-users-col--twofa-password { width: 9%; text-align: left; }
 .hub-users-col--twofa-secret { width: 11%; text-align: left; }

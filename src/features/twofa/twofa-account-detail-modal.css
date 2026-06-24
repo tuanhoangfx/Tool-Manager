@@ -4,8 +4,9 @@
   --hub-modal-max-w: min(92rem, calc(100vw - var(--app-sidebar-width, 0px) - 1.5rem));
   --hub-modal-max-h: 880px;
   --hub-modal-max-vh: 90vh;
-  --twofa-detail-log-w: min(22rem, 34%);
-  --twofa-detail-body-h: min(22rem, 58vh);
+  --twofa-detail-log-w: min(24rem, 36%);
+  --twofa-adm-label-w: 5.75rem;
+  --twofa-adm-field-gap: 0.55rem;
   --twofa-adm-line: rgba(255, 255, 255, 0.1);
   --twofa-adm-panel: rgba(255, 255, 255, 0.03);
 
@@ -34,12 +35,19 @@
   padding-right: 0;
 }
 
+.modal-shell.hub-tool-detail-modal.twofa-account-detail-modal .hub-tool-detail-modal__scroll-inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
 .twofa-account-detail__body {
   display: flex;
   flex: 1;
   flex-direction: column;
-  min-height: var(--twofa-detail-body-h);
-  height: var(--twofa-detail-body-h);
+  min-height: 0;
   overflow: hidden;
   padding: 0 0.65rem 0.65rem;
 }
@@ -50,7 +58,6 @@
   gap: 0.65rem;
   flex: 1;
   min-height: 0;
-  height: 100%;
   overflow: hidden;
   align-items: stretch;
 }
@@ -61,11 +68,12 @@
   gap: 0.65rem;
   min-height: 0;
   min-width: 0;
+  height: 100%;
 }
 
 .twofa-adm-rail--note {
-  flex: 0 0 auto;
-  max-height: 42%;
+  flex: 1;
+  min-height: 0;
 }
 
 .twofa-adm-rail--log {
@@ -74,30 +82,74 @@
 }
 
 .twofa-adm-rail__body--note {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   padding: 0.45rem;
   overflow: hidden;
 }
 
 .twofa-adm-note-textarea {
+  flex: 1;
   width: 100%;
-  min-height: 5.5rem;
-  max-height: 100%;
-  resize: vertical;
+  min-height: 7rem;
+  height: 100%;
+  resize: none;
   line-height: 1.45;
   font-size: 11px;
 }
 
-.twofa-adm-hero__meta {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-width: 0;
-  flex: 1;
-}
-
 .twofa-account-detail__panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   min-width: 0;
   min-height: 0;
+  height: 100%;
+}
+
+.twofa-account-detail__panel .twofa-adm-panel__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.twofa-account-detail__panel .twofa-adm-form-rows {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+/* Fixed label columns — inputs align across rows */
+.twofa-account-detail-modal .twofa-adm-form-row--aligned {
+  grid-template-columns:
+    var(--twofa-adm-label-w) minmax(0, 1fr)
+    var(--twofa-adm-label-w) minmax(0, 1fr)
+    var(--twofa-adm-label-w) minmax(0, 1fr);
+  column-gap: var(--twofa-adm-field-gap);
+  align-items: center;
+}
+
+.twofa-account-detail-modal .twofa-adm-form-row--aligned .twofa-adm-inline-field {
+  display: contents;
+}
+
+.twofa-account-detail-modal .twofa-adm-inline-field__label {
+  min-width: var(--twofa-adm-label-w);
+  max-width: var(--twofa-adm-label-w);
+}
+
+.twofa-account-detail-modal .twofa-adm-inline-field__control,
+.twofa-account-detail-modal .twofa-adm-inline-field__value {
+  min-width: 0;
+}
+
+.twofa-account-detail-modal .twofa-adm-control {
+  width: 100%;
 }
 
 .twofa-adm-rail,
@@ -147,15 +199,22 @@
 }
 
 .twofa-adm-hero {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.55rem;
   padding: 0.45rem 0.55rem;
   border: 1px solid rgba(52, 211, 153, 0.25);
   border-radius: 0.55rem;
   background: rgba(16, 185, 129, 0.08);
+}
+
+.twofa-adm-hero__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.65rem;
+  min-width: 0;
 }
 
 .twofa-adm-hero__status {
@@ -209,17 +268,12 @@
 }
 
 .twofa-adm-meta-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
-  column-gap: 0.5rem;
-  row-gap: 0.4rem;
   margin-top: 0.55rem;
   padding-top: 0.5rem;
   border-top: 1px dashed rgba(255, 255, 255, 0.08);
-  align-items: center;
 }
 
-.twofa-adm-meta-row .twofa-adm-inline-field {
+.twofa-adm-meta-row.twofa-adm-form-row--3 .twofa-adm-inline-field {
   display: contents;
 }
 
@@ -370,41 +424,40 @@
 @media (max-width: 1023px) {
   .modal-shell.hub-tool-detail-modal.twofa-account-detail-modal {
     --twofa-detail-log-w: min(20rem, 38%);
-    --twofa-detail-body-h: min(20rem, 54vh);
   }
 
-  .twofa-adm-meta-row {
-    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+  /* Keep Account / Password / Secret on one row on tablet */
+  .twofa-account-detail-modal .twofa-adm-form-row--credentials.twofa-adm-form-row--aligned {
+    grid-template-columns:
+      var(--twofa-adm-label-w) minmax(0, 1fr)
+      var(--twofa-adm-label-w) minmax(0, 1fr)
+      var(--twofa-adm-label-w) minmax(0, 1fr);
   }
 
-  .twofa-adm-meta-row .twofa-adm-inline-field:nth-child(3) {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: auto minmax(0, 1fr);
+  .twofa-account-detail-modal .twofa-adm-form-row--credentials .twofa-adm-inline-field:nth-child(3) {
+    display: contents;
+    grid-column: auto;
   }
 }
 
 @media (max-width: 640px) {
   .twofa-account-detail__split {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) minmax(10rem, 28vh);
   }
 
-  .twofa-adm-rail--log {
-    max-height: 10rem;
-  }
-
+  .twofa-adm-rail--log,
   .twofa-adm-rail--note {
-    max-height: 8rem;
+    min-height: 0;
   }
 
-  .twofa-adm-meta-row {
-    grid-template-columns: auto minmax(0, 1fr);
+  .twofa-account-detail-modal .twofa-adm-form-row--aligned {
+    grid-template-columns: var(--twofa-adm-label-w) minmax(0, 1fr);
   }
 
-  .twofa-adm-meta-row .twofa-adm-inline-field {
+  .twofa-account-detail-modal .twofa-adm-form-row--aligned .twofa-adm-inline-field {
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: var(--twofa-adm-label-w) minmax(0, 1fr);
   }
 }

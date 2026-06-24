@@ -9,8 +9,12 @@ export function sortableTwofaValue(row: TwofaAccount, key: TwofaTableColumnKey):
       return row.browser ?? "";
     case "account":
       return row.account;
+    case "mailRecover":
+      return row.mailRecover ?? "";
     case "status":
       return row.status;
+    case "ownership":
+      return row.ownership;
     case "password":
       return row.password ?? "";
     case "secret":

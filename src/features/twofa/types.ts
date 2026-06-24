@@ -8,6 +8,7 @@ export type TwofaAccountLogField =
   | "service"
   | "browser"
   | "account"
+  | "mailRecover"
   | "password"
   | "secret"
   | "status"
@@ -32,6 +33,8 @@ export type TwofaAccount = {
   /** Optional 4-digit browser profile code (e.g. 0100, 0101). */
   browser?: string;
   account: string;
+  /** Recovery / mailbox email (sheet Mail column). */
+  mailRecover?: string;
   /** Optional login password (stored locally). */
   password?: string;
   /** Optional TOTP secret — empty when account has no 2FA. */
@@ -54,6 +57,7 @@ export type TwofaDraft = {
   service: string;
   browser?: string;
   account: string;
+  mailRecover?: string;
   password?: string;
   secret: string;
   note?: string;

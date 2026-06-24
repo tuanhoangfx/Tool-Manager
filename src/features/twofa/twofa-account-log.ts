@@ -13,6 +13,7 @@ const LOG_FIELDS = new Set<TwofaAccountLogField>([
   "service",
   "browser",
   "account",
+  "mailRecover",
   "password",
   "secret",
   "status",
@@ -39,8 +40,8 @@ export function normalizeTwofaLog(entries: unknown): TwofaAccountLogEntry[] {
     if (!at || !message) continue;
     const changesRaw = "changes" in item && Array.isArray(item.changes) ? item.changes : [];
     const changes = changesRaw
-      .map((change) => normalizeLogChange(change))
-      .filter((change): change is TwofaAccountLogChange => Boolean(change));
+      .map((change: unknown) => normalizeLogChange(change))
+      .filter((change: TwofaAccountLogChange | null): change is TwofaAccountLogChange => Boolean(change));
     out.push(changes.length ? { at, message, changes } : { at, message });
   }
   return out;
@@ -109,6 +110,13 @@ export function buildTwofaUpdateLogChanges(
       after: maskValue(after.account),
     });
   }
+  if ((before.mailRecover ?? "").trim() !== (after.mailRecover ?? "").trim()) {
+    changes.push({
+      field: "mailRecover",
+      before: maskValue(before.mailRecover),
+      after: maskValue(after.mailRecover),
+    });
+  }
   if ((before.password ?? "").trim() !== (after.password ?? "").trim()) {
     changes.push({ field: "password", after: "updated" });
   }
@@ -168,6 +176,7 @@ export function buildTwofaUpdateLogMessage(
     service: "Service",
     browser: "Browser",
     account: "Account",
+    mailRecover: "Mail Recover",
     password: "Password",
     secret: "Secret",
     status: "Status",

@@ -7,6 +7,8 @@ import { twofaActivityAt } from "./twofa-time";
 
 export { DEFAULT_TWOFA_FILTER_KEYS, TWOFA_FILTER_DEFS } from "./twofa-filter-defs";
 
+const LARGE_VAULT_SEARCH = 2_000;
+
 export function buildTwofaServiceFilterOptions(accounts: TwofaAccount[]): FilterOption[] {
   const counts = new Map<string, number>();
   for (const row of accounts) {
@@ -33,14 +35,24 @@ export function filterTwofaAccounts(
   const usageFilters = filterValues.usage ?? [];
   const now = Date.now();
   const weekMs = 7 * 86400000;
+  const largeVault = accounts.length > LARGE_VAULT_SEARCH;
 
   return accounts.filter((row) => {
     if (q) {
-      const haystack = [row.service, row.browser, row.account, row.password, row.note, row.secret]
+      const haystack = [
+        row.service,
+        row.browser,
+        row.account,
+        row.mailRecover,
+        row.password,
+        row.note,
+        row.secret,
+      ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-      const logHay = (row.log ?? []).map((entry) => entry.message).join(" ").toLowerCase();
+      const logHay =
+        largeVault ? "" : (row.log ?? []).map((entry) => entry.message).join(" ").toLowerCase();
       const secretHay = normalizeSecret(row.secret).toLowerCase();
       const qSecret = normalizeSecret(q).toLowerCase();
       const matchText =

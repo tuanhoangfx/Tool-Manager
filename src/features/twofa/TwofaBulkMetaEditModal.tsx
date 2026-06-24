@@ -87,7 +87,7 @@ export function TwofaBulkMetaEditModal({ open, selectedCount, onClose, onApply }
       }
       ariaLabelledBy="twofa-bulk-meta-title"
     >
-      <HubToolDetailSection title="Status & note" icon={<Tags size={14} aria-hidden />}>
+      <HubToolDetailSection id="twofa-bulk-meta-section" title="Status & note" icon={<Tags size={14} aria-hidden />}>
         <div className="space-y-4 text-[12px]">
           <p className="text-[var(--muted)]">
             Changes apply to all <strong className="text-[var(--text)]">{selectedCount}</strong> selected

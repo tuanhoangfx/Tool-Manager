@@ -179,7 +179,7 @@ export function HubAuthGateGoldenPreview({ tool = "P0016", compare = true }: Hub
         title={cfg.title}
         toolInfo={cfg.toolInfo}
         anonymousHint={cfg.anonymousHint}
-        headerLeading={<HubToolAvatar code={cfg.toolInfo.code} size="sm" />}
+        headerLeading={<HubToolAvatar code={cfg.toolInfo.code ?? activeTool} size="sm" />}
         onClose={() => setModalOpen(false)}
         onAnonymous={flags.showAnonymous ? () => setModalOpen(false) : undefined}
         onAuthed={() => setModalOpen(false)}
@@ -193,10 +193,11 @@ export function HubAuthGateGoldenPreview({ tool = "P0016", compare = true }: Hub
           toolInfo={cfg.toolInfo}
           signedInAs="preview@infix1.io.vn"
           message={cfg.deniedMessage}
-          headerLeading={<HubToolAvatar code={cfg.toolInfo.code} size="sm" />}
+          headerLeading={<HubToolAvatar code={cfg.toolInfo.code ?? activeTool} size="sm" />}
           onSignOut={() => setDeniedOpen(false)}
         />
       ) : null}
     </div>
   );
 }
+

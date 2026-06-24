@@ -7,6 +7,7 @@ const LOG_FIELD_KEYS: Record<TwofaAccountLogChange["field"], TwofaTableColumnKey
   service: "service",
   browser: "browser",
   account: "account",
+  mailRecover: "mailRecover",
   password: "password",
   secret: "secret",
   status: "status",

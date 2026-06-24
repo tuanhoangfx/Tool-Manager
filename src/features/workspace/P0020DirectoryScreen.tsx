@@ -10,6 +10,8 @@ export type P0020DirectoryScreenProps<T> = {
   table: ReactNode;
   cardGridAriaLabel: string;
   renderCard: (item: T) => ReactNode;
+  /** Cap rows per page for large directories (table + card share pager). */
+  pageSize?: number;
 };
 
 /** P0020 directory body — card grid or table via shared pager (P0004 Users parity; read-only-directory). */
@@ -21,12 +23,18 @@ export function P0020DirectoryScreen<T>({
   table,
   cardGridAriaLabel,
   renderCard,
+  pageSize,
 }: P0020DirectoryScreenProps<T>) {
   if (items.length === 0) return empty;
 
   if (viewMode === "card") {
     return (
-      <HubPaginatedCardGrid items={items} resetKey={resetKey} ariaLabel={cardGridAriaLabel}>
+      <HubPaginatedCardGrid
+        items={items}
+        resetKey={resetKey}
+        pageSize={pageSize}
+        ariaLabel={cardGridAriaLabel}
+      >
         {(pageItems) => pageItems.map(renderCard)}
       </HubPaginatedCardGrid>
     );

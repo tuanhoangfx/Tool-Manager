@@ -92,6 +92,20 @@
   text-overflow: ellipsis;
 }
 
+.twofa-table-cell-ellipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.hub-users-table--twofa td.hub-users-col--twofa-note,
+.hub-users-table--twofa td.hub-users-col--twofa-log,
+.hub-users-table--twofa td.hub-users-col--twofa-mail-recover {
+  max-width: 0;
+}
+
 .twofa-code-badge {
   cursor: pointer;
   border: none;
