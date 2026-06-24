@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-06-24 - Sheet: fix deleted source resurrected by title sync + cloud purge
+
+- Version: `4.6.2`
+- Type: Patch
+- Product: P0020
+- Prompt: Order List vẫn hiện sau khi xóa (v4.6.1).
+
+### Changes
+
+- `refreshSheetTabTitles`: không còn `setSources` từ snapshot cũ — luôn đọc lại `loadSheetSources()` sau khi sync title; bỏ qua source đã xóa/tombstone.
+- Cloud delete: xóa cả theo `id` lẫn `dedupe_key`; boot sync cũng purge row tombstone trên Supabase.
+- Tombstone: lưu thêm `id` cloud để chặn restore khi reconcile đổi uuid.
+
+### Verification
+
+- `vitest run src/features/sheet/sheet-sync-pending.test.ts src/features/sheet/sheet-sources-cloud.test.ts src/features/sheet/useSheetSourcesCloud.test.ts`
+
 ## 2026-06-24 - 2FA search: apply live query to directory table
 
 - Version: `4.6.1`

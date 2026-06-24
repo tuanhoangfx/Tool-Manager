@@ -50,6 +50,7 @@ import { sheetTextIncludesQuery } from "./sheet-search-fold";
 import { SheetSearchMatchChip } from "./SheetSearchMatchChip";
 import { useNotesAuth } from "../notes/AuthSessionProvider";
 import { useSheetSourcesCloud } from "./useSheetSourcesCloud";
+import { filterSheetPendingDeletes, isSheetPendingDelete } from "./sheet-sync-pending";
 
 setupSheetFilterIcons();
 
@@ -60,16 +61,16 @@ function rowMatchesSheetQuery(row: string[], query: string): boolean {
 }
 
 async function refreshSheetTabTitles(sources: SheetSource[]): Promise<SheetSource[]> {
-  let next = sources;
-  for (const s of sources) {
+  for (const s of filterSheetPendingDeletes(sources)) {
+    if (isSheetPendingDelete(s)) continue;
     if (!shouldSyncSheetTabTitle(s)) continue;
     const title = await fetchSheetTabTitle(s);
-    if (title && title !== s.title) {
-      updateSheetSourceTitle(s.id, title);
-      next = next.map((row) => (row.id === s.id ? { ...row, title } : row));
-    }
+    if (!title || title === s.title) continue;
+    if (!loadSheetSources().some((row) => row.id === s.id)) continue;
+    if (isSheetPendingDelete(s)) continue;
+    updateSheetSourceTitle(s.id, title);
   }
-  return next;
+  return loadSheetSources();
 }
 
 export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean }) {

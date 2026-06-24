@@ -188,7 +188,9 @@ export async function syncSheetSourcesWithCloud(
   if (opts?.isStale?.()) return loadSheetSources();
 
   const local = loadSheetSources();
-  const remote = await fetchRemoteSheetSources(userId);
+  let remote = await fetchRemoteSheetSources(userId);
+  if (opts?.isStale?.()) return loadSheetSources();
+  remote = await purgeRemoteTombstonedSheetSources(userId, remote);
   if (opts?.isStale?.()) return loadSheetSources();
 
   const merged = selectSheetSourcesForCloudPush(mergeSheetSourcesLocalRemote(local, remote));
@@ -250,26 +252,26 @@ export async function pushSheetSourceToCloud(source: SheetSource, userId: string
 }
 
 async function deleteSheetSourceRowFromCloud(source: SheetSource, userId: string): Promise<void> {
+  const dedupeKey = sheetSourceDedupeKey(source);
   if (isUuid(source.id)) {
     const { error } = await supabase.from("sheet_sources").delete().eq("id", source.id).eq("user_id", userId);
     if (error && !isSheetSourcesTableMissing(error.message)) throw error;
-    return;
   }
-  const dedupeKey = sheetSourceDedupeKey(source);
-  const { error } = await supabase
+  const { error: dedupeErr } = await supabase
     .from("sheet_sources")
     .delete()
     .eq("user_id", userId)
     .eq("dedupe_key", dedupeKey);
-  if (error && !isSheetSourcesTableMissing(error.message)) throw error;
+  if (dedupeErr && !isSheetSourcesTableMissing(dedupeErr.message)) throw dedupeErr;
 }
 
 async function confirmSheetPendingDeleteCleared(source: SheetSource, userId: string): Promise<void> {
   const remote = await fetchRemoteSheetSources(userId);
   const key = sheetSourceDedupeKey(source);
-  if (!remote.some((row) => sheetSourceDedupeKey(row) === key)) {
-    clearSheetPendingDelete(source);
-  }
+  const stillOnCloud = remote.some(
+    (row) => row.id === source.id || sheetSourceDedupeKey(row) === key,
+  );
+  if (!stillOnCloud) clearSheetPendingDelete(source);
 }
 
 /** Re-delete cloud rows that still exist while local tombstone is active. */

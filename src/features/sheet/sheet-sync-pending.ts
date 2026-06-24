@@ -11,7 +11,7 @@ const TOMBSTONE_STORAGE_KEY = "p0020:sheet:delete-tombstones:v1";
 /** Keep tombstones until cloud confirms gone or this window elapses (re-delete on reconcile). */
 const TOMBSTONE_MS = 7 * 24 * 60 * 60 * 1000;
 
-type TombstoneRecord = { dedupeKey: string; markedAt: number; until: number };
+type TombstoneRecord = { dedupeKey: string; markedAt: number; until: number; ids: string[] };
 
 const tombstonesByKey = new Map<string, TombstoneRecord>();
 let tombstonesHydrated = false;
@@ -27,7 +27,8 @@ function hydrateTombstones() {
     if (!Array.isArray(parsed)) return;
     for (const row of parsed) {
       if (row && typeof row.dedupeKey === "string") {
-        tombstonesByKey.set(row.dedupeKey, row as TombstoneRecord);
+        const ids = Array.isArray(row.ids) ? row.ids.filter((id): id is string => typeof id === "string") : [];
+        tombstonesByKey.set(row.dedupeKey, { ...(row as TombstoneRecord), ids });
       }
     }
   } catch {
@@ -68,9 +69,17 @@ function pruneTombstones() {
   if (changed) saveTombstoneRecords(map);
 }
 
-function markTombstone(dedupeKey: string) {
+function markTombstone(dedupeKey: string, id?: string) {
   const map = loadTombstoneRecords();
-  map.set(dedupeKey, { dedupeKey, markedAt: Date.now(), until: Date.now() + TOMBSTONE_MS });
+  const prev = map.get(dedupeKey);
+  const ids = new Set(prev?.ids ?? []);
+  if (id) ids.add(id);
+  map.set(dedupeKey, {
+    dedupeKey,
+    markedAt: Date.now(),
+    until: Date.now() + TOMBSTONE_MS,
+    ids: [...ids],
+  });
   saveTombstoneRecords(map);
 }
 
@@ -82,6 +91,14 @@ function clearTombstone(dedupeKey: string) {
 function isTombstonedDedupeKey(dedupeKey: string): boolean {
   pruneTombstones();
   return loadTombstoneRecords().has(dedupeKey);
+}
+
+function isTombstonedId(id: string): boolean {
+  pruneTombstones();
+  for (const rec of loadTombstoneRecords().values()) {
+    if (rec.ids.includes(id)) return true;
+  }
+  return false;
 }
 
 function pruneExpired() {
@@ -105,7 +122,7 @@ export function markSheetPendingDelete(source: Pick<SheetSource, "id" | "rawUrl"
   pendingDeleteDedupeKeys.add(dedupeKey);
   pendingDeleteDedupeKeysById.set(source.id, dedupeKey);
   pendingDeleteUntil.set(source.id, Date.now() + muteMs);
-  markTombstone(dedupeKey);
+  markTombstone(dedupeKey, source.id);
 }
 
 export function clearSheetPendingDelete(source: Pick<SheetSource, "id" | "rawUrl" | "gid" | "csvUrl">) {
@@ -135,7 +152,8 @@ export function isSheetPendingDelete(source: Pick<SheetSource, "id" | "rawUrl" |
   pruneTombstones();
   const dedupeKey = sheetSourceDedupeKey(source);
   if (pendingDeleteIds.has(source.id) || pendingDeleteDedupeKeys.has(dedupeKey)) return true;
-  return isTombstonedDedupeKey(dedupeKey);
+  if (isTombstonedId(source.id) || isTombstonedDedupeKey(dedupeKey)) return true;
+  return false;
 }
 
 export function getSheetPendingDeleteIds(): ReadonlySet<string> {
