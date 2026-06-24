@@ -233,7 +233,7 @@ export async function reconcileSheetSourcesFromCloud(userId: string): Promise<Sh
   if (!isSheetSourcesCloudAvailable()) return loadSheetSources();
 
   const local = loadSheetSources();
-  const remote = await fetchRemoteSheetSources(userId);
+  const remote = await purgeRemoteTombstonedSheetSources(userId, await fetchRemoteSheetSources(userId));
   const result = filterSheetPendingDeletes(reconcileSheetSourceLists(local, remote));
   saveSheetSources(result);
   return result;
@@ -241,6 +241,7 @@ export async function reconcileSheetSourcesFromCloud(userId: string): Promise<Sh
 
 export async function pushSheetSourceToCloud(source: SheetSource, userId: string): Promise<void> {
   if (!isSheetSourcesCloudAvailable()) return;
+  if (isSheetPendingDelete(source)) return;
   const synced = await upsertSheetSourceRow(source, userId);
   const list = loadSheetSources().map((s) =>
     sheetSourceDedupeKey(s) === sheetSourceDedupeKey(source) ? synced : s,
@@ -248,12 +249,10 @@ export async function pushSheetSourceToCloud(source: SheetSource, userId: string
   saveSheetSources(dedupeSheetSources(list));
 }
 
-export async function deleteSheetSourceFromCloud(source: SheetSource, userId: string): Promise<void> {
-  if (!isSheetSourcesCloudAvailable()) return;
+async function deleteSheetSourceRowFromCloud(source: SheetSource, userId: string): Promise<void> {
   if (isUuid(source.id)) {
     const { error } = await supabase.from("sheet_sources").delete().eq("id", source.id).eq("user_id", userId);
     if (error && !isSheetSourcesTableMissing(error.message)) throw error;
-    clearSheetPendingDelete(source);
     return;
   }
   const dedupeKey = sheetSourceDedupeKey(source);
@@ -263,5 +262,32 @@ export async function deleteSheetSourceFromCloud(source: SheetSource, userId: st
     .eq("user_id", userId)
     .eq("dedupe_key", dedupeKey);
   if (error && !isSheetSourcesTableMissing(error.message)) throw error;
-  clearSheetPendingDelete(source);
+}
+
+async function confirmSheetPendingDeleteCleared(source: SheetSource, userId: string): Promise<void> {
+  const remote = await fetchRemoteSheetSources(userId);
+  const key = sheetSourceDedupeKey(source);
+  if (!remote.some((row) => sheetSourceDedupeKey(row) === key)) {
+    clearSheetPendingDelete(source);
+  }
+}
+
+/** Re-delete cloud rows that still exist while local tombstone is active. */
+async function purgeRemoteTombstonedSheetSources(userId: string, remote: SheetSource[]): Promise<SheetSource[]> {
+  const tombstoned = remote.filter((row) => isSheetPendingDelete(row));
+  if (!tombstoned.length) return remote;
+  for (const row of tombstoned) {
+    await deleteSheetSourceRowFromCloud(row, userId);
+  }
+  const refetched = await fetchRemoteSheetSources(userId);
+  for (const row of tombstoned) {
+    await confirmSheetPendingDeleteCleared(row, userId);
+  }
+  return refetched;
+}
+
+export async function deleteSheetSourceFromCloud(source: SheetSource, userId: string): Promise<void> {
+  if (!isSheetSourcesCloudAvailable()) return;
+  await deleteSheetSourceRowFromCloud(source, userId);
+  await confirmSheetPendingDeleteCleared(source, userId);
 }

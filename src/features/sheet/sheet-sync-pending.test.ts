@@ -4,6 +4,7 @@ import {
   filterSheetPendingDeletes,
   getSheetPendingDeleteIds,
   markSheetPendingDelete,
+  resetSheetPendingDeletesForTests,
 } from "./sheet-sync-pending";
 import type { SheetSource } from "./sheet-sources";
 
@@ -21,12 +22,12 @@ function src(partial: Partial<SheetSource> & Pick<SheetSource, "id">): SheetSour
 describe("sheet-sync-pending", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    clearSheetPendingDelete(src({ id: "a" }));
-    clearSheetPendingDelete(src({ id: "b" }));
+    resetSheetPendingDeletesForTests();
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    resetSheetPendingDeletesForTests();
   });
 
   it("filters pending delete by id and dedupe key", () => {
@@ -58,10 +59,24 @@ describe("sheet-sync-pending", () => {
     expect(getSheetPendingDeleteIds().has("sh_local")).toBe(true);
   });
 
-  it("expires pending delete after mute window", () => {
+  it("expires in-memory pending delete after mute window but keeps tombstone", () => {
     markSheetPendingDelete(src({ id: "a" }), 1000);
     vi.advanceTimersByTime(1001);
     expect(getSheetPendingDeleteIds().has("a")).toBe(false);
-    expect(filterSheetPendingDeletes([src({ id: "a" })])).toHaveLength(1);
+    expect(filterSheetPendingDeletes([src({ id: "a" })])).toHaveLength(0);
+  });
+
+  it("persists tombstone across reset of in-memory pending state", () => {
+    const row = src({
+      id: "a",
+      rawUrl: "https://docs.google.com/spreadsheets/d/abc/edit#gid=1",
+      csvUrl: "https://docs.google.com/spreadsheets/d/abc/export?format=csv&gid=1",
+      gid: "1",
+    });
+    markSheetPendingDelete(row, 1000);
+    vi.advanceTimersByTime(1001);
+    expect(filterSheetPendingDeletes([row])).toHaveLength(0);
+    clearSheetPendingDelete(row);
+    expect(filterSheetPendingDeletes([row])).toHaveLength(1);
   });
 });

@@ -1,5 +1,40 @@
 # Changelog
 
+## 2026-06-24 - 2FA search: apply live query to directory table
+
+- Version: `4.6.1`
+- Type: Minor
+- Product: P0020
+- Timestamp: 2026-06-24 22:10 (UTC+7)
+- Prompt: 2FA — Sửa lỗi không tìm được.
+
+### Changes
+
+- `TwofaManagerScreen`: filter table/KPI/selection with live search query instead of `useDeferredValue` — deferred filter lagged on ~6k rows so the table stayed unfiltered while the search field updated.
+- Large vault (>2k): debounce directory filter 150ms while typing to keep input responsive.
+- `twofa-filters.test.ts`: cover substring search and empty-result cases.
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-filters.test.ts`
+
+## 2026-06-24 - Sheet: durable delete tombstones stop resurrected sources
+
+- Version: `4.5.2`
+- Type: Patch
+- Product: P0020
+- Prompt: Order List vẫn hiện lại sau khi xóa hoàn toàn.
+
+### Changes
+
+- Sheet: lưu tombstone xóa vào `localStorage` (7 ngày) thay vì chỉ mute RAM 8s — reconcile/realtime không kéo lại row đã xóa.
+- Sheet: chỉ gỡ tombstone sau khi xác nhận cloud không còn `dedupe_key`; reconcile tự re-delete row còn sót trên Supabase.
+- Sheet: chặn upsert cloud/metadata (`lastSyncedAt`, title sync) cho source đang tombstone.
+
+### Verification
+
+- `vitest run src/features/sheet/sheet-sync-pending.test.ts src/features/sheet/sheet-sources-cloud.test.ts src/features/sheet/useSheetSourcesCloud.test.ts`
+
 ## 2026-06-24 - Sheet + 2FA: realtime parity, mail recover, stable offline sheet fallback
 
 - Version: `4.5.1`

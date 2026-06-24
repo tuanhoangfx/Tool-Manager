@@ -15,7 +15,7 @@ import {
   SHEET_SOURCES_CHANNEL,
   sheetSourcesStorageMatcher,
 } from "./sheet-sources-cross-tab";
-import { filterSheetPendingDeletes } from "./sheet-sync-pending";
+import { filterSheetPendingDeletes, isSheetPendingDelete } from "./sheet-sync-pending";
 import { useSheetRealtime } from "./useSheetRealtime";
 
 const CROSS_TAB_RELOAD_DEBOUNCE_MS = 120;
@@ -129,7 +129,7 @@ export function useSheetSourcesCloud(
         await deleteSheetSourceFromCloud(detail.source, userId);
         return;
       }
-      if (detail.source) {
+      if (detail.source && !isSheetPendingDelete(detail.source)) {
         await pushSheetSourceToCloud(detail.source, userId);
         applyCloudSources(onSourcesRef.current, loadSheetSources());
         postSheetSourcesCrossTab("cloud-synced");

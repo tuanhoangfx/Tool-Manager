@@ -23,6 +23,7 @@ import {
   useDirectoryBandSync,
   useDirectoryTableSort,
   useHubTablePageSize,
+  useDebouncedValue,
 } from "@tool-workspace/hub-ui";
 import { WorkspaceDirectorySearchToolbar } from "../workspace/WorkspaceDirectorySearchToolbar";
 import {
@@ -34,7 +35,7 @@ import {
 } from "./twofa-display-prefs";
 import { buildTwofaChartItems, buildTwofaKpis } from "./twofa-aggregates";
 import { buildTwofaHeaderStats } from "./twofa-header-metrics";
-import { filterTwofaAccounts } from "./twofa-filters";
+import { filterTwofaAccounts, TWOFA_LARGE_VAULT_THRESHOLD } from "./twofa-filters";
 import { twofaFiltersWithCounts } from "./twofa-filter-counts";
 import { TwofaAccountCard } from "./TwofaAccountCard";
 import { TwofaAccountsTable } from "./TwofaAccountsTable";
@@ -173,6 +174,9 @@ function TwofaManagerScreenBody({
 
   const accountsForAnalytics = useDeferredValue(accounts);
   const deferredQuery = useDeferredValue(query);
+  const debouncedFilterQuery = useDebouncedValue(query, 150);
+  const filterQuery =
+    accounts.length > TWOFA_LARGE_VAULT_THRESHOLD ? debouncedFilterQuery : query;
   const twofaFilters = useMemo(
     () => twofaFiltersWithCounts(accountsForAnalytics, deferredQuery, filterValues, period),
     [accountsForAnalytics, deferredQuery, filterValues, period],
@@ -184,9 +188,10 @@ function TwofaManagerScreenBody({
     return () => setFilters([]);
   }, [setFilters, shellMode, twofaFilters]);
 
+  // Live query for small vaults; 150ms debounce for large vaults (useDeferredValue never settled on ~6k rows).
   const displayedAccounts = useMemo(
-    () => filterTwofaAccounts(accounts, deferredQuery, filterValues, period),
-    [accounts, deferredQuery, filterValues, period],
+    () => filterTwofaAccounts(accounts, filterQuery, filterValues, period),
+    [accounts, filterQuery, filterValues, period],
   );
 
   const { sortKey, sortDir, onSort, sorted: sortedDisplayedAccounts } = useDirectoryTableSort(
@@ -211,8 +216,8 @@ function TwofaManagerScreenBody({
   } = useHubDirectorySelection(sortedDisplayedAccounts, (row) => row.id);
   const listResetKey = useMemo(
     () =>
-      hubDirectoryListResetKey(query, filterValues, period, Array.from(visibleColumns).join(","), sortKey, sortDir, viewMode),
-    [query, filterValues, period, visibleColumns, sortKey, sortDir, viewMode],
+      hubDirectoryListResetKey(filterQuery, filterValues, period, Array.from(visibleColumns).join(","), sortKey, sortDir, viewMode),
+    [filterQuery, filterValues, period, visibleColumns, sortKey, sortDir, viewMode],
   );
 
   const closeModal = useCallback(() => {

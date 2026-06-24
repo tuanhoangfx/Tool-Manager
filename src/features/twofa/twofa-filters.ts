@@ -9,6 +9,9 @@ export { DEFAULT_TWOFA_FILTER_KEYS, TWOFA_FILTER_DEFS } from "./twofa-filter-def
 
 const LARGE_VAULT_SEARCH = 2_000;
 
+/** Vaults above this row count debounce directory filter (~150ms) to keep typing smooth. */
+export const TWOFA_LARGE_VAULT_THRESHOLD = LARGE_VAULT_SEARCH;
+
 export function buildTwofaServiceFilterOptions(accounts: TwofaAccount[]): FilterOption[] {
   const counts = new Map<string, number>();
   for (const row of accounts) {

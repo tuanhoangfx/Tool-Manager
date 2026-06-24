@@ -1,6 +1,11 @@
 import { parseGoogleSheetLink } from "./google-sheet-link";
 import { postSheetSourcesCrossTab } from "./sheet-sources-cross-tab";
-import { filterSheetPendingDeletes, markSheetPendingDelete } from "./sheet-sync-pending";
+import {
+  clearSheetPendingDeleteByDedupeKey,
+  filterSheetPendingDeletes,
+  isSheetPendingDelete,
+  markSheetPendingDelete,
+} from "./sheet-sync-pending";
 
 export type SheetTitleSource = "auto" | "manual";
 
@@ -33,6 +38,7 @@ export type SheetSourcesChangeDetail = {
 
 function notifySheetSourcesChange(detail: SheetSourcesChangeDetail) {
   if (typeof window === "undefined") return;
+  if (detail.action === "upsert" && detail.source && isSheetPendingDelete(detail.source)) return;
   window.dispatchEvent(new CustomEvent(SHEET_SOURCES_CHANGE_EVENT, { detail }));
   postSheetSourcesCrossTab("local-updated");
 }
@@ -115,6 +121,7 @@ export function addSheetSource(opts: {
   headerRowIndex?: number;
 }): SheetSource {
   const key = sheetSourceDedupeKey({ rawUrl: opts.rawUrl, gid: opts.gid, csvUrl: opts.csvUrl });
+  clearSheetPendingDeleteByDedupeKey(key);
   const existing = loadSheetSources().find((s) => sheetSourceDedupeKey(s) === key);
   if (existing) {
     const title = opts.title.trim();
