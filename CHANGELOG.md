@@ -1,10 +1,30 @@
 # Changelog
 
+## 2026-06-25 - Header deploy timestamp: Vercel build time + manifest sync
+
+- Version: `4.7.2`
+- Type: Patch
+- Product: P0020
+- Timestamp: 2026-06-25 14:00 (UTC+7)
+- Prompt: ok 1 2 3 — latestPublished v4.7.1; Vercel build time in header; GitHub Release v4.7.1.
+
+### Changes
+
+- `vite.config.ts` injects `VITE_APP_BUILT_AT` at build (Vercel deploy clock).
+- `app-release.ts` prefers bundle build time over CHANGELOG timestamp for tab header.
+- `tool.manifest.json` `latestPublished` synced via post-deploy / GitHub Release.
+
+### Verification
+
+- `corepack pnpm -C Tool/P0020-Data-Box build:vercel`
+- `wait-prod-app-version.mjs` after push
+
 ## 2026-06-25 - Account: note search, filter dropdown polish, Hub modal typography
 
 - Version: `4.7.1`
 - Type: Minor
 - Product: P0020
+- Timestamp: 2026-06-25 13:43 (UTC+7)
 - Prompt: ok 1 2 3 — smoke; sync hub-ui vendor; Git commit.
 
 ### Changes

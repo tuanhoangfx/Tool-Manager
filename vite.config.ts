@@ -10,7 +10,15 @@ const hubUiSrc = path.resolve(rootDir, "vendor/hub-ui/src");
 const hubIdentitySrc = path.resolve(rootDir, "vendor/hub-identity/src");
 const devRoot = path.resolve(rootDir, "../..");
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  define:
+    command === "build"
+      ? {
+          "import.meta.env.VITE_APP_BUILT_AT": JSON.stringify(
+            process.env.VITE_APP_BUILT_AT || new Date().toISOString(),
+          ),
+        }
+      : undefined,
   plugins: [react()],
   build: {
     rollupOptions: {
@@ -59,4 +67,4 @@ export default defineConfig({
       { find: "@dev/hub-load", replacement: path.resolve(rootDir, "vendor/hub-load/src") },
     ],
   },
-});
+}));

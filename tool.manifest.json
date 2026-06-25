@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "4.7.1",
+    "version": "4.7.2",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -49,9 +49,9 @@
       "cookie-bridge"
     ],
     "latestPublished": {
-      "tag": "v4.6.19",
-      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.1.5",
-      "publishedAt": "2026-06-25T03:42:15.067Z"
+      "tag": "v4.7.2",
+      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.7.1",
+      "publishedAt": "2026-06-25T07:00:19.437Z"
     }
   },
   "urls": {
@@ -256,5 +256,5 @@
       "authVariant": "anonymous-dual"
     }
   ],
-  "manifestUpdatedAt": "2026-06-25T03:42:15.067Z"
+  "manifestUpdatedAt": "2026-06-25T07:00:19.437Z"
 }

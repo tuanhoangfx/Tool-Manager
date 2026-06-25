@@ -30,12 +30,27 @@ type ManifestRelease = {
   manifestUpdatedAt?: string;
 };
 
+/** ISO timestamp baked into the bundle at Vite build (Vercel deploy time). */
+function readBuiltAtIso(): string | undefined {
+  const raw = import.meta.env.VITE_APP_BUILT_AT;
+  return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
+}
+
 /** Build / deploy timestamp for Hub-style tab headers (P0004 golden). */
 export function resolveAppVersionReleaseMeta(): {
   shortLabel: string;
   live: boolean;
   publishedAt?: string;
 } {
+  const builtAt = readBuiltAtIso();
+  if (builtAt) {
+    return {
+      shortLabel: formatTabHeaderTimestamp(builtAt),
+      live: true,
+      publishedAt: builtAt,
+    };
+  }
+
   const currentVersion = normalizeVersion(APP_VERSION);
   const manifest = toolManifest as { release?: ManifestRelease; manifestUpdatedAt?: string };
   const latest = manifest.release?.latestPublished;
