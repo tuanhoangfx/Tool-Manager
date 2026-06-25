@@ -1,119 +1,946 @@
 [
-  { "label": "ElevenLabs", "match": "elevenlabs|eleven.?labs", "source": { "type": "thesvg", "slug": "elevenlabs" } },
-  { "label": "CapCut", "match": "capcut|cap.?cut", "source": { "type": "local", "src": "/assets/brand-icons/capcut.png" } },
-  { "label": "Kling", "match": "kling", "source": { "type": "local", "src": "/assets/brand-icons/kling.png" } },
-  { "label": "HeyGen", "match": "heygen|hey.?gen", "source": { "type": "local", "src": "/assets/brand-icons/heygen.png" } },
-  { "label": "Grok", "match": "grok|xai|\\bx\\.?ai\\b", "source": { "type": "thesvg", "slug": "grok" } },
-  { "label": "Cursor", "match": "cursor", "source": { "type": "local", "src": "/assets/brand-icons/cursor.png" } },
-  { "label": "Surfshark", "match": "surfshark|vpn\\s*surfshark", "source": { "type": "thesvg", "slug": "surfshark" } },
-  { "label": "Higgsfield", "match": "higgsfield", "source": { "type": "local", "src": "/assets/brand-icons/higgsfield.png" } },
-  { "label": "Adobe", "match": "adobe", "source": { "type": "thesvg", "slug": "adobe" } },
-  { "label": "Kalodata Boost", "match": "kalodata\\s*boost", "source": { "type": "local", "src": "/assets/brand-icons/kalodata.png" } },
-  { "label": "Kalodata", "match": "kalodata", "source": { "type": "local", "src": "/assets/brand-icons/kalodata.png" } },
-  { "label": "NordVPN", "match": "nord|vpn\\s*nord", "source": { "type": "thesvg", "slug": "nordvpn" } },
-  { "label": "ExpressVPN", "match": "express|vpn\\s*express", "source": { "type": "thesvg", "slug": "expressvpn" } },
-  { "label": "PIA", "match": "pia|private.?internet|vpn\\s*pia", "source": { "type": "thesvg", "slug": "private-internet-access" } },
-  { "label": "Proton", "match": "proton", "source": { "type": "thesvg", "slug": "proton" } },
-  { "label": "Topview", "match": "topview", "source": { "type": "local", "src": "/assets/brand-icons/topview.png" } },
-  { "label": "Exness", "match": "exness", "source": { "type": "local", "src": "/assets/brand-icons/exness.png" } },
-  { "label": "Deevid", "match": "deevid", "source": { "type": "local", "src": "/assets/brand-icons/deevid.png" } },
-  { "label": "LiteFinance", "match": "litefinance", "source": { "type": "local", "src": "/assets/brand-icons/litefinance.png" } },
-  { "label": "Runway", "match": "runway", "source": { "type": "thesvg", "slug": "runway" } },
-  { "label": "VidiQ", "match": "vidiq", "source": { "type": "thesvg", "slug": "vidiq" } },
-  { "label": "VT Markets", "match": "vt\\s*markets", "source": { "type": "local", "src": "/assets/brand-icons/vtmarkets.png" } },
-  { "label": "Freepik", "match": "freepik", "source": { "type": "thesvg", "slug": "freepik" } },
-  { "label": "GLM", "match": "glm|z\\.?ai", "source": { "type": "local", "src": "/assets/brand-icons/glm.png" } },
-  { "label": "TeamViewer", "match": "teamviewer", "source": { "type": "thesvg", "slug": "teamviewer" } },
-  { "label": "BigSpy", "match": "big\\s*spy|bigspy", "source": { "type": "local", "src": "/assets/brand-icons/bigspy.png" } },
-  { "label": "Leonardo AI", "match": "leonardo", "source": { "type": "local", "src": "/assets/brand-icons/leonardo.png" } },
-  { "label": "Mega", "match": "\\bmega\\b", "source": { "type": "thesvg", "slug": "mega" } },
-  { "label": "Meitu", "match": "meitu", "source": { "type": "local", "src": "/assets/brand-icons/meitu.png" } },
-  { "label": "BeautyPlus", "match": "beautyplus|beauty.?plus", "source": { "type": "local", "src": "/assets/brand-icons/beautyplus.png" } },
-  { "label": "Wink", "match": "\\bwink\\b", "source": { "type": "local", "src": "/assets/brand-icons/meitu.png" } },
-  { "label": "PayPal", "match": "paypal", "source": { "type": "thesvg", "slug": "paypal" } },
-  { "label": "TradingView", "match": "trading.?view", "source": { "type": "thesvg", "slug": "tradingview" } },
-  { "label": "Windsurf", "match": "windsurf", "source": { "type": "thesvg", "slug": "windsurf" } },
-  { "label": "Zoom", "match": "zoom", "source": { "type": "thesvg", "slug": "zoom" } },
-  { "label": "Minea", "match": "minea", "source": { "type": "local", "src": "/assets/brand-icons/minea.png" } },
-  { "label": "Piclumen", "match": "piclumen", "source": { "type": "local", "src": "/assets/brand-icons/piclumen.png" } },
-  { "label": "Make", "match": "\\bmake\\b|integromat", "source": { "type": "thesvg", "slug": "make" } },
-  { "label": "Garena", "match": "garena", "source": { "type": "local", "src": "/assets/brand-icons/garena.png" } },
-  { "label": "Fshare", "match": "fshare", "source": { "type": "local", "src": "/assets/brand-icons/fshare.png" } },
-  { "label": "Supabase", "match": "supabase", "source": { "type": "thesvg", "slug": "supabase" } },
-  { "label": "Spotify", "match": "spotify", "source": { "type": "thesvg", "slug": "spotify" } },
-  { "label": "Canva", "match": "canva", "source": { "type": "thesvg", "slug": "canva" } },
-  { "label": "Binance", "match": "binance", "source": { "type": "thesvg", "slug": "binance" } },
-  { "label": "Blackbox", "match": "blackbox", "source": { "type": "local", "src": "/assets/brand-icons/blackbox.png" } },
-  { "label": "CoinGecko", "match": "coingecko", "source": { "type": "local", "src": "/assets/brand-icons/coingecko.png" } },
-  { "label": "Filmora", "match": "filmora", "source": { "type": "local", "src": "/assets/brand-icons/filmora.png" } },
-  { "label": "Fliki", "match": "fliki", "source": { "type": "local", "src": "/assets/brand-icons/fliki.png" } },
-  { "label": "Genspark", "match": "genspark", "source": { "type": "local", "src": "/assets/brand-icons/genspark.png" } },
-  { "label": "OpenArt", "match": "openart", "source": { "type": "local", "src": "/assets/brand-icons/openart.png" } },
-  { "label": "Payoneer", "match": "payoneer", "source": { "type": "thesvg", "slug": "payoneer" } },
-  { "label": "Riot Games", "match": "riot", "source": { "type": "local", "src": "/assets/brand-icons/riot.png" } },
-  { "label": "Skool", "match": "skool", "source": { "type": "local", "src": "/assets/brand-icons/skool.png" } },
-  { "label": "TurboScribe", "match": "turboscribe", "source": { "type": "local", "src": "/assets/brand-icons/turboscribe.png" } },
-  { "label": "Artlist", "match": "artlist", "source": { "type": "local", "src": "/assets/brand-icons/artlist.png" } },
-  { "label": "Augment Code", "match": "augment", "source": { "type": "local", "src": "/assets/brand-icons/augment.png" } },
-  { "label": "Camtasia", "match": "camtasia", "source": { "type": "local", "src": "/assets/brand-icons/camtasia.png" } },
-  { "label": "Claude", "match": "claude|anthropic", "source": { "type": "thesvg", "slug": "claude" } },
-  { "label": "1Password", "match": "1password|one.?password", "source": { "type": "thesvg", "slug": "1password" } },
-  { "label": "Bitwarden", "match": "bitwarden", "source": { "type": "thesvg", "slug": "bitwarden" } },
-  { "label": "Dropbox", "match": "dropbox", "source": { "type": "thesvg", "slug": "dropbox" } },
-  { "label": "Figma", "match": "figma", "source": { "type": "thesvg", "slug": "figma" } },
-  { "label": "Notion", "match": "notion", "source": { "type": "thesvg", "slug": "notion" } },
-  { "label": "Telegram", "match": "telegram", "source": { "type": "thesvg", "slug": "telegram" } },
-  { "label": "Midjourney", "match": "midjourney", "source": { "type": "thesvg", "slug": "midjourney" } },
-  { "label": "Perplexity", "match": "perplexity", "source": { "type": "thesvg", "slug": "perplexity" } },
-  { "label": "Replit", "match": "replit", "source": { "type": "thesvg", "slug": "replit" } },
-  { "label": "Suno", "match": "suno", "source": { "type": "thesvg", "slug": "suno" } },
-  { "label": "Picsart", "match": "picsart", "source": { "type": "thesvg", "slug": "picsart" } },
-  { "label": "Ideogram", "match": "ideogram", "source": { "type": "thesvg", "slug": "ideogram" } },
-  { "label": "Hailuo", "match": "hailuo", "source": { "type": "thesvg", "slug": "hailuo" } },
-  { "label": "Minimax", "match": "minimax", "source": { "type": "thesvg", "slug": "minimax" } },
-  { "label": "Lovable", "match": "lovable", "source": { "type": "thesvg", "slug": "lovable" } },
-  { "label": "Manus", "match": "manus", "source": { "type": "thesvg", "slug": "manus" } },
-  { "label": "Monica", "match": "monica", "source": { "type": "thesvg", "slug": "monica" } },
-  { "label": "OpenRouter", "match": "openrouter", "source": { "type": "thesvg", "slug": "openrouter" } },
-  { "label": "DeepSeek", "match": "deepseek", "source": { "type": "thesvg", "slug": "deepseek" } },
-  { "label": "Gemini", "match": "gemini", "source": { "type": "thesvg", "slug": "gemini" } },
-  { "label": "GoDaddy", "match": "godaddy", "source": { "type": "thesvg", "slug": "godaddy" } },
-  { "label": "Hostinger", "match": "hostinger", "source": { "type": "thesvg", "slug": "hostinger" } },
-  { "label": "WordPress", "match": "wordpress", "source": { "type": "thesvg", "slug": "wordpress" } },
-  { "label": "NVIDIA", "match": "nvidia", "source": { "type": "thesvg", "slug": "nvidia" } },
-  { "label": "Obsidian", "match": "obsidian", "source": { "type": "thesvg", "slug": "obsidian" } },
-  { "label": "Duolingo", "match": "duolingo", "source": { "type": "thesvg", "slug": "duolingo" } },
-  { "label": "Pinterest", "match": "pinterest", "source": { "type": "thesvg", "slug": "pinterest" } },
-  { "label": "Signal", "match": "signal", "source": { "type": "thesvg", "slug": "signal" } },
-  { "label": "Skype", "match": "skype", "source": { "type": "thesvg", "slug": "skype" } },
-  { "label": "VMware", "match": "vmware", "source": { "type": "thesvg", "slug": "vmware" } },
-  { "label": "Xiaomi", "match": "xiaomi", "source": { "type": "thesvg", "slug": "xiaomi" } },
-  { "label": "Veed", "match": "veed", "source": { "type": "thesvg", "slug": "veed" } },
-  { "label": "Kaspersky", "match": "kaspersky", "source": { "type": "thesvg", "slug": "kaspersky" } },
-  { "label": "iCloud", "match": "icloud", "source": { "type": "thesvg", "slug": "icloud" } },
-  { "label": "eBay", "match": "ebay", "source": { "type": "thesvg", "slug": "ebay" } },
-  { "label": "WhatsApp", "match": "whatsapp", "source": { "type": "thesvg", "slug": "whatsapp" } },
-  { "label": "Apple Music", "match": "apple.?music", "source": { "type": "thesvg", "slug": "apple-music" } },
-  { "label": "Quillbot", "match": "quillbot", "source": { "type": "local", "src": "/assets/brand-icons/quillbot.png" } },
-  { "label": "Google", "match": "gmail|google", "source": { "type": "local", "src": "/icons/google.svg" } },
-  { "label": "OpenAI", "match": "chatgpt|openai|gpt", "source": { "type": "local", "src": "/assets/brand-icons/chatgpt.png" } },
-  { "label": "GitHub Copilot", "match": "github\\s*copilot|copilot", "source": { "type": "local", "src": "/assets/brand-icons/github-copilot.png" } },
-  { "label": "GitHub", "match": "github", "source": { "type": "local", "src": "/icons/github.svg" } },
-  { "label": "Microsoft", "match": "microsoft|outlook|hotmail|live|azure|xbox", "source": { "type": "local", "src": "/icons/microsoft.svg" } },
-  { "label": "Facebook", "match": "facebook|meta", "source": { "type": "thesvg", "slug": "facebook" } },
-  { "label": "Instagram", "match": "instagram", "source": { "type": "thesvg", "slug": "instagram" } },
-  { "label": "X", "match": "twitter|\\bx\\b", "source": { "type": "thesvg", "slug": "x" } },
-  { "label": "LinkedIn", "match": "linkedin", "source": { "type": "thesvg", "slug": "linkedin" } },
-  { "label": "Amazon", "match": "amazon|aws", "source": { "type": "thesvg", "slug": "amazon" } },
-  { "label": "Netflix", "match": "netflix", "source": { "type": "thesvg", "slug": "netflix" } },
-  { "label": "Discord", "match": "discord", "source": { "type": "thesvg", "slug": "discord" } },
-  { "label": "Weibo", "match": "weibo", "source": { "type": "local", "src": "/assets/brand-icons/weibo.png" } },
-  { "label": "Douyin", "match": "douyin", "source": { "type": "local", "src": "/assets/brand-icons/douyin.png" } },
-  { "label": "TikTok", "match": "tiktok", "source": { "type": "thesvg", "slug": "tiktok" } },
-  { "label": "YouTube", "match": "youtube", "source": { "type": "local", "src": "/icons/youtube.svg" } },
-  { "label": "Shopee", "match": "shopee", "source": { "type": "thesvg", "slug": "shopee" } },
-  { "label": "Zalo", "match": "zalo", "source": { "type": "local", "src": "/icons/zalo.svg" } },
-  { "label": "Vercel", "match": "vercel", "source": { "type": "local", "src": "/icons/vercel.svg" } },
-  { "label": "Docker", "match": "docker", "source": { "type": "local", "src": "/icons/docker.svg" } },
-  { "label": "npm", "match": "\\bnpm\\b", "source": { "type": "local", "src": "/icons/npm.svg" } }
+  {
+    "label": "ElevenLabs",
+    "match": "elevenlabs|eleven.?labs",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/elevenlabs.png"
+    }
+  },
+  {
+    "label": "CapCut",
+    "match": "capcut|cap.?cut",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/capcut.png"
+    }
+  },
+  {
+    "label": "Kling",
+    "match": "kling",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/kling.png"
+    }
+  },
+  {
+    "label": "HeyGen",
+    "match": "heygen|hey.?gen",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/heygen.png"
+    }
+  },
+  {
+    "label": "Grok",
+    "match": "grok|xai|\\bx\\.?ai\\b",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/grok.png"
+    }
+  },
+  {
+    "label": "Cursor",
+    "match": "cursor",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/cursor.png"
+    }
+  },
+  {
+    "label": "Surfshark",
+    "match": "surfshark|vpn\\s*surfshark",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/surfshark.png"
+    }
+  },
+  {
+    "label": "Higgsfield",
+    "match": "higgsfield",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/higgsfield.png"
+    }
+  },
+  {
+    "label": "Adobe",
+    "match": "adobe",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/adobe.ico"
+    }
+  },
+  {
+    "label": "Kalodata Boost",
+    "match": "kalodata\\s*boost",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/kalodata.png"
+    }
+  },
+  {
+    "label": "Kalodata",
+    "match": "kalodata",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/kalodata.png"
+    }
+  },
+  {
+    "label": "NordVPN",
+    "match": "nord|vpn\\s*nord",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/nordvpn.png"
+    }
+  },
+  {
+    "label": "ExpressVPN",
+    "match": "express|vpn\\s*express",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/expressvpn.png"
+    }
+  },
+  {
+    "label": "PIA",
+    "match": "pia|private.?internet|vpn\\s*pia",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/private-internet-access.png"
+    }
+  },
+  {
+    "label": "Proton",
+    "match": "proton",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/proton.png"
+    }
+  },
+  {
+    "label": "Topview",
+    "match": "topview",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/topview.png"
+    }
+  },
+  {
+    "label": "Exness",
+    "match": "exness",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/exness.png"
+    }
+  },
+  {
+    "label": "Deevid",
+    "match": "deevid",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/deevid.png"
+    }
+  },
+  {
+    "label": "LiteFinance",
+    "match": "litefinance",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/litefinance.png"
+    }
+  },
+  {
+    "label": "Runway",
+    "match": "runway",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/runway.png"
+    }
+  },
+  {
+    "label": "VidiQ",
+    "match": "vidiq",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/vidiq.png"
+    }
+  },
+  {
+    "label": "VT Markets",
+    "match": "vt\\s*markets",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/vtmarkets.png"
+    }
+  },
+  {
+    "label": "Freepik",
+    "match": "freepik",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/freepik.png"
+    }
+  },
+  {
+    "label": "GLM",
+    "match": "glm|z\\.?ai",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/glm.png"
+    }
+  },
+  {
+    "label": "TeamViewer",
+    "match": "teamviewer",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/teamviewer.png"
+    }
+  },
+  {
+    "label": "BigSpy",
+    "match": "big\\s*spy|bigspy",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/bigspy.png"
+    }
+  },
+  {
+    "label": "Leonardo AI",
+    "match": "leonardo",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/leonardo.png"
+    }
+  },
+  {
+    "label": "Mega",
+    "match": "\\bmega\\b",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/mega.png"
+    }
+  },
+  {
+    "label": "Meitu",
+    "match": "meitu",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/meitu.png"
+    }
+  },
+  {
+    "label": "BeautyPlus",
+    "match": "beautyplus|beauty.?plus",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/beautyplus.png"
+    }
+  },
+  {
+    "label": "Wink",
+    "match": "\\bwink\\b",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/meitu.png"
+    }
+  },
+  {
+    "label": "PayPal",
+    "match": "paypal",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/paypal.png"
+    }
+  },
+  {
+    "label": "TradingView",
+    "match": "trading.?view",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/tradingview.png"
+    }
+  },
+  {
+    "label": "Windsurf",
+    "match": "windsurf",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/windsurf.png"
+    }
+  },
+  {
+    "label": "Zoom",
+    "match": "zoom",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/zoom.png"
+    }
+  },
+  {
+    "label": "Minea",
+    "match": "minea",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/minea.png"
+    }
+  },
+  {
+    "label": "Piclumen",
+    "match": "piclumen",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/piclumen.png"
+    }
+  },
+  {
+    "label": "Make",
+    "match": "\\bmake\\b|integromat",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/make.png"
+    }
+  },
+  {
+    "label": "Garena",
+    "match": "garena",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/garena.png"
+    }
+  },
+  {
+    "label": "Fshare",
+    "match": "fshare",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/fshare.png"
+    }
+  },
+  {
+    "label": "Supabase",
+    "match": "supabase",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/supabase.png"
+    }
+  },
+  {
+    "label": "Spotify",
+    "match": "spotify",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/spotify.png"
+    }
+  },
+  {
+    "label": "Canva",
+    "match": "canva",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/canva.png"
+    }
+  },
+  {
+    "label": "Binance",
+    "match": "binance",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/binance.png"
+    }
+  },
+  {
+    "label": "Grizzlysms",
+    "match": "grizzly\\s*sms|grizzlysms",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/grizzlysms.png"
+    }
+  },
+  {
+    "label": "Blackbox",
+    "match": "blackbox",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/blackbox.png"
+    }
+  },
+  {
+    "label": "CoinGecko",
+    "match": "coingecko",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/coingecko.png"
+    }
+  },
+  {
+    "label": "Filmora",
+    "match": "filmora",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/filmora.png"
+    }
+  },
+  {
+    "label": "Fliki",
+    "match": "fliki",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/fliki.png"
+    }
+  },
+  {
+    "label": "Genspark",
+    "match": "genspark",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/genspark.png"
+    }
+  },
+  {
+    "label": "OpenArt",
+    "match": "openart",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/openart.png"
+    }
+  },
+  {
+    "label": "Payoneer",
+    "match": "payoneer",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/payoneer.png"
+    }
+  },
+  {
+    "label": "Riot Games",
+    "match": "riot",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/riot.png"
+    }
+  },
+  {
+    "label": "Skool",
+    "match": "skool",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/skool.png"
+    }
+  },
+  {
+    "label": "TurboScribe",
+    "match": "turboscribe",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/turboscribe.png"
+    }
+  },
+  {
+    "label": "Artlist",
+    "match": "artlist",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/artlist.png"
+    }
+  },
+  {
+    "label": "Augment Code",
+    "match": "augment",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/augment.png"
+    }
+  },
+  {
+    "label": "Camtasia",
+    "match": "camtasia",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/camtasia.png"
+    }
+  },
+  {
+    "label": "Claude",
+    "match": "claude|anthropic",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/claude.png"
+    }
+  },
+  {
+    "label": "1Password",
+    "match": "1password|one.?password",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/1password.png"
+    }
+  },
+  {
+    "label": "Bitwarden",
+    "match": "bitwarden",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/bitwarden.png"
+    }
+  },
+  {
+    "label": "Dropbox",
+    "match": "dropbox",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/dropbox.png"
+    }
+  },
+  {
+    "label": "Figma",
+    "match": "figma",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/figma.png"
+    }
+  },
+  {
+    "label": "Notion",
+    "match": "notion",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/notion.png"
+    }
+  },
+  {
+    "label": "Telegram",
+    "match": "telegram",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/telegram.png"
+    }
+  },
+  {
+    "label": "Midjourney",
+    "match": "midjourney",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/midjourney.png"
+    }
+  },
+  {
+    "label": "Perplexity",
+    "match": "perplexity",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/perplexity.png"
+    }
+  },
+  {
+    "label": "Replit",
+    "match": "replit",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/replit.png"
+    }
+  },
+  {
+    "label": "Suno",
+    "match": "suno",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/suno.png"
+    }
+  },
+  {
+    "label": "Picsart",
+    "match": "picsart",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/picsart.png"
+    }
+  },
+  {
+    "label": "Ideogram",
+    "match": "ideogram",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/ideogram.png"
+    }
+  },
+  {
+    "label": "Hailuo",
+    "match": "hailuo",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/hailuo.png"
+    }
+  },
+  {
+    "label": "Minimax",
+    "match": "minimax",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/minimax.png"
+    }
+  },
+  {
+    "label": "Lovable",
+    "match": "lovable",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/lovable.png"
+    }
+  },
+  {
+    "label": "Manus",
+    "match": "manus",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/manus.png"
+    }
+  },
+  {
+    "label": "Monica",
+    "match": "monica",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/monica.png"
+    }
+  },
+  {
+    "label": "OpenRouter",
+    "match": "openrouter",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/openrouter.png"
+    }
+  },
+  {
+    "label": "DeepSeek",
+    "match": "deepseek",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/deepseek.png"
+    }
+  },
+  {
+    "label": "Gemini",
+    "match": "gemini",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/gemini.png"
+    }
+  },
+  {
+    "label": "GoDaddy",
+    "match": "godaddy",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/godaddy.png"
+    }
+  },
+  {
+    "label": "Hostinger",
+    "match": "hostinger",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/hostinger.png"
+    }
+  },
+  {
+    "label": "WordPress",
+    "match": "wordpress",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/wordpress.png"
+    }
+  },
+  {
+    "label": "NVIDIA",
+    "match": "nvidia",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/nvidia.png"
+    }
+  },
+  {
+    "label": "Obsidian",
+    "match": "obsidian",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/obsidian.png"
+    }
+  },
+  {
+    "label": "Duolingo",
+    "match": "duolingo",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/duolingo.png"
+    }
+  },
+  {
+    "label": "Pinterest",
+    "match": "pinterest",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/pinterest.png"
+    }
+  },
+  {
+    "label": "Signal",
+    "match": "signal",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/signal.png"
+    }
+  },
+  {
+    "label": "Skype",
+    "match": "skype",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/skype.png"
+    }
+  },
+  {
+    "label": "VMware",
+    "match": "vmware",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/vmware.png"
+    }
+  },
+  {
+    "label": "Xiaomi",
+    "match": "xiaomi",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/xiaomi.png"
+    }
+  },
+  {
+    "label": "Veed",
+    "match": "veed",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/veed.png"
+    }
+  },
+  {
+    "label": "Kaspersky",
+    "match": "kaspersky",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/kaspersky.png"
+    }
+  },
+  {
+    "label": "iCloud",
+    "match": "icloud",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/icloud.png"
+    }
+  },
+  {
+    "label": "eBay",
+    "match": "ebay",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/ebay.png"
+    }
+  },
+  {
+    "label": "WhatsApp",
+    "match": "whatsapp",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/whatsapp.png"
+    }
+  },
+  {
+    "label": "Apple Music",
+    "match": "apple.?music",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/apple-music.png"
+    }
+  },
+  {
+    "label": "Quillbot",
+    "match": "quillbot",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/quillbot.png"
+    }
+  },
+  {
+    "label": "Google",
+    "match": "gmail|google",
+    "source": {
+      "type": "local",
+      "src": "/icons/google.svg"
+    }
+  },
+  {
+    "label": "OpenAI",
+    "match": "chatgpt|openai|gpt",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/chatgpt.png"
+    }
+  },
+  {
+    "label": "GitHub Copilot",
+    "match": "github\\s*copilot|copilot",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/github-copilot.png"
+    }
+  },
+  {
+    "label": "GitHub",
+    "match": "github",
+    "source": {
+      "type": "local",
+      "src": "/icons/github.svg"
+    }
+  },
+  {
+    "label": "Microsoft",
+    "match": "microsoft|outlook|hotmail|live|azure|xbox",
+    "source": {
+      "type": "local",
+      "src": "/icons/microsoft.svg"
+    }
+  },
+  {
+    "label": "Facebook",
+    "match": "facebook|meta",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/facebook.png"
+    }
+  },
+  {
+    "label": "Instagram",
+    "match": "instagram",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/instagram.png"
+    }
+  },
+  {
+    "label": "X",
+    "match": "twitter|\\bx\\b",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/x.png"
+    }
+  },
+  {
+    "label": "LinkedIn",
+    "match": "linkedin",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/linkedin.png"
+    }
+  },
+  {
+    "label": "Amazon",
+    "match": "amazon|aws",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/amazon.png"
+    }
+  },
+  {
+    "label": "Netflix",
+    "match": "netflix",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/netflix.png"
+    }
+  },
+  {
+    "label": "Discord",
+    "match": "discord",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/discord.png"
+    }
+  },
+  {
+    "label": "Weibo",
+    "match": "weibo",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/weibo.png"
+    }
+  },
+  {
+    "label": "Douyin",
+    "match": "douyin",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/douyin.png"
+    }
+  },
+  {
+    "label": "TikTok",
+    "match": "tiktok",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/tiktok.png"
+    }
+  },
+  {
+    "label": "YouTube",
+    "match": "youtube",
+    "source": {
+      "type": "local",
+      "src": "/icons/youtube.svg"
+    }
+  },
+  {
+    "label": "Shopee",
+    "match": "shopee",
+    "source": {
+      "type": "local",
+      "src": "/assets/brand-icons/shopee.png"
+    }
+  },
+  {
+    "label": "Zalo",
+    "match": "zalo",
+    "source": {
+      "type": "local",
+      "src": "/icons/zalo.svg"
+    }
+  },
+  {
+    "label": "Vercel",
+    "match": "vercel",
+    "source": {
+      "type": "local",
+      "src": "/icons/vercel.svg"
+    }
+  },
+  {
+    "label": "Docker",
+    "match": "docker",
+    "source": {
+      "type": "local",
+      "src": "/icons/docker.svg"
+    }
+  },
+  {
+    "label": "npm",
+    "match": "\\bnpm\\b",
+    "source": {
+      "type": "local",
+      "src": "/icons/npm.svg"
+    }
+  }
 ]

@@ -28,7 +28,13 @@ export function buildTwofaServiceFilterOptions(
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([value, count]) => {
       const brand = resolveTwofaPlatformIcon(value);
-      return { value, label: value, count, iconSrc: brand?.src };
+      return {
+        value,
+        label: value,
+        count,
+        iconSrc: brand?.src,
+        iconShell: brand?.shell,
+      };
     });
 }
 

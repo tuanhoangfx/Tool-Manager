@@ -42,6 +42,7 @@ function serviceRow(service: string, value: number): ChartRow {
     label,
     value,
     iconSrc: brand?.src,
+    iconShell: brand?.shell,
     iconMeta: brand ? undefined : iconFor(label),
   };
 }

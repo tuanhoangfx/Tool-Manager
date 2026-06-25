@@ -20,16 +20,47 @@ describe("resolveTwofaPlatformIcon", () => {
     expect(hit?.src).toBe("/assets/brand-icons/cursor.png");
   });
 
-  it("maps Capcut to local CapCut brand icon", () => {
+  it("maps Capcut to local CapCut brand icon (bare shell)", () => {
     const hit = resolveTwofaPlatformIcon("Capcut");
     expect(hit?.label).toBe("CapCut");
     expect(hit?.src).toBe("/assets/brand-icons/capcut.png");
+    expect(hit?.shell).toBe("bare");
   });
 
-  it("maps ElevenLabs from thesvg CDN", () => {
+  it("maps Adobe and Augment Code as bare colored icons", () => {
+    expect(resolveTwofaPlatformIcon("Adobe")?.src).toBe("/assets/brand-icons/adobe.ico");
+    expect(resolveTwofaPlatformIcon("Adobe")?.shell).toBe("bare");
+    expect(resolveTwofaPlatformIcon("Augment Code")?.shell).toBe("bare");
+  });
+
+  it("maps WhatsApp as bare green app icon", () => {
+    const hit = resolveTwofaPlatformIcon("WhatsApp");
+    expect(hit?.src).toBe("/assets/brand-icons/whatsapp.png");
+    expect(hit?.shell).toBe("bare");
+  });
+
+  it("maps Binance to local favicon PNG (bare shell)", () => {
+    const hit = resolveTwofaPlatformIcon("Binance");
+    expect(hit?.label).toBe("Binance");
+    expect(hit?.src).toBe("/assets/brand-icons/binance.png");
+    expect(hit?.shell).toBe("bare");
+  });
+
+  it("maps Github to tile shell for dark mark", () => {
+    const hit = resolveTwofaPlatformIcon("Github");
+    expect(hit?.shell).toBe("tile");
+  });
+
+  it("maps Grizzlysms to local favicon PNG", () => {
+    const hit = resolveTwofaPlatformIcon("Grizzlysms");
+    expect(hit?.label).toBe("Grizzlysms");
+    expect(hit?.src).toBe("/assets/brand-icons/grizzlysms.png");
+  });
+
+  it("maps ElevenLabs to local favicon PNG when synced", () => {
     const hit = resolveTwofaPlatformIcon("ElevenLabs");
     expect(hit?.label).toBe("ElevenLabs");
-    expect(hit?.src).toContain("elevenlabs");
+    expect(hit?.src).toMatch(/elevenlabs/);
   });
 
   it("maps Kalodata to local brand icon", () => {

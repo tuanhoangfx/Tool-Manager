@@ -1,5 +1,160 @@
 # Changelog
 
+## 2026-06-25 - Account: note search, filter dropdown polish, Hub modal typography
+
+- Version: `4.7.1`
+- Type: Minor
+- Product: P0020
+- Prompt: ok 1 2 3 — smoke; sync hub-ui vendor; Git commit.
+
+### Changes
+
+- **Note search:** `TwofaNoteSearchField` — `HubSearchField`, highlight active match (vàng), Enter scroll không cướp focus.
+- **Account detail modal:** Credentials/Note cao hơn; typography `--hub-table-*` 12px.
+- **Hub-ui filter dropdown:** bỏ scroll ngang + ô trắng góc scrollbar; label truncate `min-w-0`; vendor sync P0004→packages→tools.
+
+### Verification
+
+- `hub-ui-parity-check.mjs --code P0020`
+- `sync-hub-ui-vendor.cjs`
+
+## 2026-06-25 - Account: filter dropdown scroll + modal Hub typography
+
+- Version: `4.6.27`
+- Type: Patch
+- Product: P0020
+- Prompt: Bỏ ô trắng góc filter Service; không scroll ngang; font modal chuẩn Hub-UI.
+
+### Changes
+
+- **Hub-ui filter panel:** `hub-filter-dropdown-list` — `overflow-x: hidden`, scrollbar corner `var(--panel)`; row `min-w-0` + label truncate; panel `overflow-hidden`.
+- **Account detail modal:** labels/inputs/log/note dùng `--hub-table-header-size` / `--hub-table-body-size` (12px) thay 9–11px lẻ.
+
+### Verification
+
+- `hub-ui-parity-check.mjs --code P0020`
+- Browser MCP: `/twofa/services` → Service filter.
+
+## 2026-06-25 - Account: HQ Adobe + WhatsApp bare icons
+
+- Version: `4.6.26`
+- Type: Patch
+- Product: P0020
+- Prompt: ok 2 — Adobe PNG chất lượng cao; WhatsApp nền xanh không thêm tile trắng.
+
+### Changes
+
+- **Adobe:** `adobe.ico` (~15 KB) từ `adobe.com/favicon.ico` thay favicon 1 KB; shell `bare`.
+- **WhatsApp:** faviconV2 256px (~27 KB) — logo xanh gốc; shell `bare` (không tile Hub).
+- Sync: `HQ_ICON_DOWNLOADS` + verify min bytes cho `adobe.ico` / `whatsapp.png`.
+
+### Verification
+
+- `pnpm sync:twofa-icons`
+- `vitest run src/features/twofa/twofa-platform-icon.test.ts`
+
+## 2026-06-25 - Account: audit bare icons + fix CapCut asset
+
+- Version: `4.6.25`
+- Type: Patch
+- Product: P0020
+- Prompt: Rà soát icon có nền màu (Adobe, Augment) không cần tile; CapCut lỗi.
+
+### Changes
+
+- Xác nhận **shell `bare`** cho mọi `/assets/brand-icons/*.png` (Adobe, Augment, CapCut…) — Hub **không** thêm ô trắng thứ hai.
+- **CapCut / Augment:** bỏ asset Drive hỏng (logo mono/watermark); favicon `capcut.com` / `augmentcode.com` + `FORCE_FAVICON_REFRESH`.
+- Verify: `capcut.png` / `augment.png` tối thiểu 800 B + PNG magic.
+
+### Verification
+
+- `pnpm sync:twofa-icons`
+- `vitest run src/features/twofa/twofa-platform-icon.test.ts`
+
+## 2026-06-25 - Account detail note search: Enter scroll + active highlight
+
+- Version: `4.6.24`
+- Type: Patch
+- Product: P0020
+- Prompt: ok 1 2 3 — smoke modal; Enter lần đầu scroll không focus; active match màu vàng.
+
+### Changes
+
+- Enter lần đầu: scroll tới match đầu, giữ focus ô search (`0/N` → `1/N`).
+- Enter tiếp / ↑↓: nhảy match, vẫn giữ focus search.
+- Active match highlight vàng (`__mark--active`); match khác cyan nhạt.
+
+### Verification
+
+- Browser MCP: `/twofa` account detail → search note.
+
+## 2026-06-25 - Account: bare colored icons + shell SSOT doc
+
+- Version: `4.6.23`
+- Type: Patch
+- Product: P0020
+- Prompt: ok 1 2 3 — bỏ tile cho logo màu, smoke Binance, doc shell.
+
+### Changes
+
+- **Icon shell:** `bare` (màu gốc, default PNG) · `tile` (GitHub) · `darkInk` (Vercel) — `twofa-platform-icons.README.md`.
+- Colored logos (Binance, Spotify…) không còn ô trắng; filter/chart/trigger nhận `iconShell` từ resolver.
+- Hub-ui: `hubBrandIconImgClass`, `FilterOption.iconShell`, `ChartRow.iconShell`.
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-platform-icon.test.ts`
+- Browser MCP `/twofa/services` search Binance
+
+## 2026-06-25 - Account detail: fix note search focus + golden search field
+
+- Version: `4.6.22`
+- Type: Patch
+- Product: P0020
+- Prompt: Search note — icon trong input chuẩn Hub; sửa lỗi nhập 1 ký tự bị nhảy focus xuống textarea.
+
+### Changes
+
+- Dùng `HubSearchField` (icon Search absolute bên trong input, clear button).
+- Bỏ auto-focus/auto-scroll textarea khi gõ search — chỉ highlight live; scroll + chọn match khi Enter hoặc prev/next.
+
+## 2026-06-25 - Account detail modal: larger Credentials/Note + note search
+
+- Version: `4.6.21`
+- Type: Patch
+- Product: P0020
+- Prompt: Account Modal Detail — tăng kích thước frame Note/Credentials, thêm search cho Note.
+
+### Changes
+
+- Modal account detail cao/rộng hơn (`--hub-modal-max-h` 960px, rail Note 28rem, min-height 32rem).
+- Panel Credentials và Note kéo giãn theo chiều cao modal; textarea Note tối thiểu 12rem.
+- Thêm ô **Search note** với highlight, đếm match, prev/next (Enter / Shift+Enter).
+
+### Verification
+
+- Browser MCP: `/twofa` → mở account detail → kiểm tra search + layout.
+
+## 2026-06-25 - Account: fix brand icons (Binance, thesvg→PNG)
+
+- Version: `4.6.20`
+- Type: Patch
+- Product: P0020
+- Prompt: Rất nhiều icon vẫn lỗi (Binance ô đen, Grizzlysms thiếu logo).
+
+### Changes
+
+- **Root cause:** patch 4.6.19 áp `brightness(0)` lên **mọi** icon thesvg CDN → logo màu (Binance vàng, Spotify, PayPal…) thành ô đen trên tile trắng.
+- Bỏ blanket thesvg filter; chỉ `darkInk` cho SVG mono trắng còn trên CDN (grok, windsurf…).
+- `sync:twofa-icons`: tải favicon Google cho ~70 thesvg slug → chuyển registry sang PNG local (`/assets/brand-icons/{slug}.png`).
+- Thêm **Grizzlysms** + **Binance** vào registry; domain override cho slug lệch (elevenlabs.io, signal.org…).
+
+### Verification
+
+- `pnpm sync:twofa-icons`
+- `vitest run src/features/twofa/twofa-platform-icon.test.ts`
+- `node scripts/verify-twofa-platform-icons.mjs`
+
 ## 2026-06-25 - Account: Created/Updated font, Secret align, Service filter icon
 
 - Version: `4.6.19`

@@ -10,15 +10,36 @@ const THESVG_CDN = "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icon
 
 const registry = JSON.parse(await readFile(registryPath, "utf8"));
 const missing = [];
+const corrupt = [];
+/** Drive exports that must stay favicon (mono/watermark). */
+const MIN_PNG_BYTES = {
+  "assets/brand-icons/capcut.png": 800,
+  "assets/brand-icons/augment.png": 800,
+  "assets/brand-icons/whatsapp.png": 2000,
+};
+const MIN_ICO_BYTES = { "assets/brand-icons/adobe.ico": 5000 };
 let localCount = 0;
 let thesvgCount = 0;
 
 for (const entry of registry) {
   if (entry.source?.type === "local") {
     localCount += 1;
-    const asset = path.join(projectRoot, "public", entry.source.src.replace(/^\//, ""));
+    const rel = entry.source.src.replace(/^\//, "");
+    const asset = path.join(projectRoot, "public", rel);
     try {
       await access(asset);
+      const min = MIN_PNG_BYTES[rel];
+      const minIco = MIN_ICO_BYTES[rel];
+      if (min || minIco) {
+        const buf = await readFile(asset);
+        const isPng = buf[0] === 0x89 && buf[1] === 0x50;
+        const isIco = buf[0] === 0x00 && buf[1] === 0x00;
+        const floor = min ?? minIco;
+        const okFmt = min ? isPng : isIco;
+        if (!okFmt || buf.length < floor) {
+          corrupt.push({ label: entry.label, asset: entry.source.src, reason: `bad asset or < ${floor} B` });
+        }
+      }
     } catch {
       missing.push({ label: entry.label, asset: entry.source.src });
     }
@@ -33,6 +54,12 @@ for (const entry of registry) {
 if (missing.length) {
   console.error("Twofa platform icon assets missing:");
   for (const row of missing) console.error(`  - ${row.label}: ${row.asset}`);
+  process.exit(1);
+}
+
+if (corrupt.length) {
+  console.error("Twofa platform icon assets corrupt (re-run pnpm sync:twofa-icons):");
+  for (const row of corrupt) console.error(`  - ${row.label}: ${row.asset} (${row.reason})`);
   process.exit(1);
 }
 

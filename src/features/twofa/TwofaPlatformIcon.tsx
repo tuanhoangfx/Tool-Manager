@@ -19,21 +19,41 @@ export function TwofaPlatformIcon({ service, className = "", compact = false }: 
   const iconPx = compact ? compactIconSize(COMPACT_ICON_PX) : ICON_PX;
 
   if (hit && !imgFailed) {
+    const shell = hit.shell;
+    const img = (
+      <img
+        src={hit.src}
+        alt=""
+        className={
+          shell === "bare"
+            ? "twofa-platform-icon__img twofa-platform-icon__img--bare"
+            : `twofa-brand-icon-shell__img twofa-platform-icon__img${shell === "darkInk" ? " twofa-platform-icon__img--dark-ink" : ""}`
+        }
+        width={iconPx}
+        height={iconPx}
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => setImgFailed(true)}
+      />
+    );
+
+    if (shell === "bare") {
+      return (
+        <span
+          className={`twofa-platform-icon twofa-platform-icon--bare inline-flex shrink-0 items-center${className ? ` ${className}` : ""}`}
+          title={title}
+        >
+          {img}
+        </span>
+      );
+    }
+
     return (
       <span
-        className={`twofa-brand-icon-shell twofa-platform-icon inline-flex shrink-0 items-center${className ? ` ${className}` : ""}`}
+        className={`twofa-brand-icon-shell twofa-platform-icon twofa-platform-icon--tile inline-flex shrink-0 items-center${className ? ` ${className}` : ""}`}
         title={title}
       >
-        <img
-          src={hit.src}
-          alt=""
-          className="twofa-brand-icon-shell__img twofa-platform-icon__img"
-          width={iconPx}
-          height={iconPx}
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          onError={() => setImgFailed(true)}
-        />
+        {img}
       </span>
     );
   }

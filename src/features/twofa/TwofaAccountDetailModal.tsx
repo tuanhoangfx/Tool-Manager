@@ -41,6 +41,7 @@ import type { TwofaAccount, TwofaDraft } from "./types";
 import { twofaDraftHasContent } from "./twofa-upsert-accounts";
 import { useTwofaRelativeNow, fmtHubDate, fmtHubRelativeTime } from "./twofa-time";
 import { useTwofaShowPasswordInTable } from "./useTwofaShowPasswordInTable";
+import { TwofaNoteSearchField } from "./TwofaNoteSearchField";
 import "./twofa-inline-fields.css";
 import "./twofa-account-detail-modal.css";
 
@@ -392,15 +393,7 @@ export function TwofaAccountDetailModal({ account, onClose, onSave, onCodeUsed }
                 {twofaColumnLabel("note")}
               </div>
               <div className="twofa-adm-rail__body twofa-adm-rail__body--note">
-                <textarea
-                  className={`${TWOFA_ADM_CONTROL_CLASS} twofa-adm-note-textarea`}
-                  name="twofa-detail-note"
-                  autoComplete="off"
-                  placeholder="Optional notes, mail recovery, plan info…"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  rows={5}
-                />
+                <TwofaNoteSearchField value={note} onChange={setNote} />
               </div>
             </section>
 
