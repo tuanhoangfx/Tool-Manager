@@ -50,8 +50,8 @@
     ],
     "latestPublished": {
       "tag": "v4.7.2",
-      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.7.1",
-      "publishedAt": "2026-06-25T07:00:19.437Z"
+      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.7.2",
+      "publishedAt": "2026-06-25T11:24:40.895Z"
     }
   },
   "urls": {
@@ -256,5 +256,5 @@
       "authVariant": "anonymous-dual"
     }
   ],
-  "manifestUpdatedAt": "2026-06-25T07:00:19.437Z"
+  "manifestUpdatedAt": "2026-06-25T11:24:40.896Z"
 }

@@ -9,6 +9,7 @@
 @import "../../vendor/hub-ui/src/styles/hub-app-tab-header.css";
 @import "../../vendor/hub-ui/src/styles/hub-users-table.css";
 @import "./hub-directory-table.css";
+@import "../../vendor/hub-ui/src/styles/hub-table-controls.css";
 @import "../../vendor/hub-ui/src/styles/hub-modal.css";
 @import "../../vendor/hub-ui/src/styles/hub-auth-gate.css";
 @import "../../vendor/hub-ui/src/styles/hub-route-detail.css";

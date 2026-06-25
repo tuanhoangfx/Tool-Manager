@@ -6,6 +6,8 @@
 - Type: Patch
 - Product: P0020
 - Timestamp: 2026-06-25 14:00 (UTC+7)
+- Status: Verified
+- Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.7.2
 - Prompt: ok 1 2 3 — latestPublished v4.7.1; Vercel build time in header; GitHub Release v4.7.1.
 
 ### Changes
