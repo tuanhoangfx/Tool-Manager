@@ -21,7 +21,7 @@ import {
   prefetchNotesListBackground,
   prefetchWorkspaceTabsBackground,
 } from "../../lib/hub-background-prefetch";
-import { prefetchWorkspaceTab } from "../../lib/workspace-tab-prefetch";
+import { prefetchAllWorkspaceTabs, prefetchWorkspaceTab } from "../../lib/workspace-tab-prefetch";
 import { WorkspaceEagerTabPrefetch } from "../../lib/workspace-eager-tabs";
 import { useExtensionBindingsRelay } from "../cookie/useExtensionBindingsRelay";
 import { NotesAuthGate } from "../notes/NotesAuthGate";
@@ -80,12 +80,7 @@ function WorkspaceAppInner() {
   useEffect(() => {
     if (!session) return;
     prefetchWorkspaceTabsBackground(session);
-    prefetchWorkspaceTab("system");
-    setVisited((prev) => {
-      const next = new Set(prev);
-      for (const tab of NAV_SCREENS) next.add(tab);
-      return next;
-    });
+    prefetchAllWorkspaceTabs();
   }, [session]);
 
   useEffect(() => {

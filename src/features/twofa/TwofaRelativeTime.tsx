@@ -8,7 +8,7 @@ type Props = {
 /** Relative activity timestamp — hub-ui SSOT (dot + age buckets). */
 export function TwofaRelativeTime({ iso, className = "" }: Props) {
   if (!iso?.trim()) {
-    return <span className={className || "hub-users-cell-muted"}>—</span>;
+    return <span className={className || "hub-directory-table-body-text"}>—</span>;
   }
   return (
     <span className={className}>

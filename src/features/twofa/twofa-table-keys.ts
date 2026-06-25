@@ -12,7 +12,9 @@ export type TwofaTableColumnKey =
   | "note"
   | "log"
   | "created"
-  | "updated";
+  | "updated"
+  /** Mail sub-view only — count of Services vault rows using this mailbox. */
+  | "linkedServices";
 
 export type TwofaTableColumnDef = {
   key: TwofaTableColumnKey;

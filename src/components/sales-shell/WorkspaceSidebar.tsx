@@ -28,11 +28,13 @@ import {
   clearWorkspaceProfileRoleCache,
   useNavGroupOpenState,
 } from "@tool-workspace/hub-ui";
-import { NAV_STRUCTURE, NAV_SUBNAV_PREFIX } from "../../lib/nav-structure";
+import { NAV_STRUCTURE, NAV_GROUP_IDS, NAV_SUBNAV_PREFIX } from "../../lib/nav-structure";
 import { prefetchSystemTab } from "../../lib/system-tab-prefetch";
 import { prefetchWorkspaceTab } from "../../lib/workspace-tab-prefetch";
+import { readTwofaVaultView, setTwofaVaultView } from "../../lib/twofa-vault-path";
+import type { TwofaVaultView } from "../../lib/twofa-vault-path";
 
-const EMPTY_GROUP_IDS: readonly string[] = [];
+const NAV_GROUP_OPEN_IDS = [...NAV_GROUP_IDS];
 
 type Props = {
   screen: WorkspaceNavScreen;
@@ -44,7 +46,14 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
   const { session, offline, hubUserId, hubEmail } = useNotesAuth();
   const { pushToast } = useAppToast();
   const [listRefreshing, setListRefreshing] = useState(false);
-  const { groupOpen, setGroupSubnavOpen } = useNavGroupOpenState(NAV_SUBNAV_PREFIX, EMPTY_GROUP_IDS);
+  const [twofaVaultView, setTwofaVaultViewState] = useState<TwofaVaultView>(() => readTwofaVaultView());
+  const { groupOpen, setGroupSubnavOpen } = useNavGroupOpenState(NAV_SUBNAV_PREFIX, NAV_GROUP_OPEN_IDS);
+
+  useEffect(() => {
+    const onPop = () => setTwofaVaultViewState(readTwofaVaultView());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   useEffect(() => {
     const onRefreshing = (event: Event) => {
@@ -77,6 +86,7 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
         <HubSidebarNavList
           structure={NAV_STRUCTURE}
           activeScreen={screen}
+          activeView={screen === "twofa" ? twofaVaultView : undefined}
           groupOpen={groupOpen}
           setGroupSubnavOpen={setGroupSubnavOpen}
           showToggleIcon={false}
@@ -85,7 +95,13 @@ export function WorkspaceSidebar({ screen, onNavigate, displayPrefs }: Props) {
             prefetchWorkspaceTab(next);
             if (next === "system") prefetchSystemTab();
           }}
-          onSelectView={() => {}}
+          onSelectView={(view) => {
+            setTwofaVaultView(view);
+            setTwofaVaultViewState(view);
+          }}
+          onPrefetchView={() => {
+            prefetchWorkspaceTab("twofa");
+          }}
         />
       }
       footer={

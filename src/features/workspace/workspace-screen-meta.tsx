@@ -1,7 +1,8 @@
 import type { ElementType } from "react";
-import { ClipboardList, Cookie, FileText, KeyRound, Settings2, Table2 } from "lucide-react";
+import { ClipboardList, Cookie, FileText, KeyRound, Mail, Settings2, Shield, Table2 } from "lucide-react";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import type { TabHeaderMetaItem } from "../../components/sales-shell";
+import type { TwofaVaultView } from "../../lib/twofa-vault-path";
 
 export type ScreenChromeConfig = {
   title: string;
@@ -17,7 +18,10 @@ export type ScreenChromeConfig = {
   extraMetaItems?: TabHeaderMetaItem[];
 };
 
-export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig {
+export function screenChromeConfig(
+  screen: WorkspaceScreen,
+  twofaVaultView: TwofaVaultView | null = null,
+): ScreenChromeConfig {
   switch (screen) {
     case "notes":
     case "edit":
@@ -51,11 +55,23 @@ export function screenChromeConfig(screen: WorkspaceScreen): ScreenChromeConfig 
         filterParam: "tfilt",
       };
     case "twofa":
+      if (twofaVaultView === "mail") {
+        return {
+          title: "Mail",
+          titleIcon: Mail,
+          titleIconClass: "text-sky-400",
+          ariaLabel: "Mail vault header",
+          searchPlaceholder: "Search mailbox, provider, or recover mail…",
+          showSearch: true,
+          filterParam: "afilt",
+          directoryBand: true,
+        };
+      }
       return {
-        title: "2FA",
+        title: "Services",
         titleIcon: KeyRound,
         titleIconClass: "text-amber-400",
-        ariaLabel: "2FA header",
+        ariaLabel: "Services vault header",
         searchPlaceholder: "Search service or account…",
         showSearch: true,
         filterParam: "afilt",

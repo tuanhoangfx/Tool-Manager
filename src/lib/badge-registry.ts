@@ -255,6 +255,7 @@ function linkGroupFilterLabel(group: LinkGroup): string {
 }
 
 export function resolveFilterAllIcon(filterKey: string): FilterIconMeta | null {
+  if (filterKey === "service") return null;
   return semanticFilterAllIcon(filterKey) ?? FILTER_ALL[filterKey] ?? null;
 }
 
@@ -263,7 +264,7 @@ export function resolveFilterOptionIcon(filterKey: string, option: FilterOption)
     case "folder":
       return null;
     case "service":
-      return { icon: KeyRound, className: "text-amber-300" };
+      return null;
     case "usage":
       if (option.value === "recent") return { icon: Timer, className: "text-emerald-400" };
       if (option.value === "never") return { icon: Eye, className: "text-slate-400" };

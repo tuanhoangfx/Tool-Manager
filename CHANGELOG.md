@@ -1,5 +1,284 @@
 # Changelog
 
+## 2026-06-25 - Account: Created/Updated font, Secret align, Service filter icon
+
+- Version: `4.6.19`
+- Type: Patch
+- Product: P0020
+- Timestamp: 2026-06-25 10:40 (UTC+7)
+- Prompt: Icon filter Service sai; Created/Updated font lệch P0003 workflow; Secret lệch lên trên.
+
+### Changes
+
+- **Created / Last update:** bỏ `hub-users-cell-muted` (11px); `HubUsersStatusLabel` dùng body tokens 12px/400 giống `hub-directory-frame-table` và P0003 workflow.
+- **Secret:** bỏ `vertical-align: top`; flex căn giữa ô; monospace 12px đồng hàng.
+- **Filter Service:** `resolveFilterAllIcon("service")` → null; `suppressDefaultTriggerIcon` — không còn KeyRound ở hàng Service/trigger.
+- **Brand icons:** thesvg CDN + filter dropdown dùng `brightness(0)` trên tile sáng.
+- Hub-ui: `FilterDef.suppressDefaultTriggerIcon` cho brand filters.
+
+### Verification
+
+- `vitest run src/features/twofa/`
+
+## 2026-06-25 - Account: filter Service brand icons (portaled dropdown)
+
+- Version: `4.6.18`
+- Type: Patch
+- Product: P0020
+- Prompt: Icon filter Service chưa đồng bộ với bảng/chart (Github, Copilot…).
+
+### Changes
+
+- **Root cause:** dropdown filter portal ra `body` — nằm ngoài `[data-hub-screen="twofa"]` nên CSS tile không áp dụng; logo tối gần như vô hình trên nền tối.
+- Hub-ui: class `hub-filter-brand-icon` trên mọi `option.iconSrc` (trigger + list, kể cả portal).
+- P0020: tile SSOT qua `.hub-filter-brand-icon`; load CSS tại `WorkspaceShellTabFrame` (filter mount trước lazy table).
+- Registry: Github Copilot riêng; `badge-registry` service filter không override bằng KeyRound khi có `iconSrc`.
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-platform-icon.test.ts`
+- `pnpm sync:twofa-icons`
+
+## 2026-06-25 - Account: Hub-UI filter option counts (Status, Usage, Service)
+
+- Version: `4.6.17`
+- Type: Patch
+- Product: P0020
+- Prompt: Filter Status/Usage theo chuẩn Hub-UI — số lượng ở mỗi lựa chọn.
+
+### Changes
+
+- `enrichTwofaFilterDefs`: faceted counts O(n) mỗi filter key — luôn bật kể cả vault 2k+ rows (bỏ `FILTER_COUNT_CAP` skip).
+- Status / Usage / Service: mỗi option có `count` + `totalCount` trên header (Hub `FilterOptionCount`).
+- `rowMatchesTwofaFilters` — SSOT match một row cho filter + counts.
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-filter-counts.test.ts`
+
+## 2026-06-25 - Account: ChatGPT/Cursor icons + Service filter restore
+
+- Version: `4.6.16`
+- Type: Patch
+- Product: P0020
+- Prompt: Icon ChatGPT/Cursor trắng; filter Service không hiển thị (No matches / 0).
+
+### Changes
+
+- **Service filter:** bỏ `useDeferredValue` trên vault (2587 rows không settle → options rỗng); large vault vẫn có `totalCount` + danh sách service.
+- **ChatGPT / Cursor:** registry → PNG màu (`chatgpt.png`, `cursor.png`); sync favicon `chatgpt.com`, `cursor.com`.
+- CSS fallback `brightness(0)` cho SVG trắng legacy trên tile sáng.
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-filter-counts.test.ts src/features/twofa/twofa-platform-icon.test.ts`
+- `pnpm sync:twofa-icons`
+
+## 2026-06-25 - Account: stable table row height + pager position
+
+- Version: `4.6.15`
+- Type: Patch
+- Product: P0020
+- Prompt: Chiều cao dòng/bảng Page 16 vs 17 khác nhau → pager nhảy vị trí.
+
+### Changes
+
+- `hub-users-table--twofa`: cố định `--twofa-table-row-h` (2.25rem) mọi tbody row — badge Browser, icon Service, status emoji cùng footprint.
+- Browser trống: placeholder badge `--empty` (cùng kích thước chip) thay dash thuần.
+- `min-height` table wrap dùng `--twofa-table-row-h` × `pageSize` — pager cố định kể cả trang cuối ít row.
+
+### Verification
+
+- Hard refresh `/twofa/services` → next/prev page 16↔17, pager không nhảy.
+
+## 2026-06-25 - Account: faster Services tab load
+
+- Version: `4.6.14`
+- Type: Patch
+- Product: P0020
+- Prompt: Tab Services load quá chậm (spinner KeyRound kéo dài).
+
+### Changes
+
+- **Session boot:** bỏ mount đồng thời mọi lazy tab khi login — chỉ `prefetchAllWorkspaceTabs()` (chunk warm, không mount React tree).
+- **Deep link `/twofa/*`:** prefetch `TwofaManagerScreen` chunk trong `main.tsx` song song auth boot.
+- **Icon resolver:** pre-compile regex + cache `resolveTwofaPlatformIcon` (filter Service với ~100+ platform).
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-platform-icon.test.ts`
+
+## 2026-06-25 - Hub-UI: stale activity labels `dd/mm/yy` only
+
+- Version: `4.6.13`
+- Type: Patch
+- Product: P0020
+- Prompt: Đồng bộ format stale `dd/mm/yy` chuẩn Hub-UI (gọn hơn).
+
+### Changes
+
+- Vendor hub-ui `0.2.11`: `formatHubActivityStaleLabel` / `HubActivityTimestampLabel` stale (>24h) → **`dd/mm/yy`**; relative trong 24h giữ `just now` / `Nm ago` / `Nh ago`.
+- Absolute ISO cells (`formatTimestampCompact`) vẫn `hh:mm dd/mm/yy`.
+
+### Verification
+
+- `vitest run` hub-ui `format-hub-activity-time.test.ts`
+
+## 2026-06-25 - Account: Weibo/Douyin icons, Status Error fix, Service→Browser sort
+
+- Version: `4.6.12`
+- Type: Patch
+- Product: P0020
+- Prompt: Acc Weibo/Douyin icon; Status Error 2 icon; sort Service A→Z then Browser 0000, 0001…
+
+### Changes
+
+- Registry + sync: Weibo, Douyin (`Acc Weibo`, `Acc Douyin` → brand icon).
+- Status filter: `emoji` field thay label có emoji — tránh trùng Lucide `AlertTriangle` với Error.
+- `sortTwofaAccounts`: mặc định Service A→Z, tiebreak Browser numeric (0000, 0001, …).
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-sort.test.ts src/features/twofa/twofa-platform-icon.test.ts`
+- `pnpm sync:twofa-icons`
+
+## 2026-06-25 - Account: unify brand icon shell (table, chart, filter)
+
+- Version: `4.6.11`
+- Type: Patch
+- Product: P0020
+- Prompt: Icon service chưa đồng nhất giữa bảng, Top Services chart và filter dropdown.
+
+### Changes
+
+- `twofa-brand-icon-shell` SSOT: cùng tile nền sáng cho `TwofaPlatformIcon`, MiniBarChart (`iconSrc`), filter trigger + dropdown (`[data-hub-screen="twofa"]`).
+- Import `twofa-platform-icon.css` tại `TwofaManagerScreen` (luôn load khi mở tab Account).
+- `WorkspaceShellTabFrame`: `data-hub-screen` để scope CSS theo tab.
+- CapCut → local `capcut.png` (Drive) thay thesvg — cùng asset mọi nơi.
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-platform-icon.test.ts`
+
+## 2026-06-25 - Account: brand icon contrast + stable pager
+
+- Version: `4.6.10`
+- Type: Patch
+- Product: P0020
+- Prompt: Icon đen khó nhìn trên nền tối (CapCut, ElevenLabs, BigSpy); pager nhảy vị trí/kích thước khi next/prev.
+
+### Changes
+
+- `twofa-platform-icon.css`: nền tile trắng (~94% opacity) + viền nhẹ cho logo tối; filter dropdown Service dùng cùng treatment.
+- `hub-users-table.css` + `TwofaAccountsTable`: pager `tabular-nums` + `min-width` label; `min-height` tbody theo `pageSize` để pager không nhảy khi đổi trang.
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-platform-icon.test.ts`
+
+## 2026-06-25 - Account Vault: service brand icons (top platforms)
+
+- Version: `4.6.9`
+- Type: Patch
+- Product: P0020
+- Prompt: Bổ sung icon service còn thiếu ở Account theo chuẩn hiện tại; lấy từ Drive khi cần.
+
+### Changes
+
+- `twofa-platform-icons.registry.json`: mở rộng 18 → 114 brand entries (thesvg CDN + local `/assets/brand-icons/`).
+- `scripts/sync-twofa-brand-icons.mjs`: tải icon từ [Google Drive Icon folder](https://drive.google.com/drive/folders/1PMzS8CZrzneTvnMmbv3KHnmSVH5mszMS), copy legacy PNG (Kalodata/Cursor/BigSpy), favicon fallback cho brand chưa có trên thesvg.
+- `scripts/verify-twofa-platform-icons.mjs` + `predev`/`prebuild`: verify local + thesvg slug trước khi chạy app.
+- Phủ ~94% account rows (5.9k/6.1k) với icon brand; còn lại chủ yếu shop MMO lẻ.
+
+### Verification
+
+- `node scripts/sync-twofa-brand-icons.mjs`
+- `node scripts/verify-twofa-platform-icons.mjs`
+- `vitest run src/features/twofa/twofa-platform-icon.test.ts`
+
+## 2026-06-24 - Account: Service filter options + plain search input
+
+- Version: `4.6.8`
+- Type: Patch
+- Product: P0020
+- Prompt: Service filter trống; search tự thêm http:// — bỏ, giữ plain text như Chrome.
+
+### Changes
+
+- `TwofaManagerScreen`: build Service/Status/Usage filter options from live `scopedAccounts` (not `useDeferredValue`) — large vaults no longer show empty Service dropdown.
+- `HubSearchField` + filter panel search: `type="text"` with `autoComplete="off"` — stops browser URL heuristics prepending `http://` while typing.
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-filters.test.ts`
+
+## 2026-06-24 - Account: Service filter scope, filter labels, modal layout, Created column
+
+- Version: `4.6.7`
+- Type: Patch
+- Product: P0020
+- Prompt: Services filter hiện Gmail/Outlook; bỏ All filter; Created 1 dòng; menu Account; modal Details không trống.
+
+### Changes
+
+- Service filter options scoped by sub-view — Services excludes mailbox providers (Gmail/Outlook/Hotmail); clears service facet when switching Mail/Services.
+- Filter triggers/panel rows: drop `All` prefix (`Service`, `Status`, `Usage`).
+- Sidebar group renamed **Account** (was Account Vault).
+- Table **Created** / **Updated**: single-line ellipsis.
+- Detail modal: `height: auto`, panels no longer flex-grow into empty gaps; meta row (Created / Last update / Vault ID) stays on one line.
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-filters.test.ts`
+
+## 2026-06-24 - Mail vault: Services column (linked service count)
+
+- Version: `4.6.6`
+- Type: Patch
+- Product: P0020
+- Prompt: Mail — cột Services đếm số platform đang dùng mailbox.
+
+### Changes
+
+- Mail sub-view table: **Services** column — distinct service count where vault rows reference mailbox via `mailRecover` or login `account` email; tooltip lists platform names.
+- Provider column label **Provider** on Mail view (Gmail/Outlook row `service`).
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-mail-service-usage.test.ts`
+
+## 2026-06-24 - Account Vault Mail scope: service name only
+
+- Version: `4.6.5`
+- Type: Patch
+- Product: P0020
+- Prompt: Adobe/CapCut lọt Mail — chỉ giữ Gmail/Outlook/Hotmail theo service.
+
+### Changes
+
+- `isTwofaMailAccount`: classify Mail **only** by mailbox `service` (Gmail, Outlook, Hotmail, Live, MSN) — no longer by login email domain (`@gmail.com` on Adobe/CapCut stays in Services).
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-vault-scope.test.ts`
+
+## 2026-06-24 - Account Vault: Mail + Services sub-views (shared 2FA code)
+
+- Version: `4.6.4`
+- Type: Patch
+- Product: P0020
+- Prompt: Tách screen Mail riêng; Mail/2FA dùng chung code; menu con trong menu mẹ.
+
+### Changes
+
+- Sidebar **Account Vault** group with sub-views **Services** (`/twofa/services`) and **Mail** (`/twofa/mail`) — same vault, shared `TwofaManagerScreen`.
+- `twofa-vault-scope`: classify Gmail/Outlook/Hotmail rows; filter directory per sub-view.
+- Legacy `/twofa` redirects to `/twofa/services`; header title follows active sub-view.
+
+### Verification
+
+- `vitest run src/features/twofa/twofa-vault-scope.test.ts src/lib/twofa-vault-path.test.ts`
+
 ## 2026-06-24 - Sheet: smoother switching between sources
 
 - Version: `4.6.3`

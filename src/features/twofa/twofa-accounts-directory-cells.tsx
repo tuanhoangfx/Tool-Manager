@@ -5,6 +5,7 @@ import {
   TwofaMailRecoverCell,
   TwofaBrowserCell,
   TwofaCodeCell,
+  TwofaLinkedServicesCell,
   TwofaLogCell,
   TwofaNoteCell,
   TwofaPasswordCell,
@@ -14,15 +15,22 @@ import {
   TwofaOwnershipCell,
 } from "./twofa-copy-cells";
 import type { TwofaAccount } from "./types";
+import type { TwofaMailServiceUsage } from "./twofa-mail-service-usage";
+import { lookupTwofaMailServiceUsage } from "./twofa-mail-service-usage";
 import { TwofaRelativeTime } from "./TwofaRelativeTime";
 import type { TwofaTableColumnKey } from "./twofa-table-prefs";
 
 export type TwofaAccountsTableSortKey = TwofaTableColumnKey;
 
+export type TwofaDirectoryRenderContext = {
+  mailServiceUsage?: Map<string, TwofaMailServiceUsage>;
+};
+
 export function renderTwofaAccountsDirectoryBodyCell(
   col: HubDirectoryColumnDef<TwofaAccountsTableSortKey>,
   row: TwofaAccount,
   onUsed: (id: string) => void,
+  ctx: TwofaDirectoryRenderContext = {},
 ) {
   const { key, colClass } = col;
   switch (key) {
@@ -53,6 +61,18 @@ export function renderTwofaAccountsDirectoryBodyCell(
       return (
         <DirectoryTableBodyCell key={key} colClass={colClass}>
           <TwofaMailRecoverCell account={row} />
+        </DirectoryTableBodyCell>
+      );
+    case "linkedServices":
+      return (
+        <DirectoryTableBodyCell key={key} colClass={colClass}>
+          <TwofaLinkedServicesCell
+            usage={
+              ctx.mailServiceUsage
+                ? lookupTwofaMailServiceUsage(ctx.mailServiceUsage, row)
+                : { serviceCount: 0, rowCount: 0, labels: [] }
+            }
+          />
         </DirectoryTableBodyCell>
       );
     case "status":
@@ -105,14 +125,14 @@ export function renderTwofaAccountsDirectoryBodyCell(
       );
     case "created":
       return (
-        <DirectoryTableBodyCell key={key} colClass={colClass} typographyClass="hub-users-cell-muted">
-          <TwofaRelativeTime iso={row.createdAt} className="line-clamp-1" />
+        <DirectoryTableBodyCell key={key} colClass={colClass}>
+          <TwofaRelativeTime iso={row.createdAt} />
         </DirectoryTableBodyCell>
       );
     case "updated":
       return (
-        <DirectoryTableBodyCell key={key} colClass={colClass} typographyClass="hub-users-cell-muted">
-          <TwofaRelativeTime iso={row.updatedAt} className="line-clamp-1" />
+        <DirectoryTableBodyCell key={key} colClass={colClass}>
+          <TwofaRelativeTime iso={row.updatedAt} />
         </DirectoryTableBodyCell>
       );
     default:

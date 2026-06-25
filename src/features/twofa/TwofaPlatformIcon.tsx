@@ -21,13 +21,13 @@ export function TwofaPlatformIcon({ service, className = "", compact = false }: 
   if (hit && !imgFailed) {
     return (
       <span
-        className={`twofa-platform-icon inline-flex shrink-0 items-center${className ? ` ${className}` : ""}`}
+        className={`twofa-brand-icon-shell twofa-platform-icon inline-flex shrink-0 items-center${className ? ` ${className}` : ""}`}
         title={title}
       >
         <img
           src={hit.src}
           alt=""
-          className="twofa-platform-icon__img"
+          className="twofa-brand-icon-shell__img twofa-platform-icon__img"
           width={iconPx}
           height={iconPx}
           loading="lazy"

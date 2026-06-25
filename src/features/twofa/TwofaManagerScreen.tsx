@@ -1,5 +1,6 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { KeyRound, Plus, Shield } from "lucide-react";
+import "./twofa-platform-icon.css";
 import type { HubViewMode } from "../../components/sales-shell";
 import { useAppToast } from "../../components/toast";
 import { PageHeader } from "../../components/PageHeader";
@@ -20,8 +21,8 @@ import {
   hubDirectoryListResetKey,
   HubDirectoryBulkActionBar,
   useHubDirectorySelection,
+  directoryTableSortReducer,
   useDirectoryBandSync,
-  useDirectoryTableSort,
   useHubTablePageSize,
   useDebouncedValue,
 } from "@tool-workspace/hub-ui";
@@ -59,8 +60,12 @@ import {
   twofaUpdateToast,
 } from "./twofa-toast-messages";
 import { readTwofaTableColumns, type TwofaTableColumnKey } from "./twofa-table-prefs";
-import { sortableTwofaValue } from "./twofa-sort";
+import { sortTwofaAccounts } from "./twofa-sort";
 import { useNotesAuth } from "../notes/AuthSessionProvider";
+import { filterTwofaVaultScope } from "./twofa-vault-scope";
+import { twofaVaultScopeFromView, twofaVaultUiCopy } from "./twofa-vault-config";
+import { useTwofaVaultView } from "./useTwofaVaultView";
+import { buildTwofaMailServiceUsageIndex } from "./twofa-mail-service-usage";
 
 function visibleSet(set: Set<string> | null, defaults: Set<string>) {
   return set ?? defaults;
@@ -119,6 +124,18 @@ function TwofaManagerScreenBody({
     ackFullSyncNotice,
   } = useTwofaAccounts({ tabActive });
   const { pushToast } = useAppToast();
+  const vaultView = useTwofaVaultView();
+  const vaultScope = twofaVaultScopeFromView(vaultView);
+  const vaultCopy = twofaVaultUiCopy(vaultScope);
+
+  const scopedAccounts = useMemo(
+    () => filterTwofaVaultScope(accounts, vaultScope),
+    [accounts, vaultScope],
+  );
+  const mailServiceUsage = useMemo(
+    () => (vaultScope === "mail" ? buildTwofaMailServiceUsageIndex(accounts) : null),
+    [accounts, vaultScope],
+  );
 
   useEffect(() => {
     if (!fullSyncNotice) return;
@@ -132,6 +149,7 @@ function TwofaManagerScreenBody({
     query: wsQuery,
     filterValues,
     setFilters,
+    setFilterValues,
     setDirectoryKpis,
     setDirectoryCharts,
     setSectionRuleLabel,
@@ -172,15 +190,20 @@ function TwofaManagerScreenBody({
     setViewModeState(readTwofaViewMode());
   }), []);
 
-  const accountsForAnalytics = useDeferredValue(accounts);
-  const deferredQuery = useDeferredValue(query);
   const debouncedFilterQuery = useDebouncedValue(query, 150);
   const filterQuery =
-    accounts.length > TWOFA_LARGE_VAULT_THRESHOLD ? debouncedFilterQuery : query;
+    scopedAccounts.length > TWOFA_LARGE_VAULT_THRESHOLD ? debouncedFilterQuery : query;
   const twofaFilters = useMemo(
-    () => twofaFiltersWithCounts(accountsForAnalytics, deferredQuery, filterValues, period),
-    [accountsForAnalytics, deferredQuery, filterValues, period],
+    () => twofaFiltersWithCounts(scopedAccounts, filterQuery, filterValues, period, vaultScope),
+    [scopedAccounts, filterQuery, filterValues, period, vaultScope],
   );
+
+  useEffect(() => {
+    if (!filterValues.service?.length) return;
+    const next = { ...filterValues };
+    delete next.service;
+    setFilterValues(next);
+  }, [vaultScope]); // eslint-disable-line react-hooks/exhaustive-deps -- clear service facet when switching Mail/Services
 
   useEffect(() => {
     if (!shellMode) return;
@@ -190,14 +213,21 @@ function TwofaManagerScreenBody({
 
   // Live query for small vaults; 150ms debounce for large vaults (useDeferredValue never settled on ~6k rows).
   const displayedAccounts = useMemo(
-    () => filterTwofaAccounts(accounts, filterQuery, filterValues, period),
-    [accounts, filterQuery, filterValues, period],
+    () => filterTwofaAccounts(scopedAccounts, filterQuery, filterValues, period),
+    [scopedAccounts, filterQuery, filterValues, period],
   );
 
-  const { sortKey, sortDir, onSort, sorted: sortedDisplayedAccounts } = useDirectoryTableSort(
-    displayedAccounts,
-    "service" as TwofaTableColumnKey,
-    sortableTwofaValue,
+  const [{ sortKey, sortDir }, dispatchSort] = useReducer(
+    directoryTableSortReducer<TwofaTableColumnKey>,
+    { sortKey: "service" as TwofaTableColumnKey, sortDir: "asc" },
+  );
+  const onSort = useCallback((key: TwofaTableColumnKey) => {
+    dispatchSort(key);
+  }, []);
+
+  const sortedDisplayedAccounts = useMemo(
+    () => sortTwofaAccounts(displayedAccounts, sortKey, sortDir, mailServiceUsage),
+    [displayedAccounts, sortKey, sortDir, mailServiceUsage],
   );
 
   const directoryPageSize = useMemo(
@@ -216,8 +246,17 @@ function TwofaManagerScreenBody({
   } = useHubDirectorySelection(sortedDisplayedAccounts, (row) => row.id);
   const listResetKey = useMemo(
     () =>
-      hubDirectoryListResetKey(filterQuery, filterValues, period, Array.from(visibleColumns).join(","), sortKey, sortDir, viewMode),
-    [filterQuery, filterValues, period, visibleColumns, sortKey, sortDir, viewMode],
+      hubDirectoryListResetKey(
+        filterQuery,
+        filterValues,
+        period,
+        Array.from(visibleColumns).join(","),
+        sortKey,
+        sortDir,
+        viewMode,
+        vaultScope,
+      ),
+    [filterQuery, filterValues, period, visibleColumns, sortKey, sortDir, viewMode, vaultScope],
   );
 
   const closeModal = useCallback(() => {
@@ -226,9 +265,14 @@ function TwofaManagerScreenBody({
   }, []);
 
   const openAddModal = useCallback((draft?: Partial<TwofaDraft>) => {
-    setAddModal({ draft });
+    setAddModal({
+      draft: {
+        ...(vaultCopy.addDefaultService ? { service: vaultCopy.addDefaultService } : {}),
+        ...draft,
+      },
+    });
     setError(null);
-  }, []);
+  }, [vaultCopy.addDefaultService]);
 
   const openDetail = useCallback((row: TwofaAccount) => {
     setDetailId(row.id);
@@ -352,8 +396,8 @@ function TwofaManagerScreenBody({
   const visKpi = useResolvedVisibleKpiKeys(hubPrefs.kpi, DEFAULT_TWOFA_KPI_KEYS, TWOFA_KPI_DEFS);
   const visCharts = visibleSet(hubPrefs.charts, DEFAULT_TWOFA_CHART_KEYS);
   const twofaKpis = useMemo(
-    () => (analyticsActive ? buildTwofaKpis(accounts, displayedAccounts, visKpi) : []),
-    [accounts, analyticsActive, displayedAccounts, visKpi],
+    () => (analyticsActive ? buildTwofaKpis(scopedAccounts, displayedAccounts, visKpi) : []),
+    [scopedAccounts, analyticsActive, displayedAccounts, visKpi],
   );
   const twofaChartData = useMemo(
     () => (analyticsActive ? buildTwofaChartItems(displayedAccounts) : null),
@@ -396,7 +440,7 @@ function TwofaManagerScreenBody({
     {
       kpis: twofaKpis.length > 0 ? twofaKpis : undefined,
       charts: chartsBand ?? null,
-      sectionRuleLabel: "Accounts",
+      sectionRuleLabel: vaultCopy.sectionRuleLabel,
       kpiKey: kpiSig,
       chartsKey: chartsDepKey,
     },
@@ -405,10 +449,14 @@ function TwofaManagerScreenBody({
   );
 
   useEffect(() => {
-    if (detailId && !accounts.some((row) => row.id === detailId)) {
+    setSelectedIds(new Set());
+  }, [vaultScope, setSelectedIds]);
+
+  useEffect(() => {
+    if (detailId && !scopedAccounts.some((row) => row.id === detailId)) {
       setDetailId(null);
     }
-  }, [accounts, detailId]);
+  }, [scopedAccounts, detailId]);
 
   const detailAccount = useMemo(
     () => (detailId ? accounts.find((row) => row.id === detailId) ?? null : null),
@@ -490,15 +538,16 @@ function TwofaManagerScreenBody({
         onViewModeChange={setViewMode}
         countIcon={Shield}
         shown={displayedAccounts.length}
-        total={accounts.length}
-        countLabel="accounts"
+        total={scopedAccounts.length}
+        countLabel={vaultCopy.countLabel}
         showResultCount={viewMode === "card"}
       />
     ),
     [
-      accounts.length,
       displayedAccounts.length,
+      scopedAccounts.length,
       setViewMode,
+      vaultCopy.countLabel,
       viewMode,
     ],
   );
@@ -547,10 +596,10 @@ function TwofaManagerScreenBody({
   const directoryCenterStats = useMemo(
     () =>
       buildTwofaHeaderStats(visHeaderStats, {
-        total: accounts.length,
+        total: scopedAccounts.length,
         shown: displayedAccounts.length,
       }),
-    [accounts.length, displayedAccounts.length, visHeaderStats],
+    [scopedAccounts.length, displayedAccounts.length, visHeaderStats],
   );
 
   useP0020DirectoryChrome({
@@ -591,13 +640,13 @@ function TwofaManagerScreenBody({
             !addModalOpen ? (
               <div className="rounded-xl border border-dashed border-white/15 bg-white/[.02] px-6 py-10 text-center text-sm text-[var(--muted)]">
                 <Shield className="mx-auto mb-2 text-amber-300/80" size={28} />
-                {accounts.length === 0
-                  ? "No 2FA entries yet. Use Add to create one."
-                  : "No accounts match search or filters."}
+                {scopedAccounts.length === 0
+                  ? vaultCopy.emptyVault
+                  : vaultCopy.emptyFiltered}
               </div>
             ) : null
           }
-          cardGridAriaLabel="2FA account card pages"
+          cardGridAriaLabel={vaultCopy.cardGridAriaLabel}
           renderCard={(row) => (
             <TwofaAccountCard
               key={row.id}
@@ -625,6 +674,10 @@ function TwofaManagerScreenBody({
               onSort={onSort}
               resetKey={listResetKey}
               pageSize={directoryPageSize}
+              mailView={vaultScope === "mail"}
+              directoryContext={
+                mailServiceUsage ? { mailServiceUsage } : undefined
+              }
             />
           }
         />

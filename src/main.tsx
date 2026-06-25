@@ -9,6 +9,7 @@ import "./features/notes/AuthSessionProvider";
 
 initHubUserZoom();
 import { isPublicShareEntry, migratePublicShareUrl } from "./features/notes/shareUtils";
+import { isTwofaVaultPath } from "./lib/twofa-vault-path";
 import { prefetchDataBoxAuth } from "./lib/prefetch-data-box-auth";
 import { prefetchTwofaAuth } from "./lib/prefetch-twofa-auth";
 import { registerTabChunkServiceWorker } from "./lib/register-tab-chunk-sw";
@@ -26,6 +27,9 @@ if (typeof window !== "undefined" && isPublicShareEntry()) {
 } else {
   prefetchDataBoxAuth();
   prefetchTwofaAuth();
+  if (typeof window !== "undefined" && isTwofaVaultPath(window.location.pathname)) {
+    void import("./features/twofa/TwofaManagerScreen");
+  }
 }
 
 const rootEl = document.getElementById("root");

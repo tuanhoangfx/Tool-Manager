@@ -99,14 +99,16 @@ table.hub-users-table--twofa th.hub-users-col--twofa-period {
   text-align: center;
 }
 
-table.hub-users-table--twofa td.hub-users-col--twofa-secret {
-  max-height: none;
-  vertical-align: top;
+table.hub-users-table--twofa td.hub-users-col--twofa-secret,
+table.hub-users-table--twofa td.hub-users-col--twofa-code {
+  vertical-align: middle;
 }
 
-table.hub-users-table--twofa td.hub-users-col--twofa-code,
-table.hub-users-table--twofa td.hub-users-col--twofa-secret {
-  max-height: none;
+.hub-users-table--twofa td.hub-users-col--twofa-secret > div,
+.hub-users-table--twofa td.hub-users-col--twofa-code > div {
+  display: flex;
+  align-items: center;
+  min-height: var(--twofa-table-row-h, 2.25rem);
 }
 
 .hub-twofa-period-inline {
@@ -257,4 +259,64 @@ table.hub-users-table--cookie-routes .hub-directory-table-body-text {
 
 .hub-directory-rail-meta--compact {
   font-size: 10px;
+}
+
+/* Account vault — light brand tile is in twofa-platform-icon.css; pager stability below */
+.twofa-directory-table-host {
+  --twofa-table-row-h: 2.25rem;
+}
+
+table.hub-users-table--twofa tbody tr {
+  height: var(--twofa-table-row-h);
+  max-height: var(--twofa-table-row-h);
+  box-sizing: border-box;
+}
+
+table.hub-users-table--twofa tbody td {
+  height: var(--twofa-table-row-h);
+  max-height: var(--twofa-table-row-h);
+  box-sizing: border-box;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+table.hub-users-table--twofa td.hub-users-col--twofa-browser .hub-users-cell-muted,
+table.hub-users-table--twofa .twofa-browser-badge--empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 1.375rem;
+}
+
+table.hub-users-table--twofa .twofa-browser-badge--empty {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+.twofa-directory-paginated-shell .hub-table-page-label {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  min-width: 15.5rem;
+  text-align: center;
+}
+
+.twofa-directory-paginated-shell .hub-table-pager-group {
+  min-width: 17.5rem;
+  justify-content: center;
+}
+
+.twofa-directory-table-host .twofa-directory-paginated-shell .hub-users-table-wrap {
+  min-height: calc(
+    var(--hub-directory-head-row-h, 2.125rem) + var(--twofa-pager-rows, 25) * var(--twofa-table-row-h, 2.25rem)
+  );
+}
+
+.twofa-directory-table-host .twofa-directory-paginated-shell {
+  flex: 0 0 auto;
 }

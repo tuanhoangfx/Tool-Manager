@@ -30,7 +30,7 @@ export const SCREEN_LABELS: Record<WorkspaceScreen, string> = {
   edit: "Edit note",
   sheet: "Sheet",
   todo: "Todo",
-  twofa: "2FA",
+  twofa: "Account",
   cookie: "Cookie Bridge",
   system: "System",
   share: "Share",

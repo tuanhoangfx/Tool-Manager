@@ -10,7 +10,7 @@
   --twofa-adm-line: rgba(255, 255, 255, 0.1);
   --twofa-adm-panel: rgba(255, 255, 255, 0.03);
 
-  height: min(var(--hub-modal-max-h), var(--hub-modal-max-vh));
+  height: auto;
   max-height: min(var(--hub-modal-max-h), var(--hub-modal-max-vh));
 }
 
@@ -45,7 +45,7 @@
 
 .twofa-account-detail__body {
   display: flex;
-  flex: 1;
+  flex: 0 1 auto;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
@@ -56,10 +56,10 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--twofa-detail-log-w);
   gap: 0.65rem;
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   overflow: hidden;
-  align-items: stretch;
+  align-items: start;
 }
 
 .twofa-account-detail__rail {
@@ -72,13 +72,13 @@
 }
 
 .twofa-adm-rail--note {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
 }
 
 .twofa-adm-rail--log {
-  flex: 1;
-  min-height: 0;
+  flex: 0 1 auto;
+  min-height: 8rem;
+  max-height: min(16rem, 34vh);
 }
 
 .twofa-adm-rail__body--note {
@@ -91,11 +91,11 @@
 }
 
 .twofa-adm-note-textarea {
-  flex: 1;
+  flex: none;
   width: 100%;
-  min-height: 7rem;
-  height: 100%;
-  resize: none;
+  min-height: 5.5rem;
+  height: 5.5rem;
+  resize: vertical;
   line-height: 1.45;
   font-size: 11px;
 }
@@ -103,21 +103,21 @@
 .twofa-account-detail__panel {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   min-height: 0;
-  height: 100%;
+  height: auto;
 }
 
 .twofa-account-detail__panel .twofa-adm-panel__body {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
 }
 
 .twofa-account-detail__panel .twofa-adm-form-rows {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -273,8 +273,20 @@
   border-top: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
-.twofa-adm-meta-row.twofa-adm-form-row--3 .twofa-adm-inline-field {
-  display: contents;
+.twofa-adm-meta-row.twofa-adm-form-row--3.twofa-adm-form-row--aligned {
+  grid-template-columns:
+    var(--twofa-adm-label-w) minmax(0, 1fr)
+    var(--twofa-adm-label-w) minmax(0, 1fr)
+    var(--twofa-adm-label-w) minmax(0, 1fr);
+}
+
+.twofa-adm-meta-row .twofa-adm-inline-field__value,
+.twofa-adm-meta-row time,
+.twofa-adm-meta-row .hub-copy-badge {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .twofa-adm-log-list {

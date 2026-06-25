@@ -27,6 +27,7 @@ export const TWOFA_COLUMN_LABELS: Record<TwofaTableColumnKey, string> = {
   log: "Log",
   created: "Created",
   updated: "Last update",
+  linkedServices: "Services",
 };
 
 /** Hub table column roles — SSOT for directory + detail modal headers. */
@@ -45,6 +46,7 @@ export const TWOFA_COLUMN_META: Record<TwofaTableColumnKey, TwofaColumnMeta> = {
   log: { role: "notes" },
   created: { role: "created" },
   updated: { role: "activity" },
+  linkedServices: { role: "service" },
 };
 
 export const TWOFA_COLUMN_ROLE: Record<TwofaTableColumnKey, HubTableColumnRole> = Object.fromEntries(

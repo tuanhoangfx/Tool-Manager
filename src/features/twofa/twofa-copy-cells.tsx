@@ -1,6 +1,8 @@
 import { memo, useEffect, useMemo, useState, type ReactNode } from "react";
 import { HubCopyTickWrap, useHubCopyFlash } from "@tool-workspace/hub-ui";
 import type { TwofaAccount } from "./types";
+import type { TwofaMailServiceUsage } from "./twofa-mail-service-usage";
+import { formatTwofaMailServiceUsageTitle } from "./twofa-mail-service-usage";
 import { formatTwofaAccountStatus } from "./twofa-account-status";
 import { formatTwofaAccountOwnership } from "./twofa-account-ownership";
 import { latestTwofaLogEntry } from "./twofa-account-log";
@@ -67,7 +69,13 @@ function TwofaCopyControl({
 
 export function TwofaBrowserCell({ account }: { account: TwofaAccount }) {
   const value = account.browser?.trim();
-  if (!value) return <span className="hub-users-cell-muted">—</span>;
+  if (!value) {
+    return (
+      <span className="twofa-browser-badge twofa-browser-badge--empty hub-users-cell-muted" aria-hidden>
+        —
+      </span>
+    );
+  }
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
@@ -127,6 +135,20 @@ export function TwofaOwnershipCell({ account }: { account: TwofaAccount }) {
   return (
     <span className="line-clamp-1" title={label}>
       {label}
+    </span>
+  );
+}
+
+export function TwofaLinkedServicesCell({ usage }: { usage: TwofaMailServiceUsage }) {
+  if (usage.serviceCount === 0) {
+    return <span className="hub-users-cell-muted tabular-nums">0</span>;
+  }
+  return (
+    <span
+      className="tabular-nums font-medium text-[var(--text)]"
+      title={formatTwofaMailServiceUsageTitle(usage)}
+    >
+      {usage.serviceCount}
     </span>
   );
 }

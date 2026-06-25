@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import "../twofa/twofa-platform-icon.css";
 import type { HubDirectoryToolbarSelectionProps, HubViewMode } from "@tool-workspace/hub-ui";
 import type { KpiTileData, TabHeaderStatItem } from "../../components/sales-shell";
 import type { FilterDef, FilterValues } from "../../components/sales-shell";
@@ -44,6 +45,7 @@ export function WorkspaceShellTabFrame({
   return (
     <div
       hidden={!active}
+      data-hub-screen={screen}
       className={active ? "flex min-h-0 min-w-0 flex-1 flex-col" : "hidden"}
       aria-hidden={!active}
     >

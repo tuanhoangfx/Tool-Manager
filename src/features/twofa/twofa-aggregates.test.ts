@@ -23,7 +23,7 @@ describe("buildTwofaChartItems", () => {
     const gmail = charts.serviceItems.find((item) => item.label === "Gmail");
     const chatgpt = charts.serviceItems.find((item) => item.label === "ChatGPT");
     expect(gmail?.iconSrc).toContain("google");
-    expect(chatgpt?.iconSrc).toContain("openai");
+    expect(chatgpt?.iconSrc).toBe("/assets/brand-icons/chatgpt.png");
   });
 
   it("orders usage buckets with icons", () => {

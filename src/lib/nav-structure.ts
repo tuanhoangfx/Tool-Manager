@@ -1,17 +1,34 @@
-import type { NavIconTone, NavScreenNavItem } from "@tool-workspace/hub-ui";
-import { ClipboardList, Cookie, FileText, KeyRound, Settings2, Table2 } from "lucide-react";
+import type { NavStructureEntry } from "@tool-workspace/hub-ui";
+import { ClipboardList, Cookie, FileText, KeyRound, Mail, Settings2, Shield, Table2 } from "lucide-react";
+import type { TwofaVaultView } from "./twofa-vault-path";
 import type { WorkspaceNavScreen } from "./workspace-screen";
 
 export const NAV_SUBNAV_PREFIX = "p0020";
 
-/** Flat workspace nav — extend with NavViewGroupConfig when sub-views are added. */
-export const NAV_STRUCTURE: NavScreenNavItem<WorkspaceNavScreen>[] = [
-  { kind: "screen", screen: "notes", label: "Notes", icon: FileText, iconTone: "indigo" },
-  { kind: "screen", screen: "sheet", label: "Sheet", icon: Table2, iconTone: "cyan" },
-  { kind: "screen", screen: "todo", label: "Todo", icon: ClipboardList, iconTone: "amber" },
-  { kind: "screen", screen: "twofa", label: "2FA", icon: KeyRound, iconTone: "amber" },
-  { kind: "screen", screen: "cookie", label: "Cookie Bridge", icon: Cookie, iconTone: "rose" },
-  { kind: "screen", screen: "system", label: "System", icon: Settings2, iconTone: "cyan" },
-];
+export const NAV_GROUP_IDS = ["account-vault"] as const;
 
-export type WorkspaceNavItem = (typeof NAV_STRUCTURE)[number] & { iconTone: NavIconTone };
+/** Flat workspace nav — Account Vault group: Services + Mail (shared 2FA vault). */
+export const NAV_STRUCTURE: NavStructureEntry<WorkspaceNavScreen, (typeof NAV_GROUP_IDS)[number], TwofaVaultView>[] =
+  [
+    { kind: "screen", screen: "notes", label: "Notes", icon: FileText, iconTone: "indigo" },
+    { kind: "screen", screen: "sheet", label: "Sheet", icon: Table2, iconTone: "cyan" },
+    { kind: "screen", screen: "todo", label: "Todo", icon: ClipboardList, iconTone: "amber" },
+    {
+      kind: "group",
+      navMode: "view",
+      id: "account-vault",
+      label: "Account",
+      icon: Shield,
+      iconTone: "amber",
+      screen: "twofa",
+      defaultView: "services",
+      children: [
+        { view: "services", label: "Services", icon: KeyRound, iconTone: "amber" },
+        { view: "mail", label: "Mail", icon: Mail, iconTone: "sky" },
+      ],
+    },
+    { kind: "screen", screen: "cookie", label: "Cookie Bridge", icon: Cookie, iconTone: "rose" },
+    { kind: "screen", screen: "system", label: "System", icon: Settings2, iconTone: "cyan" },
+  ];
+
+export type WorkspaceNavItem = (typeof NAV_STRUCTURE)[number];

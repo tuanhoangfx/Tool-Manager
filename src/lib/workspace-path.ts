@@ -1,5 +1,6 @@
 import type { WorkspaceNavScreen, WorkspaceScreen } from "./workspace-screen";
 import { PUBLIC_SHARE_PATH } from "../features/notes/shareUtils";
+import { buildTwofaVaultUrl, isTwofaVaultPath, readTwofaVaultView } from "./twofa-vault-path";
 
 /** Path-first routes for P0020-Data-Box (e.g. /cookie). */
 export const NAV_SCREEN_PATH: Record<WorkspaceNavScreen, string> = {
@@ -29,10 +30,14 @@ export function isUsersLegacyPath(pathname: string): boolean {
 export function pathnameToNavScreen(pathname: string): WorkspaceNavScreen | null {
   const normalized = pathname.replace(/\/+$/, "") || "/";
   if (isUsersLegacyPath(normalized)) return null;
+  if (isTwofaVaultPath(normalized)) return "twofa";
   return PATH_TO_NAV_SCREEN.get(normalized) ?? null;
 }
 
 export function navScreenToPath(screen: WorkspaceNavScreen): string {
+  if (screen === "twofa" && typeof window !== "undefined") {
+    return buildTwofaVaultUrl(readTwofaVaultView());
+  }
   return NAV_SCREEN_PATH[screen];
 }
 
@@ -55,7 +60,14 @@ export function buildAppUrl(screen: WorkspaceScreen, search = ""): string {
     if (token) return `${PUBLIC_SHARE_PATH}?token=${encodeURIComponent(token)}`;
     return PUBLIC_SHARE_PATH;
   }
-  const base = screen === "edit" ? `/?screen=${encodeURIComponent(screen)}` : navScreenToPath(screen as WorkspaceNavScreen);
+  const base =
+    screen === "edit"
+      ? `/?screen=${encodeURIComponent(screen)}`
+      : screen === "twofa"
+        ? buildTwofaVaultUrl(
+            typeof window !== "undefined" ? readTwofaVaultView() : "services",
+          )
+        : navScreenToPath(screen as WorkspaceNavScreen);
   if (!search) return base;
   const q = screen === "edit" ? parseSearch(search).toString() : searchWithoutNavScreen(search);
   return q ? `${base}?${q}` : base;

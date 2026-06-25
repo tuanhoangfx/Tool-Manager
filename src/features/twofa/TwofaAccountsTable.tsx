@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import {
   HubDirectoryTableShell,
   buildDirectoryColgroup,
@@ -7,6 +7,7 @@ import {
   type HubTableColumnRole,
 } from "@tool-workspace/hub-ui";
 import { renderTwofaAccountsDirectoryBodyCell } from "./twofa-accounts-directory-cells";
+import type { TwofaDirectoryRenderContext } from "./twofa-accounts-directory-cells";
 import "./twofa-platform-icon.css";
 import "./twofa-table-cells.css";
 import type { TwofaAccount } from "./types";
@@ -28,6 +29,7 @@ const COLUMNS: ColumnDef[] = [
   { key: "service", label: twofaColumnLabel("service"), colClass: "hub-users-col--twofa-service", role: TWOFA_COLUMN_ROLE.service, width: "12%", headerAlign: "start" },
   { key: "browser", label: twofaColumnLabel("browser"), colClass: "hub-users-col--twofa-browser", role: TWOFA_COLUMN_ROLE.browser, width: "7%", headerAlign: "center" },
   { key: "account", label: twofaColumnLabel("account"), colClass: "hub-users-col--twofa-account", role: TWOFA_COLUMN_ROLE.account, width: "14%", headerAlign: "start" },
+  { key: "linkedServices", label: twofaColumnLabel("linkedServices"), colClass: "hub-users-col--twofa-linked-services", role: TWOFA_COLUMN_ROLE.linkedServices, width: "6rem", headerAlign: "center" },
   { key: "mailRecover", label: twofaColumnLabel("mailRecover"), colClass: "hub-users-col--twofa-mail-recover", role: TWOFA_COLUMN_ROLE.mailRecover, width: "14%", headerAlign: "start" },
   { key: "status", label: twofaColumnLabel("status"), colClass: "hub-users-col--twofa-status", role: TWOFA_COLUMN_ROLE.status, width: "9rem", headerAlign: "start" },
   { key: "password", label: twofaColumnLabel("password"), colClass: "hub-users-col--twofa-password", role: TWOFA_COLUMN_ROLE.password, width: "10%", headerAlign: "start" },
@@ -41,6 +43,8 @@ const COLUMNS: ColumnDef[] = [
 ];
 
 const NON_SORTABLE_COLUMNS = new Set<ColumnKey>(["code", "period"]);
+
+const MAIL_VIEW_PROVIDER_LABEL = "Provider";
 
 /** Golden 2FA directory table — HubDirectoryTableShell only (no virtual bypass). */
 export function TwofaAccountsTable({
@@ -58,6 +62,8 @@ export function TwofaAccountsTable({
   onSort,
   resetKey,
   pageSize,
+  mailView = false,
+  directoryContext,
 }: {
   rows: TwofaAccount[];
   detailId: string | null;
@@ -73,11 +79,21 @@ export function TwofaAccountsTable({
   onSort: (key: ColumnKey) => void;
   resetKey?: string | number | boolean | null;
   pageSize?: number;
+  mailView?: boolean;
+  directoryContext?: TwofaDirectoryRenderContext;
 }) {
-  const visibleDefs = useMemo(
-    () => COLUMNS.filter((col) => visibleColumns.has(col.key)),
-    [visibleColumns],
-  );
+  const effectiveVisible = useMemo(() => {
+    if (!mailView) return visibleColumns;
+    return new Set<TwofaTableColumnKey>([...visibleColumns, "linkedServices"]);
+  }, [mailView, visibleColumns]);
+
+  const visibleDefs = useMemo(() => {
+    const defs = COLUMNS.filter((col) => effectiveVisible.has(col.key));
+    if (!mailView) return defs;
+    return defs.map((col) =>
+      col.key === "service" ? { ...col, label: MAIL_VIEW_PROVIDER_LABEL } : col,
+    );
+  }, [effectiveVisible, mailView]);
 
   const shellColumns = useMemo(
     () =>
@@ -99,11 +115,16 @@ export function TwofaAccountsTable({
   );
 
   return (
-    <HubDirectoryTableShell
-      items={rows}
-      resetKey={resetKey}
-      pageSize={pageSize}
-      ariaLabel="Account vault table pages"
+    <div
+      className="twofa-directory-table-host"
+      style={{ "--twofa-pager-rows": String(pageSize ?? 25) } as CSSProperties}
+    >
+      <HubDirectoryTableShell
+        items={rows}
+        resetKey={resetKey}
+        pageSize={pageSize}
+        paginatedShellClassName="twofa-directory-paginated-shell"
+        ariaLabel="Account vault table pages"
       wrapClassName="overflow-hidden"
       tableClassName={`${hubDirectoryTableClass("default")} hub-users-table--twofa`}
       colgroup={colgroup}
@@ -121,8 +142,11 @@ export function TwofaAccountsTable({
       emptyMessage="No accounts match search or filters."
       getRowClassName={(row) => (detailId === row.id ? " is-detail" : "")}
       renderRowCells={(row) =>
-        shellColumns.map((col) => renderTwofaAccountsDirectoryBodyCell(col, row, onUsed))
+        shellColumns.map((col) =>
+          renderTwofaAccountsDirectoryBodyCell(col, row, onUsed, directoryContext),
+        )
       }
     />
+    </div>
   );
 }

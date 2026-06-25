@@ -34,10 +34,26 @@ describe("filterTwofaAccounts", () => {
 
 describe("buildTwofaServiceFilterOptions", () => {
   it("includes brand iconSrc for known platforms", () => {
-    const options = buildTwofaServiceFilterOptions([row("Gmail"), row("ChatGPT")]);
+    const options = buildTwofaServiceFilterOptions([row("Gmail"), row("ChatGPT")], "services");
     const gmail = options.find((opt) => opt.value === "Gmail");
     const chatgpt = options.find((opt) => opt.value === "ChatGPT");
-    expect(gmail?.iconSrc).toContain("google");
-    expect(chatgpt?.iconSrc).toContain("openai");
+    expect(gmail).toBeUndefined();
+    expect(chatgpt?.iconSrc).toBe("/assets/brand-icons/chatgpt.png");
+  });
+
+  it("omits mailbox providers on Services scope", () => {
+    const options = buildTwofaServiceFilterOptions(
+      [row("Gmail"), row("Outlook"), row("CapCut")],
+      "services",
+    );
+    expect(options.map((o) => o.value)).toEqual(["CapCut"]);
+  });
+
+  it("lists only mailbox providers on Mail scope", () => {
+    const options = buildTwofaServiceFilterOptions(
+      [row("Gmail"), row("CapCut"), row("Outlook")],
+      "mail",
+    );
+    expect(options.map((o) => o.value).sort()).toEqual(["Gmail", "Outlook"]);
   });
 });

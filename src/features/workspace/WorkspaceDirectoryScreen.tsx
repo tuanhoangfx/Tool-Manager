@@ -9,6 +9,7 @@ import { hubTabHeaderChromeProps } from "../../lib/hub-tab-header-chrome";
 import { screenChromeConfig } from "./workspace-screen-meta";
 import { workspaceVersionLine } from "./workspace-tab-header-meta";
 import { WorkspaceHeaderActions } from "./WorkspaceHeaderActions";
+import { useTwofaVaultView } from "../twofa/useTwofaVaultView";
 
 type Props = {
   screen: WorkspaceScreen;
@@ -52,7 +53,11 @@ export function WorkspaceDirectoryScreen({
   bodyFlex = false,
   children,
 }: Props) {
-  const cfg = useMemo(() => screenChromeConfig(screen), [screen]);
+  const twofaVaultView = useTwofaVaultView();
+  const cfg = useMemo(
+    () => screenChromeConfig(screen, screen === "twofa" ? twofaVaultView : null),
+    [screen, twofaVaultView],
+  );
   const version = useMemo(() => workspaceVersionLine(), []);
   const chromePrefs = useHubChromePrefs();
   const headerChrome = hubTabHeaderChromeProps(cfg.showSearch, chromePrefs);

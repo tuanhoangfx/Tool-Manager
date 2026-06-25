@@ -14,6 +14,13 @@ type PlatformIconEntry = {
 
 const ENTRIES = registry as PlatformIconEntry[];
 
+const MATCHERS = ENTRIES.map((entry) => ({
+  entry,
+  re: new RegExp(entry.match, "i"),
+}));
+
+const iconCache = new Map<string, TwofaPlatformIcon | null>();
+
 export type TwofaPlatformIcon = {
   label: string;
   src: string;
@@ -27,7 +34,15 @@ function iconSrc(source: IconSource): string {
 export function resolveTwofaPlatformIcon(service: string): TwofaPlatformIcon | null {
   const key = service.trim().toLowerCase();
   if (!key) return null;
-  const hit = ENTRIES.find((item) => new RegExp(item.match, "i").test(key));
-  if (!hit) return null;
-  return { label: hit.label, src: iconSrc(hit.source) };
+  const cached = iconCache.get(key);
+  if (cached !== undefined) return cached;
+  const hit = MATCHERS.find((item) => item.re.test(key))?.entry;
+  const resolved = hit ? { label: hit.label, src: iconSrc(hit.source) } : null;
+  iconCache.set(key, resolved);
+  return resolved;
+}
+
+/** @internal test helper */
+export function clearTwofaPlatformIconCache(): void {
+  iconCache.clear();
 }

@@ -14,6 +14,11 @@ import {
   searchWithoutNavScreen,
 } from "../../lib/workspace-path";
 import {
+  buildTwofaVaultUrl,
+  migrateTwofaVaultUrl,
+  readTwofaVaultView,
+} from "../../lib/twofa-vault-path";
+import {
   canonicalPublicSharePath,
   isPublicShareEntry,
   migratePublicShareUrl,
@@ -65,6 +70,11 @@ export function readWorkspaceScreenFromLocation(): WorkspaceScreen {
 
 function migrateUrl(): WorkspaceScreen {
   if (migratePublicShareUrl()) return "share";
+
+  const twofaMigrate = migrateTwofaVaultUrl();
+  if (twofaMigrate) {
+    window.history.replaceState(null, "", twofaMigrate);
+  }
 
   const p = new URLSearchParams(window.location.search);
   const raw = p.get("screen");
@@ -165,9 +175,14 @@ export function useHubNavigation() {
       if (next !== "cookie") p.delete("view");
 
       const qs = searchWithoutNavScreen(p.toString());
-      const path = qs
-        ? `${navScreenToPath(next as WorkspaceNavScreen)}?${qs}`
-        : navScreenToPath(next as WorkspaceNavScreen);
+      const path =
+        next === "twofa"
+          ? qs
+            ? `${buildTwofaVaultUrl(readTwofaVaultView())}?${qs}`
+            : buildTwofaVaultUrl(readTwofaVaultView())
+          : qs
+            ? `${navScreenToPath(next as WorkspaceNavScreen)}?${qs}`
+            : navScreenToPath(next as WorkspaceNavScreen);
 
       if (opts?.replace) window.history.replaceState({ screen: next }, "", path);
       else window.history.pushState({ screen: next }, "", path);

@@ -44,6 +44,8 @@
   align-items: center;
   justify-content: center;
   min-width: 2.5rem;
+  max-height: 1.375rem;
+  box-sizing: border-box;
   border-radius: 9999px;
   border: 1px solid rgba(34, 211, 238, 0.35);
   background: rgba(34, 211, 238, 0.12);
@@ -79,9 +81,9 @@
 
 .twofa-copy-control--secret {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 10px;
-  font-weight: 500;
-  line-height: 1.35;
+  font-size: var(--hub-table-body-size, 12px);
+  font-weight: 400;
+  line-height: var(--hub-table-body-line-height, 1.45);
   color: color-mix(in srgb, #c4b5fd 78%, var(--text));
   letter-spacing: 0.04em;
 }
@@ -102,8 +104,30 @@
 
 .hub-users-table--twofa td.hub-users-col--twofa-note,
 .hub-users-table--twofa td.hub-users-col--twofa-log,
-.hub-users-table--twofa td.hub-users-col--twofa-mail-recover {
+.hub-users-table--twofa td.hub-users-col--twofa-mail-recover,
+.hub-users-table--twofa td.hub-users-col--twofa-created,
+.hub-users-table--twofa td.hub-users-col--twofa-updated {
   max-width: 0;
+}
+
+.hub-users-table--twofa td.hub-users-col--twofa-created,
+.hub-users-table--twofa td.hub-users-col--twofa-updated {
+  white-space: nowrap;
+}
+
+.hub-users-table--twofa td.hub-users-col--twofa-created .hub-users-status,
+.hub-users-table--twofa td.hub-users-col--twofa-updated .hub-users-status {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--hub-table-body-size, 12px);
+  font-weight: 400;
+  line-height: var(--hub-table-body-line-height, 1.45);
+  color: var(--text);
+  text-transform: none;
 }
 
 .twofa-code-badge {
