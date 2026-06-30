@@ -12,6 +12,7 @@ import {
   filterSheetPendingDeletes,
   isSheetPendingDelete,
 } from "./sheet-sync-pending";
+import { filterLegacyPurgedSheetSources } from "./sheet-legacy-purge";
 
 type SheetSourceRow = {
   id: string;
@@ -99,15 +100,24 @@ function mergeTwoSources(a: SheetSource, b: SheetSource): SheetSource {
 /** Merge local + remote rows by doc+gid dedupe key. */
 export function mergeSheetSourcesLocalRemote(local: SheetSource[], remote: SheetSource[]): SheetSource[] {
   const byKey = new Map<string, SheetSource>();
+  const remoteKeys = new Set<string>();
   for (const row of filterSheetPendingDeletes(remote)) {
-    byKey.set(sheetSourceDedupeKey(row), row);
+    const key = sheetSourceDedupeKey(row);
+    remoteKeys.add(key);
+    byKey.set(key, row);
   }
   for (const row of filterSheetPendingDeletes(local)) {
     const key = sheetSourceDedupeKey(row);
     const prev = byKey.get(key);
-    byKey.set(key, prev ? mergeTwoSources(prev, row) : row);
+    if (prev) {
+      byKey.set(key, mergeTwoSources(prev, row));
+      continue;
+    }
+    // Cloud uuid missing on remote → deleted elsewhere; do not resurrect via boot sync.
+    if (isUuid(row.id) && !remoteKeys.has(key)) continue;
+    byKey.set(key, row);
   }
-  return dedupeSheetSources([...byKey.values()]);
+  return filterLegacyPurgedSheetSources(filterSheetPendingDeletes(dedupeSheetSources([...byKey.values()])));
 }
 
 function isSheetSourcesTableMissing(message: string): boolean {
@@ -204,7 +214,7 @@ export async function syncSheetSourcesWithCloud(
     next.push(synced);
   }
 
-  const result = filterSheetPendingDeletes(dedupeSheetSources(next));
+  const result = filterLegacyPurgedSheetSources(filterSheetPendingDeletes(dedupeSheetSources(next)));
   saveSheetSources(result);
   return result;
 }
@@ -236,7 +246,7 @@ export async function reconcileSheetSourcesFromCloud(userId: string): Promise<Sh
 
   const local = loadSheetSources();
   const remote = await purgeRemoteTombstonedSheetSources(userId, await fetchRemoteSheetSources(userId));
-  const result = filterSheetPendingDeletes(reconcileSheetSourceLists(local, remote));
+  const result = filterLegacyPurgedSheetSources(filterSheetPendingDeletes(reconcileSheetSourceLists(local, remote)));
   saveSheetSources(result);
   return result;
 }

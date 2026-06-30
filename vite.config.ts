@@ -4,6 +4,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 // @ts-expect-error shared chunk helper (JS module)
 import { createHubManualChunks } from "./scripts/vite-hub-chunks.mjs";
+// @ts-expect-error dev-only local API
+import { quotaProbeApiPlugin } from "./scripts/vite-quota-probe-api-plugin.mjs";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const hubUiSrc = path.resolve(rootDir, "vendor/hub-ui/src");
@@ -19,7 +21,7 @@ export default defineConfig(({ command }) => ({
           ),
         }
       : undefined,
-  plugins: [react()],
+  plugins: [react(), ...(command === "serve" ? [quotaProbeApiPlugin()] : [])],
   build: {
     rollupOptions: {
       output: {
@@ -52,6 +54,36 @@ export default defineConfig(({ command }) => ({
     open: false,
     fs: {
       allow: [rootDir, hubUiSrc, hubIdentitySrc, devRoot],
+    },
+    proxy: {
+      "/api/quota-probe": {
+        target: "http://127.0.0.1:5198",
+        changeOrigin: true,
+      },
+      "/api/quota-cockpit-sync": {
+        target: "http://127.0.0.1:5198",
+        changeOrigin: true,
+      },
+      "/api/quota-cockpit-import": {
+        target: "http://127.0.0.1:5198",
+        changeOrigin: true,
+      },
+      "/api/quota-stealth-open": {
+        target: "http://127.0.0.1:5198",
+        changeOrigin: true,
+      },
+      "/api/quota-stealth-enroll": {
+        target: "http://127.0.0.1:5198",
+        changeOrigin: true,
+      },
+      "/api/quota-oauth/cursor": {
+        target: "http://127.0.0.1:5198",
+        changeOrigin: true,
+      },
+      "/api/quota-oauth/gemini": {
+        target: "http://127.0.0.1:5198",
+        changeOrigin: true,
+      },
     },
   },
   resolve: {

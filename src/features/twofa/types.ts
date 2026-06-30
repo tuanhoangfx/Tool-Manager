@@ -1,5 +1,6 @@
 import type { TwofaAccountStatus } from "./twofa-account-status";
 import type { TwofaAccountOwnership } from "./twofa-account-ownership";
+import type { QuotaSnapshot } from "../quota/quota-types";
 
 export type { TwofaAccountStatus } from "./twofa-account-status";
 export type { TwofaAccountOwnership } from "./twofa-account-ownership";
@@ -51,6 +52,15 @@ export type TwofaAccount = {
   updatedAt: string;
   /** Set when a code is copied or the row is actively used (for time-range filters). */
   lastUsedAt?: string;
+  planPackage?: string;
+  planStatus?: string;
+  planTier?: string;
+  planExpiresAt?: string;
+  quotaSnapshot?: QuotaSnapshot | null;
+  quotaCheckedAt?: string;
+  quotaStatus?: string;
+  /** Set when row is enrolled on Quota tab (Cockpit sync, manual add, stealth test). */
+  quotaEnrolledAt?: string;
 };
 
 export type TwofaDraft = {

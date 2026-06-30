@@ -73,6 +73,15 @@ function WorkspaceAppInner() {
   }, [activeNav]);
 
   useEffect(() => {
+    if (!session) return;
+    setVisited((prev) => {
+      const next = new Set(prev);
+      for (const tab of NAV_SCREENS) next.add(tab);
+      return next;
+    });
+  }, [session]);
+
+  useEffect(() => {
     prefetchNotesListBackground();
     prefetchWorkspaceTab(activeNav);
   }, [activeNav]);
@@ -81,6 +90,7 @@ function WorkspaceAppInner() {
     if (!session) return;
     prefetchWorkspaceTabsBackground(session);
     prefetchAllWorkspaceTabs();
+    prefetchWorkspaceTab("system");
   }, [session]);
 
   useEffect(() => {
@@ -107,10 +117,9 @@ function WorkspaceAppInner() {
       ? "hub-main hub-main--sheet flex-1 min-h-0 min-w-0 flex-col overflow-hidden"
       : "hub-main flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden";
 
-  const needsAuthGate = !session && !authLoading && !offline;
+  const needsAuthGate = !session && !authLoading;
   const authGateVariant = authVariantForNav(activeNav);
-  /** 2FA is local-first — do not block the tab on Data Box auth boot (deep link /twofa). */
-  const authBootBlocking = !session && authLoading && activeNav !== "twofa";
+  const authBootBlocking = !session && authLoading;
 
   return (
     <HubAppLogProvider
@@ -149,9 +158,7 @@ function WorkspaceAppInner() {
           </WorkspaceVisitedTabPanel>
 
           <WorkspaceVisitedTabPanel tabId="sheet" active={screen === "sheet"} visited={visited}>
-            <Suspense fallback={<WorkspaceLoadingView screen="sheet" enabled={screen === "sheet"} />}>
-              <SheetWorkspaceScreen tabActive={screen === "sheet"} />
-            </Suspense>
+            <SheetWorkspaceScreen tabActive={screen === "sheet"} />
           </WorkspaceVisitedTabPanel>
 
           <WorkspaceVisitedTabPanel tabId="twofa" active={screen === "twofa"} visited={visited}>

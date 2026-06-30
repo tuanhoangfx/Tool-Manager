@@ -1,0 +1,92 @@
+.quota-enroll-layout {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 1rem;
+  min-height: 16rem;
+}
+
+.quota-enroll-main {
+  min-width: 0;
+}
+
+.quota-stealth-profile-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.quota-stealth-profile-select {
+  display: block;
+  margin-top: 0.35rem;
+  width: 100%;
+  border-radius: 0.375rem;
+  border: 1px solid color-mix(in srgb, white 12%, transparent);
+  background: color-mix(in srgb, black 25%, transparent);
+  padding: 0.35rem 0.5rem;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.quota-enroll-desc {
+  margin: 0 0 0.75rem;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.quota-oauth-url-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quota-oauth-url-box {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.quota-oauth-url-box input {
+  flex: 1;
+  min-width: 0;
+  border-radius: 0.375rem;
+  border: 1px solid color-mix(in srgb, white 12%, transparent);
+  background: color-mix(in srgb, black 25%, transparent);
+  padding: 0.35rem 0.5rem;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.quota-oauth-hint {
+  margin: 0;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.quota-oauth-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.quota-oauth-error {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 11px;
+  color: #fda4af;
+}
+
+.quota-oauth-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .quota-enroll-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -33,7 +33,6 @@ export function notesFiltersWithCounts(
     key: d.key,
     label: d.label,
     options: opts[d.key as keyof typeof opts] ?? [],
-    showAllLabel: true,
   }));
 
   return enrichFilterDefs(

@@ -1,12 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import {
   HubDisplayPrefs,
-  HubSettingsExtras,
   type HubDisplayPrefsProps,
   type PrefItem,
 } from "@tool-workspace/hub-ui";
 import { readWorkspaceScreenFromLocation } from "../../features/hub/useHubNavigation";
-import { useOfflineMode } from "../../lib/offlineMode";
 import { patchHubListPrefs, readHubListPrefs, subscribeHubListPrefs } from "../../lib/url-prefs";
 
 export type { PrefItem };
@@ -41,7 +39,6 @@ export function DisplayPrefs({
   ...props
 }: DisplayPrefsProps) {
   const [, setTick] = useState(0);
-  const { offline, toggle: toggleOffline } = useOfflineMode();
   useEffect(() => subscribeHubListPrefs(() => setTick((n) => n + 1)), []);
 
   const toolExtras = displayExtras ?? generalExtras;
@@ -56,11 +53,7 @@ export function DisplayPrefs({
         if (typeof window === "undefined") return;
         window.dispatchEvent(new CustomEvent("hub-app-log", { detail: { scope, message } }));
       }}
-      displayExtras={
-        <HubSettingsExtras offline={offline} onOfflineToggle={toggleOffline} appModeExtras={appModeExtras}>
-          {toolExtras}
-        </HubSettingsExtras>
-      }
+      displayExtras={toolExtras}
       title="Settings"
     />
   );

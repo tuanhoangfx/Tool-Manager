@@ -1,0 +1,153 @@
+.quota-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.quota-screen__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.quota-screen__actions {
+  display: inline-flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.quota-screen__filters {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.quota-filter {
+  border: 1px solid var(--hub-border-subtle, rgba(148, 163, 184, 0.35));
+  background: transparent;
+  color: var(--hub-text-muted, #94a3b8);
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.quota-filter.is-active {
+  color: var(--hub-text, #e2e8f0);
+  border-color: color-mix(in srgb, var(--hub-accent-violet, #8b5cf6) 55%, transparent);
+  background: color-mix(in srgb, var(--hub-accent-violet, #8b5cf6) 12%, transparent);
+}
+
+.quota-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--hub-accent-violet, #8b5cf6) 45%, transparent);
+  background: color-mix(in srgb, var(--hub-accent-violet, #8b5cf6) 10%, transparent);
+  color: var(--hub-text, #e2e8f0);
+  border-radius: 0.45rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.quota-refresh-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.quota-spin {
+  animation: quota-spin 0.9s linear infinite;
+}
+
+@keyframes quota-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.quota-platform-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.quota-metric-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.quota-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+}
+
+.quota-bar__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+}
+
+.quota-metric-text {
+  font-size: 0.76rem;
+  color: var(--hub-text-muted, #94a3b8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quota-expiry--warn {
+  color: #fbbf24;
+}
+
+.quota-expiry--danger {
+  color: #f87171;
+}
+
+.quota-expiry--ok {
+  color: #86efac;
+}
+
+.quota-expiry--muted {
+  color: var(--hub-text-muted, #94a3b8);
+}
+
+.quota-status {
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.quota-status--ok {
+  color: #86efac;
+}
+
+.quota-status--error,
+.quota-status--no_credential {
+  color: #f87171;
+}
+
+.quota-status--unsupported {
+  color: #fbbf24;
+}
+
+.quota-checked-cell {
+  font-size: 0.74rem;
+  color: var(--hub-text-muted, #94a3b8);
+}
+
+.quota-screen__hint {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--hub-text-muted, #94a3b8);
+}
+
+.quota-screen__hint code {
+  font-size: 0.72rem;
+}

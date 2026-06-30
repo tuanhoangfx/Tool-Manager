@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { ClipboardList, Cookie, FileText, KeyRound, Mail, Settings2, Shield, Table2 } from "lucide-react";
+import { ClipboardList, Cookie, FileText, Gauge, KeyRound, Mail, Settings2, Shield, Table2 } from "lucide-react";
 import type { WorkspaceScreen } from "../../lib/workspace-screen";
 import type { TabHeaderMetaItem } from "../../components/sales-shell";
 import type { TwofaVaultView } from "../../lib/twofa-vault-path";
@@ -62,6 +62,18 @@ export function screenChromeConfig(
           titleIconClass: "text-sky-400",
           ariaLabel: "Mail vault header",
           searchPlaceholder: "Search mailbox, provider, or recover mail…",
+          showSearch: true,
+          filterParam: "afilt",
+          directoryBand: true,
+        };
+      }
+      if (twofaVaultView === "quota") {
+        return {
+          title: "Quota",
+          titleIcon: Gauge,
+          titleIconClass: "text-violet-400",
+          ariaLabel: "AI subscription quota header",
+          searchPlaceholder: "Search platform, account, or plan…",
           showSearch: true,
           filterParam: "afilt",
           directoryBand: true,

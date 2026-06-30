@@ -9,6 +9,15 @@
   justify-content: center;
 }
 
+.twofa-copy-control-wrap--code.hub-copy-tick-wrap {
+  max-width: none;
+  overflow: visible;
+}
+
+.twofa-copy-control-wrap--value.hub-copy-tick-wrap {
+  overflow: visible;
+}
+
 .twofa-copy-control {
   display: inline-flex;
   max-width: 100%;
@@ -133,9 +142,19 @@
 .twofa-code-badge {
   cursor: pointer;
   border: none;
+  flex-shrink: 0;
   transition: filter 0.12s ease;
 }
 
 .twofa-code-badge:hover {
   filter: brightness(1.06);
+}
+
+.hub-users-table--twofa td.hub-users-col--twofa-code,
+.hub-users-table--twofa td.hub-users-col--twofa-code > div,
+.hub-users-table--twofa td.hub-users-col--twofa-password,
+.hub-users-table--twofa td.hub-users-col--twofa-password > div,
+.hub-users-table--twofa td.hub-users-col--twofa-secret,
+.hub-users-table--twofa td.hub-users-col--twofa-secret > div {
+  overflow: visible;
 }

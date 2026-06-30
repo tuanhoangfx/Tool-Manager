@@ -153,6 +153,34 @@ body,
   pointer-events: auto;
 }
 
+.hub-main--sheet .sheet-panel .sheet-grid-shell--switching {
+  position: relative;
+}
+
+.hub-main--sheet .sheet-panel .sheet-grid-switch-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(10, 14, 31, 0.12), rgba(10, 14, 31, 0.18));
+  backdrop-filter: blur(1.5px);
+}
+
+.hub-main--sheet .sheet-panel .sheet-grid-switch-overlay__pulse {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 35%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.05) 65%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-100%);
+  animation: sheet-grid-switch-pulse 520ms ease;
+}
+
 .hub-main--sheet .sheet-panel .sheet-grid-loading {
   animation: sheet-grid-fade-in 160ms ease;
 }
@@ -163,6 +191,15 @@ body,
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes sheet-grid-switch-pulse {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
   }
 }
 

@@ -11,11 +11,14 @@
     "src/features/twofa/TwofaManagerScreen.tsx",
     "src/features/cookie/CookieSyncScreen.tsx",
     "src/features/system/SystemDesignTemplateScreen.tsx",
+    "src/features/sheet/SheetWorkspaceShell.tsx",
+    "src/features/quota/TwofaQuotaManagerScreen.tsx",
+    "src/embed/todo-screen-root.tsx",
     "src/lib/workspace-tab-prefetch.ts",
     "src/lib/workspace-tab-load-contract.ts"
   ],
   "project": ["src/**/*.{ts,tsx}"],
-  "ignore": ["src/**/*.test.ts", "vendor/**"],
+  "ignore": ["src/**/*.test.ts", "vendor/**", "src/features/quota/quota-oauth-api.ts"],
   "ignoreBinaries": ["powershell", "supabase", "vercel", "pm2"],
   "ignoreDependencies": [
     "autoprefixer",
@@ -27,7 +30,8 @@
     "@dev/hub-identity",
     "@tool-workspace/hub-identity",
     "@tool-workspace/hub-ui",
-    "zod"
+    "zod",
+    "xlsx"
   ],
   "ignoreExportsUsedInFile": true,
   "exclude": ["exports", "types", "enumMembers", "duplicates"]

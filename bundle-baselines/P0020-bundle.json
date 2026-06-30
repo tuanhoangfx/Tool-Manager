@@ -1,29 +1,21 @@
 {
   "code": "P0020",
-  "generatedAt": "2026-06-09T10:17:50.589Z",
+  "generatedAt": "2026-06-30T04:38:38.739Z",
   "totals": {
-    "jsChunks": 31,
-    "cssChunks": 5,
-    "jsGzipKb": 480.8,
-    "cssGzipKb": 36.3,
-    "allGzipKb": 517.1
+    "jsChunks": 22,
+    "cssChunks": 6,
+    "jsGzipKb": 437.1,
+    "cssGzipKb": 52.1,
+    "allGzipKb": 489.2
   },
   "chunks": [
     {
-      "name": "vendor-xlsx-CNerDvZX.js",
+      "name": "index-mpmE3qJt.js",
       "type": "js",
-      "bytes": 429191,
-      "gzipBytes": 142940,
-      "gzipKb": 139.6,
-      "kb": 419.1
-    },
-    {
-      "name": "index-Cfkj56Z6.js",
-      "type": "js",
-      "bytes": 287770,
-      "gzipBytes": 89677,
-      "gzipKb": 87.6,
-      "kb": 281
+      "bytes": 373068,
+      "gzipBytes": 117732,
+      "gzipKb": 115,
+      "kb": 364.3
     },
     {
       "name": "vendor-react-gcHzaSmV.js",
@@ -34,52 +26,76 @@
       "kb": 188
     },
     {
-      "name": "vendor-supabase-Bfd5Thr0.js",
+      "name": "vendor-hub-ui-PyVMyt9T.js",
       "type": "js",
-      "bytes": 208031,
-      "gzipBytes": 54148,
+      "bytes": 213851,
+      "gzipBytes": 59031,
+      "gzipKb": 57.6,
+      "kb": 208.8
+    },
+    {
+      "name": "vendor-supabase-xZfB-GIF.js",
+      "type": "js",
+      "bytes": 208071,
+      "gzipBytes": 54171,
       "gzipKb": 52.9,
       "kb": 203.2
     },
     {
-      "name": "index-t1rk_qgE.css",
+      "name": "index-BSbKE6R_.css",
       "type": "css",
-      "bytes": 202940,
-      "gzipBytes": 34929,
-      "gzipKb": 34.1,
-      "kb": 198.2
+      "bytes": 247432,
+      "gzipBytes": 41492,
+      "gzipKb": 40.5,
+      "kb": 241.6
     },
     {
-      "name": "vendor-hub-ui-Sa0J_QM7.js",
+      "name": "TodoScreen-B6-pnyWU.js",
       "type": "js",
-      "bytes": 121937,
-      "gzipBytes": 33680,
+      "bytes": 113331,
+      "gzipBytes": 33703,
       "gzipKb": 32.9,
-      "kb": 119.1
+      "kb": 110.7
     },
     {
-      "name": "TodoScreen-BDfY7Plp.js",
+      "name": "TwofaManagerScreen-CEmkgO9I.js",
       "type": "js",
-      "bytes": 84921,
-      "gzipBytes": 23912,
-      "gzipKb": 23.4,
-      "kb": 82.9
+      "bytes": 90123,
+      "gzipBytes": 26721,
+      "gzipKb": 26.1,
+      "kb": 88
     },
     {
-      "name": "TwofaManagerScreen-ClcZpwla.js",
+      "name": "CookieSyncScreen-BrnbqGsW.js",
       "type": "js",
-      "bytes": 47060,
-      "gzipBytes": 15323,
-      "gzipKb": 15,
+      "bytes": 55803,
+      "gzipBytes": 18097,
+      "gzipKb": 17.7,
+      "kb": 54.5
+    },
+    {
+      "name": "SheetWorkspaceGridPane-lE1vVckj.js",
+      "type": "js",
+      "bytes": 47118,
+      "gzipBytes": 16138,
+      "gzipKb": 15.8,
       "kb": 46
     },
     {
-      "name": "vendor-icons--aTgfMGy.js",
+      "name": "vendor-icons-CNa70ZVG.js",
       "type": "js",
-      "bytes": 35438,
-      "gzipBytes": 11736,
-      "gzipKb": 11.5,
-      "kb": 34.6
+      "bytes": 39012,
+      "gzipBytes": 12728,
+      "gzipKb": 12.4,
+      "kb": 38.1
+    },
+    {
+      "name": "vendor-hub-identity-BnabfyYF.js",
+      "type": "js",
+      "bytes": 29921,
+      "gzipBytes": 10274,
+      "gzipKb": 10,
+      "kb": 29.2
     },
     {
       "name": "vendor-otpauth-DD5lQWV6.js",
@@ -90,164 +106,132 @@
       "kb": 23.6
     },
     {
-      "name": "CookieSyncScreen-Boq5ZNn-.js",
+      "name": "TaskModal-DmYAwza5.js",
       "type": "js",
-      "bytes": 24030,
-      "gzipBytes": 8449,
-      "gzipKb": 8.3,
-      "kb": 23.5
+      "bytes": 23685,
+      "gzipBytes": 8099,
+      "gzipKb": 7.9,
+      "kb": 23.1
     },
     {
-      "name": "TaskModal-CoM5WVmA.js",
+      "name": "SystemDesignTemplateScreen-ZCbbAJBb.js",
       "type": "js",
-      "bytes": 19934,
-      "gzipBytes": 6358,
-      "gzipKb": 6.2,
-      "kb": 19.5
+      "bytes": 23269,
+      "gzipBytes": 6208,
+      "gzipKb": 6.1,
+      "kb": 22.7
     },
     {
-      "name": "TaskColumn-uRdg-N26.js",
-      "type": "js",
-      "bytes": 15168,
-      "gzipBytes": 4618,
-      "gzipKb": 4.5,
-      "kb": 14.8
-    },
-    {
-      "name": "EmployeeDashboard-a60OnOUm.js",
-      "type": "js",
-      "bytes": 12994,
-      "gzipBytes": 4467,
-      "gzipKb": 4.4,
-      "kb": 12.7
-    },
-    {
-      "name": "AccountModal-CPUN-nRN.js",
-      "type": "js",
-      "bytes": 7675,
-      "gzipBytes": 2729,
-      "gzipKb": 2.7,
-      "kb": 7.5
-    },
-    {
-      "name": "AdminTaskDashboard-8qKuEfFT.js",
-      "type": "js",
-      "bytes": 6613,
-      "gzipBytes": 2693,
-      "gzipKb": 2.6,
-      "kb": 6.5
-    },
-    {
-      "name": "NotificationsModal-Zo_BPGtQ.js",
-      "type": "js",
-      "bytes": 6423,
-      "gzipBytes": 2636,
-      "gzipKb": 2.6,
-      "kb": 6.3
-    },
-    {
-      "name": "ActivityLogModal-DcoHK-ex.js",
-      "type": "js",
-      "bytes": 5249,
-      "gzipBytes": 2219,
-      "gzipKb": 2.2,
-      "kb": 5.1
-    },
-    {
-      "name": "badge-registry-BYh5Mngr.js",
-      "type": "js",
-      "bytes": 8003,
-      "gzipBytes": 2194,
-      "gzipKb": 2.1,
-      "kb": 7.8
-    },
-    {
-      "name": "TaskDefaultsModal-CwqKpb4j.js",
-      "type": "js",
-      "bytes": 5008,
-      "gzipBytes": 1923,
-      "gzipKb": 1.9,
-      "kb": 4.9
-    },
-    {
-      "name": "CustomDatePicker-qk8dhW98.js",
-      "type": "js",
-      "bytes": 5003,
-      "gzipBytes": 1866,
-      "gzipKb": 1.8,
-      "kb": 4.9
-    },
-    {
-      "name": "vendor-hub-identity-Du_BOjr1.js",
-      "type": "js",
-      "bytes": 4198,
-      "gzipBytes": 1702,
-      "gzipKb": 1.7,
-      "kb": 4.1
-    },
-    {
-      "name": "UserGuide-CRDIqlrq.js",
-      "type": "js",
-      "bytes": 4658,
-      "gzipBytes": 1638,
-      "gzipKb": 1.6,
-      "kb": 4.5
-    },
-    {
-      "name": "MultiSelectEmployeeDropdown-BsnXPvPr.js",
-      "type": "js",
-      "bytes": 4115,
-      "gzipBytes": 1512,
-      "gzipKb": 1.5,
-      "kb": 4
-    },
-    {
-      "name": "SystemDesignTemplateScreen-7fnA1-Hn.js",
-      "type": "js",
-      "bytes": 3271,
-      "gzipBytes": 1261,
-      "gzipKb": 1.2,
-      "kb": 3.2
-    },
-    {
-      "name": "ActionModal-5F4r0Yiy.js",
-      "type": "js",
-      "bytes": 2183,
-      "gzipBytes": 1054,
-      "gzipKb": 1,
-      "kb": 2.1
-    },
-    {
-      "name": "useCachedSupabaseQuery-BYe36sN-.js",
-      "type": "js",
-      "bytes": 1849,
-      "gzipBytes": 987,
-      "gzipKb": 1,
-      "kb": 1.8
-    },
-    {
-      "name": "TwofaManagerScreen-CiSZ1l0o.css",
+      "name": "TwofaManagerScreen-7AM88xHF.css",
       "type": "css",
-      "bytes": 3042,
-      "gzipBytes": 955,
-      "gzipKb": 0.9,
+      "bytes": 24569,
+      "gzipBytes": 4495,
+      "gzipKb": 4.4,
+      "kb": 24
+    },
+    {
+      "name": "TodoScreen-Do6qy1hP.css",
+      "type": "css",
+      "bytes": 17339,
+      "gzipBytes": 3514,
+      "gzipKb": 3.4,
+      "kb": 16.9
+    },
+    {
+      "name": "NotificationsModal-BkabqHJ7.js",
+      "type": "js",
+      "bytes": 6311,
+      "gzipBytes": 2688,
+      "gzipKb": 2.6,
+      "kb": 6.2
+    },
+    {
+      "name": "AccountModal--JNxEk6s.js",
+      "type": "js",
+      "bytes": 6149,
+      "gzipBytes": 2416,
+      "gzipKb": 2.4,
+      "kb": 6
+    },
+    {
+      "name": "SystemDesignTemplateScreen-D262n7A3.css",
+      "type": "css",
+      "bytes": 11242,
+      "gzipBytes": 2375,
+      "gzipKb": 2.3,
+      "kb": 11
+    },
+    {
+      "name": "CalendarView-BJTewnuD.js",
+      "type": "js",
+      "bytes": 6043,
+      "gzipBytes": 2363,
+      "gzipKb": 2.3,
+      "kb": 5.9
+    },
+    {
+      "name": "vendor-hub-load-I119DprU.js",
+      "type": "js",
+      "bytes": 5040,
+      "gzipBytes": 2116,
+      "gzipKb": 2.1,
+      "kb": 4.9
+    },
+    {
+      "name": "UserGuide-C6t-OQwI.js",
+      "type": "js",
+      "bytes": 4460,
+      "gzipBytes": 1652,
+      "gzipKb": 1.6,
+      "kb": 4.4
+    },
+    {
+      "name": "sheet-csv-parse.worker-C3QrTZDl.js",
+      "type": "js",
+      "bytes": 3112,
+      "gzipBytes": 1289,
+      "gzipKb": 1.3,
       "kb": 3
     },
     {
-      "name": "vendor-hub-load-BXLU49dJ.js",
+      "name": "workspace-user-directory-CBRo7Jnz.js",
       "type": "js",
-      "bytes": 1805,
-      "gzipBytes": 853,
-      "gzipKb": 0.8,
-      "kb": 1.8
+      "bytes": 2911,
+      "gzipBytes": 1238,
+      "gzipKb": 1.2,
+      "kb": 2.8
     },
     {
-      "name": "StatusPrioritySelect-C0fOOVxD.js",
+      "name": "ActionModal-t7SS7Vtc.js",
       "type": "js",
-      "bytes": 1777,
-      "gzipBytes": 784,
+      "bytes": 1907,
+      "gzipBytes": 902,
+      "gzipKb": 0.9,
+      "kb": 1.9
+    },
+    {
+      "name": "vendor-hub-ui-D4GItOsz.css",
+      "type": "css",
+      "bytes": 2322,
+      "gzipBytes": 804,
       "gzipKb": 0.8,
+      "kb": 2.3
+    },
+    {
+      "name": "CookieSyncScreen-DobGqTol.css",
+      "type": "css",
+      "bytes": 1769,
+      "gzipBytes": 649,
+      "gzipKb": 0.6,
       "kb": 1.7
+    },
+    {
+      "name": "P0020DirectoryScreen-3faRFfWL.js",
+      "type": "js",
+      "bytes": 766,
+      "gzipBytes": 452,
+      "gzipKb": 0.4,
+      "kb": 0.7
     }
   ]
 }

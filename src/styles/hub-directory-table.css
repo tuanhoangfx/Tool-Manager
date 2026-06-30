@@ -25,10 +25,36 @@ table.hub-users-table .sheet-rail-sync-at {
   max-width: 100%;
 }
 
+table.hub-users-table--sheet .sheet-rail-select-btn {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+table.hub-users-table--sheet .sheet-rail-select-btn--title {
+  display: block;
+  text-align: left;
+}
+
+table.hub-users-table--sheet .sheet-rail-select-btn--meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+table.hub-users-table--sheet .hub-users-row {
+  cursor: pointer;
+}
+
 table.hub-users-table .hub-users-row.is-detail {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(99, 102, 241, 0.12);
+  box-shadow: inset 2px 0 0 rgba(129, 140, 248, 0.6);
 }
 
 table.hub-users-table .hub-users-row.is-detail:hover {
-  background: rgba(99, 102, 241, 0.14);
+  background: rgba(99, 102, 241, 0.16);
 }

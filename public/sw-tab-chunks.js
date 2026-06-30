@@ -2,9 +2,9 @@
  * index-* main bundle: network-first (deploy must show immediately).
  * feature-* lazy chunks: stale-while-revalidate.
  */
-const CACHE = "p0020-tab-chunks-v2";
+const CACHE = "p0020-tab-chunks-v3";
 const INDEX_RE = /\/assets\/index-[^/?#]*/i;
-const FEATURE_RE = /\/assets\/feature-(sheet|todo|twofa|cookie|system)[^/?#]*/i;
+const FEATURE_RE = /\/assets\/(feature-(sheet|todo|twofa|cookie|system)|SheetWorkspaceScreen)[^/?#]*/i;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(self.skipWaiting());

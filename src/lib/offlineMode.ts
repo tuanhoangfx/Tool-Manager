@@ -20,6 +20,15 @@ export function setOfflineMode(next: boolean) {
   }
 }
 
+export function clearOfflineModeStorage() {
+  try {
+    window.localStorage.removeItem(KEY);
+    window.dispatchEvent(new Event("p0020:offline-mode"));
+  } catch {
+    // ignore
+  }
+}
+
 export function useOfflineMode() {
   const [offline, setOffline] = useState(false);
 

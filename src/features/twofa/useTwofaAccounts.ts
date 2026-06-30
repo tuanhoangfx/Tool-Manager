@@ -42,6 +42,8 @@ import {
   TWOFA_VAULT_CHANNEL,
   twofaVaultStorageMatcher,
 } from "./twofa-vault-broadcast";
+import { applyQuotaProbeToAccount, applyCockpitImportToAccount } from "../quota/twofa-quota-patch";
+import { quotaEnrollmentIso } from "../quota/twofa-quota-enrolled";
 
 export type TwofaCloudSyncOpts = {
   /** Skip syncing badge — use for realtime refresh */
@@ -397,12 +399,20 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
   );
 
   const add = useCallback(
-    (draft: TwofaDraft): TwofaSaveResult => {
+    (draft: TwofaDraft, opts?: { enrollQuota?: boolean }): TwofaSaveResult => {
       const now = new Date().toISOString();
       const outcome = upsertTwofaDraft(accountsRef.current, draft, now);
       if (!outcome) return { ok: false };
-      applyAccounts(outcome.accounts);
-      void cloudUpsert(outcome.row);
+      let row = outcome.row;
+      if (opts?.enrollQuota) {
+        row = { ...row, quotaEnrolledAt: quotaEnrollmentIso(new Date(now)), updatedAt: now };
+      }
+      const accounts =
+        opts?.enrollQuota
+          ? outcome.accounts.map((a) => (a.id === row.id ? row : a))
+          : outcome.accounts;
+      applyAccounts(accounts);
+      void cloudUpsert(row);
       for (const removedId of outcome.removedIds) void cloudDelete(removedId);
       return { ok: true, replaced: outcome.replaced };
     },
@@ -471,6 +481,46 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
     [applyAccounts, cloudUpsert],
   );
 
+  const applyQuotaResults = useCallback(
+    (results: import("../quota/quota-types").QuotaProbeResult[]) => {
+      if (!results.length) return 0;
+      const now = new Date().toISOString();
+      const byId = new Map(results.map((r) => [r.id, r]));
+      let changed = 0;
+      const next = accountsRef.current.map((row) => {
+        const hit = byId.get(row.id);
+        if (!hit) return row;
+        changed += 1;
+        const updated = applyQuotaProbeToAccount(row, hit, now);
+        void cloudUpsert(updated);
+        return updated;
+      });
+      if (changed) applyAccounts(next);
+      return changed;
+    },
+    [applyAccounts, cloudUpsert],
+  );
+
+  const applyCockpitImport = useCallback(
+    (patches: import("../quota/quota-types").CockpitImportPatch[]) => {
+      if (!patches.length) return 0;
+      const now = new Date().toISOString();
+      const byId = new Map(patches.map((p) => [p.id, p]));
+      let changed = 0;
+      const next = accountsRef.current.map((row) => {
+        const hit = byId.get(row.id);
+        if (!hit) return row;
+        changed += 1;
+        const updated = applyCockpitImportToAccount(row, hit, now);
+        void cloudUpsert(updated);
+        return updated;
+      });
+      if (changed) applyAccounts(next);
+      return changed;
+    },
+    [applyAccounts, cloudUpsert],
+  );
+
   const previewDedupe = useCallback(async () => {
     return previewTwofaDedupeCombined(accountsRef.current);
   }, []);
@@ -506,6 +556,8 @@ export function useTwofaAccounts(opts?: { tabActive?: boolean }) {
     remove,
     touchLastUsed,
     bulkUpdateMeta,
+    applyQuotaResults,
+    applyCockpitImport,
     dedupeNow,
     previewDedupe,
     cloudState,

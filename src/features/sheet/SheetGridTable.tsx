@@ -16,26 +16,73 @@ import type { SheetGridData } from "./sheet-grid-types";
 import { resolveSheetGridHeaderRole } from "./sheet-grid-header-role";
 import { SheetGridCopyCell } from "./sheet-grid-copy-cell";
 import { SheetHighlightedText } from "./sheet-search-highlight";
+import { SHEET_GRID_ROW_HEIGHT, useSheetGridVirtualWindow } from "./useSheetGridVirtualWindow";
 
 export type { SheetGridData } from "./sheet-grid-types";
+
+type IndexedRow = { row: string[]; index: number };
+
+function renderSheetGridBodyRow({
+  row,
+  globalIndex,
+  visibleIndices,
+  wrap,
+  searchQuery,
+  onRowClick,
+  onRowDoubleClick,
+}: {
+  row: string[];
+  globalIndex: number;
+  visibleIndices: number[];
+  wrap: boolean;
+  searchQuery: string;
+  onRowClick?: (rowIndex: number) => void;
+  onRowDoubleClick?: (rowIndex: number) => void;
+}) {
+  const editable = Boolean(onRowDoubleClick || onRowClick);
+  return (
+    <tr
+      key={String(globalIndex)}
+      className={`hub-users-row hub-users-row--static sheet-grid-row${editable ? " sheet-grid-row--editable cursor-pointer" : ""}`}
+      onClick={onRowClick && globalIndex >= 0 ? () => onRowClick(globalIndex) : undefined}
+      onDoubleClick={onRowDoubleClick && globalIndex >= 0 ? () => onRowDoubleClick(globalIndex) : undefined}
+    >
+      {visibleIndices.map((c) => (
+        <DirectoryTableBodyCell key={String(c)} colClass="sheet-grid-td align-top">
+          <span className={wrap ? "sheet-grid-cell sheet-grid-cell--wrap" : "sheet-grid-cell truncate"}>
+            <SheetGridCopyCell value={row[c] ?? ""}>
+              <SheetHighlightedText text={row[c] ?? ""} query={searchQuery} />
+            </SheetGridCopyCell>
+          </span>
+        </DirectoryTableBodyCell>
+      ))}
+    </tr>
+  );
+}
 
 export function SheetGridTable({
   data,
   loading = false,
   refreshing = false,
+  switching = false,
   pageSize,
   prefs,
   searchQuery = "",
   onWidthsChange,
+  onRowClick,
+  onRowDoubleClick,
   resetKey,
 }: {
   data: SheetGridData | null;
   loading?: boolean;
   refreshing?: boolean;
+  switching?: boolean;
   pageSize: number;
   prefs: SheetGridColumnPrefs;
   searchQuery?: string;
   onWidthsChange: (widths: Record<string, number>) => void;
+  onRowClick?: (rowIndex: number) => void;
+  onRowDoubleClick?: (rowIndex: number) => void;
   resetKey: string;
 }) {
   const resizeRef = useRef<{ index: number; startX: number; startW: number; base: Record<string, number> } | null>(
@@ -177,6 +224,17 @@ export function SheetGridTable({
     };
   }, []);
 
+  const indexedRows = useMemo(
+    () => data?.rows.map((row, index) => ({ row, index })) ?? [],
+    [data?.rows],
+  );
+
+  const rowHeight = wrap ? SHEET_GRID_ROW_HEIGHT.wrap : SHEET_GRID_ROW_HEIGHT.truncate;
+  const { scrollRef, enabled: virtualEnabled, visible, padTop, padBottom } = useSheetGridVirtualWindow(
+    indexedRows,
+    rowHeight,
+  );
+
   if (!data) {
     if (loading) {
       return (
@@ -235,54 +293,104 @@ export function SheetGridTable({
     </tr>
   );
 
+  const renderBodyRows = (pageRows: readonly IndexedRow[]) => {
+    if (pageRows.length === 0) {
+      return (
+        <tr>
+          <td colSpan={visibleIndices.length || 1} className="px-3 py-8 text-center text-[12px] text-[var(--muted)]">
+            No rows match search or filters.
+          </td>
+        </tr>
+      );
+    }
+
+    if (virtualEnabled) {
+      const colSpan = visibleIndices.length || 1;
+      return (
+        <>
+          {padTop > 0 ? (
+            <tr aria-hidden className="sheet-grid-virtual-pad">
+              <td colSpan={colSpan} style={{ height: padTop, padding: 0, border: 0 }} />
+            </tr>
+          ) : null}
+          {visible.map(({ item: { row, index: globalIndex } }) =>
+            renderSheetGridBodyRow({
+              row,
+              globalIndex,
+              visibleIndices,
+              wrap,
+              searchQuery,
+              onRowClick,
+              onRowDoubleClick,
+            }),
+          )}
+          {padBottom > 0 ? (
+            <tr aria-hidden className="sheet-grid-virtual-pad">
+              <td colSpan={colSpan} style={{ height: padBottom, padding: 0, border: 0 }} />
+            </tr>
+          ) : null}
+        </>
+      );
+    }
+
+    return pageRows.map(({ row, index: globalIndex }) =>
+      renderSheetGridBodyRow({
+        row,
+        globalIndex,
+        visibleIndices,
+        wrap,
+        searchQuery,
+        onRowClick,
+        onRowDoubleClick,
+      }),
+    );
+  };
+
+  const tableContent = (pageRows: readonly IndexedRow[]) => (
+    <>
+      <DirectoryInlineTable
+        wrapClassName={wrapClassName}
+        tableClassName={tableClass}
+        showSelect={false}
+        colgroup={renderColgroup()}
+        headRow={headRow}
+        bodyRows={renderBodyRows(pageRows)}
+        emptyMessage="No rows match search or filters."
+        hasRows={pageRows.length > 0}
+      />
+      {switching ? (
+        <div className="sheet-grid-switch-overlay" aria-hidden>
+          <div className="sheet-grid-switch-overlay__pulse" />
+        </div>
+      ) : null}
+    </>
+  );
+
+  const shellClass = `sheet-grid-shell flex min-h-0 flex-1 flex-col${refreshing ? " sheet-grid-shell--refreshing" : ""}${switching ? " sheet-grid-shell--switching" : ""}`;
+
+  if (virtualEnabled) {
+    return (
+      <div className={shellClass}>
+        <div ref={scrollRef} className={`${wrapClassName} min-h-0 flex-1 overflow-auto`}>
+          <table className={tableClass}>
+            {renderColgroup()}
+            <thead>{headRow}</thead>
+            <tbody>{renderBodyRows(indexedRows)}</tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <HubPaginatedTableShell
-      items={data.rows}
+      items={indexedRows}
       ariaLabel="Sheet rows pages"
       pageSize={pageSize}
       resetKey={resetKey}
-      className={`sheet-grid-shell flex min-h-0 flex-1 flex-col${refreshing ? " sheet-grid-shell--refreshing" : ""}`}
+      className={shellClass}
     >
-      {(pageRows) => {
-        const bodyRows =
-          pageRows.length === 0 ? (
-            <tr>
-              <td
-                colSpan={visibleIndices.length || 1}
-                className="px-3 py-8 text-center text-[12px] text-[var(--muted)]"
-              >
-                No rows match search or filters.
-              </td>
-            </tr>
-          ) : (
-            pageRows.map((row, r) => (
-              <tr key={String(r)} className="hub-users-row hub-users-row--static sheet-grid-row">
-                {visibleIndices.map((c) => (
-                  <DirectoryTableBodyCell key={String(c)} colClass="sheet-grid-td align-top">
-                    <span className={wrap ? "sheet-grid-cell sheet-grid-cell--wrap" : "sheet-grid-cell truncate"}>
-                      <SheetGridCopyCell value={row[c] ?? ""}>
-                        <SheetHighlightedText text={row[c] ?? ""} query={searchQuery} />
-                      </SheetGridCopyCell>
-                    </span>
-                  </DirectoryTableBodyCell>
-                ))}
-              </tr>
-            ))
-          );
-
-        return (
-          <DirectoryInlineTable
-            wrapClassName={wrapClassName}
-            tableClassName={tableClass}
-            showSelect={false}
-            colgroup={renderColgroup()}
-            headRow={headRow}
-            bodyRows={bodyRows}
-            emptyMessage="No rows match search or filters."
-            hasRows={pageRows.length > 0}
-          />
-        );
-      }}
+      {(pageRows) => tableContent(pageRows)}
     </HubPaginatedTableShell>
   );
 }

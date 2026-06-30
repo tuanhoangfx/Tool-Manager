@@ -1,18 +1,20 @@
 /** Account Vault sub-routes under `/twofa/...`. */
-export type TwofaVaultView = "services" | "mail";
+export type TwofaVaultView = "services" | "mail" | "quota";
 
-export const TWOFA_VAULT_VIEWS = ["services", "mail"] as const satisfies readonly TwofaVaultView[];
+export const TWOFA_VAULT_VIEWS = ["services", "mail", "quota"] as const satisfies readonly TwofaVaultView[];
 
 export const DEFAULT_TWOFA_VAULT_VIEW: TwofaVaultView = "services";
 
 const VIEW_SEGMENT: Record<TwofaVaultView, string> = {
   services: "services",
   mail: "mail",
+  quota: "quota",
 };
 
 const SEGMENT_VIEW: Record<string, TwofaVaultView> = {
   services: "services",
   mail: "mail",
+  quota: "quota",
 };
 
 function pathSegments(pathname: string): string[] {

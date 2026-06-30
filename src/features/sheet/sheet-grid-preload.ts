@@ -1,20 +1,35 @@
-import { parseCsvToGrid } from "./sheet-csv-grid";
+import { parseCsvToGrid, shouldLazyParseSheetCsv } from "./sheet-csv-grid";
 import { writeSheetGridCache } from "./sheet-grid-cache";
 import { writeSheetGridCsvIdb } from "./sheet-grid-idb-cache";
+import {
+  fetchPricingCatalogGrid,
+  isPricingCatalogSource,
+  pricingCatalogIdFromSource,
+  shouldLoadPricingCatalogGrid,
+} from "./pricing-catalog-sheet";
 import type { SheetGridData } from "./sheet-grid-types";
 import type { SheetSource } from "./sheet-sources";
 
 const inflight = new Map<string, Promise<SheetGridData | null>>();
 
 async function fetchSheetGrid(source: SheetSource): Promise<SheetGridData | null> {
+  if (shouldLoadPricingCatalogGrid(source)) {
+    const catalogId = pricingCatalogIdFromSource(source);
+    const grid = await fetchPricingCatalogGrid(catalogId);
+    writeSheetGridCache(source.id, grid);
+    return grid;
+  }
   const res = await fetch(source.csvUrl, { method: "GET" });
   if (!res.ok) return null;
   const csv = await res.text();
   const trimmed = csv.trimStart();
   if (trimmed.startsWith("<!") || /^<html[\s>]/i.test(trimmed)) return null;
-  const { grid, headerRowIndex } = parseCsvToGrid(csv, { headerRowIndex: source.headerRowIndex });
+  const { grid, headerRowIndex } = parseCsvToGrid(csv, {
+    headerRowIndex: source.headerRowIndex,
+    maxDataRows: shouldLazyParseSheetCsv(csv) ? 300 : undefined,
+  });
   writeSheetGridCache(source.id, grid);
-  void writeSheetGridCsvIdb(source.id, csv, headerRowIndex);
+  if (!shouldLazyParseSheetCsv(csv)) void writeSheetGridCsvIdb(source.id, csv, headerRowIndex);
   return grid;
 }
 
@@ -23,7 +38,8 @@ export function prefetchSheetGrid(
   source: SheetSource | null | undefined,
   onCached?: (sheetId: string, grid: SheetGridData) => void,
 ): void {
-  if (!source?.csvUrl) return;
+  if (!source) return;
+  if (!source.csvUrl && !shouldLoadPricingCatalogGrid(source)) return;
   if (inflight.has(source.id)) return;
   const job = fetchSheetGrid(source)
     .then((grid) => {
@@ -45,6 +61,8 @@ export function prefetchAdjacentSheetGrids(
   if (!activeId || sources.length < 2) return;
   const index = sources.findIndex((s) => s.id === activeId);
   if (index < 0) return;
-  if (index > 0) prefetchSheetGrid(sources[index - 1], onCached);
-  if (index < sources.length - 1) prefetchSheetGrid(sources[index + 1], onCached);
+  for (let offset = 1; offset <= 1; offset += 1) {
+    if (index - offset >= 0) prefetchSheetGrid(sources[index - offset], onCached);
+    if (index + offset < sources.length) prefetchSheetGrid(sources[index + offset], onCached);
+  }
 }

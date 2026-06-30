@@ -1,10 +1,11 @@
-import * as XLSX from "xlsx";
 import type { SheetGridData } from "./sheet-grid-types";
 
 export type SheetCsvParseResult = {
   grid: SheetGridData;
   headerRowIndex: number;
 };
+
+export const SHEET_LAZY_PARSE_ROW_THRESHOLD = 500;
 
 function normCell(v: unknown): string {
   const s = String(v ?? "").trim();
@@ -144,17 +145,90 @@ function trimToHeaderWidth(header: string[], rows: string[][]): string[][] {
   });
 }
 
-export function csvToMatrix(csv: string): string[][] {
-  const wb = XLSX.read(csv, { type: "string" });
-  const name = wb.SheetNames[0];
-  const ws = name ? wb.Sheets[name] : undefined;
-  const matrix = ws ? (XLSX.utils.sheet_to_json(ws, { header: 1 }) as unknown[][]) : [];
-  return padMatrixRows(matrix.map((r) => (Array.isArray(r) ? r.map((v) => normCell(v)) : [])));
+/** RFC-style single-line CSV row (Google Sheets export). */
+export function parseCsvLine(line: string): string[] {
+  const cells: string[] = [];
+  let cur = "";
+  let q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (q && line[i + 1] === '"') {
+        cur += '"';
+        i += 1;
+        continue;
+      }
+      q = !q;
+      continue;
+    }
+    if (ch === "," && !q) {
+      cells.push(cur);
+      cur = "";
+      continue;
+    }
+    cur += ch;
+  }
+  cells.push(cur);
+  return cells.map((c) => normCell(c));
 }
 
-export function parseCsvToGrid(csv: string, opts?: { headerRowIndex?: number }): SheetCsvParseResult {
-  const norm = csvToMatrix(csv);
-  const headerRowIndex = resolveHeaderRowIndex(norm, opts?.headerRowIndex);
+export function estimateCsvLineCount(csv: string): number {
+  if (!csv) return 0;
+  let count = 0;
+  for (let i = 0; i < csv.length; i++) {
+    if (csv.charCodeAt(i) === 10) count += 1;
+  }
+  if (!csv.endsWith("\n")) count += 1;
+  return count;
+}
+
+export function shouldLazyParseSheetCsv(csv: string): boolean {
+  return estimateCsvLineCount(csv) > SHEET_LAZY_PARSE_ROW_THRESHOLD || csv.length > 280_000;
+}
+
+function readCsvMatrix(csv: string, opts?: { maxLines?: number }): string[][] {
+  return csvToMatrixLineParse(csv, opts?.maxLines);
+}
+
+function readCsvLineAt(csv: string, start: number): { line: string; next: number } {
+  let i = start;
+  let q = false;
+  while (i < csv.length) {
+    const ch = csv[i]!;
+    if (ch === '"') {
+      if (q && csv[i + 1] === '"') {
+        i += 2;
+        continue;
+      }
+      q = !q;
+      i += 1;
+      continue;
+    }
+    if (!q && ch === "\n") return { line: csv.slice(start, i), next: i + 1 };
+    if (!q && ch === "\r") {
+      const next = csv[i + 1] === "\n" ? i + 2 : i + 1;
+      return { line: csv.slice(start, i), next };
+    }
+    i += 1;
+  }
+  return { line: csv.slice(start), next: csv.length };
+}
+
+function csvToMatrixLineParse(csv: string, maxLines?: number): string[][] {
+  const matrix: string[][] = [];
+  let pos = 0;
+  let lineNo = 0;
+  while (pos < csv.length) {
+    const { line, next } = readCsvLineAt(csv, pos);
+    pos = next;
+    if (line.trim() || lineNo < 6) matrix.push(parseCsvLine(line));
+    lineNo += 1;
+    if (maxLines != null && lineNo >= maxLines) break;
+  }
+  return padMatrixRows(matrix);
+}
+
+function buildGridFromMatrix(norm: string[][], headerRowIndex: number): SheetCsvParseResult {
   let header = mergeHeaderWithPreviousRow(norm, headerRowIndex);
   let rows = norm.slice(headerRowIndex + 1).filter((row) => row.some((c) => normCell(c)));
 
@@ -164,4 +238,30 @@ export function parseCsvToGrid(csv: string, opts?: { headerRowIndex?: number }):
   header = header.map((v) => normCell(v) || "—");
 
   return { grid: { header, rows }, headerRowIndex };
+}
+
+export function csvToMatrix(csv: string): string[][] {
+  return readCsvMatrix(csv);
+}
+
+/** First N lines only — header picker / quick scans without parsing the full workbook. */
+export function readCsvMatrixHead(csv: string, maxLines: number): string[][] {
+  return readCsvMatrix(csv, { maxLines });
+}
+
+export function parseCsvToGrid(
+  csv: string,
+  opts?: { headerRowIndex?: number; maxDataRows?: number },
+): SheetCsvParseResult {
+  if (opts?.maxDataRows != null) {
+    const headerWindow = readCsvMatrix(csv, { maxLines: 45 });
+    const headerRowIndex = resolveHeaderRowIndex(headerWindow, opts.headerRowIndex);
+    const maxLines = headerRowIndex + 1 + opts.maxDataRows + 8;
+    const norm = readCsvMatrix(csv, { maxLines });
+    return buildGridFromMatrix(norm, headerRowIndex);
+  }
+
+  const norm = readCsvMatrix(csv);
+  const headerRowIndex = resolveHeaderRowIndex(norm, opts?.headerRowIndex);
+  return buildGridFromMatrix(norm, headerRowIndex);
 }

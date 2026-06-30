@@ -22,13 +22,28 @@ type Props = {
 /** Data Box sign-in gate — golden createWorkspaceAuthGate factory. */
 export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
   const { adoptSession } = useNotesAuth();
+  const enzyEmbed = import.meta.env.VITE_SITE_PROFILE === "enzy";
 
   return (
     <WorkspaceAuthGate
       {...createWorkspaceAuthGate({
         code: "P0020",
         variant,
-        headerLeading: (
+        ...(enzyEmbed
+          ? {
+              title: "Welcome to ENZY",
+              toolName: "ENZY",
+              tagline: "Pin Lithium — tasks & customers",
+            }
+          : {}),
+        headerLeading: enzyEmbed ? (
+          <div
+            className="grid h-9 w-9 place-items-center rounded-[10px] bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm"
+            aria-hidden
+          >
+            <span className="text-[11px] font-bold tracking-wide">EZ</span>
+          </div>
+        ) : (
           <ToolAvatar
             code={DATA_BOX_PRODUCT.code}
             iconName={toolIconName({ code: DATA_BOX_PRODUCT.code })}
@@ -37,7 +52,6 @@ export function NotesAuthGate({ onAuthed, variant = "notes" }: Props) {
           />
         ),
         onAuthed,
-        onAnonymous: () => setOfflineMode(true),
         profileRoleClient: isHubSupabaseConfigured
           ? createClient(HUB_SUPABASE_URL, HUB_SUPABASE_ANON_KEY, {
               auth: { persistSession: false, autoRefreshToken: false },

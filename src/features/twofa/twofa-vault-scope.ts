@@ -1,7 +1,8 @@
+import { isQuotaEnrolledAccount } from "../quota/twofa-quota-enrolled";
 import type { TwofaAccount } from "./types";
 
-/** Vault directory slice — shared by Services and Mail sub-views. */
-export type TwofaVaultScope = "services" | "mail";
+/** Vault directory slice — Services, Mail, or Quota (AI subscriptions). */
+export type TwofaVaultScope = "services" | "mail" | "quota";
 
 /** Mail sub-view: mailbox providers only (by `service` name — not login email domain). */
 const MAIL_PROVIDER_SERVICES = new Set([
@@ -32,5 +33,6 @@ export function filterTwofaVaultScope(
   scope: TwofaVaultScope,
 ): TwofaAccount[] {
   if (scope === "mail") return accounts.filter(isTwofaMailAccount);
+  if (scope === "quota") return accounts.filter(isQuotaEnrolledAccount);
   return accounts.filter((row) => !isTwofaMailAccount(row));
 }

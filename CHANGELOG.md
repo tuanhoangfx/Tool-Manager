@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-06-30 - Sheet workspace, pricing catalog, quota tooling
+
+- Version: `4.7.4`
+- Type: Patch
+- Product: P0020
+- Timestamp: 2026-06-30 11:30 (UTC+7)
+- Status: Committed
+
+### Changes
+
+- **Sheet** — workspace grid, CSV import, cloud sources directory, tab switching smokes.
+- **Pricing** — INFI28 catalog sync, seed sheet sources, MCP + catalog smokes.
+- **Quota** — 2FA account quota probe/import/backfill scripts.
+- **Hub-UI vendor** — directory table scroll, users table, split pane parity with P0016.
+- **Notes/Cookie/2FA** — auth gate, folder filter, route filters, brand icon sync.
+
+### Verification
+
+- `corepack pnpm build`
+- `verify-production-smoke.mjs --release` after Vercel deploy
+
 ## 2026-06-25 - Header deploy timestamp: Vercel build time + manifest sync
 
 - Version: `4.7.2`

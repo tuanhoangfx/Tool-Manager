@@ -38,7 +38,7 @@
     "manifestPath": "tool.manifest.json"
   },
   "release": {
-    "version": "4.7.2",
+    "version": "4.7.4",
     "readiness": [
       "unified-sidebar-shell",
       "notes-workspace",
@@ -222,6 +222,11 @@
       "pnpm check:p0019-decommission"
     ],
     "devUrl": "http://127.0.0.1:5177/todo"
+  },
+  "embedExports": {
+    "todo": "src/embed/todo-screen-root.tsx",
+    "todoStyles": "src/embed/p0020-todo-embed.css",
+    "consumers": ["P0026"]
   },
   "uiScreens": [
     {

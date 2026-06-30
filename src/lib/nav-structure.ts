@@ -1,5 +1,5 @@
 import type { NavStructureEntry } from "@tool-workspace/hub-ui";
-import { ClipboardList, Cookie, FileText, KeyRound, Mail, Settings2, Shield, Table2 } from "lucide-react";
+import { ClipboardList, Cookie, FileText, Gauge, KeyRound, Mail, Settings2, Shield, Table2 } from "lucide-react";
 import type { TwofaVaultView } from "./twofa-vault-path";
 import type { WorkspaceNavScreen } from "./workspace-screen";
 
@@ -7,7 +7,7 @@ export const NAV_SUBNAV_PREFIX = "p0020";
 
 export const NAV_GROUP_IDS = ["account-vault"] as const;
 
-/** Flat workspace nav — Account Vault group: Services + Mail (shared 2FA vault). */
+/** Flat workspace nav — Account Vault group: Services + Mail + Quota. */
 export const NAV_STRUCTURE: NavStructureEntry<WorkspaceNavScreen, (typeof NAV_GROUP_IDS)[number], TwofaVaultView>[] =
   [
     { kind: "screen", screen: "notes", label: "Notes", icon: FileText, iconTone: "indigo" },
@@ -25,6 +25,7 @@ export const NAV_STRUCTURE: NavStructureEntry<WorkspaceNavScreen, (typeof NAV_GR
       children: [
         { view: "services", label: "Services", icon: KeyRound, iconTone: "amber" },
         { view: "mail", label: "Mail", icon: Mail, iconTone: "sky" },
+        { view: "quota", label: "Quota", icon: Gauge, iconTone: "violet" },
       ],
     },
     { kind: "screen", screen: "cookie", label: "Cookie Bridge", icon: Cookie, iconTone: "rose" },

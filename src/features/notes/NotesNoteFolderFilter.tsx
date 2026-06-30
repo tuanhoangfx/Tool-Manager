@@ -46,7 +46,6 @@ export function NotesNoteFolderFilter({
     () => ({
       key: "folder",
       label: "Folder",
-      showAllLabel: true,
       options: folders.map((f) => ({ value: f.id, label: f.name, color: f.color })),
     }),
     [folders],

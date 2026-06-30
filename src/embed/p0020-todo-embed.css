@@ -1,0 +1,11 @@
+/**
+ * P0020 Todo embed — stylesheet SSOT for cross-tool hosts (P0026, …).
+ * Host must load hub-boot + p0008-globals + hub-appearance + hub-ui-styles before this file.
+ * todo-hub-theme MUST be last (overrides task card min-height).
+ */
+@import "../theme/data-box-layout.css";
+@import "../styles/layout.css";
+@import "../styles/controls.css";
+@import "../styles/cards.css";
+@import "../styles/visual.css";
+@import "../features/todo/styles/todo-hub-theme.css";

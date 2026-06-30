@@ -36,19 +36,21 @@ function TwofaCopyControl({
   value,
   display,
   className,
+  wrapClassName = "",
   title,
   onCopied,
 }: {
   value: string;
   display: ReactNode;
   className: string;
+  wrapClassName?: string;
   title: string;
   onCopied?: () => void;
 }) {
   const { copied, flash } = useCopyFlash();
 
   return (
-    <HubCopyTickWrap copied={copied} className="twofa-copy-control-wrap">
+    <HubCopyTickWrap copied={copied} className={`twofa-copy-control-wrap ${wrapClassName}`.trim()}>
       <button
         type="button"
         className={`twofa-copy-control ${className}`}
@@ -115,6 +117,7 @@ export function TwofaSecretCell({ account }: { account: TwofaAccount }) {
         value={value}
         display={value}
         className="twofa-copy-control--secret"
+        wrapClassName="twofa-copy-control-wrap--value"
         title="Copy secret"
       />
     </div>
@@ -202,6 +205,7 @@ export function TwofaPasswordCell({ account }: { account: TwofaAccount }) {
         value={value}
         display={display}
         className={`twofa-copy-control--password${mask ? " twofa-copy-control--password-masked" : ""}`}
+        wrapClassName="twofa-copy-control-wrap--value"
         title="Copy password"
       />
     </div>
@@ -247,7 +251,11 @@ export const TwofaCodeCell = memo(function TwofaCodeCell({
 
   return (
     <div onClick={(e) => e.stopPropagation()}>
-      <HubCopyTickWrap copied={copied} className="twofa-copy-control-wrap" tickClassName="text-emerald-300">
+      <HubCopyTickWrap
+        copied={copied}
+        className="twofa-copy-control-wrap twofa-copy-control-wrap--code"
+        tickClassName="text-emerald-300"
+      >
         <button
           type="button"
           className={CODE_CHIP_CLASS}

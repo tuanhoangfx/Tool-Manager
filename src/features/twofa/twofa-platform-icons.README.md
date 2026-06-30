@@ -1,6 +1,10 @@
 # Account vault — platform icon registry
 
-SSOT: `twofa-platform-icons.registry.json` · resolver: `twofa-platform-icon.ts` · UI: `TwofaPlatformIcon.tsx`
+**SSOT moved to hub-ui:** `packages/hub-ui/src/lib/hub-brand-icons.registry.json`
+
+- Resolver (P0020): `twofa-platform-icon.ts` → `resolveHubBrandIconByMatch()` from `@tool-workspace/hub-ui`
+- UI: `TwofaPlatformIcon.tsx`
+- Sync: `node ../../scripts/sync-hub-brand-icons.mjs --code P0020` (alias: `pnpm sync:twofa-icons`)
 
 ## Icon shell (display mode)
 
@@ -12,34 +16,6 @@ SSOT: `twofa-platform-icons.registry.json` · resolver: `twofa-platform-icon.ts`
 
 **Do not** apply `brightness(0)` to colored logos — they become black blobs on the tile.
 
-**Baked-in background:** Many favicons already include the brand’s colored square (Adobe red A, CapCut app icon). Use **`bare`** — we do **not** add a second white Hub tile on top.
-
-### Registry fields
-
-```json
-{
-  "label": "Binance",
-  "match": "binance",
-  "source": { "type": "local", "src": "/assets/brand-icons/binance.png" }
-}
-```
-
-Optional override:
-
-```json
-{ "shell": "tile" }
-```
-
-Legacy: `"darkInk": true` → same as `"shell": "darkInk"`.
-
-### Auto rules (when `shell` omitted)
-
-1. `darkInk: true` → `darkInk`
-2. `/assets/brand-icons/*.{png,ico}` → `bare`
-3. `/icons/github.svg` → `tile`
-4. `/icons/vercel.svg` → `darkInk`
-5. Else → `bare`
-
 ### Sync
 
-`pnpm sync:twofa-icons` downloads favicon PNGs (original colors). New entries default to **bare**.
+`pnpm sync:twofa-icons` downloads favicon PNGs (original colors). New entries go in **hub-ui** registry.

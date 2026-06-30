@@ -17,6 +17,13 @@ function row(partial: Partial<TwofaDbRow> & Pick<TwofaDbRow, "id">): TwofaDbRow 
     created_at: "2026-06-01T00:00:00.000Z",
     updated_at: "2026-06-09T10:00:00.000Z",
     last_used_at: null,
+    plan_package: null,
+    plan_status: null,
+    plan_tier: null,
+    plan_expires_at: null,
+    quota_snapshot: null,
+    quota_checked_at: null,
+    quota_status: null,
     deleted_at: null,
     ...partial,
   };

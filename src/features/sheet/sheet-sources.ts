@@ -1,5 +1,8 @@
 import { parseGoogleSheetLink } from "./google-sheet-link";
+
+const PRICING_CATALOG_PREFIX = "pricing-catalog://";
 import { postSheetSourcesCrossTab } from "./sheet-sources-cross-tab";
+import { filterLegacyPurgedSheetSources } from "./sheet-legacy-purge";
 import {
   clearSheetPendingDeleteByDedupeKey,
   filterSheetPendingDeletes,
@@ -63,10 +66,18 @@ function normalizeSheetSource(row: SheetSource): SheetSource {
 }
 
 export function sheetSourceDedupeKey(source: Pick<SheetSource, "rawUrl" | "gid" | "csvUrl">): string {
+  const raw = source.rawUrl?.trim() ?? "";
+  if (raw.startsWith(PRICING_CATALOG_PREFIX) || source.csvUrl?.startsWith(PRICING_CATALOG_PREFIX)) {
+    return `pricing-catalog:${pricingCatalogIdFromRaw(raw || source.csvUrl)}`;
+  }
   const info = parseGoogleSheetLink(source.rawUrl);
   const docId = info.sheetId ?? info.publishId ?? source.csvUrl;
   const gid = (source.gid || info.gid || "0").trim();
   return `${docId}:${gid}`;
+}
+
+function pricingCatalogIdFromRaw(url: string): string {
+  return url.replace(PRICING_CATALOG_PREFIX, "").trim() || "infi28-payment";
 }
 
 function pickPreferredSource(a: SheetSource, b: SheetSource): SheetSource {
@@ -95,7 +106,7 @@ export function loadSheetSources(): SheetSource[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     const list = Array.isArray(parsed) ? (parsed as SheetSource[]).map(normalizeSheetSource) : [];
-    const deduped = filterSheetPendingDeletes(dedupeSheetSources(list));
+    const deduped = filterLegacyPurgedSheetSources(filterSheetPendingDeletes(dedupeSheetSources(list)));
     if (deduped.length !== list.length) saveSheetSources(deduped);
     return deduped;
   } catch {
@@ -106,7 +117,7 @@ export function loadSheetSources(): SheetSource[] {
 export function saveSheetSources(list: SheetSource[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filterSheetPendingDeletes(dedupeSheetSources(list))));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filterLegacyPurgedSheetSources(filterSheetPendingDeletes(dedupeSheetSources(list)))));
   } catch {
     /* ignore quota */
   }

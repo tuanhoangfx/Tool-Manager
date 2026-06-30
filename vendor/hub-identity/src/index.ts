@@ -1,3 +1,5 @@
+export * from "./integrated-login-tools";
+export * from "./verify-hub-integrated-tool-access";
 export * from "./hub-login";
 export * from "./hub-default-tool-access";
 export * from "./hub-auth-rate-limit";
@@ -22,3 +24,4 @@ export * from "./hub-api-auth-token";
 export * from "./hub-token-refresh-scheduler";
 export * from "./workspace-hub-auth-boot";
 export * from "./workspace-data-auth-boot";
+export * from "./workspace-auth-policy";

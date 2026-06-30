@@ -27,7 +27,9 @@ function hydrateTombstones() {
     if (!Array.isArray(parsed)) return;
     for (const row of parsed) {
       if (row && typeof row.dedupeKey === "string") {
-        const ids = Array.isArray(row.ids) ? row.ids.filter((id): id is string => typeof id === "string") : [];
+        const ids = Array.isArray(row.ids)
+          ? row.ids.filter((id: unknown): id is string => typeof id === "string")
+          : [];
         tombstonesByKey.set(row.dedupeKey, { ...(row as TombstoneRecord), ids });
       }
     }

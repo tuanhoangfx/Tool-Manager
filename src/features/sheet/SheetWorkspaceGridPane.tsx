@@ -1,14 +1,11 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Table2, Trash2, Upload } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
+import { Table2, Trash2, Upload, Pencil, Plus } from "lucide-react";
 import {
   HubBulkActionButton,
   HubDirectoryBulkActionRail,
   HubSplitDirectoryFilterBar,
   HubSplitDirectoryPane,
-  useDirectoryTimeRange,
-  useHubTablePageSize,
   type FilterValues,
-  type HubSortDir,
 } from "@tool-workspace/hub-ui";
 import { WorkspaceDirectorySearchToolbar } from "../workspace/WorkspaceDirectorySearchToolbar";
 import { useAppToast } from "../../components/toast/ToastContext";
@@ -16,13 +13,13 @@ import {
   addSheetSource,
   loadSheetSources,
   removeSheetSource,
-  sheetSourceDedupeKey,
   updateSheetSourceHeaderRowIndex,
   updateSheetSourceLastSynced,
   updateSheetSourceTitle,
   type SheetSource,
 } from "./sheet-sources";
-import { SheetImportModal } from "./SheetImportModal";
+import { SheetImportModal, type SheetImportModalResult } from "./SheetImportModal";
+import { SheetPricingRowModal } from "./SheetPricingRowModal";
 import {
   readSheetGridPrefs,
   reconcileSheetGridPrefs,
@@ -34,11 +31,11 @@ import {
 import { SheetDisplayBandToolbar } from "./SheetDisplayBandToolbar";
 import { SheetGridTable } from "./SheetGridTable";
 import type { SheetGridData } from "./sheet-grid-types";
-import { SheetHubChrome } from "./SheetHubChrome";
-import { filterSheetSourcesByTimeRange, SheetSourcesRail } from "./SheetSourcesRail";
-import { sortSheetSources, type SheetSourceSortKey } from "./SheetSourcesDirectoryTable";
-import { parseCsvToGrid } from "./sheet-csv-grid";
+import { noopBridge, useSheetWorkspace } from "./sheet-workspace-context";
+import { parseCsvToGrid, shouldLazyParseSheetCsv } from "./sheet-csv-grid";
 import { buildHeaderRowCandidates, type SheetHeaderRowCandidate } from "./sheet-header-row-candidates";
+import { runPhasedSheetCsvParse, type PhasedSheetParseHandle } from "./sheet-lazy-parse";
+import { isSheetNetworkCacheFresh } from "./sheet-network-cache";
 import { fetchSheetTabTitle, shouldSyncSheetTabTitle } from "./sheet-tab-title";
 import { applySheetMainFilters, buildSheetMainFilterDefs } from "./sheet-main-filters";
 import {
@@ -49,13 +46,25 @@ import {
 } from "./sheet-grid-cache";
 import { deleteSheetGridCsvIdb, readSheetGridCsvIdb, writeSheetGridCsvIdb } from "./sheet-grid-idb-cache";
 import { prefetchAdjacentSheetGrids, prefetchSheetGrid } from "./sheet-grid-preload";
+import {
+  fetchPricingCatalogGrid,
+  isNonHttpSheetUrl,
+  isPricingCatalogSource,
+  pricingCatalogIdFromSource,
+  shouldLoadPricingCatalogGrid,
+  PRICING_CATALOG_PREFIX,
+} from "./pricing-catalog-sheet";
+import {
+  appendGridRow,
+  deletePricingCatalogRow,
+  patchGridRow,
+  pricingRowFromGridRow,
+  upsertPricingCatalogRow,
+} from "./pricing-catalog-edit";
 import { setupSheetFilterIcons } from "./sheet-filter-icons";
 import { countSheetSearchMatches } from "./sheet-search-highlight";
 import { sheetTextIncludesQuery } from "./sheet-search-fold";
 import { SheetSearchMatchChip } from "./SheetSearchMatchChip";
-import { useNotesAuth } from "../notes/AuthSessionProvider";
-import { useSheetSourcesCloud } from "./useSheetSourcesCloud";
-import { filterSheetPendingDeletes, isSheetPendingDelete } from "./sheet-sync-pending";
 
 setupSheetFilterIcons();
 
@@ -65,79 +74,38 @@ function rowMatchesSheetQuery(row: string[], query: string): boolean {
   return row.some((cell) => sheetTextIncludesQuery(String(cell ?? ""), q));
 }
 
-async function refreshSheetTabTitles(sources: SheetSource[]): Promise<SheetSource[]> {
-  for (const s of filterSheetPendingDeletes(sources)) {
-    if (isSheetPendingDelete(s)) continue;
-    if (!shouldSyncSheetTabTitle(s)) continue;
-    const title = await fetchSheetTabTitle(s);
-    if (!title || title === s.title) continue;
-    if (!loadSheetSources().some((row) => row.id === s.id)) continue;
-    if (isSheetPendingDelete(s)) continue;
-    updateSheetSourceTitle(s.id, title);
-  }
-  return loadSheetSources();
-}
-
-export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean }) {
-  const { session } = useNotesAuth();
-  const [sources, setSources] = useState<SheetSource[]>(() => loadSheetSources());
-  const [activeId, setActiveId] = useState<string | null>(() => sources[0]?.id ?? null);
+export function SheetWorkspaceGridPane() {
+  const {
+    tabActive,
+    sources,
+    setSources,
+    activeId,
+    setActiveId,
+    active,
+    sortedRailSources,
+    pageSize,
+    setBridge,
+  } = useSheetWorkspace();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [grid, setGrid] = useState<SheetGridData | null>(null);
   const [gridSheetId, setGridSheetId] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const pageSize = useHubTablePageSize();
-  const railTimeRange = useDirectoryTimeRange();
+  const [pricingEditOpen, setPricingEditOpen] = useState(false);
+  const [pricingEditMode, setPricingEditMode] = useState<"add" | "edit">("edit");
+  const [pricingEditRowIndex, setPricingEditRowIndex] = useState<number | null>(null);
   const { pushToast } = useAppToast();
-  const [railQuery, setRailQuery] = useState("");
   const [sheetQuery, setSheetQuery] = useState("");
+  const deferredSheetQuery = useDeferredValue(sheetQuery);
   const [filterValues, setFilterValues] = useState<FilterValues>({});
-  const [railSortKey, setRailSortKey] = useState<SheetSourceSortKey>("title");
-  const [railSortDir, setRailSortDir] = useState<HubSortDir>("asc");
   const [gridPrefs, setGridPrefs] = useState(() => readSheetGridPrefs(activeId ?? ""));
   const [headerRowCandidates, setHeaderRowCandidates] = useState<SheetHeaderRowCandidate[]>([]);
   const rawCsvRef = useRef<string | null>(null);
   const gridCacheRef = useRef<Map<string, SheetGridData>>(hydrateSheetGridCache());
   const activeIdRef = useRef(activeId);
+  const activateLockRef = useRef(false);
+  const phasedParseRef = useRef<PhasedSheetParseHandle | null>(null);
   activeIdRef.current = activeId;
-
-  const onCloudSources = useCallback((next: SheetSource[]) => {
-    setSources((prevSources) => {
-      setActiveId((cur) => {
-        if (!cur) return next[0]?.id ?? null;
-        if (next.some((s) => s.id === cur)) return cur;
-        const old = prevSources.find((s) => s.id === cur);
-        if (old) {
-          const key = sheetSourceDedupeKey(old);
-          const match = next.find((s) => sheetSourceDedupeKey(s) === key);
-          if (match) return match.id;
-        }
-        return next[0]?.id ?? null;
-      });
-      return next;
-    });
-  }, []);
-
-  useSheetSourcesCloud(session, tabActive, onCloudSources);
-
-  useEffect(() => {
-    if (!tabActive) return;
-    const next = loadSheetSources();
-    setSources(next);
-    setActiveId((cur) => cur ?? next[0]?.id ?? null);
-  }, [tabActive]);
-
-  useEffect(() => {
-    if (!tabActive) return;
-    let cancelled = false;
-    void refreshSheetTabTitles(loadSheetSources()).then((next) => {
-      if (!cancelled) setSources(next);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [tabActive]);
 
   useEffect(() => {
     if (!activeId) return;
@@ -145,7 +113,10 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     return subscribeSheetGridPrefs(() => setGridPrefs(readSheetGridPrefs(activeId)));
   }, [activeId]);
 
-  const active = useMemo(() => sources.find((s) => s.id === activeId) ?? null, [activeId, sources]);
+  const activeNativeCatalogId = useMemo(() => {
+    if (!active || !shouldLoadPricingCatalogGrid(active)) return null;
+    return pricingCatalogIdFromSource(active);
+  }, [active]);
   const activeLoadSource = useMemo(
     () =>
       active
@@ -157,6 +128,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
             gid: active.gid,
             headerRowIndex: active.headerRowIndex,
             titleSource: active.titleSource,
+            lastSyncedAt: active.lastSyncedAt,
           }
         : null,
     [
@@ -167,22 +139,8 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       active?.gid,
       active?.headerRowIndex,
       active?.titleSource,
+      active?.lastSyncedAt,
     ],
-  );
-
-  const filteredSources = useMemo(() => {
-    let list = filterSheetSourcesByTimeRange(sources, railTimeRange);
-    const q = railQuery.trim();
-    if (!q) return list;
-    return list.filter((s) => {
-      const hay = `${s.title}\n${s.gid}\n${s.rawUrl}\n${s.csvUrl}`;
-      return sheetTextIncludesQuery(hay, q);
-    });
-  }, [railQuery, railTimeRange, sources]);
-
-  const sortedRailSources = useMemo(
-    () => sortSheetSources(filteredSources, railSortKey, railSortDir),
-    [filteredSources, railSortKey, railSortDir],
   );
 
   const resolvedGrid = useMemo(() => {
@@ -191,24 +149,27 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     return gridCacheRef.current.get(activeId) ?? null;
   }, [activeId, grid, gridSheetId]);
 
-  const mainFilterDefs = useMemo(() => buildSheetMainFilterDefs(resolvedGrid), [resolvedGrid]);
+  // Keep the previous grid visible while the next sheet is loading to avoid a jarring blank flash.
+  const visibleGrid = useMemo(() => resolvedGrid ?? (busy ? grid : null), [busy, grid, resolvedGrid]);
+
+  const mainFilterDefs = useMemo(() => buildSheetMainFilterDefs(visibleGrid), [visibleGrid]);
 
   const displayGrid = useMemo(() => {
-    if (!resolvedGrid) return null;
-    let rows = applySheetMainFilters(resolvedGrid.rows, resolvedGrid.header, filterValues);
-    const q = sheetQuery.trim().toLowerCase();
+    if (!visibleGrid) return null;
+    let rows = applySheetMainFilters(visibleGrid.rows, visibleGrid.header, filterValues);
+    const q = deferredSheetQuery.trim().toLowerCase();
     if (q) rows = rows.filter((row) => rowMatchesSheetQuery(row, q));
-    return { header: resolvedGrid.header, rows };
-  }, [filterValues, resolvedGrid, sheetQuery]);
+    return { header: visibleGrid.header, rows };
+  }, [filterValues, visibleGrid, deferredSheetQuery]);
+
+  const searchMatchCount = useMemo(() => {
+    if (!displayGrid || !deferredSheetQuery.trim()) return 0;
+    return countSheetSearchMatches(displayGrid.rows, deferredSheetQuery);
+  }, [displayGrid, deferredSheetQuery]);
 
   const hiddenCols = useMemo(() => new Set(gridPrefs.hidden), [gridPrefs.hidden]);
 
   const filteredRowCount = displayGrid?.rows.length ?? 0;
-
-  const searchMatchCount = useMemo(() => {
-    if (!displayGrid || !sheetQuery.trim()) return 0;
-    return countSheetSearchMatches(displayGrid.rows, sheetQuery);
-  }, [displayGrid, sheetQuery]);
 
   const applySheetGridToUi = useCallback((sheetId: string, cached: SheetGridData) => {
     gridCacheRef.current.set(sheetId, cached);
@@ -228,15 +189,17 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   const activateSheet = useCallback(
     (id: string) => {
       if (id === activeIdRef.current) return;
+      if (activateLockRef.current) return;
+      activateLockRef.current = true;
+      window.setTimeout(() => {
+        activateLockRef.current = false;
+      }, 160);
+      activeIdRef.current = id;
       setError(null);
       const cached = peekSheetGridFromCaches(id, gridCacheRef.current);
       if (cached) applySheetGridToUi(id, cached);
-      else {
-        setGrid(null);
-        setGridSheetId(null);
-        setBusy(true);
-      }
-      startTransition(() => setActiveId(id));
+      else setBusy(true);
+      setActiveId(id);
     },
     [applySheetGridToUi],
   );
@@ -244,7 +207,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   const applyParsedGrid = useCallback(
     (sheetId: string, parsed: ReturnType<typeof parseCsvToGrid>) => {
       gridCacheRef.current.set(sheetId, parsed.grid);
-      writeSheetGridCache(sheetId, parsed.grid);
+      if (!parsed.grid.loadingMoreRows) writeSheetGridCache(sheetId, parsed.grid);
       setGrid(parsed.grid);
       setGridSheetId(sheetId);
       const nextPrefs = reconcileSheetGridPrefs(sheetId, parsed.grid.header, parsed.grid.rows);
@@ -252,6 +215,77 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     },
     [],
   );
+
+  const applyCsvToGrid = useCallback(
+    async (
+      loadId: string,
+      csv: string,
+      headerRowIndex: number | undefined,
+      source: Pick<
+        SheetSource,
+        "id" | "title" | "rawUrl" | "gid" | "titleSource" | "headerRowIndex" | "lastSyncedAt"
+      >,
+    ) => {
+      phasedParseRef.current?.cancel();
+      await new Promise<void>((resolve) => {
+        let settled = false;
+        const done = () => {
+          if (settled) return;
+          settled = true;
+          resolve();
+        };
+        phasedParseRef.current = runPhasedSheetCsvParse(
+          csv,
+          {
+            headerRowIndex,
+            isActive: () => loadId === activeIdRef.current,
+          },
+          (partial) => {
+            if (loadId !== activeIdRef.current) return;
+            applyParsedGrid(loadId, partial);
+            setBusy(false);
+            if (!partial.loadingMoreRows) done();
+          },
+          (full) => {
+            if (loadId !== activeIdRef.current) {
+              done();
+              return;
+            }
+            applyParsedGrid(loadId, full);
+            void writeSheetGridCsvIdb(loadId, csv, full.headerRowIndex);
+            updateSheetSourceLastSynced(source.id);
+            setSources((prev) =>
+              prev.map((s) => (s.id === source.id ? { ...s, lastSyncedAt: new Date().toISOString() } : s)),
+            );
+            if (full.headerRowIndex !== source.headerRowIndex) {
+              updateSheetSourceHeaderRowIndex(source.id, full.headerRowIndex);
+              setSources((prev) =>
+                prev.map((s) => (s.id === source.id ? { ...s, headerRowIndex: full.headerRowIndex } : s)),
+              );
+            }
+            if (shouldSyncSheetTabTitle(source)) {
+              void fetchSheetTabTitle(source).then((title) => {
+                if (!title || title === source.title || loadId !== activeIdRef.current) return;
+                updateSheetSourceTitle(source.id, title);
+                setSources((prev) => prev.map((s) => (s.id === source.id ? { ...s, title } : s)));
+              });
+            }
+            done();
+          },
+        );
+      });
+    },
+    [applyParsedGrid],
+  );
+
+  const applyNativeGrid = useCallback((sheetId: string, native: SheetGridData) => {
+    gridCacheRef.current.set(sheetId, native);
+    writeSheetGridCache(sheetId, native);
+    setGrid(native);
+    setGridSheetId(sheetId);
+    const nextPrefs = reconcileSheetGridPrefs(sheetId, native.header, native.rows);
+    setGridPrefs(nextPrefs);
+  }, []);
 
   const loadActive = useCallback(async () => {
     if (!activeLoadSource) return;
@@ -263,7 +297,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       applySheetGridToUi(loadId, sessionCached);
     }
 
-    const idbPromise = readSheetGridCsvIdb(loadId);
+    const idbPromise = isPricingCatalogSource(source) ? Promise.resolve(null) : readSheetGridCsvIdb(loadId);
     const hasCachedGrid = Boolean(peekSheetGridFromCaches(loadId, gridCacheRef.current));
     if (!hasCachedGrid) {
       setBusy(true);
@@ -274,10 +308,17 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
         setHeaderRowCandidates(buildHeaderRowCandidates(idbSnap.csv));
         const stale = parseCsvToGrid(idbSnap.csv, {
           headerRowIndex: source.headerRowIndex ?? idbSnap.headerRowIndex,
+          maxDataRows: shouldLazyParseSheetCsv(idbSnap.csv) ? 500 : undefined,
         });
-        gridCacheRef.current.set(loadId, stale.grid);
-        writeSheetGridCache(loadId, stale.grid);
-        applySheetGridToUi(loadId, stale.grid);
+        const preview = {
+          ...stale,
+          grid: {
+            ...stale.grid,
+            loadingMoreRows: shouldLazyParseSheetCsv(idbSnap.csv),
+          },
+        };
+        gridCacheRef.current.set(loadId, preview.grid);
+        applySheetGridToUi(loadId, preview.grid);
       }
     } else {
       void idbPromise.then((idbSnap) => {
@@ -288,7 +329,35 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     }
 
     try {
-      if (peekSheetGridFromCaches(loadId, gridCacheRef.current)) setBusy(true);
+      const hasWarmCache = Boolean(peekSheetGridFromCaches(loadId, gridCacheRef.current));
+      if (!hasWarmCache) setBusy(true);
+
+      if (shouldLoadPricingCatalogGrid(source)) {
+        const catalogId = pricingCatalogIdFromSource(source);
+        const native = await fetchPricingCatalogGrid(catalogId);
+        if (loadId !== activeIdRef.current) return;
+        setError(null);
+        applyNativeGrid(loadId, native);
+        updateSheetSourceLastSynced(source.id);
+        setSources((prev) =>
+          prev.map((s) => (s.id === source.id ? { ...s, lastSyncedAt: new Date().toISOString() } : s)),
+        );
+        return;
+      }
+
+      if (isNonHttpSheetUrl(source.csvUrl)) {
+        throw new Error(
+          "This sheet uses a native catalog URL — refresh the page (Ctrl+Shift+R) to load the latest Data Box build.",
+        );
+      }
+
+      const warmGrid = peekSheetGridFromCaches(loadId, gridCacheRef.current);
+      if (warmGrid && isSheetNetworkCacheFresh(source)) {
+        applySheetGridToUi(loadId, warmGrid);
+        setError(null);
+        return;
+      }
+
       const res = await fetch(source.csvUrl, { method: "GET" });
       if (!res.ok) throw new Error(`Fetch failed (${res.status}).`);
       const csv = await res.text();
@@ -298,27 +367,8 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       }
       rawCsvRef.current = csv;
       setHeaderRowCandidates(buildHeaderRowCandidates(csv));
-      const parsed = parseCsvToGrid(csv, { headerRowIndex: source.headerRowIndex });
+      await applyCsvToGrid(loadId, csv, source.headerRowIndex, source);
       if (loadId !== activeIdRef.current) return;
-      applyParsedGrid(loadId, parsed);
-      void writeSheetGridCsvIdb(loadId, csv, parsed.headerRowIndex);
-      updateSheetSourceLastSynced(source.id);
-      setSources((prev) =>
-        prev.map((s) => (s.id === source.id ? { ...s, lastSyncedAt: new Date().toISOString() } : s)),
-      );
-      if (parsed.headerRowIndex !== source.headerRowIndex) {
-        updateSheetSourceHeaderRowIndex(source.id, parsed.headerRowIndex);
-        setSources((prev) =>
-          prev.map((s) => (s.id === source.id ? { ...s, headerRowIndex: parsed.headerRowIndex } : s)),
-        );
-      }
-      if (shouldSyncSheetTabTitle(source)) {
-        const title = await fetchSheetTabTitle(source);
-        if (title && title !== source.title) {
-          updateSheetSourceTitle(source.id, title);
-          setSources((prev) => prev.map((s) => (s.id === source.id ? { ...s, title } : s)));
-        }
-      }
     } catch (e) {
       if (loadId !== activeIdRef.current) return;
       if (peekSheetGridFromCaches(loadId, gridCacheRef.current)) {
@@ -332,7 +382,13 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     } finally {
       if (loadId === activeIdRef.current) setBusy(false);
     }
-  }, [activeLoadSource, applyParsedGrid, applySheetGridToUi]);
+  }, [activeLoadSource, applyCsvToGrid, applyNativeGrid, applySheetGridToUi]);
+
+  useEffect(() => {
+    return () => {
+      phasedParseRef.current?.cancel();
+    };
+  }, []);
 
   useEffect(() => {
     if (!tabActive) return;
@@ -344,39 +400,38 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     prefetchAdjacentSheetGrids(sortedRailSources, activeId, onGridCached);
   }, [activeId, onGridCached, sortedRailSources, tabActive]);
 
-  useEffect(() => {
-    if (!tabActive) return;
-    for (const source of sources.slice(0, 6)) {
-      prefetchSheetGrid(source, onGridCached);
-    }
-  }, [onGridCached, sources, tabActive]);
-
   const onPrefetchSheet = useCallback(
     (source: SheetSource) => prefetchSheetGrid(source, onGridCached),
     [onGridCached],
   );
 
   useEffect(() => {
+    setBridge({ activateSheet, prefetchSheet: onPrefetchSheet });
+    return () => setBridge(noopBridge);
+  }, [activateSheet, onPrefetchSheet, setBridge]);
+
+  useEffect(() => {
     setFilterValues({});
   }, [activeId]);
 
-  const onRailSort = useCallback((key: SheetSourceSortKey) => {
-    if (railSortKey === key) setRailSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setRailSortKey(key);
-      setRailSortDir("asc");
-    }
-  }, [railSortKey]);
-
   const onImport = useCallback(
-    (res: {
-      title: string;
-      rawUrl: string;
-      csvUrl: string;
-      gid: string;
-      titleSource: "auto" | "manual";
-    }) => {
+    (res: SheetImportModalResult) => {
       setError(null);
+      if (res.kind === "pricing-catalog") {
+        const url = `${PRICING_CATALOG_PREFIX}${res.catalogId}`;
+        const row = addSheetSource({
+          title: res.title,
+          rawUrl: url,
+          csvUrl: url,
+          gid: res.catalogId,
+          titleSource: "manual",
+        });
+        const next = loadSheetSources();
+        setSources(next);
+        setActiveId(row.id);
+        pushToast("Native sheet created — double-click a row to edit.", "success", 2400);
+        return;
+      }
       const row = addSheetSource({
         title: res.title,
         rawUrl: res.rawUrl,
@@ -388,10 +443,76 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
       setSources(next);
       setActiveId(row.id);
       if (next.find((s) => s.id === row.id) !== row) {
-        pushToast("Sheet đã tồn tại — chuyển sang bản đã lưu.", "info", 1800);
+        pushToast("Sheet already exists — switched to saved copy.", "info", 1800);
       }
     },
     [pushToast],
+  );
+
+  const openPricingRowEditor = useCallback((rowIndex: number) => {
+    setPricingEditMode("edit");
+    setPricingEditRowIndex(rowIndex);
+    setPricingEditOpen(true);
+  }, []);
+
+  const openPricingRowAdd = useCallback(() => {
+    setPricingEditMode("add");
+    setPricingEditRowIndex(null);
+    setPricingEditOpen(true);
+  }, []);
+
+  const onPricingRowSave = useCallback(
+    async (row: ReturnType<typeof pricingRowFromGridRow>) => {
+      if (!activeNativeCatalogId || !resolvedGrid) return;
+      const sortOrder = pricingEditMode === "add" ? resolvedGrid.rows.length : (pricingEditRowIndex ?? 0);
+      await upsertPricingCatalogRow(activeNativeCatalogId, row, sortOrder);
+      const nextGrid =
+        pricingEditMode === "add"
+          ? appendGridRow(resolvedGrid, row)
+          : patchGridRow(resolvedGrid, pricingEditRowIndex ?? 0, row);
+      if (activeId) {
+        gridCacheRef.current.set(activeId, nextGrid);
+        writeSheetGridCache(activeId, nextGrid);
+        setGrid(nextGrid);
+        setGridSheetId(activeId);
+      }
+      pushToast("Pricing row saved to Supabase.", "success", 1800);
+    },
+    [activeId, activeNativeCatalogId, pricingEditMode, pricingEditRowIndex, pushToast, resolvedGrid],
+  );
+
+  const onPricingRowDelete = useCallback(async () => {
+    if (!activeNativeCatalogId || pricingEditRowIndex == null || !resolvedGrid) return;
+    const row = pricingRowFromGridRow(resolvedGrid.rows[pricingEditRowIndex] ?? []);
+    await deletePricingCatalogRow(activeNativeCatalogId, row.platformKey);
+    const nextRows = resolvedGrid.rows.filter((_, i) => i !== pricingEditRowIndex);
+    const nextGrid = { header: [...resolvedGrid.header], rows: nextRows };
+    if (activeId) {
+      gridCacheRef.current.set(activeId, nextGrid);
+      writeSheetGridCache(activeId, nextGrid);
+      setGrid(nextGrid);
+      setGridSheetId(activeId);
+    }
+    pushToast("Row deleted.", "info", 1600);
+  }, [activeId, activeNativeCatalogId, pricingEditRowIndex, pushToast, resolvedGrid]);
+
+  const resolveFullRowIndex = useCallback(
+    (displayRowIndex: number) => {
+      if (!displayGrid || !resolvedGrid) return displayRowIndex;
+      const key = displayGrid.rows[displayRowIndex]?.[1];
+      if (!key) return displayRowIndex;
+      const fullIndex = resolvedGrid.rows.findIndex((r) => r[1] === key);
+      return fullIndex >= 0 ? fullIndex : displayRowIndex;
+    },
+    [displayGrid, resolvedGrid],
+  );
+
+  const onGridRowDoubleClick = useCallback(
+    (displayRowIndex: number) => {
+      if (!activeNativeCatalogId) return;
+      openPricingRowEditor(resolveFullRowIndex(displayRowIndex));
+    },
+    [activeNativeCatalogId, openPricingRowEditor, resolveFullRowIndex],
   );
 
   const onRemove = useCallback(() => {
@@ -522,7 +643,7 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
         countIcon={Table2}
         shown={filteredRowCount}
         total={resolvedGrid?.rows.length ?? 0}
-        countLabel="rows"
+        countLabel={resolvedGrid?.loadingMoreRows ? "rows (loading more…)" : "rows"}
         displayBand={
           <SheetDisplayBandToolbar
             sheetId={activeId}
@@ -563,19 +684,42 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
     ],
   );
 
-  const gridLoading = Boolean(activeId && busy && !resolvedGrid);
-  const gridRefreshing = Boolean(activeId && busy && resolvedGrid);
+  const gridLoading = Boolean(activeId && busy && !resolvedGrid && !grid);
+  const gridRefreshing = Boolean(activeId && busy && visibleGrid);
+  const gridSwitching = Boolean(activeId && busy && !resolvedGrid && Boolean(grid));
 
   const sheetBulkActions = useMemo(
     () => (
       <HubDirectoryBulkActionRail>
         <HubBulkActionButton
           icon={<Upload size={14} aria-hidden />}
-          label="Import"
-          title="Import spreadsheet source"
+          label="Add sheet"
+          title="Independent sheet or Google Sheet import"
           tone="sky"
           onClick={() => setImportOpen(true)}
         />
+        {activeNativeCatalogId ? (
+          <>
+            <HubBulkActionButton
+              icon={<Plus size={14} aria-hidden />}
+              label="Add row"
+              title="Add pricing row to native catalog"
+              tone="emerald"
+              onClick={openPricingRowAdd}
+            />
+            <HubBulkActionButton
+              icon={<Pencil size={14} aria-hidden />}
+              label="Edit"
+              title="Double-click a row to edit — or select then Edit"
+              tone="amber"
+              disabled={pricingEditRowIndex == null && !resolvedGrid?.rows.length}
+              onClick={() => {
+                if (pricingEditRowIndex != null) openPricingRowEditor(pricingEditRowIndex);
+                else if (resolvedGrid?.rows.length) openPricingRowEditor(0);
+              }}
+            />
+          </>
+        ) : null}
         <HubBulkActionButton
           icon={<Trash2 size={14} aria-hidden />}
           label="Remove"
@@ -586,7 +730,15 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
         />
       </HubDirectoryBulkActionRail>
     ),
-    [active, onRemove],
+    [
+      active,
+      activeNativeCatalogId,
+      onRemove,
+      openPricingRowAdd,
+      openPricingRowEditor,
+      pricingEditRowIndex,
+      resolvedGrid?.rows.length,
+    ],
   );
 
   const sheetFilterRowLeading = useMemo(
@@ -602,56 +754,58 @@ export function SheetWorkspaceScreen({ tabActive = true }: { tabActive?: boolean
   if (!tabActive) return null;
 
   return (
-    <div className="sheet-workspace flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-      <SheetHubChrome sources={sources} active={active}>
-        <SheetSourcesRail
-          sources={filteredSources}
-          totalCount={sources.length}
-          activeId={activeId}
-          pageSize={pageSize}
-          query={railQuery}
-          onQueryChange={setRailQuery}
-          sortKey={railSortKey}
-          sortDir={railSortDir}
-          onSort={onRailSort}
-          onSelect={activateSheet}
-          onPrefetch={onPrefetchSheet}
-          resetKey={`${railQuery}:${railTimeRange}:${railSortKey}:${railSortDir}:${filteredSources.length}`}
-        />
-
-        <HubSplitDirectoryPane
-          className="sheet-panel min-h-0 min-w-0 flex-1"
-          variant="panel"
-          filterBar={
-            <HubSplitDirectoryFilterBar
-              shortcutScope="sheet"
-              query={sheetQuery}
-              onQueryChange={setSheetQuery}
-              placeholder="Search rows…"
-              filters={mainFilterDefs}
-              values={filterValues}
-              onValuesChange={setFilterValues}
-              searchTrailing={sheetQuery.trim() ? <SheetSearchMatchChip count={searchMatchCount} /> : null}
-              toolbar={sheetToolbar}
-              row2Leading={sheetFilterRowLeading}
-              row2Actions={sheetBulkActions}
-            />
-          }
-        >
-          <SheetGridTable
-            data={displayGrid}
-            loading={gridLoading}
-            refreshing={gridRefreshing}
-            pageSize={pageSize}
-            prefs={gridPrefs}
-            searchQuery={sheetQuery}
-            onWidthsChange={onWidthsChange}
-            resetKey={`${activeId ?? ""}:${sheetQuery}:${JSON.stringify(filterValues)}:${gridPrefs.hidden.join(",")}:${gridPrefs.wrap ? "w" : "n"}:${gridPrefs.columnFit ?? "equal"}:${gridPrefs.textAlign ?? "left"}:${Object.keys(gridPrefs.widths).join(",")}`}
+    <>
+      <HubSplitDirectoryPane
+        className="sheet-panel min-h-0 min-w-0 flex-1"
+        variant="panel"
+        filterBar={
+          <HubSplitDirectoryFilterBar
+            shortcutScope="sheet"
+            query={sheetQuery}
+            onQueryChange={setSheetQuery}
+            placeholder="Search rows…"
+            filters={mainFilterDefs}
+            values={filterValues}
+            onValuesChange={setFilterValues}
+            searchTrailing={sheetQuery.trim() ? <SheetSearchMatchChip count={searchMatchCount} /> : null}
+            toolbar={sheetToolbar}
+            row2Leading={sheetFilterRowLeading}
+            row2Actions={sheetBulkActions}
           />
-        </HubSplitDirectoryPane>
-      </SheetHubChrome>
+        }
+      >
+        <SheetGridTable
+          data={displayGrid}
+          loading={gridLoading}
+          refreshing={gridRefreshing}
+          switching={gridSwitching}
+          pageSize={pageSize}
+          prefs={gridPrefs}
+          searchQuery={sheetQuery}
+          onWidthsChange={onWidthsChange}
+          onRowDoubleClick={activeNativeCatalogId ? onGridRowDoubleClick : undefined}
+          onRowClick={
+            activeNativeCatalogId
+              ? (idx) => setPricingEditRowIndex(resolveFullRowIndex(idx))
+              : undefined
+          }
+          resetKey={`${activeId ?? ""}:${sheetQuery}:${JSON.stringify(filterValues)}:${gridPrefs.hidden.join(",")}:${gridPrefs.wrap ? "w" : "n"}:${gridPrefs.columnFit ?? "equal"}:${gridPrefs.textAlign ?? "left"}:${Object.keys(gridPrefs.widths).join(",")}`}
+        />
+      </HubSplitDirectoryPane>
 
       <SheetImportModal open={importOpen} onClose={() => setImportOpen(false)} onImport={onImport} />
-    </div>
+      <SheetPricingRowModal
+        open={pricingEditOpen}
+        mode={pricingEditMode}
+        initial={
+          pricingEditMode === "edit" && pricingEditRowIndex != null && resolvedGrid
+            ? pricingRowFromGridRow(resolvedGrid.rows[pricingEditRowIndex] ?? [])
+            : null
+        }
+        onClose={() => setPricingEditOpen(false)}
+        onSave={onPricingRowSave}
+        onDelete={pricingEditMode === "edit" ? onPricingRowDelete : undefined}
+      />
+    </>
   );
 }

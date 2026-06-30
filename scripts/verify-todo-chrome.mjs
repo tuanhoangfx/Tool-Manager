@@ -62,7 +62,7 @@ const checks = [
     must: [
       "useResolvedVisibleKpiKeys",
       "useResolvedVisibleChartKeys",
-      "MiniBarChart",
+      "directoryChartBandNode",
       "readTodoHubPrefs",
       "screenFilters={chrome.filterDefs}",
     ],

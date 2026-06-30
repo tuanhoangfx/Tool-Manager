@@ -26,7 +26,7 @@ const LEGACY_SYNC_WATERMARK_KEY = "p0020-twofa-cloud-sync-at-v1";
 const SYNC_WATERMARK_PREFIX = "p0020-twofa-cloud-sync-at-v2";
 const PAGE_SIZE = 500;
 const SELECT_COLS =
-  "id,service,browser,account,mail_recover,password,secret,note,status,ownership,log,created_at,updated_at,last_used_at,deleted_at";
+  "id,service,browser,account,mail_recover,password,secret,note,status,ownership,log,created_at,updated_at,last_used_at,plan_package,plan_status,plan_tier,plan_expires_at,quota_snapshot,quota_checked_at,quota_status,quota_enrolled_at,deleted_at";
 
 export type TwofaCloudSyncState = "off" | "idle" | "syncing" | "ok" | "error";
 
@@ -47,6 +47,14 @@ function accountToPayload(account: TwofaAccount, userId: string) {
     created_at: account.createdAt,
     updated_at: account.updatedAt,
     last_used_at: account.lastUsedAt ?? null,
+    plan_package: account.planPackage?.trim() || null,
+    plan_status: account.planStatus?.trim() || null,
+    plan_tier: account.planTier?.trim() || null,
+    plan_expires_at: account.planExpiresAt ?? null,
+    quota_snapshot: account.quotaSnapshot ?? null,
+    quota_checked_at: account.quotaCheckedAt ?? null,
+    quota_status: account.quotaStatus?.trim() || null,
+    quota_enrolled_at: account.quotaEnrolledAt ?? null,
     deleted_at: null,
   };
 }
@@ -68,6 +76,13 @@ function draftToPayload(id: string, draft: TwofaDraft, userId: string, now: stri
     created_at: now,
     updated_at: now,
     last_used_at: null,
+    plan_package: null,
+    plan_status: null,
+    plan_tier: null,
+    plan_expires_at: null,
+    quota_snapshot: null,
+    quota_checked_at: null,
+    quota_status: null,
     deleted_at: null,
   };
 }

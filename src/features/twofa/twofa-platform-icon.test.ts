@@ -1,7 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach } from "vitest";
+import { clearHubBrandIconMatchCache } from "@tool-workspace/hub-ui";
 import { resolveTwofaPlatformIcon } from "./twofa-platform-icon";
 
 describe("resolveTwofaPlatformIcon", () => {
+  beforeEach(() => {
+    clearHubBrandIconMatchCache();
+  });
   it("maps Gmail to Google icon", () => {
     const hit = resolveTwofaPlatformIcon("Gmail");
     expect(hit?.label).toBe("Google");
@@ -77,7 +81,7 @@ describe("resolveTwofaPlatformIcon", () => {
 
   it("maps Github Copilot before Github", () => {
     expect(resolveTwofaPlatformIcon("Github Copilot")?.src).toBe("/assets/brand-icons/github-copilot.png");
-    expect(resolveTwofaPlatformIcon("Github")?.src).toBe("/icons/github.svg");
+    expect(resolveTwofaPlatformIcon("Github")?.src).toBe("/assets/brand-icons/github.png");
   });
 
   it("maps Acc Weibo and Acc Douyin to local brand icons", () => {

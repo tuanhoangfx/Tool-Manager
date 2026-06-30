@@ -65,6 +65,11 @@ import { useNotesAuth } from "../notes/AuthSessionProvider";
 import { filterTwofaVaultScope } from "./twofa-vault-scope";
 import { twofaVaultScopeFromView, twofaVaultUiCopy } from "./twofa-vault-config";
 import { useTwofaVaultView } from "./useTwofaVaultView";
+import { TwofaQuotaBulkActionBar } from "./TwofaQuotaBulkActionBar";
+import { QuotaEnrollModal } from "../quota/QuotaEnrollModal";
+import { QuotaStealthTestModal } from "../quota/QuotaStealthTestModal";
+import { useTwofaQuotaDirectoryActions } from "../quota/useTwofaQuotaDirectoryActions";
+import type { CockpitImportOutcome } from "../quota/quota-api";
 import { buildTwofaMailServiceUsageIndex } from "./twofa-mail-service-usage";
 
 function visibleSet(set: Set<string> | null, defaults: Set<string>) {
@@ -120,6 +125,9 @@ function TwofaManagerScreenBody({
     bulkUpdateMeta,
     dedupeNow,
     previewDedupe,
+    applyQuotaResults,
+    applyCockpitImport,
+    syncFromCloud,
     fullSyncNotice,
     ackFullSyncNotice,
   } = useTwofaAccounts({ tabActive });
@@ -226,7 +234,7 @@ function TwofaManagerScreenBody({
   }, []);
 
   const sortedDisplayedAccounts = useMemo(
-    () => sortTwofaAccounts(displayedAccounts, sortKey, sortDir, mailServiceUsage),
+    () => sortTwofaAccounts(displayedAccounts, sortKey, sortDir, mailServiceUsage ?? undefined),
     [displayedAccounts, sortKey, sortDir, mailServiceUsage],
   );
 
@@ -244,6 +252,15 @@ function TwofaManagerScreenBody({
     toggleSelect,
     toggleSelectAll,
   } = useHubDirectorySelection(sortedDisplayedAccounts, (row) => row.id);
+
+  const quotaActions = useTwofaQuotaDirectoryActions({
+    applyQuotaResults,
+    applyCockpitImport,
+    syncFromCloud,
+    selectedRows,
+    visibleRows: sortedDisplayedAccounts,
+  });
+
   const listResetKey = useMemo(
     () =>
       hubDirectoryListResetKey(
@@ -257,6 +274,20 @@ function TwofaManagerScreenBody({
         vaultScope,
       ),
     [filterQuery, filterValues, period, visibleColumns, sortKey, sortDir, viewMode, vaultScope],
+  );
+
+  const handleQuotaEnrolled = useCallback(
+    async (outcome: CockpitImportOutcome) => {
+      const changed = applyCockpitImport(outcome.patches);
+      if ((outcome.created ?? 0) > 0) {
+        await syncFromCloud({ silent: true, full: true });
+      }
+      pushToast(
+        `Enrolled ${outcome.accounts?.[0]?.email ?? "account"} — plan & quota synced`,
+        changed > 0 || (outcome.created ?? 0) > 0 ? "success" : "info",
+      );
+    },
+    [applyCockpitImport, pushToast, syncFromCloud],
   );
 
   const closeModal = useCallback(() => {
@@ -562,20 +593,37 @@ function TwofaManagerScreenBody({
                 selectedCount: selectedIds.size,
                 allVisibleSelected,
                 onToggleSelectAll: toggleSelectAll,
-                noun: "accounts",
+                noun: vaultScope === "quota" ? "subscriptions" : "accounts",
               }
             : null
         }
       >
-        <TwofaBulkActionBar
-          hasSelection={hasSelection}
-          selectedCount={selectedIds.size}
-          onAdd={() => openAddModal()}
-          onEdit={handleBulkEdit}
-          onBulkMeta={handleBulkMeta}
-          onDelete={requestBulkDelete}
-          onDedupe={handleDedupePreview}
-        />
+        {vaultScope === "quota" ? (
+          <TwofaQuotaBulkActionBar
+            hasSelection={hasSelection}
+            selectedCount={selectedIds.size}
+            onAdd={() => openAddModal()}
+            onEdit={handleBulkEdit}
+            onBulkMeta={handleBulkMeta}
+            onDelete={requestBulkDelete}
+            onSyncCockpit={() => void quotaActions.syncFromCockpit()}
+            onRefreshProbe={() => quotaActions.refreshProbe()}
+            onStealthTest={() => quotaActions.setStealthOpen(true)}
+            onImportBackup={quotaActions.onImportBackupClick}
+            syncing={quotaActions.syncing}
+            probing={quotaActions.probing}
+          />
+        ) : (
+          <TwofaBulkActionBar
+            hasSelection={hasSelection}
+            selectedCount={selectedIds.size}
+            onAdd={() => openAddModal()}
+            onEdit={handleBulkEdit}
+            onBulkMeta={handleBulkMeta}
+            onDelete={requestBulkDelete}
+            onDedupe={handleDedupePreview}
+          />
+        )}
       </HubDirectoryBulkActionBar>
     ),
     [
@@ -585,10 +633,12 @@ function TwofaManagerScreenBody({
       handleDedupePreview,
       hasSelection,
       openAddModal,
+      quotaActions,
       requestBulkDelete,
       selectedIds.size,
       sortedDisplayedAccounts.length,
       toggleSelectAll,
+      vaultScope,
       viewMode,
     ],
   );
@@ -703,11 +753,17 @@ function TwofaManagerScreenBody({
       {shellMode ? accountsBody : <div className="space-y-3">{accountsBody}</div>}
 
       <TwofaAddModal
-        open={addModalOpen}
+        open={addModalOpen && vaultScope !== "quota"}
         initialDraft={modalInitialDraft}
         onClose={closeModal}
         onSaveSingle={handleSaveSingle}
         onImportMany={handleImportMany}
+      />
+
+      <QuotaEnrollModal
+        open={addModalOpen && vaultScope === "quota"}
+        onClose={closeModal}
+        onEnrolled={(outcome) => void handleQuotaEnrolled(outcome)}
       />
 
       {detailAccount ? (
@@ -759,6 +815,29 @@ function TwofaManagerScreenBody({
         onConfirm={handleDedupeConfirm}
         onClose={closeDedupeModal}
       />
+
+      {vaultScope === "quota" ? (
+        <>
+          <input
+            ref={quotaActions.backupInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void quotaActions.onBackupFile(file);
+            }}
+          />
+          <QuotaStealthTestModal
+            open={quotaActions.stealthOpen}
+            onClose={() => quotaActions.setStealthOpen(false)}
+            onOpened={() => {
+              pushToast("Cursor opened in Stealth — login then Sync Cockpit", "info");
+            }}
+          />
+        </>
+      ) : null}
     </div>
   );
 }

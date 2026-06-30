@@ -25,7 +25,7 @@ import {
 } from "../../lib/hub-token-refresh-scheduler";
 import { isToolHubOrigin } from "../../lib/hub-identity-urls";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase";
-import { getOfflineMode, offlineSession } from "../../lib/offlineMode";
+import { getOfflineMode, setOfflineMode } from "../../lib/offlineMode";
 
 async function resolveDataBoxSessionCore(): Promise<Session | null> {
   if (!isSupabaseConfigured) return null;
@@ -47,10 +47,7 @@ export type NotesAuthState = {
 };
 
 function initialAuthState(): { session: Session | null; loading: boolean; offline: boolean } {
-  const offline = getOfflineMode();
-  if (offline) {
-    return { session: offlineSession(), loading: false, offline: true };
-  }
+  if (getOfflineMode()) setOfflineMode(false);
   return {
     session: sessionFromDataBoxSnapshot(readDataBoxSession()),
     loading: isSupabaseConfigured,
@@ -86,16 +83,8 @@ export function useNotesAuthState(): NotesAuthState {
   const refreshSession = useCallback(
     async (opts?: { boot?: boolean }) => {
       syncHubIdentity();
-      const nextOffline = getOfflineMode();
-      setOffline(nextOffline);
-      if (nextOffline) {
-        setSession(offlineSession());
-        setHubEmail(null);
-        setHubUserId(null);
-        setLoading(false);
-        return;
-      }
-
+      if (getOfflineMode()) setOfflineMode(false);
+      setOffline(false);
       const showBlockingLoader = opts?.boot && !sessionFromDataBoxSnapshot(readDataBoxSession());
       if (showBlockingLoader) setLoading(true);
       try {

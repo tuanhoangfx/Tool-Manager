@@ -37,6 +37,28 @@ describe("mergeSheetSourcesLocalRemote", () => {
     expect(merged[0]?.title).toBe("Infi Docs");
   });
 
+  it("does not resurrect cloud-deleted uuid rows from stale local cache", () => {
+    const local = [
+      src({
+        id: "5964f32a-b3e4-42b6-bceb-ade87bc9ba15",
+        title: "CzP Seller — Order List (import)",
+        titleSource: "manual",
+        rawUrl: "https://docs.google.com/spreadsheets/d/10cTORpWxfp9PfuZ95gbpBhiurIM0yOose4oU5QSC-mY/edit#gid=91093553",
+        csvUrl: "https://docs.google.com/spreadsheets/d/10cTORpWxfp9PfuZ95gbpBhiurIM0yOose4oU5QSC-mY/export?format=csv&gid=91093553",
+        gid: "91093553",
+      }),
+      src({
+        id: "sh_new_local",
+        title: "Draft tab",
+        rawUrl: "https://docs.google.com/spreadsheets/d/new/edit#gid=1",
+        csvUrl: "https://docs.google.com/spreadsheets/d/new/export?format=csv&gid=1",
+        gid: "1",
+      }),
+    ];
+    const merged = mergeSheetSourcesLocalRemote(local, []);
+    expect(merged.map((s) => s.title)).toEqual(["Draft tab"]);
+  });
+
   it("prefers manual title from local over auto remote", () => {
     const local = [
       src({

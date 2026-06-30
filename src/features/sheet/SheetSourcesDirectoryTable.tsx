@@ -103,7 +103,9 @@ export function SheetSourcesDirectoryTable({
       getRowClassName={(row) =>
         ` hub-users-row--static${row.id === activeId ? " is-detail" : ""}`
       }
-      renderRowCells={(row) => columns.map((col) => renderSheetSourcesDirectoryBodyCell(col, row, searchQuery))}
+      renderRowCells={(row) =>
+        columns.map((col) => renderSheetSourcesDirectoryBodyCell(col, row, onSelect, searchQuery))
+      }
     />
   );
 }

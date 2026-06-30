@@ -30,6 +30,14 @@ const COPY: Record<TwofaVaultScope, TwofaVaultUiCopy> = {
     cardGridAriaLabel: "Mail account card pages",
     addDefaultService: "Gmail",
   },
+  quota: {
+    sectionRuleLabel: "AI subscription quota",
+    emptyVault: "No enrolled quota accounts yet. Sync Cockpit (Cursor + Gemini) or add one manually.",
+    emptyFiltered: "No enrolled quota accounts match search or filters.",
+    countLabel: "subscriptions",
+    cardGridAriaLabel: "Quota account pages",
+    addDefaultService: "Cursor",
+  },
 };
 
 export function twofaVaultUiCopy(scope: TwofaVaultScope): TwofaVaultUiCopy {

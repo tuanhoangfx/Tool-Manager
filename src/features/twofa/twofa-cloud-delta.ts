@@ -21,6 +21,14 @@ export type TwofaDbRow = {
   created_at: string;
   updated_at: string;
   last_used_at: string | null;
+  plan_package: string | null;
+  plan_status: string | null;
+  plan_tier: string | null;
+  plan_expires_at: string | null;
+  quota_snapshot: unknown;
+  quota_checked_at: string | null;
+  quota_status: string | null;
+  quota_enrolled_at?: string | null;
   deleted_at: string | null;
 };
 
@@ -42,6 +50,14 @@ export function twofaDbRowToAccount(row: TwofaDbRow): TwofaAccount {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     ...(row.last_used_at ? { lastUsedAt: row.last_used_at } : {}),
+    ...(row.plan_package?.trim() ? { planPackage: row.plan_package.trim() } : {}),
+    ...(row.plan_status?.trim() ? { planStatus: row.plan_status.trim() } : {}),
+    ...(row.plan_tier?.trim() ? { planTier: row.plan_tier.trim() } : {}),
+    ...(row.plan_expires_at ? { planExpiresAt: row.plan_expires_at } : {}),
+    ...(row.quota_snapshot ? { quotaSnapshot: row.quota_snapshot as TwofaAccount["quotaSnapshot"] } : {}),
+    ...(row.quota_checked_at ? { quotaCheckedAt: row.quota_checked_at } : {}),
+    ...(row.quota_status?.trim() ? { quotaStatus: row.quota_status.trim() } : {}),
+    ...(row.quota_enrolled_at ? { quotaEnrolledAt: row.quota_enrolled_at } : {}),
   };
 }
 

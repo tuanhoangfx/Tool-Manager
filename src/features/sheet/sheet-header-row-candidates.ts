@@ -1,4 +1,4 @@
-import { csvToMatrix, rowLooksLikeHeader } from "./sheet-csv-grid";
+import { csvToMatrix, readCsvMatrixHead, rowLooksLikeHeader } from "./sheet-csv-grid";
 
 export type SheetHeaderRowCandidate = {
   index: number;
@@ -18,7 +18,7 @@ function previewRow(row: string[], maxCells = 4): string {
 
 /** List rows that look like a header — for manual override when sheet has spacer rows. */
 export function buildHeaderRowCandidates(csv: string, maxScan = 15): SheetHeaderRowCandidate[] {
-  const matrix = csvToMatrix(csv);
+  const matrix = readCsvMatrixHead(csv, maxScan + 5);
   const limit = Math.min(matrix.length, maxScan);
   const out: SheetHeaderRowCandidate[] = [];
   for (let i = 0; i < limit; i++) {

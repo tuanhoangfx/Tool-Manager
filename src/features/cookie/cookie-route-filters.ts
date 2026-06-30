@@ -11,13 +11,11 @@ export const COOKIE_ROUTE_FILTER_DEFS: FilterDef[] = [
       { value: "error", label: "Error", color: "#ef4444" },
       { value: "manual", label: "Manual", color: "#6b7394" },
     ],
-    showAllLabel: true,
   },
   {
     key: "platform",
     label: "Platform",
     options: [],
-    showAllLabel: true,
   },
 ];
 

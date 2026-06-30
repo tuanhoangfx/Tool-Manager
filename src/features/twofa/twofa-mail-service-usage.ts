@@ -10,6 +10,8 @@ export type TwofaMailServiceUsage = {
   labels: string[];
 };
 
+export type TwofaMailServiceUsageIndex = Map<string, TwofaMailServiceUsage>;
+
 type UsageBucket = {
   services: Set<string>;
   rowCount: number;
