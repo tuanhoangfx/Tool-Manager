@@ -6,7 +6,8 @@
 - Type: Patch
 - Product: P0020
 - Timestamp: 2026-06-30 11:30 (UTC+7)
-- Status: Committed
+- Status: Verified
+- Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.7.4
 
 ### Changes
 

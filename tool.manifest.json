@@ -49,9 +49,9 @@
       "cookie-bridge"
     ],
     "latestPublished": {
-      "tag": "v4.7.2",
-      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.7.2",
-      "publishedAt": "2026-06-25T11:24:40.895Z"
+      "tag": "v4.7.4",
+      "url": "https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.7.4",
+      "publishedAt": "2026-06-30T04:41:01.379Z"
     }
   },
   "urls": {
@@ -226,7 +226,9 @@
   "embedExports": {
     "todo": "src/embed/todo-screen-root.tsx",
     "todoStyles": "src/embed/p0020-todo-embed.css",
-    "consumers": ["P0026"]
+    "consumers": [
+      "P0026"
+    ]
   },
   "uiScreens": [
     {
@@ -261,5 +263,5 @@
       "authVariant": "anonymous-dual"
     }
   ],
-  "manifestUpdatedAt": "2026-06-25T11:24:40.896Z"
+  "manifestUpdatedAt": "2026-06-30T04:41:01.380Z"
 }
