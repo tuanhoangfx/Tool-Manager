@@ -122,6 +122,16 @@ body,
   min-height: var(--hub-control-h);
 }
 
+/* Sheet panel — row 2 is column filters only (bulk actions on toolbar row 1). */
+.hub-main--sheet .sheet-panel .hub-split-directory-pane__filters .space-y-2 > div:nth-child(2) {
+  align-items: center;
+}
+
+.hub-main--sheet .sheet-panel .hub-split-directory-pane__filters .space-y-2 > div:nth-child(2) > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Sheet rail — fixed rows, no inner scroll collapse (GPM workflow rail parity) */
 .hub-main--sheet .sheet-rail.hub-split-directory-pane--fixed-rows table.hub-users-table {
   min-width: 0;

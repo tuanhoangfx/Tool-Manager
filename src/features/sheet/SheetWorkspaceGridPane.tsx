@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Table2, Trash2, Upload, Pencil, Plus } from "lucide-react";
 import {
   HubBulkActionButton,
@@ -96,7 +96,6 @@ export function SheetWorkspaceGridPane() {
   const [pricingEditRowIndex, setPricingEditRowIndex] = useState<number | null>(null);
   const { pushToast } = useAppToast();
   const [sheetQuery, setSheetQuery] = useState("");
-  const deferredSheetQuery = useDeferredValue(sheetQuery);
   const [filterValues, setFilterValues] = useState<FilterValues>({});
   const [gridPrefs, setGridPrefs] = useState(() => readSheetGridPrefs(activeId ?? ""));
   const [headerRowCandidates, setHeaderRowCandidates] = useState<SheetHeaderRowCandidate[]>([]);
@@ -154,18 +153,25 @@ export function SheetWorkspaceGridPane() {
 
   const mainFilterDefs = useMemo(() => buildSheetMainFilterDefs(visibleGrid), [visibleGrid]);
 
-  const displayGrid = useMemo(() => {
+  const columnFilteredRows = useMemo(() => {
     if (!visibleGrid) return null;
-    let rows = applySheetMainFilters(visibleGrid.rows, visibleGrid.header, filterValues);
-    const q = deferredSheetQuery.trim().toLowerCase();
-    if (q) rows = rows.filter((row) => rowMatchesSheetQuery(row, q));
-    return { header: visibleGrid.header, rows };
-  }, [filterValues, visibleGrid, deferredSheetQuery]);
+    return applySheetMainFilters(visibleGrid.rows, visibleGrid.header, filterValues);
+  }, [filterValues, visibleGrid]);
+
+  const displayGrid = useMemo(() => {
+    if (!visibleGrid || !columnFilteredRows) return null;
+    const q = sheetQuery.trim();
+    if (!q) return { header: visibleGrid.header, rows: columnFilteredRows };
+    return {
+      header: visibleGrid.header,
+      rows: columnFilteredRows.filter((row) => rowMatchesSheetQuery(row, q)),
+    };
+  }, [columnFilteredRows, sheetQuery, visibleGrid]);
 
   const searchMatchCount = useMemo(() => {
-    if (!displayGrid || !deferredSheetQuery.trim()) return 0;
-    return countSheetSearchMatches(displayGrid.rows, deferredSheetQuery);
-  }, [displayGrid, deferredSheetQuery]);
+    if (!columnFilteredRows || !sheetQuery.trim()) return 0;
+    return countSheetSearchMatches(columnFilteredRows, sheetQuery);
+  }, [columnFilteredRows, sheetQuery]);
 
   const hiddenCols = useMemo(() => new Set(gridPrefs.hidden), [gridPrefs.hidden]);
 
@@ -633,61 +639,6 @@ export function SheetWorkspaceGridPane() {
     [pushToast],
   );
 
-  const sheetToolbar = useMemo(
-    () => (
-      <WorkspaceDirectorySearchToolbar
-        screen="sheet"
-        showTimeRange={false}
-        showRefresh={false}
-        showViewToggle={false}
-        countIcon={Table2}
-        shown={filteredRowCount}
-        total={resolvedGrid?.rows.length ?? 0}
-        countLabel={resolvedGrid?.loadingMoreRows ? "rows (loading more…)" : "rows"}
-        displayBand={
-          <SheetDisplayBandToolbar
-            sheetId={activeId}
-            headers={resolvedGrid?.header ?? []}
-            hidden={hiddenCols}
-            onToggleColumn={onToggleColumn}
-            wrap={Boolean(gridPrefs.wrap)}
-            onWrapChange={onWrapChange}
-            columnFit={gridPrefs.columnFit ?? "equal"}
-            onColumnFitChange={onColumnFitChange}
-            textAlign={gridPrefs.textAlign ?? "left"}
-            onTextAlignChange={onTextAlignChange}
-            onResetColumnWidths={onResetColumnWidths}
-            headerRowIndex={active?.headerRowIndex}
-            headerRowCandidates={headerRowCandidates}
-            onHeaderRowChange={onHeaderRowChange}
-          />
-        }
-      />
-    ),
-    [
-      activeId,
-      filteredRowCount,
-      resolvedGrid?.header,
-      resolvedGrid?.rows.length,
-      gridPrefs.columnFit,
-      gridPrefs.textAlign,
-      gridPrefs.wrap,
-      hiddenCols,
-      onColumnFitChange,
-      onResetColumnWidths,
-      onTextAlignChange,
-      onToggleColumn,
-      onWrapChange,
-      onHeaderRowChange,
-      headerRowCandidates,
-      active?.headerRowIndex,
-    ],
-  );
-
-  const gridLoading = Boolean(activeId && busy && !resolvedGrid && !grid);
-  const gridRefreshing = Boolean(activeId && busy && visibleGrid);
-  const gridSwitching = Boolean(activeId && busy && !resolvedGrid && Boolean(grid));
-
   const sheetBulkActions = useMemo(
     () => (
       <HubDirectoryBulkActionRail>
@@ -741,6 +692,66 @@ export function SheetWorkspaceGridPane() {
     ],
   );
 
+  const sheetToolbar = useMemo(
+    () => (
+      <>
+        <WorkspaceDirectorySearchToolbar
+          screen="sheet"
+          showTimeRange={false}
+          showRefresh={false}
+          showViewToggle={false}
+          countIcon={Table2}
+          shown={filteredRowCount}
+          total={resolvedGrid?.rows.length ?? 0}
+          countLabel={resolvedGrid?.loadingMoreRows ? "rows (loading more…)" : "rows"}
+          displayBand={
+            <SheetDisplayBandToolbar
+              sheetId={activeId}
+              headers={resolvedGrid?.header ?? []}
+              hidden={hiddenCols}
+              onToggleColumn={onToggleColumn}
+              wrap={Boolean(gridPrefs.wrap)}
+              onWrapChange={onWrapChange}
+              columnFit={gridPrefs.columnFit ?? "equal"}
+              onColumnFitChange={onColumnFitChange}
+              textAlign={gridPrefs.textAlign ?? "left"}
+              onTextAlignChange={onTextAlignChange}
+              onResetColumnWidths={onResetColumnWidths}
+              headerRowIndex={active?.headerRowIndex}
+              headerRowCandidates={headerRowCandidates}
+              onHeaderRowChange={onHeaderRowChange}
+            />
+          }
+        />
+        {sheetBulkActions}
+      </>
+    ),
+    [
+      activeId,
+      filteredRowCount,
+      resolvedGrid?.header,
+      resolvedGrid?.rows.length,
+      resolvedGrid?.loadingMoreRows,
+      gridPrefs.columnFit,
+      gridPrefs.textAlign,
+      gridPrefs.wrap,
+      hiddenCols,
+      onColumnFitChange,
+      onResetColumnWidths,
+      onTextAlignChange,
+      onToggleColumn,
+      onWrapChange,
+      onHeaderRowChange,
+      headerRowCandidates,
+      active?.headerRowIndex,
+      sheetBulkActions,
+    ],
+  );
+
+  const gridLoading = Boolean(activeId && busy && !resolvedGrid && !grid);
+  const gridRefreshing = Boolean(activeId && busy && visibleGrid);
+  const gridSwitching = Boolean(activeId && busy && !resolvedGrid && Boolean(grid));
+
   const sheetFilterRowLeading = useMemo(
     () =>
       error ? (
@@ -770,7 +781,6 @@ export function SheetWorkspaceGridPane() {
             searchTrailing={sheetQuery.trim() ? <SheetSearchMatchChip count={searchMatchCount} /> : null}
             toolbar={sheetToolbar}
             row2Leading={sheetFilterRowLeading}
-            row2Actions={sheetBulkActions}
           />
         }
       >

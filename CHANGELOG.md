@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-06-30 - Sheet: fix row search + filter row layout
+
+- Version: `4.7.5`
+- Type: Patch
+- Product: P0020
+- Timestamp: 2026-06-30 13:20 (UTC+7)
+- Status: Verified
+- Release: https://github.com/tuanhoangfx/Tool-Manager/releases/tag/v4.7.5
+
+### Changes
+
+- **Sheet search** — bỏ `useDeferredValue` trên row query (deferred không settle khi grid lazy-parse → bảng không lọc dù ô search có text); đếm match trên dataset sau column filters.
+- **Sheet filter chrome** — bulk actions (`Add sheet`, `Remove`, …) lên toolbar row 1; row 2 chỉ column filters + Clear filters (golden WorkflowFilterPane parity).
+
+### Verification
+
+- `pnpm exec vitest run src/features/sheet/sheet-search-highlight.test.ts src/features/sheet/sheet-main-filters.test.ts`
+- Browser MCP: `/sheet` — search `Cursor` / `Claude` lọc đúng rows
+
 ## 2026-06-30 - Sheet workspace, pricing catalog, quota tooling
 
 - Version: `4.7.4`
